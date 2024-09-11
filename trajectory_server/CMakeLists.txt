@@ -25,7 +25,8 @@ set(ROS_LIBRABRIES
 	px4_msgs
 	geometry_msgs
 	nav_msgs
-	sensor_msgs)
+	sensor_msgs
+	gestelt_interfaces)
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
@@ -39,7 +40,8 @@ set(EXPORTED_DEPENDENCIES
 	Eigen3
 	px4_msgs
 	geometry_msgs
-	sensor_msgs)
+	sensor_msgs
+	gestelt_interfaces)
 
 #################
 # Setup targets #
@@ -48,7 +50,7 @@ set(EXPORTED_DEPENDENCIES
 include_directories(include)
 
 # Add frame_transforms lib
-add_library(frame_transforms SHARED src/lib/frame_transforms.cpp)
+add_library(frame_transforms SHARED src/frame_transforms.cpp)
 ament_target_dependencies(frame_transforms 
 	Eigen3
 	geometry_msgs
@@ -58,42 +60,23 @@ target_include_directories(frame_transforms PUBLIC
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
-# # examples/listeners/sensor_combined_listener
-# add_executable(sensor_combined_listener src/examples/listeners/sensor_combined_listener.cpp)
-# ament_target_dependencies(sensor_combined_listener rclcpp px4_msgs)
-# install(TARGETS sensor_combined_listener DESTINATION lib/${PROJECT_NAME})
-
-# # examples/listeners/vehicle_gps_position_listener
-# add_executable(vehicle_gps_position_listener src/examples/listeners/vehicle_gps_position_listener.cpp)
-# ament_target_dependencies(vehicle_gps_position_listener rclcpp px4_msgs)
-# install(TARGETS vehicle_gps_position_listener DESTINATION lib/${PROJECT_NAME})
-
-# # examples/advertisers/debug_vect_advertiser
-# add_executable(debug_vect_advertiser src/examples/advertisers/debug_vect_advertiser.cpp)
-# ament_target_dependencies(debug_vect_advertiser rclcpp px4_msgs)
-# install(TARGETS debug_vect_advertiser DESTINATION lib/${PROJECT_NAME})
-
-# # examples/offboard/offboard_control
-# add_executable(offboard_control src/examples/offboard/offboard_control.cpp)
-# ament_target_dependencies(offboard_control rclcpp px4_msgs)
-# install(TARGETS offboard_control DESTINATION lib/${PROJECT_NAME})
-
-# # examples/offboard/offboard_control_srv
-# add_executable(offboard_control_srv src/examples/offboard/offboard_control_srv.cpp)
-# ament_target_dependencies(offboard_control_srv rclcpp px4_msgs)
-# install(TARGETS offboard_control_srv DESTINATION lib/${PROJECT_NAME})
-
 # examples/offboard/offboard_control_srv
-add_executable(trajectory_server src/examples/trajectory_server/trajectory_server.cpp)
-ament_target_dependencies(trajectory_server 
+add_executable(trajectory_server_node src/trajectory_server.cpp src/uavsm.cpp)
+ament_target_dependencies(trajectory_server_node 
 	rclcpp 
 	px4_msgs 
 	Eigen3
 	geometry_msgs
 	nav_msgs
-	sensor_msgs)
-target_link_libraries(trajectory_server frame_transforms)
-install(TARGETS trajectory_server DESTINATION lib/${PROJECT_NAME})
+	sensor_msgs
+	gestelt_interfaces)
+target_include_directories(trajectory_server_node PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+target_link_libraries(trajectory_server_node frame_transforms)
+
+# install(TARGETS trajectory_server_node DESTINATION lib/${PROJECT_NAME})
 
 ############
 # Install ##
@@ -148,7 +131,7 @@ endif()
 ###########
 
 # Install Python modules
-ament_python_install_package(${PROJECT_NAME})
+# ament_python_install_package(${PROJECT_NAME})
 
 # # Install Python executables
 # install(PROGRAMS

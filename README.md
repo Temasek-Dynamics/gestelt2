@@ -124,9 +124,11 @@ ros2 topic echo /fmu/out/vehicle_status
             - All values are interpreted in NED (Nord, East, Down) coordinate system and the units are [m], [m/s] and [m/s^2] for position, velocity and acceleration, respectively.
     - **Collective thrust, attitude**
         - [VehicleAttitudeSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleAttitudeSetpoint.html) Normalized thrust vector, attitude (quaternion)
+            - Normalized thrust command in body FRD frame [-1,1]
             - The quaternion represents the rotation between the drone body FRD (front, right, down) frame and the NED frame. The thrust is in the drone body FRD frame and expressed in normalized [-1, 1] values.
     - Collective thrust, rates
         - [VehicleRatesSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleRatesSetpoint.html)
+            - Normalized thrust command in body NED frame [-1,1]
             - All the values are in the drone body FRD frame. The rates are in [rad/s] while thrust_body is normalized in [-1, 1].
     - **Thrust and torque**
         - [VehicleThrustSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleThrustSetpoint.html) Thrust setpoint along X, Y, Z body axis [-1, 1]

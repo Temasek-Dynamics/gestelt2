@@ -22,6 +22,7 @@
   <depend>px4_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>gestelt_interfaces</depend>
 
   <depend>launch</depend>
   <depend>launch_testing</depend>
