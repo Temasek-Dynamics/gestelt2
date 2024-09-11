@@ -252,31 +252,59 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 {
 	OffboardControlMode msg{};
 
-	if (offb_ctrl_mode == 0){ // Position mode
+	if (offb_ctrl_mode == 0){ // Trajectory mode
 		msg.position = true;
 		msg.velocity = false;
 		msg.acceleration = false;
+
 		msg.attitude = false;
 		msg.body_rate = false;
 		msg.thrust_and_torque = false;
 		msg.direct_actuator = false;
 	}
-	if (offb_ctrl_mode == 1){ // thrust_and_torque mode
+	if (offb_ctrl_mode == 1){ // Attitude mode
+		msg.position = false;
+		msg.velocity = false;
+		msg.acceleration = false;
+		
+		msg.attitude = true;
+
+		msg.body_rate = false;
+		msg.thrust_and_torque = false;
+		msg.direct_actuator = false;
+	}
+
+	if (offb_ctrl_mode == 2){ // Body rate mode
+		msg.position = false;
+		msg.velocity = false;
+		msg.acceleration = false;
+		msg.attitude = false;
+
+		msg.body_rate = true;
+
+		msg.thrust_and_torque = false;
+		msg.direct_actuator = false;
+	}
+
+	if (offb_ctrl_mode == 3){ // thrust_and_torque mode
 		msg.position = false;
 		msg.velocity = false;
 		msg.acceleration = false;
 		msg.attitude = false;
 		msg.body_rate = false;
+
 		msg.thrust_and_torque = true;
+
 		msg.direct_actuator = false;
 	}
-	if (offb_ctrl_mode == 2){ // actuator mode
+	if (offb_ctrl_mode == 4){ // actuator mode
 		msg.position = false;
 		msg.velocity = false;
 		msg.acceleration = false;
 		msg.attitude = false;
 		msg.body_rate = false;
 		msg.thrust_and_torque = false;
+		
 		msg.direct_actuator = true;
 	}
 
