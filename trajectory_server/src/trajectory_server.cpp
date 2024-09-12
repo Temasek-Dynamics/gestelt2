@@ -31,6 +31,28 @@
 
 #include <trajectory_server/trajectory_server.hpp>
 
+TrajectoryServer::TrajectoryServer() 
+: Node("trajectory_server")
+{
+	initParams();
+	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
+
+	logger_->logInfo("Initializing");
+	// start UAV state machine
+	fsm_list::start();
+
+	initPubSubTimers();
+
+	initSrv();
+
+	offboard_setpoint_counter_ = 0;
+	logger_->logInfo("Initialized");
+}
+
+TrajectoryServer::~TrajectoryServer()
+{
+	//Disarm drone 
+}
 
 void TrajectoryServer::initParams()
 {
@@ -80,6 +102,9 @@ void TrajectoryServer::initPubSubTimers()
 	odometry_sub_ = this->create_subscription<VehicleOdometry>(
 		"/fmu/out/vehicle_odometry", qos_sensor, std::bind(&TrajectoryServer::odometrySubCB, this, std::placeholders::_1));
 
+	vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
+		"/fmu/out/vehicle_status", qos_sensor, std::bind(&TrajectoryServer::vehicleStatusSubCB, this, std::placeholders::_1));
+
 	/* Timers */
 
 	// set_offb_timer_ = this->create_wall_timer((1/set_offb_ctrl_freq_) *1ms, std::bind(&TrajectoryServer::setOffboardTimerCB, this));
@@ -92,6 +117,145 @@ void TrajectoryServer::initSrv()
 	uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>("/uav_command", 
 																			std::bind(&TrajectoryServer::uavCmdSrvCB, this, 
 																						std::placeholders::_1, std::placeholders::_2));
+}
+
+/****************** */
+/* SUBSCRIBER CALLBACKS */
+/****************** */
+
+void TrajectoryServer::vehicleStatusSubCB(const VehicleStatus::UniquePtr msg)
+{
+	arming_state_ = msg->arming_state;
+	nav_state_ = msg->nav_state;
+
+	std::cout << "arming_state_: " << arming_state_ << std::endl;
+
+	pre_flight_checks_pass_ = msg->pre_flight_checks_pass;
+
+	{
+		// # Encodes the system state of the vehicle published by commander
+
+		// uint64 timestamp # time since system start (microseconds)
+
+		// uint64 armed_time # Arming timestamp (microseconds)
+		// uint64 takeoff_time # Takeoff timestamp (microseconds)
+
+		// uint8 arming_state
+		// uint8 ARMING_STATE_DISARMED = 1
+		// uint8 ARMING_STATE_ARMED    = 2
+
+		// uint8 latest_arming_reason
+		// uint8 latest_disarming_reason
+		// uint8 ARM_DISARM_REASON_TRANSITION_TO_STANDBY = 0
+		// uint8 ARM_DISARM_REASON_STICK_GESTURE = 1
+		// uint8 ARM_DISARM_REASON_RC_SWITCH = 2
+		// uint8 ARM_DISARM_REASON_COMMAND_INTERNAL = 3
+		// uint8 ARM_DISARM_REASON_COMMAND_EXTERNAL = 4
+		// uint8 ARM_DISARM_REASON_MISSION_START = 5
+		// uint8 ARM_DISARM_REASON_SAFETY_BUTTON = 6
+		// uint8 ARM_DISARM_REASON_AUTO_DISARM_LAND = 7
+		// uint8 ARM_DISARM_REASON_AUTO_DISARM_PREFLIGHT = 8
+		// uint8 ARM_DISARM_REASON_KILL_SWITCH = 9
+		// uint8 ARM_DISARM_REASON_LOCKDOWN = 10
+		// uint8 ARM_DISARM_REASON_FAILURE_DETECTOR = 11
+		// uint8 ARM_DISARM_REASON_SHUTDOWN = 12
+		// uint8 ARM_DISARM_REASON_UNIT_TEST = 13
+
+		// uint64 nav_state_timestamp # time when current nav_state activated
+
+		// uint8 nav_state_user_intention                  # Mode that the user selected (might be different from nav_state in a failsafe situation)
+
+		// uint8 nav_state                                 # Currently active mode
+		// uint8 NAVIGATION_STATE_MANUAL = 0               # Manual mode
+		// uint8 NAVIGATION_STATE_ALTCTL = 1               # Altitude control mode
+		// uint8 NAVIGATION_STATE_POSCTL = 2               # Position control mode
+		// uint8 NAVIGATION_STATE_AUTO_MISSION = 3         # Auto mission mode
+		// uint8 NAVIGATION_STATE_AUTO_LOITER = 4          # Auto loiter mode
+		// uint8 NAVIGATION_STATE_AUTO_RTL = 5             # Auto return to launch mode
+		// uint8 NAVIGATION_STATE_POSITION_SLOW = 6
+		// uint8 NAVIGATION_STATE_FREE5 = 7
+		// uint8 NAVIGATION_STATE_FREE4 = 8
+		// uint8 NAVIGATION_STATE_FREE3 = 9
+		// uint8 NAVIGATION_STATE_ACRO = 10                # Acro mode
+		// uint8 NAVIGATION_STATE_FREE2 = 11
+		// uint8 NAVIGATION_STATE_DESCEND = 12             # Descend mode (no position control)
+		// uint8 NAVIGATION_STATE_TERMINATION = 13         # Termination mode
+		// uint8 NAVIGATION_STATE_OFFBOARD = 14
+		// uint8 NAVIGATION_STATE_STAB = 15                # Stabilized mode
+		// uint8 NAVIGATION_STATE_FREE1 = 16
+		// uint8 NAVIGATION_STATE_AUTO_TAKEOFF = 17        # Takeoff
+		// uint8 NAVIGATION_STATE_AUTO_LAND = 18           # Land
+		// uint8 NAVIGATION_STATE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
+		// uint8 NAVIGATION_STATE_AUTO_PRECLAND = 20       # Precision land with landing target
+		// uint8 NAVIGATION_STATE_ORBIT = 21               # Orbit in a circle
+		// uint8 NAVIGATION_STATE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
+		// uint8 NAVIGATION_STATE_EXTERNAL1 = 23
+		// uint8 NAVIGATION_STATE_EXTERNAL2 = 24
+		// uint8 NAVIGATION_STATE_EXTERNAL3 = 25
+		// uint8 NAVIGATION_STATE_EXTERNAL4 = 26
+		// uint8 NAVIGATION_STATE_EXTERNAL5 = 27
+		// uint8 NAVIGATION_STATE_EXTERNAL6 = 28
+		// uint8 NAVIGATION_STATE_EXTERNAL7 = 29
+		// uint8 NAVIGATION_STATE_EXTERNAL8 = 30
+		// uint8 NAVIGATION_STATE_MAX = 31
+
+		// uint8 executor_in_charge                        # Current mode executor in charge (0=Autopilot)
+
+		// uint32 valid_nav_states_mask                    # Bitmask for all valid nav_state values
+		// uint32 can_set_nav_states_mask                  # Bitmask for all modes that a user can select
+
+		// # Bitmask of detected failures
+		// uint16 failure_detector_status
+		// uint16 FAILURE_NONE = 0
+		// uint16 FAILURE_ROLL = 1              # (1 << 0)
+		// uint16 FAILURE_PITCH = 2             # (1 << 1)
+		// uint16 FAILURE_ALT = 4               # (1 << 2)
+		// uint16 FAILURE_EXT = 8               # (1 << 3)
+		// uint16 FAILURE_ARM_ESC = 16          # (1 << 4)
+		// uint16 FAILURE_BATTERY = 32          # (1 << 5)
+		// uint16 FAILURE_IMBALANCED_PROP = 64  # (1 << 6)
+		// uint16 FAILURE_MOTOR = 128           # (1 << 7)
+
+		// uint8 hil_state
+		// uint8 HIL_STATE_OFF = 0
+		// uint8 HIL_STATE_ON = 1
+
+		// uint8 FAILSAFE_DEFER_STATE_DISABLED = 0
+		// uint8 FAILSAFE_DEFER_STATE_ENABLED = 1
+		// uint8 FAILSAFE_DEFER_STATE_WOULD_FAILSAFE = 2 # Failsafes deferred, but would trigger a failsafe
+
+		// bool failsafe # true if system is in failsafe state (e.g.:RTL, Hover, Terminate, ...)
+		// bool failsafe_and_user_took_over # true if system is in failsafe state but the user took over control
+		// uint8 failsafe_defer_state # one of FAILSAFE_DEFER_STATE_*
+
+		// # Link loss
+		// bool gcs_connection_lost              # datalink to GCS lost
+		// uint8 gcs_connection_lost_counter     # counts unique GCS connection lost events
+		// bool high_latency_data_link_lost # Set to true if the high latency data link (eg. RockBlock Iridium 9603 telemetry module) is lost
+
+		// # MAVLink identification
+		// uint8 system_type  # system type, contains mavlink MAV_TYPE
+		// uint8 system_id	   # system id, contains MAVLink's system ID field
+		// uint8 component_id # subsystem / component id, contains MAVLink's component ID field
+
+		// bool safety_button_available # Set to true if a safety button is connected
+		// bool safety_off # Set to true if safety is off
+
+		// bool power_input_valid                            # set if input power is valid
+		// bool usb_connected                                # set to true (never cleared) once telemetry received from usb link
+
+		// bool open_drone_id_system_present
+		// bool open_drone_id_system_healthy
+
+		// bool avoidance_system_required                    # Set to true if avoidance system is enabled via COM_OBS_AVOID parameter
+		// bool avoidance_system_valid                       # Status of the obstacle avoidance system
+
+		// bool rc_calibration_in_progress
+		// bool calibration_enabled
+
+		// bool pre_flight_checks_pass		# true if all checks necessary to arm pass
+	}
+
 }
 
 void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
@@ -144,71 +308,144 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 
 void TrajectoryServer::setOffboardTimerCB()
 {
-	// offboard_control_mode needs to be paired with trajectory_setpoint
-	publishOffboardCtrlMode(offboard_ctrl_mode_);
+	// Check all states
+	if (UAV::is_in_state<Unconnected>()){
+		logger_->logInfoThrottle("[Unconnected]", 1.0);
+		
+		// TODO Check if FCU is connected
 
-	if (offboard_setpoint_counter_ == 10) {
-		// Change to Offboard mode after 10 setpoints
+	}
+	else if (UAV::is_in_state<Idle>()){
+		logger_->logInfoThrottle("[Idle]", 1.0);
+		{ // Do on the first time
+			this->disarm();
+		}
+	}
+	else if (UAV::is_in_state<Landing>()){
+		logger_->logInfoThrottle("[Landing]", 1.0);
+		{
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+											PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO,
+											PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND);
+		}
 
-		// VEHICLE_CMD_DO_SET_MODE: |Mode, as defined by ENUM MAV_MODE| Custom mode |
-		this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6);
+		// TODO Check if takeOff is complete
 
-		// Arm the vehicle
-		this->arm();
+	}
+	else if (UAV::is_in_state<TakingOff>()){
+		logger_->logInfoThrottle("[TakingOff]", 1.0);
+		
+		{ // Do on the first time
+			// Set to custom (offboard) mode
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+											PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD);
+
+			this->arm();
+		}
+
+		publishOffboardCtrlMode(0);	// Position control
+
+		// TODO Check if takeOff is complete
+	}
+	else if (UAV::is_in_state<Hovering>()){
+		logger_->logInfoThrottle("[Hovering]", 1.0);
+		
+		{ // Do on the first time
+			// Set to custom (offboard) mode
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+											PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD);
+		}
+
+		// PERIODICALLY: Publish offboard control mode message 
+		publishOffboardCtrlMode(0);	// Position control
+	}
+	else if (UAV::is_in_state<Mission>()){
+		logger_->logInfoThrottle("[Mission]", 1.0);
+
+		// PERIODICALLY: Publish offboard control mode message
+		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
+	}
+	else if (UAV::is_in_state<EmergencyStop>()){
+		logger_->logInfoThrottle("[EmergencyStop]", 1.0);
+
+		{ // Do on the first time
+			this->disarm();
+		}
+	}
+	else {
+		logger_->logInfoThrottle("Undefined UAV state", 1.0);
 	}
 
-	offboard_setpoint_counter_++;
+
+	// // offboard_control_mode needs to be paired with trajectory_setpoint
+	// publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
+
+	// if (offboard_setpoint_counter_ == 10) {
+	// 	// Change to Offboard mode after 10 setpoints
+
+	// 	// VEHICLE_CMD_DO_SET_MODE: |Mode, as defined by ENUM MAV_MODE| Custom mode |
+	// 	this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 6);
+
+	// 	// Arm the vehicle
+	// 	this->arm();
+	// }
+
+	// offboard_setpoint_counter_++;
 }
 
 void TrajectoryServer::SMTickTimerCB()
 {
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
-		std::cout << "Unconnected" << std::endl;
+		logger_->logInfoThrottle("[Unconnected]", 1.0);
 	}
 	else if (UAV::is_in_state<Idle>()){
-		std::cout << "Idle" << std::endl;
-
+		logger_->logInfoThrottle("[Idle]", 1.0);
 	}
 	else if (UAV::is_in_state<Landing>()){
-		std::cout << "Landing" << std::endl;
-
+		logger_->logInfoThrottle("[Landing]", 1.0);
 	}
 	else if (UAV::is_in_state<TakingOff>()){
-		std::cout << "TakingOff" << std::endl;
-
+		logger_->logInfoThrottle("[TakingOff]", 1.0);
+		publishTrajectorySetpoint(
+			Eigen::Vector3d(0.0, 0.0, fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()), 
+			0.0);
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		std::cout << "Hovering" << std::endl;
-
+		logger_->logInfoThrottle("[Hovering]", 1.0);
+		publishTrajectorySetpoint(
+			Eigen::Vector3d(0.0, 0.0, fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()), 
+			0.0);
 	}
 	else if (UAV::is_in_state<Mission>()){
-		std::cout << "Mission" << std::endl;
-
+		logger_->logInfoThrottle("[Mission]", 1.0);
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
-		std::cout << "EmergencyStop" << std::endl;
-
+		logger_->logInfoThrottle("]EmergencyStop]", 1.0);
 	}
 	else {
-		std::cout << "Undefined UAV state" << std::endl;
-
+		logger_->logInfoThrottle("Undefined UAV state", 1.0);
 	}
 
-	switch (offboard_ctrl_mode_){
-	case 0:	//Position/Velocity/Acceleration mode
-		publishTrajectorySetpoint(Eigen::Vector3d(0.0, 1.0, 2.0), 1.57);
-		break;
-	case 1: //Thrust/Torque mode
-		// publishTorqueSetpoint();
-		// publishThrustSetpoint();
-		break;
-	case 2: //Actuator mode
-		// publishActuatorCmds();
-		break;
-	default: 
-		break;
-	}
+	// switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
+	// 		publishTrajectorySetpoint(Eigen::Vector3d(0.0, 1.0, 2.0), 1.57);
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE:
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::MODE_RATES:
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::MODE_THRUST_TORQUE:
+	// 		// publishTorqueSetpoint();
+	// 		// publishThrustSetpoint();
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::MODE_MOTORS:
+	// 		// publishActuatorCmds();
+	// 		break;
+	// 	default:
+	// 		// Undefined. Do nothing
+	// 		break;
+	// }
 
 }
 
@@ -252,63 +489,37 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 {
 	OffboardControlMode msg{};
 
-	if (offb_ctrl_mode == 0){ // Trajectory mode
-		msg.position = true;
-		msg.velocity = false;
-		msg.acceleration = false;
-
-		msg.attitude = false;
-		msg.body_rate = false;
-		msg.thrust_and_torque = false;
-		msg.direct_actuator = false;
-	}
-	if (offb_ctrl_mode == 1){ // Attitude mode
-		msg.position = false;
-		msg.velocity = false;
-		msg.acceleration = false;
-		
-		msg.attitude = true;
-
-		msg.body_rate = false;
-		msg.thrust_and_torque = false;
-		msg.direct_actuator = false;
-	}
-
-	if (offb_ctrl_mode == 2){ // Body rate mode
-		msg.position = false;
-		msg.velocity = false;
-		msg.acceleration = false;
-		msg.attitude = false;
-
-		msg.body_rate = true;
-
-		msg.thrust_and_torque = false;
-		msg.direct_actuator = false;
-	}
-
-	if (offb_ctrl_mode == 3){ // thrust_and_torque mode
-		msg.position = false;
-		msg.velocity = false;
-		msg.acceleration = false;
-		msg.attitude = false;
-		msg.body_rate = false;
-
-		msg.thrust_and_torque = true;
-
-		msg.direct_actuator = false;
-	}
-	if (offb_ctrl_mode == 4){ // actuator mode
-		msg.position = false;
-		msg.velocity = false;
-		msg.acceleration = false;
-		msg.attitude = false;
-		msg.body_rate = false;
-		msg.thrust_and_torque = false;
-		
-		msg.direct_actuator = true;
-	}
-
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+	msg.position = false;
+	msg.velocity = false;
+	msg.acceleration = false;
+
+	msg.attitude = false;
+	msg.body_rate = false;
+	msg.thrust_and_torque = false;
+	msg.direct_actuator = false;
+
+	switch (offb_ctrl_mode){
+		case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
+			msg.position = true;
+			break;
+		case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE:
+			msg.attitude = true;
+			break;
+		case gestelt_interfaces::srv::UAVCommand::Request::MODE_RATES:
+			msg.body_rate = true;
+			break;
+		case gestelt_interfaces::srv::UAVCommand::Request::MODE_THRUST_TORQUE:
+			msg.thrust_and_torque = true;
+			break;
+		case gestelt_interfaces::srv::UAVCommand::Request::MODE_MOTORS:
+			msg.direct_actuator = true;
+			break;
+		default:
+			// Undefined
+			break;
+	}
+	
 	offboard_control_mode_pub_->publish(msg);
 }
 
@@ -388,12 +599,13 @@ void TrajectoryServer::publishThrustSetpoint(const Eigen::Vector3d& thrust_vec)
  * @param param1    Command parameter 1
  * @param param2    Command parameter 2
  */
-void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, float param2)
+void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, float param2, float param3)
 {
 	VehicleCommand msg{};
 	msg.param1 = param1;	// param1 is used to set the base_mode variable. 1 is MAV_MODE_FLAG_CUSTOM_MODE_ENABLED. See mavlink's MAV_MODE_FLAG 
 	// For param2 and param3, refer to https://github.com/PX4/PX4-Autopilot/blob/0186d687b2ac3d62789806d341bd868b388c2504/src/modules/commander/px4_custom_mode.h
 	msg.param2 = param2;	// custom_main_mode. 6 is PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD
+	msg.param3 = param3;	// sub mode
 	msg.command = command;	// command id
 	msg.target_system = 1;		// System which should execute the command
 	msg.target_component = 1;	// Component which should execute the command, 0 for all components
@@ -405,6 +617,7 @@ void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, f
 	vehicle_command_pub_->publish(msg);
 }
 
+
 /****************** */
 /* SERVICE CALLBACKS*/
 /****************** */
@@ -412,20 +625,46 @@ void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, f
 void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Request> request,
           								std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Response>  response)
 {
-	// request->header
-	sendEvent(UAVCommandToEvent(request->command));
-	// request->value
-	// request->mode
+	sendUAVCommandEvent(request->command, request->value, request->mode);
 
-	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Incoming request\n Command: %d" " Mode: %d" " Value: %f",
-					request->command, request->mode, request->value);
+	// sendEvent(TakeOff_E());
+
+	// switch (request->command)
+	// {
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:  
+	// 		logger_->logInfo("COMMAND_TAKEOFF");
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_LAND:  
+	// 		logger_->logInfo("COMMAND_LAND");
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_HOVER:  
+	// 		logger_->logInfo("COMMAND_HOVER");
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION: 
+	// 		logger_->logInfo("COMMAND_START_MISSION");
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_STOP_MISSION: 
+	// 		logger_->logInfo("COMMAND_STOP_MISSION");
+	// 		break;
+	// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_EMERGENCY_STOP: 
+	// 		logger_->logInfo("COMMAND_EMERGENCY_STOP");
+	// 		break;
+	// 	default:                    
+	// 		break;
+	// }
+	// request->header
+
+
+	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
+					request->command, request->mode, request->value));
 
 	response->state = (int) getUAVState();
 	response->state_name = getUAVStateString();
 	response->success = true;
 
-	RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "sending back response: State[%d] State_name[%s] Success [%d]", 
-		response->state, response->state_name.c_str(), response->success);
+	logger_->logInfo(strFmt("sending back response: State[%d] State_name[%s] Success [%d]", 
+		response->state, response->state_name.c_str(), response->success));
+
 }
 
 /****************** */
@@ -440,7 +679,7 @@ void TrajectoryServer::arm()
 	// VEHICLE_CMD_COMPONENT_ARM_DISARM: Arms / Disarms a component |1 to arm, 0 to disarm
 	publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, VehicleCommand::ARMING_ACTION_ARM);
 
-	RCLCPP_INFO(this->get_logger(), "Arm command send");
+	logger_->logInfo( "Arm command sent");
 }
 
 /**
@@ -450,9 +689,8 @@ void TrajectoryServer::disarm()
 {
 	publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, VehicleCommand::ARMING_ACTION_DISARM);
 
-	RCLCPP_INFO(this->get_logger(), "Disarm command send");
+	logger_->logInfo( "Disarm command sent");
 }
-
 
 /****************** */
 /* HELPER METHODS */
@@ -460,7 +698,6 @@ void TrajectoryServer::disarm()
 
 int main(int argc, char *argv[])
 {
-	std::cout << "Starting trajectory server node..." << std::endl;
 	setvbuf(stdout, NULL, _IONBF, BUFSIZ);
 
 	rclcpp::init(argc, argv);

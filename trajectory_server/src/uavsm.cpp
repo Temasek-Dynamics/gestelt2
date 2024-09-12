@@ -59,8 +59,11 @@ void UAV::react(EmergencyStop_E const &) {
   transit<EmergencyStop>();
 }
 
+double UAV::take_off_height_ = 0.0;
+int UAV::offb_ctrl_mode_  = 0;
+
 // ----------------------------------------------------------------------------
 // Initial state definition
 //
-FSM_INITIAL_STATE(UAV, Unconnected)
+FSM_INITIAL_STATE(UAV, Idle)
 

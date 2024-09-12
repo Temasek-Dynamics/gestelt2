@@ -28,6 +28,8 @@
 
 #include <tinyfsm.hpp>
 
+#include <gestelt_interfaces/srv/uav_command.hpp>
+
 #include <iostream>
 
 // ----------------------------------------------------------------------------
@@ -36,7 +38,7 @@
 
 struct CommandEvent : tinyfsm::Event
 {
-  double val; // Active in states [TakeOff], [Hover]. Value which takes the context of the event. For Taking off, it is the height to take off to. For hover, it is the height to hover at.
+  double value; // Active in states [TakeOff]. Value which takes the context of the event. For Taking off, it is the height to take off to.
   int mode; // Active in states [Mission].
 };
 
@@ -80,8 +82,19 @@ public:
   virtual void entry(void) { };  /* entry actions in some states */
   void         exit(void)  { };  /* no exit actions at all */
 
-protected:
+  /* Get offboard control mode */
+  int const getControlMode() const {
+    return offb_ctrl_mode_;
+  }
 
+  /* Get offboard control mode */
+  double const getTakeoffHeight() const{
+    return take_off_height_;
+  }
+
+protected:
+  static double take_off_height_;
+  static int offb_ctrl_mode_;
   // static constexpr int initial_floor = 0;
   // static int current_floor;
   // static int dest_floor;
@@ -131,6 +144,8 @@ class Idle
   }
 
   void react(TakeOff_E const & e) override {
+    std::cout<< "Taking off!" << std::endl;
+    take_off_height_ = e.value;
     transit<TakingOff>();
   };
 
@@ -197,6 +212,7 @@ class Hovering
   };
 
   void react(StartMission_E const & e) override {
+    offb_ctrl_mode_ = e.mode;
     transit<Mission>();
   };
 };
@@ -245,7 +261,7 @@ class EmergencyStop
 
 using fsm_list = tinyfsm::FsmList<UAV>;
 
-/** dispatch event to "UAV" */
+/** dispatch event to "UAV" State Machine*/
 template<typename E>
 void sendEvent(E const & event)
 {
@@ -271,56 +287,55 @@ enum UAVStateEnum
   UNDEFINED       // 7
 };
 
-/* Enum for UAV Event */
-enum UAVCommandEnum
-{
-  TAKEOFF_E,           // 0
-  LAND_E,    // 1
-  HOVER_E,        // 2
-  STARTMISSION_E,      // 3
-  STOPMISSION_E,       // 4
-  EMERGENCYSTOP_E        // 5
-};
+// /* Enum for UAV Event */
+// enum UAVCommandEnum
+// {
+//   TAKEOFF_E,           // 0
+//   LAND_E,    // 1
+//   HOVER_E,        // 2
+//   STARTMISSION_E,      // 3
+//   STOPMISSION_E,       // 4
+//   EMERGENCYSTOP_E        // 5
+// };
 
 inline UAVStateEnum getUAVState() {
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
-		std::cout << "Unconnected" << std::endl;
+		// std::cout << "Unconnected" << std::endl;
 		return UAVStateEnum::UNCONNECTED;
 	}
 	else if (UAV::is_in_state<Idle>()){
-		std::cout << "Idle" << std::endl;
+		// std::cout << "Idle" << std::endl;
 
 		return UAVStateEnum::IDLE;
 	}
 	else if (UAV::is_in_state<Landing>()){
-		std::cout << "Landing" << std::endl;
+		// std::cout << "Landing" << std::endl;
 
 		return UAVStateEnum::LANDING;
 	}
 	else if (UAV::is_in_state<TakingOff>()){
-		std::cout << "TakingOff" << std::endl;
+		// std::cout << "TakingOff" << std::endl;
 
 		return UAVStateEnum::TAKINGOFF;
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		std::cout << "Hovering" << std::endl;
+		// std::cout << "Hovering" << std::endl;
 
 		return UAVStateEnum::HOVERING;
 	}
 	else if (UAV::is_in_state<Mission>()){
-		std::cout << "Mission" << std::endl;
+		// std::cout << "Mission" << std::endl;
 
 		return UAVStateEnum::MISSION;
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
-		std::cout << "EmergencyStop" << std::endl;
+		// std::cout << "EmergencyStop" << std::endl;
 
 		return UAVStateEnum::EMERGENCYSTOP;
 	}
 	else {
-		std::cout << "Undefined UAV state" << std::endl;
-
+		// std::cout << "Undefined UAV state" << std::endl;
 		return UAVStateEnum::UNDEFINED;
 	}
 }
@@ -341,17 +356,51 @@ inline const std::string getUAVStateString()
   }
 }
 
-inline CommandEvent UAVCommandToEvent(const int& cmd)
+inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& mode)
 {
   switch (cmd)
   {
-    case UAVCommandEnum::TAKEOFF_E:     return TakeOff_E();
-    case UAVCommandEnum::LAND_E:  return Land_E();
-    case UAVCommandEnum::HOVER_E:    return Hover_E();
-    case UAVCommandEnum::STARTMISSION_E:  return StartMission_E();
-    case UAVCommandEnum::STOPMISSION_E:  return StartMission_E();
-    case UAVCommandEnum::EMERGENCYSTOP_E:   return EmergencyStop_E();
-    default:                    return Land_E();
+    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:  
+      {
+        auto evt = TakeOff_E();
+        evt.value = value;
+        sendEvent(evt);
+      }
+      break;
+    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_LAND:  
+      {      
+        auto evt = Land_E();
+        sendEvent(evt);
+      }
+      break;
+    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_HOVER:  
+      {      
+        auto evt = Hover_E();
+        sendEvent(evt);
+      }
+      break;
+    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION:  
+      {      
+        auto evt = StartMission_E();
+        evt.mode = mode;
+        sendEvent(evt);
+      }
+      break;
+    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_STOP_MISSION:  
+      {      
+        auto evt = StopMission_E();
+        sendEvent(evt);
+      }
+      break;
+    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_EMERGENCY_STOP:  
+      {      
+        auto evt = EmergencyStop_E();
+        sendEvent(evt);
+      }
+      break;
+    default:
+      // Do nothing                    
+      break;
   }
 }
 

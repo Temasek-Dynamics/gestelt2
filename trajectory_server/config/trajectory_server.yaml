@@ -10,3 +10,4 @@
     set_offb_ctrl_freq: 4.0  #[ Hz] Offboard control mode publish frequency
     pub_odom_freq: 30.0  # [Hz] Publish odometry frequency 
     pub_cmd_freq: 30.0  # [Hz] Publish control input command frequency
+    state_machine_tick_freq: 10.0  # [Hz] Frequency to tick state machine

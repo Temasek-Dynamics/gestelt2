@@ -89,6 +89,7 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "eigen": "cpp"
+        "eigen": "cpp",
+        "bitset": "cpp"
     }
 }

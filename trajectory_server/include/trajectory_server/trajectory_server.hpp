@@ -44,6 +44,7 @@
 // #include <px4_msgs/msg/vehicle_control_mode.hpp>
 
 #include <px4_msgs/msg/vehicle_odometry.hpp>
+#include <px4_msgs/msg/vehicle_status.hpp>
 
 #include <nav_msgs/msg/odometry.hpp>
 
@@ -53,28 +54,51 @@
 
 #include <uavsm.hpp>
 
+#include <logger_wrapper/logger_wrapper.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
 
+enum PX4_CUSTOM_MAIN_MODE {
+	PX4_CUSTOM_MAIN_MODE_MANUAL = 1,
+	PX4_CUSTOM_MAIN_MODE_ALTCTL, // 2
+	PX4_CUSTOM_MAIN_MODE_POSCTL,  // 3
+	PX4_CUSTOM_MAIN_MODE_AUTO, // 4
+	PX4_CUSTOM_MAIN_MODE_ACRO, // 5
+	PX4_CUSTOM_MAIN_MODE_OFFBOARD,  // 6
+	PX4_CUSTOM_MAIN_MODE_STABILIZED,
+	PX4_CUSTOM_MAIN_MODE_RATTITUDE_LEGACY,
+	PX4_CUSTOM_MAIN_MODE_SIMPLE, /* unused, but reserved for future use */
+	PX4_CUSTOM_MAIN_MODE_TERMINATION
+};
+
+enum PX4_CUSTOM_SUB_MODE_AUTO {
+	PX4_CUSTOM_SUB_MODE_AUTO_READY = 1,
+	PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF,
+	PX4_CUSTOM_SUB_MODE_AUTO_LOITER,
+	PX4_CUSTOM_SUB_MODE_AUTO_MISSION,
+	PX4_CUSTOM_SUB_MODE_AUTO_RTL,
+	PX4_CUSTOM_SUB_MODE_AUTO_LAND,
+	PX4_CUSTOM_SUB_MODE_AUTO_RESERVED_DO_NOT_USE, // was PX4_CUSTOM_SUB_MODE_AUTO_RTGS, deleted 2020-03-05
+	PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET,
+	PX4_CUSTOM_SUB_MODE_AUTO_PRECLAND,
+	PX4_CUSTOM_SUB_MODE_AUTO_VTOL_TAKEOFF,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL1,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL2,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL3,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL4,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL5,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL6,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL7,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL8,
+};
 
 class TrajectoryServer : public rclcpp::Node
 {
 public:
-	TrajectoryServer() : Node("trajectory_server")
-	{
-		// start UAV state machine
-		fsm_list::start();
-
-		initParams();
-
-		initPubSubTimers();
-
-		initSrv();
-
-		offboard_setpoint_counter_ = 0;
-	}
+	TrajectoryServer();
+	virtual ~TrajectoryServer();
 
 private:
 	void initParams();
@@ -87,7 +111,7 @@ private:
 	void SMTickTimerCB();
 
 	/* Publisher methods */
-	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0);
+	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0, float param3=0.0);
 	void publishOffboardCtrlMode(const int& offb_ctrl_mode);
 	void publishTrajectorySetpoint(const Eigen::Vector3d& pos_enu, const double& yaw);
 	void publishActuatorCmds(const Eigen::Vector4d& motor_in );
@@ -100,13 +124,15 @@ private:
 
 	/* Subscriber callbacks */
 	void odometrySubCB(const VehicleOdometry::UniquePtr msg);
+	void vehicleStatusSubCB(const VehicleStatus::UniquePtr msg);
 
 	/* PX4-related methods */
 	void arm();
 	void disarm();
 
 	/* Helper methods */
-
+private:
+	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
 private:
 	rclcpp::TimerBase::SharedPtr set_offb_timer_;	
@@ -129,6 +155,7 @@ private:
 
 	/* Subscribers */
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr odometry_sub_;
+	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
 
 	// std::atomic<uint64_t> timestamp_;   //!< common synced timestamped
 	uint64_t offboard_setpoint_counter_;   //!< counter for the number of setpoints sent
@@ -142,17 +169,27 @@ private:
 	Eigen::Vector3d cur_vel_;	// current velocity
 	Eigen::Vector3d cur_ang_vel_;	// current angular velocity
 
+	/* UAV state*/
+
+	int arming_state_; // Arming state
+	int nav_state_; // Navigation state 
+	bool pre_flight_checks_pass_; // Pre flight checks pass
+
 	/* Param */
+	int drone_id_{-1};
+
 	std::string origin_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // base link frame of uav
 
-	int offboard_ctrl_mode_{-1}; // offboard control mode
+	int offb_ctrl_mode_{-1}; // offboard control mode
 	double takeoff_height_; // [m] Take off height
 	
 	double pub_cmd_freq_; // [Hz] Frequency to publish PVA commands
 	double pub_odom_freq_; // [Hz] Frequency of state machine ticks
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
+
+
 };
 
 #endif //TRAJECTORY_SERVER_HPP_

@@ -53,10 +53,10 @@ def generate_launch_description():
 
     trajectory_server = Node(
         package='trajectory_server',
-        executable='trajectory_server',
+        executable='trajectory_server_node',
         output='screen',
         shell=True,
-        name='traj_server',
+        name='traj_server_0',
         parameters=[traj_server_config],
     )
 

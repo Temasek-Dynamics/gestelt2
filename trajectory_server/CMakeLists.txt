@@ -26,7 +26,8 @@ set(ROS_LIBRABRIES
 	geometry_msgs
 	nav_msgs
 	sensor_msgs
-	gestelt_interfaces)
+	gestelt_interfaces
+	logger_wrapper)
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
@@ -60,7 +61,7 @@ target_include_directories(frame_transforms PUBLIC
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
-# examples/offboard/offboard_control_srv
+# Trajectory Server
 add_executable(trajectory_server_node src/trajectory_server.cpp src/uavsm.cpp)
 ament_target_dependencies(trajectory_server_node 
 	rclcpp 
@@ -69,14 +70,25 @@ ament_target_dependencies(trajectory_server_node
 	geometry_msgs
 	nav_msgs
 	sensor_msgs
-	gestelt_interfaces)
+	gestelt_interfaces
+	logger_wrapper)
 target_include_directories(trajectory_server_node PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 target_link_libraries(trajectory_server_node frame_transforms)
+install(TARGETS trajectory_server_node DESTINATION lib/${PROJECT_NAME})
 
-# install(TARGETS trajectory_server_node DESTINATION lib/${PROJECT_NAME})
+# (For testing) Trajectory Server UAV Command service client 
+add_executable(uav_cmd_srv_client src/uav_cmd_srv_client.cpp )
+ament_target_dependencies(uav_cmd_srv_client 
+	rclcpp 
+	gestelt_interfaces)
+target_include_directories(uav_cmd_srv_client PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+install(TARGETS uav_cmd_srv_client DESTINATION lib/${PROJECT_NAME})
 
 ############
 # Install ##
@@ -109,7 +121,6 @@ install(DIRECTORY config DESTINATION share/${PROJECT_NAME}/)
 
 # Install tests
 # install(DIRECTORY test DESTINATION share/${PROJECT_NAME}/)
-
 
 ############
 # Testing ##
