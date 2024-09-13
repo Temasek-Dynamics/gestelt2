@@ -5,8 +5,12 @@ A Receding Horizon Planning (RHP) framework with a focus on multi-UAV navigation
 <img src="docs/pictures/gestelt_architecture_24_10.png" alt="Gestelt Architecture" style="width: 1200px;"/>
 
 # Installation and Setup for Simulation
-1. Install dependencies
+1. Install ROS2 and associated dependencies
 - ROS 2 Jazzy
+```bash
+sudo apt install ros-jazzy-pcl-ros
+sudo apt install ros-jazzy-pcl-conversions
+```
 
 2. Required Repos
 - PX4-msgs: bcb3d020bd2f2a994b0633a6fccf8ae47190d867
@@ -131,8 +135,10 @@ ros2 topic echo /fmu/out/vehicle_status
             - Normalized thrust command in body NED frame [-1,1]
             - All the values are in the drone body FRD frame. The rates are in [rad/s] while thrust_body is normalized in [-1, 1].
     - **Thrust and torque**
-        - [VehicleThrustSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleThrustSetpoint.html) Thrust setpoint along X, Y, Z body axis [-1, 1]
-        - [VehicleTorqueSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleTorqueSetpoint.html) Torque setpoint about X, Y, Z body axis (normalized)
+        - [VehicleThrustSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleThrustSetpoint.html) 
+            - Thrust setpoint along X, Y, Z body axis [-1, 1]
+        - [VehicleTorqueSetpoint](https://docs.px4.io/main/en/msg_docs/VehicleTorqueSetpoint.html) 
+            - Torque setpoint about X, Y, Z body axis (normalized)
             - All the values are in the drone body FRD frame and normalized in [-1, 1].
     - **Individual motors**
         - [ActuatorMotors](https://docs.px4.io/main/en/msg_docs/ActuatorMotors.html) Individual motor values

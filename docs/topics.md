@@ -18,6 +18,7 @@
 /fmu/in/telemetry_status
 /fmu/in/trajectory_setpoint
 /fmu/in/unregister_ext_component
+
 /fmu/in/vehicle_attitude_setpoint
 /fmu/in/vehicle_command
 /fmu/in/vehicle_command_mode_executor
