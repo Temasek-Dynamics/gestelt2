@@ -61,6 +61,7 @@
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
+using namespace std::placeholders;
 
 enum PX4_CUSTOM_MAIN_MODE {
 	PX4_CUSTOM_MAIN_MODE_MANUAL = 1,
@@ -201,7 +202,6 @@ private:
 	double pub_odom_freq_; // [Hz] Frequency of state machine ticks
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
-
 };
 
 #endif //TRAJECTORY_SERVER_HPP_

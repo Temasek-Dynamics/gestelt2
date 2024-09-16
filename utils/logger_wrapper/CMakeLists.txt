@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(logger_wrapper)
 
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 17)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -14,7 +21,12 @@ find_package(rclcpp REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-add_library(logger_wrapper src/logger_wrapper.cpp)
+add_library(logger_wrapper 
+  src/logger_wrapper.cpp 
+  include/logger_wrapper/logger_wrapper.hpp
+  include/logger_wrapper/definitions.hpp
+  include/logger_wrapper/timer.hpp
+)
 ament_target_dependencies(logger_wrapper 
   rclcpp
 )

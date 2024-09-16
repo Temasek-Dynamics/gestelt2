@@ -3,7 +3,6 @@ project(trajectory_server)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
-
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
 	set(CMAKE_CXX_STANDARD 17)
@@ -37,7 +36,6 @@ set(EXPORTED_DEPENDENCIES
 	ament_cmake
 	rclcpp
 	rosidl_default_runtime
-	eigen3_cmake_module
 	Eigen3
 	px4_msgs
 	geometry_msgs

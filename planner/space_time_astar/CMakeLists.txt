@@ -2,21 +2,37 @@ cmake_minimum_required(VERSION 3.8)
 project(space_time_astar)
 
 set(CMAKE_BUILD_TYPE "Release")
-add_compile_options(-std=c++17)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 17)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_ros REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+set(ROS_LIBRABRIES
+	ament_cmake
+	ament_cmake_ros
+  rclcpp
+  dynamic_voronoi
+)
+
+foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
+
 add_library(space_time_astar src/space_time_astar.cpp)
 add_library(space_time_astar::space_time_astar ALIAS space_time_astar)
+ament_target_dependencies(space_time_astar 
+  Eigen3
+  rclcpp
+  dynamic_voronoi)
 target_compile_features(space_time_astar PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(space_time_astar PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -24,7 +40,7 @@ target_include_directories(space_time_astar PUBLIC
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(space_time_astar PRIVATE "SPACE_TIME_ASTAR_PLANNER_BUILDING_LIBRARY")
+target_compile_definitions(space_time_astar PRIVATE "SPACE_TIME_ASTAR_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/

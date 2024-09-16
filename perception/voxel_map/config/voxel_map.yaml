@@ -1,0 +1,40 @@
+/**:
+  ros__parameters:
+    global_map: # Global map size
+      size_x: 50.0
+      size_y: 50.0
+      size_z: 20.0
+    local_map:  # Local map size
+      # size_x: 15.5
+      # size_y: 15.5 
+      # size_z: 5.0
+      size_x: 17.0
+      size_y: 17.0
+      size_z: 5.0
+      viz_map_frequency: 10.0
+      update_local_map_frequency: 15.0
+
+    occ_map:
+      resolution: 0.1
+      inflation: 0.2
+      ground_height: 0.0
+      max_range: 30.0
+
+    # For visualizing collision with static obstacles
+    collision_check:
+      enable: false
+      warn_radius: 0.225
+      fatal_radius: 0.14
+      check_collision_frequency: 10.0
+
+    # camera extrinsic parameters 
+    camera_to_body: 
+      # roll: 90.0
+      # pitch: 180.0
+      # yaw: 90.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0 
+      t_x: 0.0 # x translation
+      t_y: 0.0
+      t_z: 0.0

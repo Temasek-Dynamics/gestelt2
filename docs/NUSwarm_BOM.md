@@ -4,3 +4,8 @@
 3. Flight Receiver: FrSky R-XSR
 4. Motors x 4: NIN 1404 V2 4850Kv
 5. Propellers: HQ 3X3X3
+6. Receiver: FrSky R-XSR/RXSR Ultra mini S.BUS
+
+# Additional equipment:
+1. Transmitter
+2. 3S Lipo Battery

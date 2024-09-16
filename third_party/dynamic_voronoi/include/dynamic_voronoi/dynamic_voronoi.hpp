@@ -43,13 +43,6 @@ public:
   //! Initialization with a given binary map (false==free, true==occupied)
   void initializeMap(int _sizeX, int _sizeY, const std::vector<bool>& bool_map_1d_arr) ;
 
-  //! add an obstacle at the specified cell coordinate
-  // void occupyCell(int x, int y);
-  //! remove an obstacle at the specified cell coordinate
-  // void clearCell(int x, int y);
-  //! remove old dynamic obstacles and add the new ones
-  void exchangeObstacles(std::vector<INTPOINT>& newObstacles);
-
   //! update distance map and Voronoi diagram to reflect the changes
   void update(bool updateRealDist=true) ;
   //! prune the Voronoi diagram
@@ -211,7 +204,6 @@ private:
   int sizeY;
   int sizeX;
   dataCell** data;
-  // std::shared_ptr<std::vector<std::vector<bool>>> grid_map_; // 2d vector of booleans assigned upon initialization
   bool allocatedGridMap;
 
   // Data structure

@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(dynamic_voronoi)
 
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 17)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -12,7 +19,7 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 add_library(dynamic_voronoi
-  include/dynamic_voronoi/dynamic_voronoi.h
+  include/dynamic_voronoi/dynamic_voronoi.hpp
   include/dynamic_voronoi/bucketedqueue.hpp
   include/dynamic_voronoi/bucketedqueue.h
   src/dynamic_voronoi.cpp

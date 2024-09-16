@@ -13,12 +13,18 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>tf2_ros</depend>
-  <depend>message_filters</depend>
 
-  <depend>logger_wrapper</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>pcl_conversions</depend>
+
+  <depend>message_filters</depend>
+  <depend>tf2_ros</depend>
+
   <depend>bonxai</depend>
+  <depend>logger_wrapper</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

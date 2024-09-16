@@ -4,4 +4,4 @@ This package contains a voronoi planner which:
 2. Does Space Time A* search on the resulting discrete voronoi diaram across 3D space
 
 # Acknowledgements
-1. dynamicvoronoi code from Boris Lau
+1. [dynamicvoronoi code from Boris Lau](http://www2.informatik.uni-freiburg.de/~lau/dynamicvoronoi/)

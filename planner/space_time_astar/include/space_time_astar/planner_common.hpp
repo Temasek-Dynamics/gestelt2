@@ -1,18 +1,20 @@
-#ifndef _PLANNER_COMMON_H_
-#define _PLANNER_COMMON_H_
+#ifndef _PLANNER_COMMON_HPP_
+#define _PLANNER_COMMON_HPP_
 
 // Common helper methods for planners
 #include <limits>
-#include <Eigen/Eigen>
 #include <queue>
-#include <space_time_astar_planner/point.h>
 #include <boost/functional/hash_fwd.hpp>
 
+#include <Eigen/Eigen>
+
+#include <space_time_astar/point.hpp>
+
 using namespace Eigen;
-constexpr double infinity = std::numeric_limits<float>::infinity();
-constexpr double epsilon = std::numeric_limits<double>::epsilon();
 
 #define SQRT2 1.4142135623
+
+namespace global_planner{
 
 /**
  * @brief Priority queue used for open list in A* search
@@ -353,6 +355,6 @@ struct RsvnTable{
   std::unordered_set<Eigen::Vector4i> table;
 };  // struct RsvnTable
 
+} // namespace global_planner
 
-
-#endif // _PLANNER_COMMON_H_
+#endif // _PLANNER_COMMON_HPP_

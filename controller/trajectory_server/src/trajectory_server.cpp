@@ -34,10 +34,11 @@
 TrajectoryServer::TrajectoryServer() 
 : Node("trajectory_server")
 {
-	initParams();
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
-
 	logger_->logInfo("Initializing");
+
+	initParams();
+
 	// start UAV state machine
 	fsm_list::start();
 
@@ -64,6 +65,10 @@ TrajectoryServer::~TrajectoryServer()
 
 void TrajectoryServer::initParams()
 {
+	/**
+	 * Declare params
+	 */
+
 	this->declare_parameter("origin_frame", "world");
 	this->declare_parameter("base_link_frame", "base_link");
 
@@ -77,6 +82,9 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("pub_cmd_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 
+	/**
+	 * Get params
+	 */
 	origin_frame_ = this->get_parameter("origin_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
@@ -108,27 +116,24 @@ void TrajectoryServer::initPubSubTimers()
 	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
 
 	/* Subscribers */
-	rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
-	auto qos_sensor = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 5), qos_profile);
-
 	odometry_sub_ = this->create_subscription<VehicleOdometry>(
-		"/fmu/out/vehicle_odometry", qos_sensor, std::bind(&TrajectoryServer::odometrySubCB, this, std::placeholders::_1), fcu_sub_opt);
+		"/fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
 
 	vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
-		"/fmu/out/vehicle_status", qos_sensor, std::bind(&TrajectoryServer::vehicleStatusSubCB, this, std::placeholders::_1), fcu_sub_opt);
+		"/fmu/out/vehicle_status", rclcpp::SensorDataQoS(), std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	/* Timers */
 
-	set_offb_timer_ = this->create_wall_timer((1/set_offb_ctrl_freq_) *1000ms, std::bind(&TrajectoryServer::setOffboardTimerCB, this));
-	pub_odom_timer_ = this->create_wall_timer((1/pub_odom_freq_) *1000ms, std::bind(&TrajectoryServer::pubOdomTimerCB, this));
-	sm_tick_timer_ = this->create_wall_timer((1/sm_tick_freq_)*1000ms, std::bind(&TrajectoryServer::SMTickTimerCB, this), control_cb_group_);
+	set_offb_timer_ = this->create_wall_timer((1.0/set_offb_ctrl_freq_) *1000ms, std::bind(&TrajectoryServer::setOffboardTimerCB, this));
+	pub_odom_timer_ = this->create_wall_timer((1.0/pub_odom_freq_) *1000ms, std::bind(&TrajectoryServer::pubOdomTimerCB, this));
+	sm_tick_timer_ = this->create_wall_timer((1.0/sm_tick_freq_)*1000ms, std::bind(&TrajectoryServer::SMTickTimerCB, this), control_cb_group_);
 }
 
 void TrajectoryServer::initSrv()
 {
 	uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>("/uav_command", 
 																			std::bind(&TrajectoryServer::uavCmdSrvCB, this, 
-																						std::placeholders::_1, std::placeholders::_2),
+																						_1, _2),
 																			rclcpp::ServicesQoS(),
 																			others_cb_group_);
 }
@@ -283,7 +288,7 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 	// For frame transforms, refer to https://docs.px4.io/main/en/ros2/user_guide.html
 
 	std::vector<double> position_d = std::vector<double>(msg->position.begin(), msg->position.end());
-	std::vector<double> q_d = {msg->q[1], msg->q[2], msg->q[3], msg->q[0] };
+	std::vector<double> q_d = {msg->q[1], msg->q[2], msg->q[3], msg->q[0] }; // PX4 uses (w,x,y,z), We reorder to (x,y,z,w) 
 	std::vector<double> velocity_d = std::vector<double>(msg->velocity.begin(), msg->velocity.end());
 	std::vector<double> angular_velocity_d = std::vector<double>(msg->angular_velocity.begin(), msg->angular_velocity.end());
 
@@ -637,7 +642,6 @@ void TrajectoryServer::publishActuatorCmds(const Eigen::Vector4d& motor_in )
 
 	actuator_cmd_pub_->publish(msg);
 }
-
 
 /**
  * @brief Publish vehicle commands

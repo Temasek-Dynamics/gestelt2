@@ -1,32 +1,15 @@
-#include "space_time_astar_planner/space_time_astar_planner.hpp"
+#include "space_time_astar/space_time_astar.hpp"
 
-AStarPlanner::AStarPlanner( const AStarParams& astar_params): astar_params_(astar_params)
+namespace global_planner{
+
+SpaceTimeAStar::SpaceTimeAStar(const AStarParams& astar_params, rclcpp::Clock::SharedPtr clock)
+: astar_params_(astar_params), clock_(clock)
 {}
 
-void AStarPlanner::assignVoroMap(const std::map<int, std::shared_ptr<DynamicVoronoi>>& dyn_voro_arr,
-                                const int& z_separation_cm,
-                                const double& local_origin_x,
-                                const double& local_origin_y,
-                                const double& max_height,
-                                const double& min_height,
-                                const double& res)
-{
-    dyn_voro_arr_ = dyn_voro_arr;
-
-    z_separation_cm_ = z_separation_cm;
-    local_origin_x_ = local_origin_x;
-    local_origin_y_ = local_origin_y;
-    max_height_ = max_height;
-    min_height_ = min_height;
-    res_ = res;
+SpaceTimeAStar::~SpaceTimeAStar(){
 }
 
-void AStarPlanner::updateReservationTable(const std::map<int, RsvnTable>& rsvn_tbl)
-{
-    rsvn_tbl_ = rsvn_tbl;
-}
-
-void AStarPlanner::reset()
+void SpaceTimeAStar::reset()
 {
     // Voronoi planning data structs
     marked_bubble_cells_.clear();
@@ -39,7 +22,14 @@ void AStarPlanner::reset()
 
 }
 
-void AStarPlanner::expandVoronoiBubbleT(const VCell_T& origin_cell)
+void SpaceTimeAStar::setVoroMap(const std::map<int, std::shared_ptr<DynamicVoronoi>>& dyn_voro_arr,
+                                const VoronoiParams& voro_params)
+{
+    dyn_voro_arr_ = dyn_voro_arr;
+    voro_params_ = voro_params;
+}
+
+void SpaceTimeAStar::expandVoronoiBubbleT(const VCell_T& origin_cell)
 {
     std::queue<IntPoint> q;
     q.push(IntPoint(origin_cell.x, origin_cell.y));
@@ -91,7 +81,7 @@ void AStarPlanner::expandVoronoiBubbleT(const VCell_T& origin_cell)
     }
 }
 
-bool AStarPlanner::generatePlanVoroT(  const Eigen::Vector3d& start_pos_3d, 
+bool SpaceTimeAStar::generatePlan(  const Eigen::Vector3d& start_pos_3d, 
                                         const Eigen::Vector3d& goal_pos_3d)
 {
     std::function<double(const VCell_T&, const VCell_T&)> cost_function;
@@ -119,17 +109,17 @@ bool AStarPlanner::generatePlanVoroT(  const Eigen::Vector3d& start_pos_3d,
             break;
     }
 
-    return generatePlanVoroT(start_pos_3d, goal_pos_3d, cost_function);
+    return generatePlan(start_pos_3d, goal_pos_3d, cost_function);
 }
 
-bool AStarPlanner::generatePlanVoroT(   const Eigen::Vector3d& start_pos_3d, 
+bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d, 
                                         const Eigen::Vector3d& goal_pos_3d, 
                                         std::function<double(const VCell_T&, const VCell_T&)> cost_function)
 {
     reset();
     
-    int start_z_cm = roundToMultInt((int) (start_pos_3d(2) * 100), z_separation_cm_);
-    int goal_z_cm = roundToMultInt((int) (goal_pos_3d(2) * 100), z_separation_cm_);
+    int start_z_cm = roundToMultInt((int) (start_pos_3d(2) * 100), voro_params_.z_separation_cm);
+    int goal_z_cm = roundToMultInt((int) (goal_pos_3d(2) * 100), voro_params_.z_separation_cm);
     // std::cout << astar_params_.drone_id << ": start_z: " <<  start_pos_3d(2) << " m rounded to " << start_z_cm << " cm" << std::endl;
     // std::cout << astar_params_.drone_id << ": goal_z: " <<  goal_pos_3d(2) << " m rounded to " << goal_z_cm << " cm" << std::endl;
     
@@ -167,25 +157,14 @@ bool AStarPlanner::generatePlanVoroT(   const Eigen::Vector3d& start_pos_3d,
     dyn_voro_arr_[start_node.z_cm]->update(); // update distance map and Voronoi diagram
     dyn_voro_arr_[goal_node.z_cm]->update(); // update distance map and Voronoi diagram
 
-    // std::cout << astar_params_.drone_id << ": before expandVoronoiBubbleT" << std::endl;
-
     // marked_bubble_cells_[start_node.z_cm].clear();
     // marked_bubble_cells_[goal_node.z_cm].clear();
     // Create voronoi bubble around start and goal
     expandVoronoiBubbleT(start_node);
     expandVoronoiBubbleT(goal_node);
 
-    // std::cout << astar_params_.drone_id << ": before removeObstacle" << std::endl;
-
     dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
     dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
-
-    ////////
-    // Method B: Straight path to nearest voronoi cell
-    ////////
-    // INTPOINT start_nearest_voro_cell, goal_nearest_voro_cell; 
-    // dyn_voro_arr_[start_z_cm]->getNearestVoroCell(start_node_2d, start_nearest_voro_cell);
-    // dyn_voro_arr_[goal_z_cm]->getNearestVoroCell(goal_node_2d, goal_nearest_voro_cell);
 
     came_from_vt_[start_node] = start_node;
     VCell start_node_3d(start_node_2d.x, start_node_2d.y, start_z_cm);
@@ -196,14 +175,13 @@ bool AStarPlanner::generatePlanVoroT(   const Eigen::Vector3d& start_pos_3d,
     int num_iter = 0;
     std::vector<Eigen::Vector4i> neighbours; // 3d indices of neighbors
 
-    double t_now = ros::Time::now().toSec();
+    double t_now = clock_->now().seconds();
 
     while (!open_list_vt_.empty() && num_iter < astar_params_.max_iterations)
     {
         // if (num_iter%100 == 1){
         //     std::cout << "[a_star] Iteration " << num_iter << std::endl;
         //     publishClosedList(getClosedListVoroT(), closed_list_viz_pub_, "local_map_origin");
-        //     // ros::Duration(0.1).sleep();
         // }
 
         VCell_T cur_node = open_list_vt_.get();
@@ -215,7 +193,7 @@ bool AStarPlanner::generatePlanVoroT(   const Eigen::Vector3d& start_pos_3d,
         {
             // std::cout << astar_params_.drone_id << ":  Found goal after " << num_iter << " iterations" << std::endl;
             // Goal reached, terminate search and obtain path
-            tracePathVoroT(cur_node);
+            tracePath(cur_node);
 
             return true;
         }
@@ -283,85 +261,83 @@ bool AStarPlanner::generatePlanVoroT(   const Eigen::Vector3d& start_pos_3d,
     return false;
 }
 
-bool AStarPlanner::lineOfSight(IntPoint s, IntPoint s_, int z_cm)
+void SpaceTimeAStar::tracePath(const VCell_T& final_node)
 {
-    int x0 = s.x;
-    int y0 = s.y;
-    int x1 = s_.x;
-    int y1 = s_.y;
+// Clear existing data structures
+path_idx_vt_.clear();
 
-    int dy = y1 - y0;
-    int dx = x1 - x0;
+path_pos_t_.clear();
+path_pos_.clear();
 
-    int f = 0;
+path_idx_smoothed_t_.clear();
+path_smoothed_.clear();
+path_smoothed_t_.clear();
 
-    int sx = 1; // Direction taken by x
-    int sy = 1; // Direction taken by y
-
-    // Correct for y direction
-    if (dy < 0) {
-        dy = -dy;
-        sy = -1;
-    }
-    else {
-        sy = 1;
-    }
-    
-    // Correct for x direction
-    if (dx < 0) {
-        dx = -dx;
-        sx = -1;
-    }
-    else {
-        sx = 1;
-    }
-
-    if (dx >= dy) {
-        while (x0 != x1){
-            f += dy;
-            if (f >= dx){
-                if (dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
-                {
-                    return false;
-                }
-                y0 = y0 + sy;
-                f -= dx;
-            }
-            if (f != 0 && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
-            {
-                return false;
-            }
-            if (dy == 0 && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0)
-                        && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 -1))
-            {
-                return false;
-            }
-            x0 = x0 + sx;
-        }
-    }
-    else {
-        while (y0 != y1){
-            f += dx;
-            if (f >= dy){
-                if (dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
-                {
-                    return false;
-                }
-                x0 += sx;
-                f -= dy;
-            }
-            if (f != 0 && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
-            {
-                return false;
-            }
-            if (dy == 0 && dyn_voro_arr_[z_cm]->isOccupied(x0, y0 + ((sy-1)/2))
-                        && dyn_voro_arr_[z_cm]->isOccupied(x0-1, y0+ ((sy-1)/2)))
-            {
-                return false;
-            }
-            y0 += sy;
-        }
-    }
-
-    return true;
+// Trace back the nodes through the pointer to their parent
+VCell_T cur_node = final_node;
+while (!(cur_node == came_from_vt_[cur_node])) // Start node's parents was initially set as itself, hence this indicates the end of the path
+{
+    path_idx_vt_.push_back(cur_node);
+    cur_node = came_from_vt_[cur_node];
 }
+// Push back the start node
+path_idx_vt_.push_back(cur_node);
+
+// Reverse the order of the path so that it goes from start to goal
+std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
+
+// For each gridnode, get the position and index,
+// So we can obtain a path in terms of indices and positions
+for (const VCell_T& cell : path_idx_vt_)
+{
+    DblPoint map_2d_pos;
+
+    // Convert to map position
+    dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
+    // Add space time map position to path and transform it from local map to world frame
+    path_pos_t_.push_back(Eigen::Vector4d{map_2d_pos.x + voro_params_.local_origin_x, 
+                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m, (double) cell.t});
+    path_pos_.push_back(Eigen::Vector3d{map_2d_pos.x + voro_params_.local_origin_x, 
+                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m});
+}
+
+// /* Get smoothed path */
+
+// // For each gridnode, get the position and index,
+// // So we can obtain a path in terms of indices and positions
+// path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
+// for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
+// {
+//   if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
+//     // Add current point to smoothed path
+//     path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+//   }
+//   else {
+//     IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
+//     IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
+
+//     if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
+//       // Add current point to smoothed path
+//       path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+//     }
+//   }
+// }
+// path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+
+// // For each gridnode, get the position and index,
+// // So we can obtain a path in terms of indices and positions
+// for (const VCell_T& cell : path_idx_smoothed_t_)
+// {
+//   DblPoint map_2d_pos;
+
+//   // Convert to map position
+//   dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
+//   // Add space time map position to path and transform it from local map to world frame
+//   path_smoothed_t_.push_back(Eigen::Vector4d{map_2d_pos.x + voro_params_.local_origin_x, 
+//                                         map_2d_pos.y + voro_params_.local_origin_y, cell.z_m, (double) cell.t});
+//   path_smoothed_.push_back(Eigen::Vector3d{map_2d_pos.x + voro_params_.local_origin_x, 
+//                                         map_2d_pos.y + voro_params_.local_origin_y, cell.z_m});
+// }
+}
+
+} // namespace global_planner

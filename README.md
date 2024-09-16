@@ -8,8 +8,7 @@ A Receding Horizon Planning (RHP) framework with a focus on multi-UAV navigation
 1. Install ROS2 and associated dependencies
 - ROS 2 Jazzy
 ```bash
-sudo apt install ros-jazzy-pcl-ros
-sudo apt install ros-jazzy-pcl-conversions
+sudo apt install -y ros-jazzy-pcl-ros ros-jazzy-pcl-conversions ros-jazzy-message-filters
 ```
 
 2. Required Repos

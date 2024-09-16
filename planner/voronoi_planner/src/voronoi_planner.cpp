@@ -1,6 +1,6 @@
 #include <voronoi_planner/voronoi_planner.hpp>
 
-void VoronoiPlanner::init(ros::NodeHandle &nh, ros::NodeHandle &pnh)
+void VoronoiPlanner::init()
 { 
   // Initialize Params
   initParams(pnh);
@@ -8,29 +8,43 @@ void VoronoiPlanner::init(ros::NodeHandle &nh, ros::NodeHandle &pnh)
   tm_front_end_plan_.updateID(drone_id_);
   tm_voro_map_init_.updateID(drone_id_);
 
+  astar_params_.drone_id = drone_id_;
+  astar_params_.max_iterations = 9999;
+  astar_params_.debug_viz = true;
+  astar_params_.tie_breaker = 1.001;
+  astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
+  astar_params_.t_unit = t_unit_;
+
+  fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_);
+
+  // Initialize map
+  voxel_map_ = std::make_shared<voxel_map::VoxelMap>();
+  voxel_map_->initMapROS();
+}
+
+void VoronoiPlanner::initPubSubTimer(){
   /* Publishers */
-  start_pt_pub_ = nh.advertise<visualization_msgs::Marker>("fe_start", 5, true);
-  goal_pt_pub_ = nh.advertise<visualization_msgs::Marker>("fe_goal", 5, true);
 
   // Map publishers
-  occ_map_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("voro/occ_map", 10, true);
-  voro_occ_grid_pub_ = nh.advertise<nav_msgs::OccupancyGrid>("voro/voro_map", 10, true);
-  voronoi_graph_pub_ = nh.advertise<visualization_msgs::Marker>("voronoi_graph", 500, true);
+  occ_map_pub_ = nh.advertise<nav_msgs::msg::OccupancyGrid>("voro/occ_map", 10, true);
+  voro_occ_grid_pub_ = nh.advertise<nav_msgs::msg::OccupancyGrid>("voro/voro_map", 10, true);
+  voronoi_graph_pub_ = nh.advertise<visualization_msgs::msg::Marker>("voronoi_graph", 500, true);
 
   // Planner publishers
-  fe_closed_list_pub_ = nh.advertise<visualization_msgs::Marker>("fe_plan/closed_list", 50, true);
-  fe_plan_viz_pub_ = nh.advertise<visualization_msgs::Marker>("fe_plan/viz", 50 , true);
-  fe_plan_pub_ = nh.advertise<gestelt_msgs::FrontEndPlan>("fe_plan", 5, true);
-  fe_plan_broadcast_pub_ = nh.advertise<gestelt_msgs::FrontEndPlan>("/fe_plan/broadcast", 5, true);
+  fe_plan_pub_ = nh.advertise<gestelt_interfaces::msg::SpaceTimePath>("fe_plan", 5, true);
+  fe_plan_broadcast_pub_ = nh.advertise<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", 5, true);
+
+  // Visualization
+  start_pt_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_start", 5, true);
+  goal_pt_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_goal", 5, true);
+  fe_closed_list_viz_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_plan/closed_list", 50, true);
+  fe_plan_viz_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_plan/viz", 50 , true);
 
   /* Subscribers */
-  fe_plan_broadcast_sub_ = nh.subscribe<gestelt_msgs::FrontEndPlan>("/fe_plan/broadcast", 50, &VoronoiPlanner::FEPlanSubCB, this);
+  fe_plan_broadcast_sub_ = nh.subscribe<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", 50, &VoronoiPlanner::FEPlanSubCB, this);
 
-  plan_req_dbg_sub_ = nh.subscribe("plan_request_dbg", 50, 
-                                  &VoronoiPlanner::planReqDbgCB, this);
+  plan_req_dbg_sub_ = nh.subscribe("plan_request_dbg", 50, &VoronoiPlanner::planReqDbgCB, this);
   goals_sub_ = nh.subscribe("goals", 50, &VoronoiPlanner::goalsCB, this);
-  // bool_map_sub_ = nh.subscribe<gestelt_msgs::BoolMapArray>("bool_map_arr", 50, 
-  //                                                           &VoronoiPlanner::boolMapCB, this);
 
   odom_sub_ = nh.subscribe("odom", 5, &VoronoiPlanner::odometryCB, this);
 
@@ -40,48 +54,178 @@ void VoronoiPlanner::init(ros::NodeHandle &nh, ros::NodeHandle &pnh)
 
   gen_voro_map_timer_ = nh.createTimer(ros::Duration(1.0/gen_voro_map_freq_), 
                                   &VoronoiPlanner::genVoroMapTimerCB, this);
-
-  /* Initialization */
-
-  // Initialize planner
-
-  astar_params_.drone_id = drone_id_;
-  astar_params_.max_iterations = 9999;
-  astar_params_.debug_viz = true;
-  astar_params_.tie_breaker = 1.001;
-  astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
-  astar_params_.t_unit = t_unit_;
-  fe_planner_ = std::make_unique<AStarPlanner>(astar_params_);
-
-  // Initialize map
-  map_.reset(new GridMap);
-  map_->initMapROS(nh, pnh);
 }
 
-void VoronoiPlanner::initParams(ros::NodeHandle &pnh)
+void VoronoiPlanner::initParams()
 {
-  pnh.param("drone_id", drone_id_, -1);
+	/**
+	 * Declare params
+	 */
+  this->declare_parameter("drone_id", -1);
 
-  double goal_tol;
-  pnh.param("planner/goal_tolerance", goal_tol, 0.1);
+  this->declare_parameter("planner/goal_tolerance", 0.1);
+  this->declare_parameter("planner/verbose_print", false);
+  this->declare_parameter("planner/planner_frequency", 10.0);
+  this->declare_parameter("planner/generate_voronoi_frequency", 10.0);
+  this->declare_parameter("planner/plan_once", false);
+  this->declare_parameter("planner/t_unit", 0.1);
+
+  this->declare_parameter("reservation_table/inflation", 0.3);
+  this->declare_parameter("reservation_table/time_buffer", 0.5);
+  this->declare_parameter("reservation_table/window_size", -1);
+
+  this->declare_parameter("local_map_origin", "local_map_origin");
+  this->declare_parameter("global_origin", "world");
+
+	/**
+	 * Get params
+	 */
+
+  drone_id_ = this->get_parameter("drone_id");
+
+  double goal_tol = this->get_parameter("planner/goal_tolerance").as_double();
   sqr_goal_tol_ = goal_tol * goal_tol;
-  pnh.param("planner/verbose_print", verbose_print_, false);
-  pnh.param("planner/planner_frequency", fe_planner_freq_, 10.0);
-  pnh.param("planner/generate_voronoi_frequency", gen_voro_map_freq_, 10.0);
-  pnh.param("planner/plan_once", plan_once_, false);
-  pnh.param("planner/t_unit", t_unit_, 0.1);
+  verbose_print_ = this->get_parameter("planner/verbose_print").as_bool();
+  fe_planner_freq_ = this->get_parameter("planner/planner_frequency").as_double();
+  gen_voro_map_freq_ = this->get_parameter("planner/generate_voronoi_frequency").as_double();
+  plan_once_ = this->get_parameter("planner/plan_once").as_bool();
+  t_unit_ = this->get_parameter("planner/t_unit").as_double();
 
-  pnh.param("reservation_table/inflation", rsvn_tbl_inflation_, 0.3);
-  pnh.param("reservation_table/time_buffer", rsvn_tbl_t_buffer_, 0.5);
-  pnh.param("reservation_table/window_size", rsvn_tbl_window_size_, -1);
-  t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer_/t_unit_);  // [space-time units] for time buffer
+  rsvn_tbl_inflation_ = this->get_parameter("reservation_table/inflation").as_double();
+  double rsvn_tbl_t_buffer = this->get_parameter("reservation_table/time_buffer").as_double();
+  rsvn_tbl_window_size_ = this->get_parameter("reservation_table/window_size").as_int();
+  t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer/t_unit_);  // [space-time units] for time buffer
 
-  pnh.param("local_map_origin", local_map_origin_, std::string("local_map_origin"));
-  pnh.param("global_origin", global_origin_, std::string("world"));
+  local_map_origin_ = this->get_parameter("d" +std::to_string(drone_id_) + "local_map_origin").as_string();
+  global_origin_ = this->get_parameter("global_origin").as_string();
+}
+
+/* Core methods */
+bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal){
+  if (!init_voro_maps_){
+    std::cout << "Voronoi maps not initialized! Request a plan after initialization!" << std::endl;
+    return false;
+  }
+
+  if (plan_once_ && plan_complete_){
+    return true;
+  }
+
+  /* Lambda for checking if all higher priority plans are received*/
+  auto isAllPrioPlansRcv = [&] () {
+    for (int i = 0; i < drone_id_; i++){
+      if (rsvn_tbl_.find(i) == rsvn_tbl_.end()){
+        return false;
+      }
+    }
+    return true;
+  };
+
+  while (!isAllPrioPlansRcv()){
+    ros::Duration(0.001).sleep();  // sleep for 1 ms
+  }
+
+  // Assign voronoi map
+  {
+    std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+
+    voro_params_.z_separation_cm = bool_map_3d_.z_separation_cm;
+    voro_params_.local_origin_x = bool_map_3d_.origin(0);
+    voro_params_.local_origin_y = bool_map_3d_.origin(1);
+    voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
+    voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
+    voro_params_.res = bool_map_3d_.resolution;
+
+    fe_planner_->setVoroMap(dyn_voro_arr_, 
+                            voro_params_);
+  }
+
+  // Update reservation table on planner
+  {
+    std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
+    fe_planner_->setReservationTable(rsvn_tbl_);
+    rsvn_tbl_.clear();
+  }
+
+
+  viz_helper::publishStartAndGoal(start, goal, local_map_origin_, start_pt_pub_, goal_pt_pub_);
+
+  tm_front_end_plan_.start();
+
+  // Generate plan 
+  if (!fe_planner_->generatePlan(start, goal))
+  {
+    ROS_ERROR("Drone %d: Failed to generate plan from (%f, %f, %f) to (%f, %f, %f)", drone_id_, start(0), start(1), start(2),
+                                                                            goal(0), goal(1), goal(2));
+
+    tm_front_end_plan_.stop(verbose_print_);
+
+    // viz_helper::publishClosedList(fe_planner_->getClosedListVoroT(), 
+    //                   fe_closed_list_viz_pub_, local_map_origin_);
+
+    // ROS_ERROR("Closed list size: %ld", fe_planner_->getClosedListVoroT().size() );
+
+    return false;
+  }
+
+
+  tm_front_end_plan_.stop(verbose_print_);
+
+  // Retrieve space time path and publish it
+  front_end_path_ = fe_planner_->getPath(cur_pos_);
+  space_time_path_ = fe_planner_->getPathWithTime(cur_pos_);
+  // smoothed_path_ = fe_planner_->getSmoothedPath();
+  // smoothed_path_t_ = fe_planner_->getSmoothedPathWithTime();
+  // viz_helper::publishClosedList(fe_planner_->getClosedListVoroT(), fe_closed_list_viz_pub_, local_map_origin_);
+
+  // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
+  gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
+
+  fe_plan_msg.agent_id = drone_id_;
+  fe_plan_msg.header.stamp = this->get_clock()->now();
+
+  for (size_t i = 0; i < space_time_path_.size(); i++){
+    geometry_msgs::Pose pose;
+    pose.position.x = space_time_path_[i](0);
+    pose.position.y = space_time_path_[i](1);
+    pose.position.z = space_time_path_[i](2);
+    pose.orientation.w = 1.0; 
+
+    fe_plan_msg.plan.push_back(pose);
+    fe_plan_msg.plan_time.push_back(int(space_time_path_[i](3)));
+  }
+
+  fe_plan_msg.t_plan_start = this->get_clock()->now().seconds();
+
+  fe_plan_pub_.publish(fe_plan_msg);
+  fe_plan_broadcast_pub_.publish(fe_plan_msg);
+
+  // viz_helper::publishSpaceTimePath(space_time_path_, global_origin_, fe_plan_viz_pub_) ;
+
+  viz_helper::publishFrontEndPath(front_end_path_, global_origin_, fe_plan_viz_pub_);
+
+  // double min_clr = DBL_MAX; // minimum path clearance 
+  // double max_clr = 0.0;     // maximum path clearance 
+
+  // for (const Eigen::Vector4d& pos_4d : space_time_path_)
+  // {
+  //   Eigen::Vector3d pos{pos_4d(0), pos_4d(1), pos_4d(2)}; 
+  //   Eigen::Vector3d occ_nearest; 
+  //   double dist_to_nearest_nb;
+  //   if (voxel_map_->getNearestOccupiedCellLocal(pos, occ_nearest, dist_to_nearest_nb)){
+  //     min_clr = (min_clr > dist_to_nearest_nb) ? dist_to_nearest_nb : min_clr;
+  //     max_clr = (max_clr < dist_to_nearest_nb) ? dist_to_nearest_nb : max_clr;
+  //   }
+  // }
+  // std::cout << "Maximum clearance: " << max_clr << ", Minimum clearance: " << min_clr << std::endl;
+
+  plan_complete_ = true;
+
+  return true;
 }
 
 /* Timer callbacks*/
-void VoronoiPlanner::planFETimerCB(const ros::TimerEvent &e)
+void VoronoiPlanner::planFETimerCB()
 {
   if (!init_voro_maps_){
     return;
@@ -103,9 +247,9 @@ void VoronoiPlanner::planFETimerCB(const ros::TimerEvent &e)
   plan(cur_pos_, waypoints_.nextWP());
 }
 
-void VoronoiPlanner::genVoroMapTimerCB(const ros::TimerEvent &e)
+void VoronoiPlanner::genVoroMapTimerCB()
 {
-  if (!map_->getBoolMap3D(bool_map_3d_)){
+  if (!voxel_map_->getBoolMap3D(bool_map_3d_)){
     return;
   }
 
@@ -180,7 +324,15 @@ void VoronoiPlanner::genVoroMapTimerCB(const ros::TimerEvent &e)
 
 /* Subscriber callbacks*/
 
-void VoronoiPlanner::FEPlanSubCB(const gestelt_msgs::FrontEndPlanConstPtr& msg)
+void VoronoiPlanner::odometryCB(const nav_msgs::Odometry::UniquePtr msg)
+{
+  cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x - bool_map_3d_.origin(0), 
+                            msg->pose.pose.position.y - bool_map_3d_.origin(1), 
+                            msg->pose.pose.position.z};
+  // cur_vel_= Eigen::Vector3d{msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z};
+}
+
+void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg)
 {
   if (!init_voro_maps_){
     return;
@@ -232,7 +384,7 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_msgs::FrontEndPlanConstPtr& msg)
 
 }
 
-void VoronoiPlanner::goalsCB(const gestelt_msgs::GoalsConstPtr &msg)
+void VoronoiPlanner::goalsCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 {
     if (msg->transforms.size() <= 0)
     {
@@ -258,7 +410,7 @@ void VoronoiPlanner::goalsCB(const gestelt_msgs::GoalsConstPtr &msg)
     waypoints_.addMultipleWP(wp_vec);
 }
 
-void VoronoiPlanner::planReqDbgCB(const gestelt_msgs::PlanRequestDebugConstPtr &msg)
+void VoronoiPlanner::planReqDbgCB(const gestelt_interfaces::msg::PlanRequestDebug::UniquePtr msg)
 {
   Eigen::Vector3d plan_start( 
                   msg->start.position.x - bool_map_3d_.origin(0),
@@ -276,141 +428,5 @@ void VoronoiPlanner::planReqDbgCB(const gestelt_msgs::PlanRequestDebugConstPtr &
   plan(plan_start, plan_end);
 }
 
-void VoronoiPlanner::odometryCB(const nav_msgs::OdometryConstPtr &msg)
-{
-  cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x - bool_map_3d_.origin(0), 
-                            msg->pose.pose.position.y - bool_map_3d_.origin(1), 
-                            msg->pose.pose.position.z};
-  // cur_vel_= Eigen::Vector3d{msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z};
-}
+/* Conversion methods */
 
-/* Planning functions */
-
-bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal){
-  if (!init_voro_maps_){
-    std::cout << "Voronoi maps not initialized! Request a plan after initialization!" << std::endl;
-    return false;
-  }
-
-  if (plan_once_ && plan_complete_){
-    return true;
-  }
-
-  auto isAllPrioPlansRcv = [&] () {
-    for (int i = 0; i < drone_id_; i++){
-      if (rsvn_tbl_.find(i) == rsvn_tbl_.end()){
-        return false;
-      }
-    }
-    return true;
-  };
-
-  while (!isAllPrioPlansRcv()){
-    ros::Duration(0.001).sleep();  // sleep for 1 ms
-  }
-
-  // Assign voronoi map
-  {
-    std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
-    fe_planner_->assignVoroMap(dyn_voro_arr_, 
-                                bool_map_3d_.z_separation_cm, 
-                                bool_map_3d_.origin(0), bool_map_3d_.origin(1),
-                                bool_map_3d_.max_height_cm,
-                                bool_map_3d_.min_height_cm,
-                                bool_map_3d_.resolution);
-  }
-
-  // Update reservation table on planner
-  {
-    std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
-    fe_planner_->updateReservationTable(rsvn_tbl_);
-    rsvn_tbl_.clear();
-  }
-
-
-  viz_helper::publishStartAndGoal(start, goal, local_map_origin_, start_pt_pub_, goal_pt_pub_);
-
-  tm_front_end_plan_.start();
-
-  // Generate plan 
-  if (!fe_planner_->generatePlanVoroT(start, goal))
-  {
-    ROS_ERROR("Drone %d: Failed to generate plan from (%f, %f, %f) to (%f, %f, %f)", drone_id_, start(0), start(1), start(2),
-                                                                            goal(0), goal(1), goal(2));
-
-    tm_front_end_plan_.stop(verbose_print_);
-
-    // viz_helper::publishClosedList(fe_planner_->getClosedListVoroT(), 
-    //                   fe_closed_list_pub_, local_map_origin_);
-
-    // ROS_ERROR("Closed list size: %ld", fe_planner_->getClosedListVoroT().size() );
-
-    return false;
-  }
-
-
-  tm_front_end_plan_.stop(verbose_print_);
-
-  // Retrieve space time path and publish it
-  front_end_path_ = fe_planner_->getPath(cur_pos_);
-  space_time_path_ = fe_planner_->getPathWithTime(cur_pos_);
-  // smoothed_path_ = fe_planner_->getSmoothedPath();
-  // smoothed_path_t_ = fe_planner_->getSmoothedPathWithTime();
-  // viz_helper::publishClosedList(fe_planner_->getClosedListVoroT(), fe_closed_list_pub_, local_map_origin_);
-
-  // Convert from space time path to gestelt_msgs::FrontEndPlan
-  gestelt_msgs::FrontEndPlan fe_plan_msg;
-
-  fe_plan_msg.agent_id = drone_id_;
-  fe_plan_msg.header.stamp = ros::Time::now();
-
-  for (size_t i = 0; i < space_time_path_.size(); i++){
-    geometry_msgs::Pose pose;
-    pose.position.x = space_time_path_[i](0);
-    pose.position.y = space_time_path_[i](1);
-    pose.position.z = space_time_path_[i](2);
-    pose.orientation.w = 1.0; 
-
-    fe_plan_msg.plan.push_back(pose);
-    fe_plan_msg.plan_time.push_back(int(space_time_path_[i](3)));
-  }
-
-  fe_plan_msg.t_plan_start = ros::Time::now().toSec();
-
-  fe_plan_pub_.publish(fe_plan_msg);
-  fe_plan_broadcast_pub_.publish(fe_plan_msg);
-
-  // viz_helper::publishSpaceTimePath(space_time_path_, global_origin_, fe_plan_viz_pub_) ;
-
-  viz_helper::publishFrontEndPath(front_end_path_, global_origin_, fe_plan_viz_pub_);
-
-  // double min_clr = DBL_MAX; // minimum path clearance 
-  // double max_clr = 0.0;     // maximum path clearance 
-
-  // for (const Eigen::Vector4d& pos_4d : space_time_path_)
-  // {
-  //   Eigen::Vector3d pos{pos_4d(0), pos_4d(1), pos_4d(2)}; 
-  //   Eigen::Vector3d occ_nearest; 
-  //   double dist_to_nearest_nb;
-  //   if (map_->getNearestOccupiedCellLocal(pos, occ_nearest, dist_to_nearest_nb)){
-  //     min_clr = (min_clr > dist_to_nearest_nb) ? dist_to_nearest_nb : min_clr;
-  //     max_clr = (max_clr < dist_to_nearest_nb) ? dist_to_nearest_nb : max_clr;
-  //   }
-  // }
-  // std::cout << "Maximum clearance: " << max_clr << ", Minimum clearance: " << min_clr << std::endl;
-
-  plan_complete_ = true;
-
-  return true;
-}
-
-/**
- * @brief Check if current position is within goal tolerance
- * 
- * @return true 
- * @return false 
- */
-bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
-{
-  return (pos - goal).squaredNorm() < sqr_goal_tol_;
-}

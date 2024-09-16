@@ -1,6 +1,24 @@
 cmake_minimum_required(VERSION 3.8)
 project(voronoi_planner)
 
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 17)
+endif()
+
+# find dependencies
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+set(ROS_LIBRABRIES
+	ament_cmake
+	ament_cmake_ros
+  rclcpp
+  dynamic_voronoi
+)
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -12,6 +30,10 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 
 add_executable(voronoi_planner src/voronoi_planner.cpp)
+ament_target_dependencies(voronoi_planner 
+  Eigen3
+  rclcpp
+  dynamic_voronoi)
 target_include_directories(voronoi_planner PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)

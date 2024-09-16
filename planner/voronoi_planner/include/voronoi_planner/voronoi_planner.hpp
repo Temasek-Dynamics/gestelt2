@@ -10,47 +10,23 @@
 
 #include <ros/ros.h>
 
-#include <nav_msgs/OccupancyGrid.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/msg/occupancy_grid.h>
+#include <tf2_geometry_msgs/msg/tf2_geometry_msgs.h>
 
-#include <gestelt_msgs/BoolMapArray.h>
-#include <gestelt_msgs/PlanRequestDebug.h>
-#include <gestelt_msgs/FrontEndPlan.h>
-#include <gestelt_msgs/Goals.h>
+#include <gestelt_interfaces/msg/PlanRequestDebug.h>
+#include <gestelt_interfaces/msg/space_time_path.h>
+#include <gestelt_interfaces/msg/Goals.h>
 
-#include <grid_map/grid_map.h> // Map representation
+#include <voxel_map/voxel_map.hpp> 
 
-#include "dynamic_voronoi/dynamicvoronoi.h"
-#include "global_planner/a_star.h"
+#include "dynamic_voronoi/dynamic_voronoi.hpp"
+#include "space_time_astar/space_time_astar.hpp"
 
-#include <logger/timer.h>
+#include <logger_wrapper/logger_wrapper.hpp>
+#include <logger_wrapper/timer.hpp>
 
-// We use SDL_image to load the image from disk
-// #include <SDL/SDL_image.h>
-
-namespace cost_val
+namespace navigator
 {
-static const int8_t OCC = 100;
-static const int8_t FREE = 0;
-static const int8_t UNKNOWN = -1;
-}
-
-#define INF std::numeric_limits<double>::max()
-
-template<typename ... Args>
-std::string str_fmt( const std::string& format, Args ... args )
-{
-  int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
-  if( size_s <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
-  auto size = static_cast<size_t>( size_s );
-  std::unique_ptr<char[]> buf( new char[ size ] );
-  std::snprintf( buf.get(), size, format.c_str(), args ... );
-  return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
-}
-
-
 
 class Waypoint
 {
@@ -154,14 +130,16 @@ private:
   std::vector<Eigen::Vector3d> wp_queue;
 };
 
-class VoronoiPlanner
+class VoronoiPlanner : public rclcpp::Node
 {
 public:
-  // VoronoiPlanner(){}
+  void init();
 
-  void init(ros::NodeHandle &nh, ros::NodeHandle &pnh);
+  void initParams();
 
-  void initParams(ros::NodeHandle &pnh);
+  void initPubSubTimer();
+
+  /* Core methods */
 
   /**
    * @brief Plan a path from start to goal
@@ -173,114 +151,61 @@ public:
    */
   bool plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal);
 
-/* Subscriber callbacks */
 private:
 
+  /* Timer callbacks */
+
   /* Timer for front-end planner*/
-  void planFETimerCB(const ros::TimerEvent &e);
+  void planFETimerCB();
 
   /* Generate voronoi map timer callback*/
-  void genVoroMapTimerCB(const ros::TimerEvent &e);
+  void genVoroMapTimerCB();
+
+  /* Subscription callbacks */
 
   /* Front end plan subscription */
-  void FEPlanSubCB(const gestelt_msgs::FrontEndPlanConstPtr& msg);
-
-  /* Plan request (for debug use)*/
-  void planReqDbgCB(const gestelt_msgs::PlanRequestDebugConstPtr &msg);
+  void FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg);
 
   /* Subscription callback to goals */
-  void goalsCB(const gestelt_msgs::GoalsConstPtr &msg);
+  void goalsCB(const gestelt_interfaces::msg::Goals::UniquePtr msg);
+
+  /* Plan request (for debug use)*/
+  void planReqDbgCB(const gestelt_interfaces::msg::PlanRequestDebug::UniquePtr msg);
 
   /* Subscription callback to odometry */
-  void odometryCB(const nav_msgs::OdometryConstPtr &msg);
+  void odometryCB(const nav_msgs::Odometry::UniquePtr msg);
 
 /* Helper methods */
 private:
 
-  bool isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal);
-
-  inline size_t map2Dto1DIdx(const int& width, const int& x, const int& y)
-  {
-    return width * y + x;
-  }
-
-  inline void map1Dto2DIdx(const int& idx, const int& width, int& x, int& y)
-  {
-    y = idx/width;
-    x = idx - (y * width);
-  }
-
   // Convert from map to occupancy grid type
   void voronoimapToOccGrid( const DynamicVoronoi& dyn_voro, 
                             const double& origin_x, const double& origin_y, 
-                            nav_msgs::OccupancyGrid& occ_grid)
-  {
-    occ_grid.header.stamp = ros::Time::now();
-    occ_grid.header.frame_id = "map";
-    occ_grid.info.width = dyn_voro.getSizeX();
-    occ_grid.info.height = dyn_voro.getSizeY();
-    occ_grid.info.resolution = bool_map_3d_.resolution;
-    occ_grid.info.origin.position.x = origin_x;
-    occ_grid.info.origin.position.y = origin_y;
-    occ_grid.info.origin.position.z = dyn_voro.getOriginZ();
-    tf2::Quaternion q;
-    q.setRPY(0, 0, 0.0);
-    occ_grid.info.origin.orientation.x = q.x();
-    occ_grid.info.origin.orientation.y = q.y();
-    occ_grid.info.origin.orientation.z = q.z();
-    occ_grid.info.origin.orientation.w = q.w();
-
-    occ_grid.data.resize(occ_grid.info.width * occ_grid.info.height);
-
-    for(int j = 0; j < dyn_voro.getSizeY(); j++)
-    {
-      for (int i = 0; i < dyn_voro.getSizeX(); i++)
-      {
-        size_t idx = map2Dto1DIdx(occ_grid.info.width, i, j);
-        occ_grid.data[idx] = dyn_voro.isVoronoi(i, j) ? 255: 0;
-      }
-    }
-  }
+                            nav_msgs::OccupancyGrid& occ_grid);
 
   // Convert from map to occupancy grid type
   void occmapToOccGrid(const DynamicVoronoi& dyn_voro, 
                       const double& origin_x, const double& origin_y,
-                      nav_msgs::OccupancyGrid& occ_grid)
-  {
-    occ_grid.header.stamp = ros::Time::now();
-    occ_grid.header.frame_id = "map";
-    occ_grid.info.width = dyn_voro.getSizeX();
-    occ_grid.info.height = dyn_voro.getSizeY();
-    occ_grid.info.resolution = bool_map_3d_.resolution;
-    occ_grid.info.origin.position.x = origin_x;
-    occ_grid.info.origin.position.y = origin_y;
-    occ_grid.info.origin.position.z = dyn_voro.getOriginZ();
-    tf2::Quaternion q;
-    q.setRPY(0, 0, 0.0);
-    occ_grid.info.origin.orientation.x = q.x();
-    occ_grid.info.origin.orientation.y = q.y();
-    occ_grid.info.origin.orientation.z = q.z();
-    occ_grid.info.origin.orientation.w = q.w();
+                      nav_msgs::OccupancyGrid& occ_grid);
 
-    occ_grid.data.resize(occ_grid.info.width * occ_grid.info.height);
+  /* Checks */
 
-    for(int j = 0; j < dyn_voro.getSizeY(); j++)
-    {
-      for (int i = 0; i < dyn_voro.getSizeX(); i++)
-      {
-        size_t idx = map2Dto1DIdx(occ_grid.info.width, i, j);
+  /**
+   * @brief Check if current position is within goal tolerance
+   * 
+   * @return true 
+   * @return false 
+   */
+  bool isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal);
 
-        // Flip the coordinates vertically (Occ grid uses top left as origin but original map data uses bottom left as origin)
-        // size_t idx = map2Dto1DIdx(occ_grid.info.width, i, occ_grid.info.height - j - 1);
-        occ_grid.data[idx] = dyn_voro.isOccupied(i, j) ? 255: 0;
-      }
-    }
-  }
+  /* Helper methods */
+
+  inline size_t map2Dto1DIdx(const int& width, const int& x, const int& y);
+
+  inline void map1Dto2DIdx(const int& idx, const int& width, int& x, int& y);
 
   /* Convert from time [s] to space-time units */
-  long tToSpaceTimeUnits(const double& t){
-    return std::lround(t / t_unit_);
-  }
+  long tToSpaceTimeUnits(const double& t);
 
   /**
    * @brief Round to nearest multiple 
@@ -289,37 +214,13 @@ private:
    * @param mult Multiple
    * @return int 
    */
-  int roundToMultInt(const int& num, const int& mult)
-  {
-    if (mult == 0){
-      return num;
-    }
-
-    if (num > bool_map_3d_.max_height_cm){
-      return bool_map_3d_.max_height_cm;
-    }
-
-    if (num < bool_map_3d_.min_height_cm){
-      return bool_map_3d_.min_height_cm;
-    }
-
-    int rem = (int)num % mult;
-    if (rem == 0){
-      return num;
-    }
-
-    return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
-  }
+  int roundToMultInt(const int& num, const int& mult);
 
   // Convert from meters to centimeters
-  int mToCm(const double& val_m){
-    return (int) (val_m * 100.0);
-  }
+  int mToCm(const double& val_m);
 
   // Convert from centimeters to meters
-  double cmToM(const int& val_cm) {
-    return ((double) val_cm)/100.0;  
-  }
+  double cmToM(const int& val_cm);
 
 private:
   /* Params */
@@ -337,33 +238,34 @@ private:
   bool verbose_print_{false};  // enables printing of planning time
 
   double rsvn_tbl_inflation_{-1.0}; // [m] Inflation of cells in the reservation table
-  double rsvn_tbl_t_buffer_{-1.0}; // [s] Time buffer in the reservation table
   int rsvn_tbl_window_size_{-1}; // [s] Time buffer in the reservation table
   int t_buffer_{-1}; // [space-time units] Time buffer
   int cells_inf_{-1}; // [voxels] Spatial buffer
 
-  AStarPlanner::AStarParams astar_params_; 
+  global_planner::AStarParams astar_params_; 
+  global_planner::VoronoiParams voro_params_; 
 
   /* Timers */
   ros::Timer plan_fe_timer_;
   ros::Timer gen_voro_map_timer_;
 
   /* Publishers */
-  ros::Publisher occ_map_pub_;      // Publishes original occupancy grid
-  ros::Publisher voro_occ_grid_pub_; // Publishes voronoi map occupancy grid
-  ros::Publisher voronoi_graph_pub_; // publisher of voronoi graph vertices
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr occ_map_pub_; // Publishes original occupancy grid
+
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr voro_occ_grid_pub_; // Publishes voronoi map occupancy grid
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
 
   // Planning publishers
-  ros::Publisher fe_closed_list_pub_; // Closed list publishers
-  ros::Publisher fe_plan_viz_pub_; // Publish front-end plan visualization
-  ros::Publisher fe_plan_pub_; // Publish front-end plans
-  ros::Publisher start_pt_pub_, goal_pt_pub_; // start and goal visualization publisher
-  ros::Publisher fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
+  rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_pub_; // Publish front-end plans
+  rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
+
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr start_pt_pub_, goal_pt_pub_; // start and goal visualization publisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
 
   /* Subscribers */
   ros::Subscriber plan_req_dbg_sub_;  // plan request (start and goal) debug subscriber
   ros::Subscriber goals_sub_;  // goal subscriber
-  // ros::Subscriber bool_map_sub_; // Subscription to boolean map
   ros::Subscriber fe_plan_broadcast_sub_; // Subscription to broadcasted front end plan from other agents
 
   ros::Subscriber odom_sub_; // Subscriber to odometry
@@ -374,12 +276,12 @@ private:
   std::mutex cur_state_mtx_;
 
   /* Mapping */
-  std::shared_ptr<GridMap> map_;  // Occupancy map object
+  std::shared_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
 
-  BoolMap3D bool_map_3d_; // Bool map slices 
+  voxel_map::BoolMap3D bool_map_3d_; // Bool map slices 
 
   /* Data structs */
-  std::unique_ptr<AStarPlanner> fe_planner_; // Front end planner
+  std::unique_ptr<global_planner::SpaceTimeAStar> fe_planner_; // Front end planner
 
   // map{drone_id : unordered_set{(x,y,z,t)}}
   std::map<int, RsvnTable> rsvn_tbl_; // Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
@@ -404,6 +306,137 @@ private:
   Timer tm_voro_map_init_{"voro_map_init"};
 
 }; // class VoronoiPlanner
+
+bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
+{
+  return (pos - goal).squaredNorm() < sqr_goal_tol_;
+}
+
+
+/* Convert from time [s] to space-time units */
+long tToSpaceTimeUnits(const double& t){
+  return std::lround(t / t_unit_);
+}
+
+/**
+ * @brief Round to nearest multiple 
+ * 
+ * @param num Number to be rounded
+ * @param mult Multiple
+ * @return int 
+ */
+int roundToMultInt(const int& num, const int& mult)
+{
+  if (mult == 0){
+    return num;
+  }
+
+  if (num > bool_map_3d_.max_height_cm){
+    return bool_map_3d_.max_height_cm;
+  }
+
+  if (num < bool_map_3d_.min_height_cm){
+    return bool_map_3d_.min_height_cm;
+  }
+
+  int rem = (int)num % mult;
+  if (rem == 0){
+    return num;
+  }
+
+  return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
+}
+
+// Convert from meters to centimeters
+int mToCm(const double& val_m){
+  return (int) (val_m * 100.0);
+}
+
+// Convert from centimeters to meters
+double cmToM(const int& val_cm) {
+  return ((double) val_cm)/100.0;  
+}
+
+inline size_t map2Dto1DIdx(const int& width, const int& x, const int& y)
+{
+  return width * y + x;
+}
+
+inline void map1Dto2DIdx(const int& idx, const int& width, int& x, int& y)
+{
+  y = idx/width;
+  x = idx - (y * width);
+}
+
+
+void VoronoiPlanner::voronoimapToOccGrid( const DynamicVoronoi& dyn_voro, 
+                          const double& origin_x, const double& origin_y, 
+                          nav_msgs::OccupancyGrid& occ_grid)
+{
+  occ_grid.header.stamp = this->get_clock()->now();
+  occ_grid.header.frame_id = "map";
+  occ_grid.info.width = dyn_voro.getSizeX();
+  occ_grid.info.height = dyn_voro.getSizeY();
+  occ_grid.info.resolution = bool_map_3d_.resolution;
+  occ_grid.info.origin.position.x = origin_x;
+  occ_grid.info.origin.position.y = origin_y;
+  occ_grid.info.origin.position.z = dyn_voro.getOriginZ();
+  tf2::Quaternion q;
+  q.setRPY(0, 0, 0.0);
+  occ_grid.info.origin.orientation.x = q.x();
+  occ_grid.info.origin.orientation.y = q.y();
+  occ_grid.info.origin.orientation.z = q.z();
+  occ_grid.info.origin.orientation.w = q.w();
+
+  occ_grid.data.resize(occ_grid.info.width * occ_grid.info.height);
+
+  for(int j = 0; j < dyn_voro.getSizeY(); j++)
+  {
+    for (int i = 0; i < dyn_voro.getSizeX(); i++)
+    {
+      size_t idx = map2Dto1DIdx(occ_grid.info.width, i, j);
+      occ_grid.data[idx] = dyn_voro.isVoronoi(i, j) ? 255: 0;
+    }
+  }
+}
+
+void VoronoiPlanner::occmapToOccGrid(const DynamicVoronoi& dyn_voro, 
+                    const double& origin_x, const double& origin_y,
+                    nav_msgs::OccupancyGrid& occ_grid)
+{
+  occ_grid.header.stamp = this->get_clock()->now();
+  occ_grid.header.frame_id = "map";
+  occ_grid.info.width = dyn_voro.getSizeX();
+  occ_grid.info.height = dyn_voro.getSizeY();
+  occ_grid.info.resolution = bool_map_3d_.resolution;
+  occ_grid.info.origin.position.x = origin_x;
+  occ_grid.info.origin.position.y = origin_y;
+  occ_grid.info.origin.position.z = dyn_voro.getOriginZ();
+  tf2::Quaternion q;
+  q.setRPY(0, 0, 0.0);
+  occ_grid.info.origin.orientation.x = q.x();
+  occ_grid.info.origin.orientation.y = q.y();
+  occ_grid.info.origin.orientation.z = q.z();
+  occ_grid.info.origin.orientation.w = q.w();
+
+  occ_grid.data.resize(occ_grid.info.width * occ_grid.info.height);
+
+  for(int j = 0; j < dyn_voro.getSizeY(); j++)
+  {
+    for (int i = 0; i < dyn_voro.getSizeX(); i++)
+    {
+      size_t idx = map2Dto1DIdx(occ_grid.info.width, i, j);
+
+      // Flip the coordinates vertically (Occ grid uses top left as origin but original map data uses bottom left as origin)
+      // size_t idx = map2Dto1DIdx(occ_grid.info.width, i, occ_grid.info.height - j - 1);
+      occ_grid.data[idx] = dyn_voro.isOccupied(i, j) ? 255: 0;
+    }
+  }
+}
+
+
+
+} // namespace navigator
 
   // void realignBoolMap(bool ***map, bool ***map_og, int& size_x, int& size_y)
   // {
