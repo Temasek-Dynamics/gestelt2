@@ -539,7 +539,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 
 //     cloud_msg.header.frame_id = "local_map_origin";
 //     cloud_msg.header.stamp = this->get_clock()->now();
-//     slice_map_pub_.publish(cloud_msg);
+//     slice_map_pub_->publish(cloud_msg);
 //     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", local_occ_map_pts_.points.size()));
 //   }
   
@@ -587,7 +587,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 //   sphere.pose.position.y = pos(1);
 //   sphere.pose.position.z = pos(2);
 
-//   collision_viz_pub_.publish(sphere);
+//   collision_viz_pub_->publish(sphere);
 // }
 
 // void VoxelMap::publishLocalMapBounds()
@@ -616,7 +616,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 //   local_map_poly.polygon.points.push_back(max_corner);
 //   local_map_poly.polygon.points.push_back(corner_1);
 
-//   local_map_bounds_pub_.publish(local_map_poly);
+//   local_map_bounds_pub_->publish(local_map_poly);
 // }
 
 }  // namespace voxel_map

@@ -124,9 +124,12 @@ void TrajectoryServer::initPubSubTimers()
 
 	/* Timers */
 
-	set_offb_timer_ = this->create_wall_timer((1.0/set_offb_ctrl_freq_) *1000ms, std::bind(&TrajectoryServer::setOffboardTimerCB, this));
-	pub_odom_timer_ = this->create_wall_timer((1.0/pub_odom_freq_) *1000ms, std::bind(&TrajectoryServer::pubOdomTimerCB, this));
-	sm_tick_timer_ = this->create_wall_timer((1.0/sm_tick_freq_)*1000ms, std::bind(&TrajectoryServer::SMTickTimerCB, this), control_cb_group_);
+	set_offb_timer_ = this->create_wall_timer((1.0/set_offb_ctrl_freq_) *1000ms, 
+												std::bind(&TrajectoryServer::setOffboardTimerCB, this));
+	pub_odom_timer_ = this->create_wall_timer((1.0/pub_odom_freq_) *1000ms, 
+												std::bind(&TrajectoryServer::pubOdomTimerCB, this));
+	sm_tick_timer_ = this->create_wall_timer((1.0/sm_tick_freq_)*1000ms, 
+												std::bind(&TrajectoryServer::SMTickTimerCB, this), control_cb_group_);
 }
 
 void TrajectoryServer::initSrv()

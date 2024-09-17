@@ -8,6 +8,10 @@ if(NOT CMAKE_CXX_STANDARD)
 	set(CMAKE_CXX_STANDARD 17)
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 # find dependencies
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -16,12 +20,19 @@ set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
+  nav_msgs
+  tf2_geometry_msgs
+  visualization_msgs
+  gestelt_interfaces
+  voxel_map
   dynamic_voronoi
+  space_time_astar
+  logger_wrapper
 )
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -29,17 +40,25 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
-add_executable(voronoi_planner src/voronoi_planner.cpp)
-ament_target_dependencies(voronoi_planner 
+add_executable(voronoi_planner_node src/voronoi_planner_node.cpp)
+ament_target_dependencies(voronoi_planner_node 
   Eigen3
   rclcpp
-  dynamic_voronoi)
-target_include_directories(voronoi_planner PUBLIC
+  nav_msgs
+  tf2_geometry_msgs
+  visualization_msgs
+  gestelt_interfaces
+  voxel_map
+  dynamic_voronoi
+  space_time_astar
+  logger_wrapper
+)
+target_include_directories(voronoi_planner_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(voronoi_planner PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(voronoi_planner_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-install(TARGETS voronoi_planner
+install(TARGETS voronoi_planner_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

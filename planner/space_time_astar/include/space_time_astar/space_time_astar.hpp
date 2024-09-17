@@ -127,7 +127,7 @@ public:
    *
    * @return std::vector<Eigen::Vector3d>
    */
-  std::vector<Eigen::Vector3d> getClosedListVoroT();
+  std::vector<Eigen::Vector3d> getClosedList();
 
 /* Helper methods */
 private:
@@ -246,7 +246,7 @@ std::vector<Eigen::Vector3d> SpaceTimeAStar::getSmoothedPath()
   return path_smoothed_;
 }
 
-std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedListVoroT()
+std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
 {
   std::vector<Eigen::Vector3d> closed_list_pos;
   for (auto itr = closed_list_vt_.begin(); itr != closed_list_vt_.end(); ++itr) {

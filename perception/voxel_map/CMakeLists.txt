@@ -31,6 +31,12 @@ set(ROS_LIBRABRIES
   logger_wrapper
   bonxai)
 
+set(EXPORTED_DEPENDENCIES
+  bonxai
+  PCL
+  pcl_conversions
+)
+
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
@@ -59,6 +65,10 @@ target_include_directories(voxel_map PUBLIC
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(voxel_map PRIVATE "VOXEL_MAP_BUILDING_LIBRARY")
 
+############
+# Install ##
+############
+
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
@@ -82,6 +92,10 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_dependencies(
+  ${EXPORTED_DEPENDENCIES}
+)
 
 ament_export_include_directories(
   "include/${PROJECT_NAME}"

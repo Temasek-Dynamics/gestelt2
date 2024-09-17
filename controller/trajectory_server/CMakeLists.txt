@@ -75,7 +75,6 @@ target_include_directories(trajectory_server_node PUBLIC
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 target_link_libraries(trajectory_server_node frame_transforms)
-install(TARGETS trajectory_server_node DESTINATION lib/${PROJECT_NAME})
 
 # (For testing) Trajectory Server UAV Command service client 
 add_executable(uav_cmd_srv_client src/uav_cmd_srv_client.cpp )
@@ -86,18 +85,22 @@ target_include_directories(uav_cmd_srv_client PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
-install(TARGETS uav_cmd_srv_client DESTINATION lib/${PROJECT_NAME})
 
 ############
 # Install ##
 ############
+install(TARGETS 
+	trajectory_server_node
+	uav_cmd_srv_client 
+DESTINATION lib/${PROJECT_NAME})
 
 # Export information to downstream packages
 ament_export_dependencies(${EXPORTED_DEPENDENCIES})
 
+ament_export_include_directories(include)
+
 ament_export_targets(export_frame_transforms HAS_LIBRARY_TARGET)
 
-ament_export_include_directories(include)
 ament_export_libraries(frame_transforms)
 
 # Install header files

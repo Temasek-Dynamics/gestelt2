@@ -181,7 +181,7 @@ bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d,
     {
         // if (num_iter%100 == 1){
         //     std::cout << "[a_star] Iteration " << num_iter << std::endl;
-        //     publishClosedList(getClosedListVoroT(), closed_list_viz_pub_, "local_map_origin");
+        //     viz_helper_->pubFrontEndClosedList(getClosedList(), closed_list_viz_pub_, "local_map_origin");
         // }
 
         VCell_T cur_node = open_list_vt_.get();

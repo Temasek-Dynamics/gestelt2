@@ -12,6 +12,19 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
+  <depend>rclcpp</depend>
+
+  <depend>std_msgs</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>gestelt_interfaces</depend>
+  
+  <depend>voxel_map</depend>
+  <depend>dynamic_voronoi</depend>
+  <depend>space_time_astar</depend>
+  <depend>logger_wrapper</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

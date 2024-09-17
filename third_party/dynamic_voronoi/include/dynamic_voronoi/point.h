@@ -40,13 +40,13 @@ public:
 };
 
 
-template <> 
-struct std::hash<IntPoint> {
-  /* implement hash function so we can put IntPoint into an unordered_set */
-  std::size_t operator()(const IntPoint& pos) const noexcept {
-    // NOTE: better to use something like boost hash_combine
-    return 0.5 * (pos.x + pos.y)*(pos.x + pos.y + 1) + pos.y;
-  }
-};
+// template <> 
+// struct std::hash<IntPoint> {
+//   /* implement hash function so we can put IntPoint into an unordered_set */
+//   std::size_t operator()(const IntPoint& pos) const noexcept {
+//     // NOTE: better to use something like boost hash_combine
+//     return 0.5 * (pos.x + pos.y)*(pos.x + pos.y + 1) + pos.y;
+//   }
+// };
 
 #endif // _VOROPOINT_H_

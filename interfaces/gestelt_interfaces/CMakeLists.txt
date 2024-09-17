@@ -10,10 +10,16 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/UAVCommand.srv"
-  DEPENDENCIES std_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
+  "msg/Goals.msg"
+  "msg/PlanRequest.msg"
+  "msg/SpaceTimePath.msg"
+  DEPENDENCIES 
+    std_msgs 
+    geometry_msgs 
 )
 
 # uncomment the following section in order to fill in

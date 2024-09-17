@@ -1,5 +1,8 @@
 #include <voronoi_planner/voronoi_planner.hpp>
 
+namespace navigator
+{
+
 void VoronoiPlanner::init()
 { 
   // Initialize Params
@@ -15,45 +18,52 @@ void VoronoiPlanner::init()
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
   astar_params_.t_unit = t_unit_;
 
-  fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_);
+  fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_, this->get_clock());
 
   // Initialize map
   voxel_map_ = std::make_shared<voxel_map::VoxelMap>();
   voxel_map_->initMapROS();
+
+  // Initialize visualization stuff
+  viz_helper_ = std::make_shared<VizHelper>(this->get_clock());
 }
 
 void VoronoiPlanner::initPubSubTimer(){
   /* Publishers */
 
+	occ_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", rclcpp::SensorDataQoS());
+
   // Map publishers
-  occ_map_pub_ = nh.advertise<nav_msgs::msg::OccupancyGrid>("voro/occ_map", 10, true);
-  voro_occ_grid_pub_ = nh.advertise<nav_msgs::msg::OccupancyGrid>("voro/voro_map", 10, true);
-  voronoi_graph_pub_ = nh.advertise<visualization_msgs::msg::Marker>("voronoi_graph", 500, true);
+  occ_map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("voro/occ_map");
+  voro_occ_grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("voro/voro_map");
+  voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph");
 
   // Planner publishers
-  fe_plan_pub_ = nh.advertise<gestelt_interfaces::msg::SpaceTimePath>("fe_plan", 5, true);
-  fe_plan_broadcast_pub_ = nh.advertise<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", 5, true);
+  fe_plan_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan");
+  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast");
 
   // Visualization
-  start_pt_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_start", 5, true);
-  goal_pt_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_goal", 5, true);
-  fe_closed_list_viz_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_plan/closed_list", 50, true);
-  fe_plan_viz_pub_ = nh.advertise<visualization_msgs::msg::Marker>("fe_plan/viz", 50 , true);
+  start_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_start");
+  goal_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_goal");
+  fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/closed_list");
+  fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz");
 
   /* Subscribers */
-  fe_plan_broadcast_sub_ = nh.subscribe<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", 50, &VoronoiPlanner::FEPlanSubCB, this);
 
-  plan_req_dbg_sub_ = nh.subscribe("plan_request_dbg", 50, &VoronoiPlanner::planReqDbgCB, this);
-  goals_sub_ = nh.subscribe("goals", 50, &VoronoiPlanner::goalsCB, this);
+  fe_plan_broadcast_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1));
 
-  odom_sub_ = nh.subscribe("odom", 5, &VoronoiPlanner::odometryCB, this);
+  plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>("plan_request_dbg", std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
+  goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>("goals", std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
+
+  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", std::bind(&VoronoiPlanner::odomSubCB, this, _1));
 
   /* Timers */
-  plan_fe_timer_ = nh.createTimer(ros::Duration(1.0/fe_planner_freq_), 
-                                  &VoronoiPlanner::planFETimerCB, this);
 
-  gen_voro_map_timer_ = nh.createTimer(ros::Duration(1.0/gen_voro_map_freq_), 
-                                  &VoronoiPlanner::genVoroMapTimerCB, this);
+	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
+                                        std::bind(&VoronoiPlanner::planFETimerCB, this));
+
+	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
+                                        std::bind(&VoronoiPlanner::genVoroMapTimerCB, this));
 }
 
 void VoronoiPlanner::initParams()
@@ -147,8 +157,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     rsvn_tbl_.clear();
   }
 
-
-  viz_helper::publishStartAndGoal(start, goal, local_map_origin_, start_pt_pub_, goal_pt_pub_);
+  viz_helper_->pubStartGoalPts(start, goal, local_map_origin_, start_pt_pub_, goal_pt_pub_);
 
   tm_front_end_plan_.start();
 
@@ -160,10 +169,10 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
     tm_front_end_plan_.stop(verbose_print_);
 
-    // viz_helper::publishClosedList(fe_planner_->getClosedListVoroT(), 
+    // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
     //                   fe_closed_list_viz_pub_, local_map_origin_);
 
-    // ROS_ERROR("Closed list size: %ld", fe_planner_->getClosedListVoroT().size() );
+    // ROS_ERROR("Closed list size: %ld", fe_planner_->getClosedList().size() );
 
     return false;
   }
@@ -176,7 +185,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   space_time_path_ = fe_planner_->getPathWithTime(cur_pos_);
   // smoothed_path_ = fe_planner_->getSmoothedPath();
   // smoothed_path_t_ = fe_planner_->getSmoothedPathWithTime();
-  // viz_helper::publishClosedList(fe_planner_->getClosedListVoroT(), fe_closed_list_viz_pub_, local_map_origin_);
+  // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_origin_);
 
   // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
   gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
@@ -197,12 +206,12 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
   fe_plan_msg.t_plan_start = this->get_clock()->now().seconds();
 
-  fe_plan_pub_.publish(fe_plan_msg);
-  fe_plan_broadcast_pub_.publish(fe_plan_msg);
+  fe_plan_pub_->publish(fe_plan_msg);
+  fe_plan_broadcast_pub_->publish(fe_plan_msg);
 
-  // viz_helper::publishSpaceTimePath(space_time_path_, global_origin_, fe_plan_viz_pub_) ;
+  // viz_helper_->pubSpaceTimePath(space_time_path_, global_origin_, fe_plan_viz_pub_) ;
 
-  viz_helper::publishFrontEndPath(front_end_path_, global_origin_, fe_plan_viz_pub_);
+  viz_helper_->pubFrontEndPath(front_end_path_, global_origin_, fe_plan_viz_pub_);
 
   // double min_clr = DBL_MAX; // minimum path clearance 
   // double max_clr = 0.0;     // maximum path clearance 
@@ -286,7 +295,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     std::vector<Eigen::Vector3d> voro_verts_cur_layer = dyn_voro_arr_[z_cm]->getVoronoiVertices();
     voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
 
-    nav_msgs::OccupancyGrid occ_grid, voro_occ_grid;
+    nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
 
     occmapToOccGrid(*dyn_voro_arr_[z_cm], 
                     bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
@@ -296,8 +305,8 @@ void VoronoiPlanner::genVoroMapTimerCB()
                         bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
                         voro_occ_grid); // Voronoi map
 
-    voro_occ_grid_pub_.publish(voro_occ_grid);
-    occ_map_pub_.publish(occ_grid);
+    voro_occ_grid_pub_->publish(voro_occ_grid);
+    occ_map_pub_->publish(occ_grid);
 
   }
 
@@ -317,14 +326,14 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   tm_voro_map_init_.stop(false);
 
-  viz_helper::publishVertices(voro_verts, local_map_origin_, voronoi_graph_pub_);
+  viz_helper_->pubVoroVertices(voro_verts, local_map_origin_, voronoi_graph_pub_);
 
   init_voro_maps_ = true; // Flag to indicate that all voronoi maps have been initialized
 }
 
 /* Subscriber callbacks*/
 
-void VoronoiPlanner::odometryCB(const nav_msgs::Odometry::UniquePtr msg)
+void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 {
   cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x - bool_map_3d_.origin(0), 
                             msg->pose.pose.position.y - bool_map_3d_.origin(1), 
@@ -384,7 +393,7 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
 
 }
 
-void VoronoiPlanner::goalsCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
+void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 {
     if (msg->transforms.size() <= 0)
     {
@@ -410,7 +419,7 @@ void VoronoiPlanner::goalsCB(const gestelt_interfaces::msg::Goals::UniquePtr msg
     waypoints_.addMultipleWP(wp_vec);
 }
 
-void VoronoiPlanner::planReqDbgCB(const gestelt_interfaces::msg::PlanRequestDebug::UniquePtr msg)
+void VoronoiPlanner::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg)
 {
   Eigen::Vector3d plan_start( 
                   msg->start.position.x - bool_map_3d_.origin(0),
@@ -428,5 +437,5 @@ void VoronoiPlanner::planReqDbgCB(const gestelt_interfaces::msg::PlanRequestDebu
   plan(plan_start, plan_end);
 }
 
-/* Conversion methods */
+} // namespace navigator
 

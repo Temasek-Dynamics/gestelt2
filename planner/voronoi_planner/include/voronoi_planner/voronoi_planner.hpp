@@ -1,5 +1,5 @@
-#ifndef _VORONOI_PLANNER_HPP
-#define _VORONOI_PLANNER_HPP
+#ifndef _VORONOI_PLANNER_HPP_
+#define _VORONOI_PLANNER_HPP_
 
 #include "viz_helper.hpp"
 
@@ -8,14 +8,16 @@
 #include <limits>
 #include <queue>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <nav_msgs/msg/occupancy_grid.h>
-#include <tf2_geometry_msgs/msg/tf2_geometry_msgs.h>
+#include <nav_msgs/msg/odometry.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <visualization_msgs/msg/marker.hpp>
 
-#include <gestelt_interfaces/msg/PlanRequestDebug.h>
-#include <gestelt_interfaces/msg/space_time_path.h>
-#include <gestelt_interfaces/msg/Goals.h>
+#include <gestelt_interfaces/msg/plan_request.hpp>
+#include <gestelt_interfaces/msg/space_time_path.hpp>
+#include <gestelt_interfaces/msg/goals.hpp>
 
 #include <voxel_map/voxel_map.hpp> 
 
@@ -167,13 +169,13 @@ private:
   void FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg);
 
   /* Subscription callback to goals */
-  void goalsCB(const gestelt_interfaces::msg::Goals::UniquePtr msg);
+  void goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg);
 
   /* Plan request (for debug use)*/
-  void planReqDbgCB(const gestelt_interfaces::msg::PlanRequestDebug::UniquePtr msg);
+  void planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg);
 
   /* Subscription callback to odometry */
-  void odometryCB(const nav_msgs::Odometry::UniquePtr msg);
+  void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
 
 /* Helper methods */
 private:
@@ -181,12 +183,12 @@ private:
   // Convert from map to occupancy grid type
   void voronoimapToOccGrid( const DynamicVoronoi& dyn_voro, 
                             const double& origin_x, const double& origin_y, 
-                            nav_msgs::OccupancyGrid& occ_grid);
+                            nav_msgs::msg::OccupancyGrid& occ_grid);
 
   // Convert from map to occupancy grid type
   void occmapToOccGrid(const DynamicVoronoi& dyn_voro, 
                       const double& origin_x, const double& origin_y,
-                      nav_msgs::OccupancyGrid& occ_grid);
+                      nav_msgs::msg::OccupancyGrid& occ_grid);
 
   /* Checks */
 
@@ -246,8 +248,8 @@ private:
   global_planner::VoronoiParams voro_params_; 
 
   /* Timers */
-  ros::Timer plan_fe_timer_;
-  ros::Timer gen_voro_map_timer_;
+	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	
+	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_;
 
   /* Publishers */
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr occ_map_pub_; // Publishes original occupancy grid
@@ -264,11 +266,11 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
 
   /* Subscribers */
-  ros::Subscriber plan_req_dbg_sub_;  // plan request (start and goal) debug subscriber
-  ros::Subscriber goals_sub_;  // goal subscriber
-  ros::Subscriber fe_plan_broadcast_sub_; // Subscription to broadcasted front end plan from other agents
+	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
+	rclcpp::Subscription<gestelt_interfaces::msg::Goals>::SharedPtr goals_sub_;              // Goal subscriber
+	rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_sub_;  // Subscription to broadcasted front end plan from other agents
 
-  ros::Subscriber odom_sub_; // Subscriber to odometry
+	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
 
   /* Mutexes*/
   std::mutex rsvn_tbl_mtx_;
@@ -302,8 +304,11 @@ private:
   bool plan_complete_{false}; // flag to indicate a plan has been completed
 
   /* Debugging */
-  Timer tm_front_end_plan_{"front_end_plan"};
-  Timer tm_voro_map_init_{"voro_map_init"};
+  logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"};
+  logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"};
+
+  /* Visualization */
+  std::shared_ptr<VizHelper> viz_helper_;
 
 }; // class VoronoiPlanner
 
@@ -371,7 +376,7 @@ inline void map1Dto2DIdx(const int& idx, const int& width, int& x, int& y)
 
 void VoronoiPlanner::voronoimapToOccGrid( const DynamicVoronoi& dyn_voro, 
                           const double& origin_x, const double& origin_y, 
-                          nav_msgs::OccupancyGrid& occ_grid)
+                          nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
   occ_grid.header.frame_id = "map";
@@ -402,7 +407,7 @@ void VoronoiPlanner::voronoimapToOccGrid( const DynamicVoronoi& dyn_voro,
 
 void VoronoiPlanner::occmapToOccGrid(const DynamicVoronoi& dyn_voro, 
                     const double& origin_x, const double& origin_y,
-                    nav_msgs::OccupancyGrid& occ_grid)
+                    nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
   occ_grid.header.frame_id = "map";
@@ -434,8 +439,6 @@ void VoronoiPlanner::occmapToOccGrid(const DynamicVoronoi& dyn_voro,
   }
 }
 
-
-
 } // namespace navigator
 
   // void realignBoolMap(bool ***map, bool ***map_og, int& size_x, int& size_y)
@@ -453,6 +456,6 @@ void VoronoiPlanner::occmapToOccGrid(const DynamicVoronoi& dyn_voro,
   //   }
   // }
 
-#endif // _VORONOI_PLANNER_HPP
+#endif // _VORONOI_PLANNER_HPP_
 
 
