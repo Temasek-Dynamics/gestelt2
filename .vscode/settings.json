@@ -90,6 +90,7 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "eigen": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "queue": "cpp"
     }
 }

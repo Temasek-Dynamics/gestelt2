@@ -22,7 +22,7 @@ void SpaceTimeAStar::reset()
 
 }
 
-void SpaceTimeAStar::setVoroMap(const std::map<int, std::shared_ptr<DynamicVoronoi>>& dyn_voro_arr,
+void SpaceTimeAStar::setVoroMap(const std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
                                 const VoronoiParams& voro_params)
 {
     dyn_voro_arr_ = dyn_voro_arr;
@@ -123,7 +123,7 @@ bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d,
     // std::cout << astar_params_.drone_id << ": start_z: " <<  start_pos_3d(2) << " m rounded to " << start_z_cm << " cm" << std::endl;
     // std::cout << astar_params_.drone_id << ": goal_z: " <<  goal_pos_3d(2) << " m rounded to " << goal_z_cm << " cm" << std::endl;
     
-    INTPOINT start_node_2d, goal_node_2d;
+    IntPoint start_node_2d, goal_node_2d;
 
     // Search takes place in index space. So we first convert 3d real world positions into indices
     if (!dyn_voro_arr_[start_z_cm]->posToIdx(DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d) 
@@ -198,11 +198,75 @@ bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d,
             return true;
         }
         
+        auto getVoroNeighbors = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro,
+                                    const Eigen::Vector4i& grid_pos, 
+                                    std::vector<Eigen::Vector4i>& neighbours,
+                                    const std::unordered_set<IntPoint>& marked_bubble_cells)
+        {
+            // Input
+            //  grid_pos: (cur_node.x, cur_node.y, cur_node.z_cm, cur_node.t)
+            //  neighbours: To be filled with neighbours that are voronoi cells
+            //  marked_bubble_cells: bubble cells that are marked
+            
+            neighbours.clear();
+
+            int cur_t = grid_pos(3);
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+
+                int nx = grid_pos(0) + dx;
+                int ny = grid_pos(1) + dy;
+
+                if (!dyn_voro->isInMap(nx, ny) 
+                    || dyn_voro->isOccupied(nx, ny)){
+                    continue;
+                }
+                
+                if (!(dyn_voro->isVoronoi(nx, ny) 
+                        || marked_bubble_cells.find(IntPoint(nx, ny)) != marked_bubble_cells.end())){
+                    // if not (voronoi or marked as bubble cell)
+                    continue;
+                }
+
+                neighbours.push_back(Eigen::Vector4i{   nx, 
+                                                        ny, 
+                                                        dyn_voro->params_.origin_z_cm, 
+                                                        cur_t + 1 });
+                }
+            }
+
+            // Check if current cell is voronoi vertex. IF so, then add neighbors that go up and down
+            if (dyn_voro->isVoronoiVertex(grid_pos(0), grid_pos(1))){
+                // If point at top layer is free:
+                if (!dyn_voro->top_voro_ .expired()){
+                    auto top_voro = dyn_voro->top_voro_.lock();
+                    if (!top_voro->isOccupied(grid_pos(0), grid_pos(1))){
+                        neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
+                                                                grid_pos(1), 
+                                                                top_voro->params_.origin_z_cm, 
+                                                                cur_t + 1 });
+                    }
+                }
+                // If point at bottom layer is free:
+                if (!dyn_voro->bottom_voro_ .expired()){
+                    auto bottom_voro = dyn_voro->bottom_voro_.lock();
+                    if (!bottom_voro->isOccupied(grid_pos(0), grid_pos(1))){
+                        neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
+                                                                grid_pos(1), 
+                                                                bottom_voro->params_.origin_z_cm, 
+                                                                cur_t + 1 });
+                    }
+                }
+            }
+        };
 
         // Get neighbours that are within the map
-        dyn_voro_arr_[cur_node.z_cm]->getVoroNeighbors(
+        getVoroNeighbors(
+            dyn_voro_arr_[cur_node.z_cm],
             Eigen::Vector4i(cur_node.x, cur_node.y, cur_node.z_cm, cur_node.t), 
-            neighbours, marked_bubble_cells_[cur_node.z_cm]);
+            neighbours, 
+            marked_bubble_cells_[cur_node.z_cm]);
 
         // Explore neighbors of current node. Each neighbor is (grid_x, grid_y, map_z_cm)
         for (const Eigen::Vector4i& nb_grid_4d : neighbours) 

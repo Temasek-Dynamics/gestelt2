@@ -21,6 +21,7 @@ set(ROS_LIBRABRIES
 	ament_cmake_ros
   rclcpp
   dynamic_voronoi
+  planner_utils
 )
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
@@ -32,6 +33,7 @@ add_library(space_time_astar::space_time_astar ALIAS space_time_astar)
 ament_target_dependencies(space_time_astar 
   Eigen3
   rclcpp
+  planner_utils
   dynamic_voronoi)
 target_compile_features(space_time_astar PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(space_time_astar PUBLIC
@@ -74,6 +76,10 @@ ament_export_libraries(
 )
 ament_export_targets(
   export_${PROJECT_NAME}
+)
+
+ament_export_dependencies(
+  planner_utils
 )
 
 ament_package()

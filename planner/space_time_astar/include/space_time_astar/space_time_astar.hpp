@@ -10,7 +10,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <space_time_astar/planner_common.hpp>
+#include <planner_utils/planner_common.hpp>
+
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
 
 namespace global_planner{
@@ -64,7 +65,7 @@ public:
   void reset();
 
   /* Assign voronoi map. To be executed when map is updated*/
-  void setVoroMap(const std::map<int, std::shared_ptr<DynamicVoronoi>>& dyn_voro_arr,
+  void setVoroMap(const std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
                      const VoronoiParams& voro_params);
 
   /* Update the assignement of the reservation table. TO be executed when the reservation table is updated*/
@@ -157,7 +158,7 @@ private:
   rclcpp::Clock::SharedPtr clock_;
 
   /* Path planner data structures */
-  std::map<int, std::shared_ptr<DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
+  std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
 
   // General voronoi params
   std::map<int, std::unordered_set<IntPoint>> marked_bubble_cells_; // Cells that are marked as part of the voronoi bubble with key of height(cm)

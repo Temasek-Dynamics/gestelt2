@@ -6,13 +6,14 @@
 #include <limits.h>
 #include <queue>
 
-#include <dynamic_voronoi/bucketedqueue.h>
 #include <memory>
 
 #include <math.h>
 #include <iostream>
 
-#include <Eigen/Eigen>
+#include <dynamic_voronoi/bucketed_queue.hpp>
+
+namespace dynamic_voronoi{
 
 //! A DynamicVoronoi object computes and updates a distance map and Voronoi diagram.
 class DynamicVoronoi {
@@ -39,7 +40,7 @@ public:
   ~DynamicVoronoi();
 
   //! Initialization with an empty map
-  void initializeEmpty(int _sizeX, int _sizeY, bool initGridMap=true);
+  void initializeEmpty(int _sizeX, int _sizeY);
   //! Initialization with a given binary map (false==free, true==occupied)
   void initializeMap(int _sizeX, int _sizeY, const std::vector<bool>& bool_map_1d_arr) ;
 
@@ -67,9 +68,6 @@ public:
   void visualize(const char* filename="result.ppm");
 
   /* Getter methods */
-
-  // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
-  std::vector<Eigen::Vector3d> getVoronoiVertices();
 
   //! retrieve the number of neighbors that are Voronoi cells (4-connected)
   int getNumVoronoiNeighbors(int x, int y);
@@ -133,26 +131,19 @@ public:
   void setObstacle(int x, int y);
   void removeObstacle(int x, int y);
 
-  /* Planning methods */
-
-
-  // Get voronoi or voronoi bubble expansion neighbors
-  void getVoroNeighbors(const Eigen::Vector4i& grid_pos, 
-                        std::vector<Eigen::Vector4i>& neighbours,
-                        const std::unordered_set<IntPoint>& marked_bubble_cells);
   /* Checking methods */
   // If cell is in map
   bool isInMap(int x, int y);
   //! checks whether the specficied location is occupied
-  bool isOccupied(const INTPOINT& grid_pos) const;
+  bool isOccupied(const IntPoint& grid_pos) const;
   //! checks whether the location is occupied
   bool isOccupied(const size_t& x, const size_t& y) const ;
 
   // Convert from position to index
-  bool posToIdx(const DblPoint& map_pos, INTPOINT& grid_pos);
+  bool posToIdx(const DblPoint& map_pos, IntPoint& grid_pos);
 
   // Convert from position to index
-  void idxToPos(const INTPOINT& grid_pos, DblPoint& map_pos);
+  void idxToPos(const IntPoint& grid_pos, DblPoint& map_pos);
 
   double getOriginX() const {
     return params_.origin_x;
@@ -175,8 +166,11 @@ public:
   }
 
   // Top and bottom voronoi planes
-  std::weak_ptr<DynamicVoronoi> top_voro_;
-  std::weak_ptr<DynamicVoronoi> bottom_voro_;
+  std::weak_ptr<dynamic_voronoi::DynamicVoronoi> top_voro_;
+  std::weak_ptr<dynamic_voronoi::DynamicVoronoi> bottom_voro_;
+
+public:
+  DynamicVoronoiParams params_;
 
 private:
   // Parameters
@@ -188,16 +182,15 @@ private:
   //  dataCell** getData(){ return data; }
   int** alternativeDiagram;
 
-  DynamicVoronoiParams params_;
 
   // queues
-  BucketPrioQueue<INTPOINT> open;
-  std::queue<INTPOINT> pruneQueue;
-  BucketPrioQueue<INTPOINT> sortedPruneQueue;
+  BucketPrioQueue<IntPoint> open;
+  std::queue<IntPoint> pruneQueue;
+  BucketPrioQueue<IntPoint> sortedPruneQueue;
 
-  std::vector<INTPOINT> removeList;
-  std::vector<INTPOINT> addList;
-  std::vector<INTPOINT> lastObstacles;
+  std::vector<IntPoint> removeList;
+  std::vector<IntPoint> addList;
+  std::vector<IntPoint> lastObstacles;
 
   // maps
   bool flip_y_{false};
@@ -209,10 +202,9 @@ private:
   // Data structure
   bool init_kd_tree_{false};
 
-  std::vector<Eigen::Vector2i> voro_cells_;
-
 }; // end class DynamicVoronoi
 
+} // namespace dynamic_voronoi
 
 #endif // _DYNAMIC_VORONOI_H_
 

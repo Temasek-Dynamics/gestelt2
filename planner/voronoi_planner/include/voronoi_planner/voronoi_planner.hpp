@@ -1,7 +1,6 @@
 #ifndef _VORONOI_PLANNER_HPP_
 #define _VORONOI_PLANNER_HPP_
 
-#include "viz_helper.hpp"
 
 #include <Eigen/Eigen>
 
@@ -10,8 +9,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <nav_msgs/msg/occupancy_grid.h>
-#include <nav_msgs/msg/odometry.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
@@ -21,11 +20,13 @@
 
 #include <voxel_map/voxel_map.hpp> 
 
-#include "dynamic_voronoi/dynamic_voronoi.hpp"
-#include "space_time_astar/space_time_astar.hpp"
+#include <dynamic_voronoi/dynamic_voronoi.hpp>
+#include <space_time_astar/space_time_astar.hpp>
 
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
+
+#include "viz_helper.hpp"
 
 namespace navigator
 {
@@ -135,7 +136,10 @@ private:
 class VoronoiPlanner : public rclcpp::Node
 {
 public:
-  void init();
+
+  VoronoiPlanner();
+
+  virtual ~VoronoiPlanner();
 
   void initParams();
 
@@ -181,12 +185,12 @@ private:
 private:
 
   // Convert from map to occupancy grid type
-  void voronoimapToOccGrid( const DynamicVoronoi& dyn_voro, 
+  void voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                             const double& origin_x, const double& origin_y, 
                             nav_msgs::msg::OccupancyGrid& occ_grid);
 
   // Convert from map to occupancy grid type
-  void occmapToOccGrid(const DynamicVoronoi& dyn_voro, 
+  void occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                       const double& origin_x, const double& origin_y,
                       nav_msgs::msg::OccupancyGrid& occ_grid);
 
@@ -290,7 +294,7 @@ private:
 
   Waypoint waypoints_; // Goal waypoint handler object
 
-  std::map<int, std::shared_ptr<DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
+  std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
 
   std::vector<Eigen::Vector3d> front_end_path_; // Front-end Space path in space coordinates (x,y,z) in world frame
   std::vector<Eigen::Vector4d> space_time_path_; // Front-end Space time  path in space-time coordinates (x,y,z,t) in world frame
@@ -310,6 +314,9 @@ private:
   /* Visualization */
   std::shared_ptr<VizHelper> viz_helper_;
 
+  /* Logging */
+	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
+
 }; // class VoronoiPlanner
 
 bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
@@ -319,7 +326,7 @@ bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vect
 
 
 /* Convert from time [s] to space-time units */
-long tToSpaceTimeUnits(const double& t){
+long VoronoiPlanner::tToSpaceTimeUnits(const double& t){
   return std::lround(t / t_unit_);
 }
 
@@ -330,7 +337,7 @@ long tToSpaceTimeUnits(const double& t){
  * @param mult Multiple
  * @return int 
  */
-int roundToMultInt(const int& num, const int& mult)
+int VoronoiPlanner::roundToMultInt(const int& num, const int& mult)
 {
   if (mult == 0){
     return num;
@@ -353,28 +360,28 @@ int roundToMultInt(const int& num, const int& mult)
 }
 
 // Convert from meters to centimeters
-int mToCm(const double& val_m){
+int VoronoiPlanner::mToCm(const double& val_m){
   return (int) (val_m * 100.0);
 }
 
 // Convert from centimeters to meters
-double cmToM(const int& val_cm) {
+double VoronoiPlanner::cmToM(const int& val_cm) {
   return ((double) val_cm)/100.0;  
 }
 
-inline size_t map2Dto1DIdx(const int& width, const int& x, const int& y)
+inline size_t VoronoiPlanner::map2Dto1DIdx(const int& width, const int& x, const int& y)
 {
   return width * y + x;
 }
 
-inline void map1Dto2DIdx(const int& idx, const int& width, int& x, int& y)
+inline void VoronoiPlanner::map1Dto2DIdx(const int& idx, const int& width, int& x, int& y)
 {
   y = idx/width;
   x = idx - (y * width);
 }
 
 
-void VoronoiPlanner::voronoimapToOccGrid( const DynamicVoronoi& dyn_voro, 
+void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                           const double& origin_x, const double& origin_y, 
                           nav_msgs::msg::OccupancyGrid& occ_grid)
 {
@@ -405,7 +412,7 @@ void VoronoiPlanner::voronoimapToOccGrid( const DynamicVoronoi& dyn_voro,
   }
 }
 
-void VoronoiPlanner::occmapToOccGrid(const DynamicVoronoi& dyn_voro, 
+void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                     const double& origin_x, const double& origin_y,
                     nav_msgs::msg::OccupancyGrid& occ_grid)
 {

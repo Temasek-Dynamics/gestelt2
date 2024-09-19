@@ -3,10 +3,12 @@
 namespace navigator
 {
 
-void VoronoiPlanner::init()
-{ 
+VoronoiPlanner::VoronoiPlanner()
+{
+	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
+	logger_->logInfo("Initializing");
   // Initialize Params
-  initParams(pnh);
+  initParams();
 
   tm_front_end_plan_.updateID(drone_id_);
   tm_voro_map_init_.updateID(drone_id_);
@@ -26,7 +28,15 @@ void VoronoiPlanner::init()
 
   // Initialize visualization stuff
   viz_helper_ = std::make_shared<VizHelper>(this->get_clock());
+
+	logger_->logInfo("Initialized");
 }
+
+VoronoiPlanner::~VoronoiPlanner()
+{
+
+}
+
 
 void VoronoiPlanner::initPubSubTimer(){
   /* Publishers */
@@ -164,15 +174,15 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   // Generate plan 
   if (!fe_planner_->generatePlan(start, goal))
   {
-    ROS_ERROR("Drone %d: Failed to generate plan from (%f, %f, %f) to (%f, %f, %f)", drone_id_, start(0), start(1), start(2),
-                                                                            goal(0), goal(1), goal(2));
+    logger_->logError(strFmt("Drone %d: Failed to generate plan from (%f, %f, %f) to (%f, %f, %f)", 
+                              drone_id_, start(0), start(1), start(2), goal(0), goal(1), goal(2)));
 
     tm_front_end_plan_.stop(verbose_print_);
 
+    logger_->logError(strFmt("Closed list size: %ld", fe_planner_->getClosedList().size()));
     // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
     //                   fe_closed_list_viz_pub_, local_map_origin_);
 
-    // ROS_ERROR("Closed list size: %ld", fe_planner_->getClosedList().size() );
 
     return false;
   }
@@ -282,7 +292,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     dyn_voro_params.origin_z_cm = z_cm;
 
     // Initialize dynamic voronoi 
-    dyn_voro_arr_[z_cm] = std::make_shared<DynamicVoronoi>(dyn_voro_params);
+    dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>(dyn_voro_params);
     dyn_voro_arr_[z_cm]->initializeMap(bool_map_3d_.width, 
                                       bool_map_3d_.height, 
                                       bool_map.second);
@@ -291,8 +301,28 @@ void VoronoiPlanner::genVoroMapTimerCB()
     dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
     dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();  
 
-    // Get voronoi graph for current layer and append to voro_verts
-    std::vector<Eigen::Vector3d> voro_verts_cur_layer = dyn_voro_arr_[z_cm]->getVoronoiVertices();
+    // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
+    auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){
+      std::vector<Eigen::Vector3d> voronoi_vertices;
+      if (dyn_voro->data != nullptr){  
+        for (int x=0; x<sizeX; x++) {
+          for (int y=0; y<sizeY; y++) {
+            if (dyn_voro->isVoronoiVertex(x, y)){
+              voronoi_vertices.push_back(Eigen::Vector3d{x*params_.res, y*params_.res, params_.origin_z});
+            }
+          }
+        }
+      }
+
+      return voronoi_vertices
+    };
+
+    // voro_verts_cur_layer: voronoi vertices at current layer
+    std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
+
+    // std::vector<Eigen::Vector3d> voro_verts_cur_layer = dyn_voro_arr_[z_cm]->getVoronoiVertices();
+
+
     voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
 
     nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
@@ -397,12 +427,14 @@ void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr 
 {
     if (msg->transforms.size() <= 0)
     {
-      ROS_ERROR("Received empty waypoints. Ignoring waypoints.");
+      logger_->logError(strFmt("Received empty waypoints. Ignoring waypoints."));
+
+
       return;
     }
     if (msg->header.frame_id != "world" && msg->header.frame_id != "map" )
     {
-      ROS_ERROR("Only waypoint goals in 'world' or 'map' frame are accepted, ignoring waypoints.");
+      logger_->logError(strFmt("Only accepting goals in 'world' or 'map' frame, ignoring goals."));
       return;
     }
 

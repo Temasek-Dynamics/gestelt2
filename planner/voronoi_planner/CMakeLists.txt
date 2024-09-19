@@ -28,17 +28,14 @@ set(ROS_LIBRABRIES
   dynamic_voronoi
   space_time_astar
   logger_wrapper
+  planner_utils
 )
 
+# find dependencies
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-# find dependencies
-find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
 
 add_executable(voronoi_planner_node src/voronoi_planner_node.cpp)
 ament_target_dependencies(voronoi_planner_node 

@@ -1,12 +1,17 @@
-#ifndef _PRIORITYQUEUE2_H_
-#define _PRIORITYQUEUE2_H_
+#ifndef _BUCKETED_QUEUE_HPP_
+#define _BUCKETED_QUEUE_HPP_
+
+#include "limits.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <vector>
 #include <set>
 #include <queue>
 #include <assert.h>
-#include "point.h"
 #include <map>
+
+#include <planner_utils/int_point.hpp>
 
 //! Priority queue for integer coordinates with squared distances as priority.
 /** A priority queue that uses buckets to group elements with the same priority.
@@ -55,7 +60,36 @@ private:
   typename BucketType::iterator nextPop;
 };
 
-#include "bucketedqueue.hpp"
+template <class T>
+BucketPrioQueue<T>::BucketPrioQueue() {
+  clear();
+}
 
-#endif // _PRIORITYQUEUE2_H_
+template <class T>
+bool BucketPrioQueue<T>::empty() {
+  return (count==0);
+}
 
+template <class T>
+void BucketPrioQueue<T>::push(int prio, T t) {
+  buckets[prio].push(t);
+  if (nextPop == buckets.end() || prio < nextPop->first) nextPop = buckets.find(prio);
+  count++;
+}
+
+template <class T>
+T BucketPrioQueue<T>::pop() {
+  while (nextPop!=buckets.end() && nextPop->second.empty()) ++nextPop;
+
+  T p = nextPop->second.front();
+  nextPop->second.pop();
+  if (nextPop->second.empty()) {
+    typename BucketType::iterator it = nextPop;
+    nextPop++;
+    buckets.erase(it);
+  }
+  count--;
+  return p;
+}
+
+#endif // _BUCKETED_QUEUE_HPP_

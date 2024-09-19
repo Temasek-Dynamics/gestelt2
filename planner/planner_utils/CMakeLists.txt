@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(dynamic_voronoi)
+project(planner_utils)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
@@ -15,30 +15,30 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-find_package(planner_utils REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
 
-add_library(dynamic_voronoi
-  src/dynamic_voronoi.cpp
-)
-add_library(dynamic_voronoi::dynamic_voronoi ALIAS dynamic_voronoi)
-ament_target_dependencies( dynamic_voronoi
-  planner_utils
-)
-target_compile_features(dynamic_voronoi PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(dynamic_voronoi PUBLIC
+include(${CMAKE_CURRENT_SOURCE_DIR}/ConfigExtras.cmake)
+
+add_library(planner_utils src/planner_utils.cpp)
+add_library(planner_utils::planner_utils ALIAS planner_utils)
+ament_target_dependencies(planner_utils 
+  Eigen3)
+target_compile_features(planner_utils PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(planner_utils PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(dynamic_voronoi PRIVATE "DYNAMIC_VORONOI_BUILDING_LIBRARY")
+target_compile_definitions(planner_utils PRIVATE "PLANNER_UTILS_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 install(
-  TARGETS dynamic_voronoi
+  TARGETS planner_utils
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -61,14 +61,10 @@ ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
 ament_export_libraries(
-  dynamic_voronoi
+  planner_utils
 )
 ament_export_targets(
   export_${PROJECT_NAME}
-)
-
-ament_export_dependencies(
-  planner_utils
 )
 
 ament_package()
