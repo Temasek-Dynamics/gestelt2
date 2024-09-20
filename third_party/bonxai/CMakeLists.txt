@@ -15,7 +15,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-find_package(PCL REQUIRED COMPONENTS common io)
+find_package(PCL REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -27,13 +27,14 @@ add_library(bonxai
   src/probabilistic_map.cpp
 )
 add_library(bonxai::bonxai ALIAS bonxai)
-ament_target_dependencies(bonxai 
-	PCL
-  Eigen3)
 target_compile_features(bonxai PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(bonxai PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_link_libraries(bonxai
+  Eigen3::Eigen
+  ${PCL_LIBRARIES}
+)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.

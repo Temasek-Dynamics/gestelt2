@@ -8,24 +8,30 @@ if(NOT CMAKE_CXX_STANDARD)
 	set(CMAKE_CXX_STANDARD 17)
 endif()
 
-
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(PCL REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
-add_executable(fake_map src/fake_map.cpp)
-target_include_directories(fake_map PUBLIC
+add_executable(fake_map_publisher_node src/fake_map_publisher_node.cpp)
+ament_target_dependencies(fake_map_publisher_node 
+  pcl_conversions
+  sensor_msgs
+	rclcpp)
+target_include_directories(fake_map_publisher_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(fake_map PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(fake_map_publisher_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_libraries(fake_map_publisher_node
+  ${PCL_LIBRARIES}
+)
 
-install(TARGETS fake_map
+install(TARGETS fake_map_publisher_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

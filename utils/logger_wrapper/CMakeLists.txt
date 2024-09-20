@@ -23,9 +23,7 @@ find_package(rclcpp REQUIRED)
 
 add_library(logger_wrapper 
   src/logger_wrapper.cpp 
-  include/logger_wrapper/logger_wrapper.hpp
-  include/logger_wrapper/definitions.hpp
-  include/logger_wrapper/timer.hpp
+  src/timer.cpp 
 )
 ament_target_dependencies(logger_wrapper 
   rclcpp

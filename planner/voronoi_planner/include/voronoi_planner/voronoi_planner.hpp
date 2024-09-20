@@ -1,7 +1,6 @@
 #ifndef _VORONOI_PLANNER_HPP_
 #define _VORONOI_PLANNER_HPP_
 
-
 #include <Eigen/Eigen>
 
 #include <limits>
@@ -141,6 +140,9 @@ public:
 
   virtual ~VoronoiPlanner();
 
+  /* Initialize planner and map */
+  void init();
+
   void initParams();
 
   void initPubSubTimer();
@@ -206,34 +208,12 @@ private:
 
   /* Helper methods */
 
-  inline size_t map2Dto1DIdx(const int& width, const int& x, const int& y);
-
-  inline void map1Dto2DIdx(const int& idx, const int& width, int& x, int& y);
-
-  /* Convert from time [s] to space-time units */
-  long tToSpaceTimeUnits(const double& t);
-
-  /**
-   * @brief Round to nearest multiple 
-   * 
-   * @param num Number to be rounded
-   * @param mult Multiple
-   * @return int 
-   */
-  int roundToMultInt(const int& num, const int& mult);
-
-  // Convert from meters to centimeters
-  int mToCm(const double& val_m);
-
-  // Convert from centimeters to meters
-  double cmToM(const int& val_cm);
-
 private:
   /* Params */
   int drone_id_{-1};
 
-  std::string local_map_origin_;
-  std::string global_origin_;
+  std::string local_map_origin_;  // Frame ID of UAV's local map
+  std::string global_origin_;     // Global origin of all UAVs
 
   // Planning params
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
@@ -243,145 +223,99 @@ private:
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time
 
+  // For use when populating reservation table 
   double rsvn_tbl_inflation_{-1.0}; // [m] Inflation of cells in the reservation table
   int rsvn_tbl_window_size_{-1}; // [s] Time buffer in the reservation table
   int t_buffer_{-1}; // [space-time units] Time buffer
   int cells_inf_{-1}; // [voxels] Spatial buffer
 
-  global_planner::AStarParams astar_params_; 
-  global_planner::VoronoiParams voro_params_; 
+  global_planner::AStarParams astar_params_;  // a star planner parameters
+  global_planner::VoronoiParams voro_params_; // voronoi map parameters
 
-  /* Timers */
-	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	
-	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_;
+private:
+	/* Callback groups */
+	rclcpp::CallbackGroup::SharedPtr planning_cb_group_;
+	rclcpp::CallbackGroup::SharedPtr mapping_cb_group_;
+	rclcpp::CallbackGroup::SharedPtr others_cb_group_;
 
-  /* Publishers */
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr occ_map_pub_; // Publishes original occupancy grid
+  /**
+   * Periodically running timers
+   */
+	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	    // Timer for planning front end path
+	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_; // Timer for generating discretized voronoi diagram
 
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr voro_occ_grid_pub_; // Publishes voronoi map occupancy grid
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
+  /**
+   * ROS Publishers
+   */
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
 
   // Planning publishers
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_pub_; // Publish front-end plans
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
 
+  // Visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr start_pt_pub_, goal_pt_pub_; // start and goal visualization publisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
 
-  /* Subscribers */
+  /**
+   * ROS Subscribers
+   */
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
 	rclcpp::Subscription<gestelt_interfaces::msg::Goals>::SharedPtr goals_sub_;              // Goal subscriber
 	rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_sub_;  // Subscription to broadcasted front end plan from other agents
 
 	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
 
+private:
+  /* Stored sensor data */
+  Eigen::Vector3d cur_pos_, cur_vel_;   // [LOCAL FRAME] current state
+
   /* Mutexes*/
   std::mutex rsvn_tbl_mtx_;
   std::mutex voro_map_mtx_;
   std::mutex cur_state_mtx_;
 
+  /* Flags*/
+  bool init_voro_maps_{false}; // flag to indicate if voronoi map is initialized
+  bool plan_complete_{false}; // flag to indicate a plan has been completed
+
   /* Mapping */
   std::shared_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
-
   voxel_map::BoolMap3D bool_map_3d_; // Bool map slices 
+  std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
 
-  /* Data structs */
+  /* Planner  */
   std::unique_ptr<global_planner::SpaceTimeAStar> fe_planner_; // Front end planner
-
-  // map{drone_id : unordered_set{(x,y,z,t)}}
-  std::map<int, RsvnTable> rsvn_tbl_; // Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
+  std::map<int, RsvnTbl> rsvn_tbl_; // map{drone_id : unordered_set{(x,y,z,t)}}. Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
 
   Waypoint waypoints_; // Goal waypoint handler object
-
-  std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
 
   std::vector<Eigen::Vector3d> front_end_path_; // Front-end Space path in space coordinates (x,y,z) in world frame
   std::vector<Eigen::Vector4d> space_time_path_; // Front-end Space time  path in space-time coordinates (x,y,z,t) in world frame
   std::vector<Eigen::Vector3d> smoothed_path_; // Front end smoothed path in space coordinates (x,y,z) in world frame
   std::vector<Eigen::Vector4d> smoothed_path_t_; // Front end smoothed space-time path in space coordinates (x,y,z) in world frame
 
-  Eigen::Vector3d cur_pos_, cur_vel_;   // [LOCAL FRAME] current state
-
-  /* Flags*/
-  bool init_voro_maps_{false}; // flag to indicate if voronoi map is initialized
-  bool plan_complete_{false}; // flag to indicate a plan has been completed
-
-  /* Debugging */
-  logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"};
-  logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"};
+  /* Debugging Use */
+  logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Timer to measure runtime
+  logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Timer to measure runtime
 
   /* Visualization */
-  std::shared_ptr<VizHelper> viz_helper_;
+  std::shared_ptr<VizHelper> viz_helper_; // Class to aid visualization
 
   /* Logging */
-	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
+	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_; // Class for logging
 
 }; // class VoronoiPlanner
 
-bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
+inline bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
 {
   return (pos - goal).squaredNorm() < sqr_goal_tol_;
 }
 
-
-/* Convert from time [s] to space-time units */
-long VoronoiPlanner::tToSpaceTimeUnits(const double& t){
-  return std::lround(t / t_unit_);
-}
-
-/**
- * @brief Round to nearest multiple 
- * 
- * @param num Number to be rounded
- * @param mult Multiple
- * @return int 
- */
-int VoronoiPlanner::roundToMultInt(const int& num, const int& mult)
-{
-  if (mult == 0){
-    return num;
-  }
-
-  if (num > bool_map_3d_.max_height_cm){
-    return bool_map_3d_.max_height_cm;
-  }
-
-  if (num < bool_map_3d_.min_height_cm){
-    return bool_map_3d_.min_height_cm;
-  }
-
-  int rem = (int)num % mult;
-  if (rem == 0){
-    return num;
-  }
-
-  return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
-}
-
-// Convert from meters to centimeters
-int VoronoiPlanner::mToCm(const double& val_m){
-  return (int) (val_m * 100.0);
-}
-
-// Convert from centimeters to meters
-double VoronoiPlanner::cmToM(const int& val_cm) {
-  return ((double) val_cm)/100.0;  
-}
-
-inline size_t VoronoiPlanner::map2Dto1DIdx(const int& width, const int& x, const int& y)
-{
-  return width * y + x;
-}
-
-inline void VoronoiPlanner::map1Dto2DIdx(const int& idx, const int& width, int& x, int& y)
-{
-  y = idx/width;
-  x = idx - (y * width);
-}
-
-
-void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
+inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                           const double& origin_x, const double& origin_y, 
                           nav_msgs::msg::OccupancyGrid& occ_grid)
 {
@@ -402,6 +336,15 @@ void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi&
 
   occ_grid.data.resize(occ_grid.info.width * occ_grid.info.height);
 
+  auto map2Dto1DIdx = [&](const int& width, const int& x, const int& y){
+    return width * y + x;
+  };
+
+  // auto map1Dto2DIdx = [&](const int& idx, const int& width, int& x, int& y){
+  //   y = idx / width;
+  //   x = idx - (y * width);
+  // };
+
   for(int j = 0; j < dyn_voro.getSizeY(); j++)
   {
     for (int i = 0; i < dyn_voro.getSizeX(); i++)
@@ -412,7 +355,7 @@ void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi&
   }
 }
 
-void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
+inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                     const double& origin_x, const double& origin_y,
                     nav_msgs::msg::OccupancyGrid& occ_grid)
 {
@@ -433,6 +376,10 @@ void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_
 
   occ_grid.data.resize(occ_grid.info.width * occ_grid.info.height);
 
+  auto map2Dto1DIdx = [&](const int& width, const int& x, const int& y){
+    return width * y + x;
+  };
+
   for(int j = 0; j < dyn_voro.getSizeY(); j++)
   {
     for (int i = 0; i < dyn_voro.getSizeX(); i++)
@@ -448,20 +395,20 @@ void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_
 
 } // namespace navigator
 
-  // void realignBoolMap(bool ***map, bool ***map_og, int& size_x, int& size_y)
-  // {
-  //   for (int x=0; x<size_x; x++) {
-  //     (*map)[x] = new bool[size_y];
-  //   }
+// void realignBoolMap(bool ***map, bool ***map_og, int& size_x, int& size_y)
+// {
+//   for (int x=0; x<size_x; x++) {
+//     (*map)[x] = new bool[size_y];
+//   }
 
-  //   for(int j = 0; j < size_y; j++)
-  //   {
-  //     for (int i = 0; i < size_x; i++)
-  //     {
-  //       (*map)[i][j] = (*map_og)[i][size_y-j-1];
-  //     }
-  //   }
-  // }
+//   for(int j = 0; j < size_y; j++)
+//   {
+//     for (int i = 0; i < size_x; i++)
+//     {
+//       (*map)[i][j] = (*map_og)[i][size_y-j-1];
+//     }
+//   }
+// }
 
 #endif // _VORONOI_PLANNER_HPP_
 

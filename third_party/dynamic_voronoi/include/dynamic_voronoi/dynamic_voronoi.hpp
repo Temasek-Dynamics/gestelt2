@@ -31,7 +31,6 @@ public:
     double z_separation_cm{0.0};
   }; // struct DynamicVoronoiParams
 
-
 public:
   
   DynamicVoronoi();
@@ -86,17 +85,13 @@ public:
   //! returns the obstacle distance at the specified location
   float getDistance( int x, int y );
 
-  //! returns the horizontal size of the workspace/map
-  unsigned int getSizeX() {return sizeX;}
-  //! returns the vertical size of the workspace/map
-  unsigned int getSizeY() {return sizeY;}
 
 private:  
   struct dataCell {
     float dist;
     int sqdist;
     char voronoi;   // voronoi status
-    char queueing;
+    char queueing;  
     int obstX;  // Position to nearest obstacle
     int obstY;  // Position to nearest obstacle
     bool needsRaise;
@@ -109,26 +104,39 @@ private:
     voronoiPrune=-1, 
     free=0, 
     occupied=1} State;
-  typedef enum {fwNotQueued=1, fwQueued=2, fwProcessed=3, bwQueued=4, bwProcessed=1} QueueingState;
-  typedef enum {invalidObstData = SHRT_MAX/2} ObstDataState;
-  typedef enum {pruned, keep, retry} markerMatchResult;
+  typedef enum {
+    fwNotQueued=1, 
+    fwQueued=2, 
+    fwProcessed=3, 
+    bwQueued=4, 
+    bwProcessed=1} QueueingState;
+  typedef enum {
+    invalidObstData = SHRT_MAX/2} ObstDataState;
+  typedef enum {
+    pruned, 
+    keep, 
+    retry} 
+    markerMatchResult;
 
   // methods
-  inline void checkVoro(int x, int y, int nx, int ny, dataCell& c, dataCell& nc);
+  void checkVoro(int x, int y, int nx, int ny, dataCell& c, dataCell& nc);
   void recheckVoro();
   void commitAndColorize(bool updateRealDist=true);
-  inline void reviveVoroNeighbors(int &x, int &y);
+  void reviveVoroNeighbors(int &x, int &y);
 
-  inline bool isOccupied(int &x, int &y, dataCell &c);
-  inline markerMatchResult markerMatch(int x, int y);
-  inline bool markerMatchAlternative(int x, int y);
-  inline int getVoronoiPruneValence(int x, int y);
+  bool isOccupied(int &x, int &y, dataCell &c);
+  markerMatchResult markerMatch(int x, int y);
+  bool markerMatchAlternative(int x, int y);
+  int getVoronoiPruneValence(int x, int y);
 
 /* Exposed methods used to interface with external planners */
 public:
 
   /* Mapping methods */
+
+  // Set obstacle at position (x,y)
   void setObstacle(int x, int y);
+  // Remove obstacle at position (x,y)
   void removeObstacle(int x, int y);
 
   /* Checking methods */
@@ -145,24 +153,37 @@ public:
   // Convert from position to index
   void idxToPos(const IntPoint& grid_pos, DblPoint& map_pos);
 
+  // Get x origin of map
   double getOriginX() const {
     return params_.origin_x;
   }
 
+  // Get y origin of map
   double getOriginY() const {
     return params_.origin_y;
   }
 
+  // Get z origin of map
   double getOriginZ() const {
     return params_.origin_z;
   }
 
-  double getSizeX() const {
-    return sizeX;
+  // Get map resolution
+  double getRes() const {
+    return params_.res;
   }
 
-  double getSizeY() const {
+  //! returns the horizontal size of the workspace/map
+  int getSizeX() const {
+    return sizeX;
+  }
+  //! returns the vertical size of the workspace/map
+  int getSizeY() const{
     return sizeY;
+  }
+
+  dataCell** getData() const {
+    return data;
   }
 
   // Top and bottom voronoi planes
@@ -173,15 +194,7 @@ public:
   DynamicVoronoiParams params_;
 
 private:
-  // Parameters
-  int padding;
-  double doubleThreshold;
-
-  double sqrt2;
-
-  //  dataCell** getData(){ return data; }
   int** alternativeDiagram;
-
 
   // queues
   BucketPrioQueue<IntPoint> open;
@@ -193,14 +206,10 @@ private:
   std::vector<IntPoint> lastObstacles;
 
   // maps
-  bool flip_y_{false};
-  int sizeY;
-  int sizeX;
-  dataCell** data;
-  bool allocatedGridMap;
-
-  // Data structure
-  bool init_kd_tree_{false};
+  bool flip_y_{false}; // Whether to flip the input map about y-axis
+  int sizeY;  // Size of map along y
+  int sizeX;  // Size of map along x
+  dataCell** data;  // map data
 
 }; // end class DynamicVoronoi
 

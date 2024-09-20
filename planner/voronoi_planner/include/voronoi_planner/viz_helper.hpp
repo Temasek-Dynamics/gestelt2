@@ -18,7 +18,7 @@ namespace navigator{
 
     /*Helper methods for publishing to RVIZ for visualization */
 
-    inline void pubStartGoalPts(
+    void pubStartGoalPts(
       const Eigen::Vector3d& map_start, 
       const Eigen::Vector3d& map_goal, 
       const std::string& frame_id, 
@@ -66,7 +66,7 @@ namespace navigator{
       publisher2->publish(goal_sphere);
     }
 
-    inline void pubSpaceTimePath(const std::vector<Eigen::Vector4d>& path, 
+    void pubSpaceTimePath(const std::vector<Eigen::Vector4d>& path, 
                                     const std::string& frame_id, 
                                     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr  publisher) 
     {
@@ -88,6 +88,8 @@ namespace navigator{
       cube.scale.y = radius;
       cube.scale.z = radius;
 
+      rclcpp::Rate loop_rate(200);
+
       for (size_t i = 0; i < path.size(); i++)
       {
         cube.id = i; 
@@ -105,11 +107,11 @@ namespace navigator{
 
         publisher->publish(cube);
 
-        // ros::Duration(0.005).sleep();
+        loop_rate.sleep();
       }
     }
 
-    inline void pubFrontEndPath(const std::vector<Eigen::Vector3d>& path, 
+    void pubFrontEndPath(const std::vector<Eigen::Vector3d>& path, 
                                     const std::string& frame_id, 
                                     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr  publisher) 
     {
@@ -210,7 +212,7 @@ namespace navigator{
       publisher->publish(path_line_strip);
     }
 
-    inline void pubVoroVertices(const std::vector<Eigen::Vector3d>& vor_verts, 
+    void pubVoroVertices(const std::vector<Eigen::Vector3d>& vor_verts, 
                                 const std::string& frame_id, 
                                 rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr  publisher)
     {
@@ -248,7 +250,7 @@ namespace navigator{
       publisher->publish(vertices);
     }
 
-    inline void pubFrontEndClosedList(const std::vector<Eigen::Vector3d>& pts, 
+    void pubFrontEndClosedList(const std::vector<Eigen::Vector3d>& pts, 
                                   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr  publisher, 
                                   const std::string& frame_id = "map")
     {

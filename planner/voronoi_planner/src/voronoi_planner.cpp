@@ -4,11 +4,21 @@ namespace navigator
 {
 
 VoronoiPlanner::VoronoiPlanner()
+: Node("voronoi_planner")
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
-	logger_->logInfo("Initializing");
-  // Initialize Params
+
   initParams();
+
+	// Create callback groups
+  planning_cb_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+  mapping_cb_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+  others_cb_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::Reentrant);
+
+  initPubSubTimer();
 
   tm_front_end_plan_.updateID(drone_id_);
   tm_voro_map_init_.updateID(drone_id_);
@@ -20,104 +30,110 @@ VoronoiPlanner::VoronoiPlanner()
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
   astar_params_.t_unit = t_unit_;
 
+  // Initialize visualization helper
+  viz_helper_ = std::make_shared<VizHelper>(this->get_clock());
+}
+
+void VoronoiPlanner::init()
+{
+  // Initialize planner
   fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_, this->get_clock());
 
   // Initialize map
-  voxel_map_ = std::make_shared<voxel_map::VoxelMap>();
-  voxel_map_->initMapROS();
-
-  // Initialize visualization stuff
-  viz_helper_ = std::make_shared<VizHelper>(this->get_clock());
+  voxel_map_ = std::make_shared<voxel_map::VoxelMap>(this->shared_from_this());
 
 	logger_->logInfo("Initialized");
-}
+} 
 
 VoronoiPlanner::~VoronoiPlanner()
-{
-
-}
-
+{}
 
 void VoronoiPlanner::initPubSubTimer(){
+  auto others_sub_opt = rclcpp::SubscriptionOptions();
+  others_sub_opt.callback_group = others_cb_group_;
+
   /* Publishers */
 
-	occ_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", rclcpp::SensorDataQoS());
-
   // Map publishers
-  occ_map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("voro/occ_map");
-  voro_occ_grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("voro/voro_map");
-  voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph");
+  occ_map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("voro/occ_map", 10);
+  voro_occ_grid_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("voro/voro_map", 10);
+  voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph", 10);
 
   // Planner publishers
-  fe_plan_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan");
-  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast");
+  fe_plan_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan", 10);
+  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", rclcpp::SensorDataQoS());
 
   // Visualization
-  start_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_start");
-  goal_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_goal");
-  fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/closed_list");
-  fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz");
+  start_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_start", 10);
+  goal_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_goal", 10);
+  fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/closed_list", 10);
+  fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz", 10);
 
   /* Subscribers */
+  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
 
-  fe_plan_broadcast_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1));
+  fe_plan_broadcast_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
+    "/fe_plan/broadcast", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), others_sub_opt);
 
-  plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>("plan_request_dbg", std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
-  goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>("goals", std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
-
-  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", std::bind(&VoronoiPlanner::odomSubCB, this, _1));
+  plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
+    "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
+  goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>(
+    "goals", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
 
   /* Timers */
-
 	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
-                                        std::bind(&VoronoiPlanner::planFETimerCB, this));
+                                        std::bind(&VoronoiPlanner::planFETimerCB, this), 
+                                        planning_cb_group_);
 
 	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
-                                        std::bind(&VoronoiPlanner::genVoroMapTimerCB, this));
+                                        std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
+                                        mapping_cb_group_);
 }
 
 void VoronoiPlanner::initParams()
 {
-	/**
-	 * Declare params
-	 */
-  this->declare_parameter("drone_id", -1);
+  std::string param_ns = "navigator";
+  
+  this->declare_parameter(param_ns+".drone_id", -1);
 
-  this->declare_parameter("planner/goal_tolerance", 0.1);
-  this->declare_parameter("planner/verbose_print", false);
-  this->declare_parameter("planner/planner_frequency", 10.0);
-  this->declare_parameter("planner/generate_voronoi_frequency", 10.0);
-  this->declare_parameter("planner/plan_once", false);
-  this->declare_parameter("planner/t_unit", 0.1);
+  this->declare_parameter(param_ns+".planner_frequency", 10.0);
+  this->declare_parameter(param_ns+".generate_voronoi_frequency", 10.0);
 
-  this->declare_parameter("reservation_table/inflation", 0.3);
-  this->declare_parameter("reservation_table/time_buffer", 0.5);
-  this->declare_parameter("reservation_table/window_size", -1);
+  this->declare_parameter(param_ns+".planner.goal_tolerance", 0.1);
+  this->declare_parameter(param_ns+".planner.verbose_print", false);
+  this->declare_parameter(param_ns+".planner.plan_once", false);
+  this->declare_parameter(param_ns+".planner.t_unit", 0.1);
 
-  this->declare_parameter("local_map_origin", "local_map_origin");
-  this->declare_parameter("global_origin", "world");
+  this->declare_parameter(param_ns+".reservation_table.inflation", 0.3);
+  this->declare_parameter(param_ns+".reservation_table.time_buffer", 0.5);
+  this->declare_parameter(param_ns+".reservation_table.window_size", -1);
+
+  this->declare_parameter(param_ns+".local_map_origin", "local_map_origin");
+  this->declare_parameter(param_ns+".global_origin", "world");
 
 	/**
 	 * Get params
 	 */
 
-  drone_id_ = this->get_parameter("drone_id");
+  drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
 
-  double goal_tol = this->get_parameter("planner/goal_tolerance").as_double();
+  fe_planner_freq_ = this->get_parameter(param_ns+".planner_frequency").as_double();
+  gen_voro_map_freq_ = this->get_parameter(param_ns+".generate_voronoi_frequency").as_double();
+
+  double goal_tol = this->get_parameter(param_ns+".planner.goal_tolerance").as_double();
   sqr_goal_tol_ = goal_tol * goal_tol;
-  verbose_print_ = this->get_parameter("planner/verbose_print").as_bool();
-  fe_planner_freq_ = this->get_parameter("planner/planner_frequency").as_double();
-  gen_voro_map_freq_ = this->get_parameter("planner/generate_voronoi_frequency").as_double();
-  plan_once_ = this->get_parameter("planner/plan_once").as_bool();
-  t_unit_ = this->get_parameter("planner/t_unit").as_double();
+  verbose_print_ = this->get_parameter(param_ns+".planner.verbose_print").as_bool();
+  plan_once_ = this->get_parameter(param_ns+".planner.plan_once").as_bool();
+  t_unit_ = this->get_parameter(param_ns+".planner.t_unit").as_double();
 
-  rsvn_tbl_inflation_ = this->get_parameter("reservation_table/inflation").as_double();
-  double rsvn_tbl_t_buffer = this->get_parameter("reservation_table/time_buffer").as_double();
-  rsvn_tbl_window_size_ = this->get_parameter("reservation_table/window_size").as_int();
+  rsvn_tbl_inflation_ = this->get_parameter(param_ns+".reservation_table.inflation").as_double();
+  rsvn_tbl_window_size_ = this->get_parameter(param_ns+".reservation_table.window_size").as_int();
+  double rsvn_tbl_t_buffer = this->get_parameter(param_ns+".reservation_table.time_buffer").as_double();
   t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer/t_unit_);  // [space-time units] for time buffer
 
-  local_map_origin_ = this->get_parameter("d" +std::to_string(drone_id_) + "local_map_origin").as_string();
-  global_origin_ = this->get_parameter("global_origin").as_string();
+  local_map_origin_ = this->get_parameter(param_ns+".local_map_origin").as_string();
+  global_origin_ = this->get_parameter(param_ns+".global_origin").as_string();
 }
 
 /* Core methods */
@@ -141,8 +157,9 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     return true;
   };
 
+  rclcpp::Rate loop_rate(1000);
   while (!isAllPrioPlansRcv()){
-    ros::Duration(0.001).sleep();  // sleep for 1 ms
+    loop_rate.sleep();
   }
 
   // Assign voronoi map
@@ -204,7 +221,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   fe_plan_msg.header.stamp = this->get_clock()->now();
 
   for (size_t i = 0; i < space_time_path_.size(); i++){
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
     pose.position.x = space_time_path_[i](0);
     pose.position.y = space_time_path_[i](1);
     pose.position.z = space_time_path_[i](2);
@@ -284,7 +301,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     double z_m = cmToM(bool_map.first);
 
     // Create DynamicVoronoi object if it does not exist
-    DynamicVoronoi::DynamicVoronoiParams dyn_voro_params;
+    dynamic_voronoi::DynamicVoronoi::DynamicVoronoiParams dyn_voro_params;
     dyn_voro_params.res = bool_map_3d_.resolution;
     dyn_voro_params.origin_x = 0.0;
     dyn_voro_params.origin_y = 0.0;
@@ -304,25 +321,22 @@ void VoronoiPlanner::genVoroMapTimerCB()
     // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
     auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){
       std::vector<Eigen::Vector3d> voronoi_vertices;
-      if (dyn_voro->data != nullptr){  
-        for (int x=0; x<sizeX; x++) {
-          for (int y=0; y<sizeY; y++) {
+      if (dyn_voro->getData() != nullptr){  
+        for (int x=0; x < dyn_voro->getSizeX(); x++) {
+          for (int y=0; y < dyn_voro->getSizeY(); y++) {
             if (dyn_voro->isVoronoiVertex(x, y)){
-              voronoi_vertices.push_back(Eigen::Vector3d{x*params_.res, y*params_.res, params_.origin_z});
+              voronoi_vertices.push_back(Eigen::Vector3d{ x * dyn_voro->getRes(), 
+                                                          y * dyn_voro->getRes(), 
+                                                          dyn_voro->getOriginZ()});
             }
           }
         }
       }
 
-      return voronoi_vertices
+      return voronoi_vertices;
     };
-
     // voro_verts_cur_layer: voronoi vertices at current layer
     std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
-
-    // std::vector<Eigen::Vector3d> voro_verts_cur_layer = dyn_voro_arr_[z_cm]->getVoronoiVertices();
-
-
     voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
 
     nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
@@ -385,7 +399,7 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
 
   // Clear reservation table
-  rsvn_tbl_[msg->agent_id] = RsvnTable(msg->t_plan_start);
+  rsvn_tbl_[msg->agent_id] = RsvnTbl(msg->t_plan_start);
   
   // Add all points on path (with inflation) to reservation table
   cells_inf_ = (int) std::lround(rsvn_tbl_inflation_/bool_map_3d_.resolution); // Number of cells used for inflation
@@ -398,7 +412,10 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
     // get map position relative to local origin
     DblPoint map_2d_pos(msg->plan[i].position.x - bool_map_3d_.origin(0), 
                         msg->plan[i].position.y - bool_map_3d_.origin(1));
-    int map_z_cm =roundToMultInt(mToCm(msg->plan[i].position.z), bool_map_3d_.z_separation_cm);
+    int map_z_cm =roundToMultInt(mToCm(msg->plan[i].position.z), 
+                                  bool_map_3d_.z_separation_cm,
+                                  bool_map_3d_.min_height_cm,
+                                  bool_map_3d_.max_height_cm);
     {
       std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
       dyn_voro_arr_[map_z_cm]->posToIdx(map_2d_pos, grid_pos);

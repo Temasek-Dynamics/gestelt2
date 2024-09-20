@@ -5,13 +5,10 @@ namespace voxel_map
 
 /** Initialization methods */
 
-VoxelMap::~VoxelMap(){
-}
-
-void VoxelMap::init()
-{  
-	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
-	logger_->logInfo("Initializing");
+VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node) 
+: node_(node)
+{
+	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(node_->get_logger(), node_->get_clock());
 
   initParams();
 
@@ -31,15 +28,18 @@ void VoxelMap::init()
   // //   mp_.local_map_size_(0), mp_.local_map_size_(1), mp_.local_map_size_(2)));
   // logger_->logInfo(strFmt("Resolution %f m, Inflation %f m",  
     // mp_.resolution_, mp_.inflation_));
-	logger_->logInfo("Initialized");
+	logger_->logInfo("Initialized voxel_map");
+}
+
+VoxelMap::~VoxelMap(){
 }
 
 void VoxelMap::initPubSubTimer()
 {
   /* Initialize Subscribers */
   if (!dbg_input_entire_map_){
-    cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(this, "cloud", rmw_qos_profile_sensor_data);
-    odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(this, "odom", rmw_qos_profile_sensor_data);
+    cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(node_, "cloud", rmw_qos_profile_sensor_data);
+    odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(node_, "odom", rmw_qos_profile_sensor_data);
 
     sync_cloud_odom_ = std::make_shared<message_filters::Synchronizer<SyncPolicyCloudOdom>>(
         SyncPolicyCloudOdom(5), *cloud_sub_, *odom_sub_);
@@ -47,15 +47,14 @@ void VoxelMap::initPubSubTimer()
     sync_cloud_odom_->setAgePenalty(0.50);
   }
 
-
   /* Initialize Publishers */
-	occ_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", rclcpp::SensorDataQoS());
-	// slice_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("slice", rclcpp::SensorDataQoS());
-	local_map_bounds_pub_ = this->create_publisher<geometry_msgs::msg::PolygonStamped>("local_map/bounds", rclcpp::SensorDataQoS());
+	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", rclcpp::SensorDataQoS());
+	// slice_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("slice", rclcpp::SensorDataQoS());
+	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>("local_map/bounds", rclcpp::SensorDataQoS());
 
   /* Initialize ROS Timers */
-	viz_map_timer_ = this->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, std::bind(&VoxelMap::vizMapTimerCB, this));
-	update_local_map_timer_ = this->create_wall_timer((1.0/update_local_map_freq_) *1000ms, std::bind(&VoxelMap::updateLocalMapTimerCB, this));
+	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, std::bind(&VoxelMap::vizMapTimerCB, this));
+	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, std::bind(&VoxelMap::updateLocalMapTimerCB, this));
 
   if (dbg_input_entire_map_){
     logger_->logInfo(strFmt("DEBUG: INPUT ENTIRE MAP"));
@@ -63,8 +62,14 @@ void VoxelMap::initPubSubTimer()
     // Wait for entire point cloud map
 		sensor_msgs::msg::PointCloud2::UniquePtr pc_msg;
     logger_->logInfo(strFmt("Waiting for point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
-    bool got_pcd = rclcpp::wait_for_message(*pc_msg, this->shared_from_this(),
-                                            entire_pcd_map_topic_, std::chrono::seconds(10));
+
+    auto fake_map_sub = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+      entire_pcd_map_topic_, 1, [](const std::shared_ptr<const sensor_msgs::msg::PointCloud2>) {});
+
+    //https://github.com/ros2/rclcpp/issues/1864
+
+    bool got_pcd = rclcpp::wait_for_message(*pc_msg, fake_map_sub, node_->get_node_options().context(), 10s);
+    logger_->logInfo(strFmt("After point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
 
     if (!got_pcd){
 			logger_->logError(strFmt("No point cloud topic %s received. Shutting down.",  entire_pcd_map_topic_.c_str()));
@@ -75,118 +80,121 @@ void VoxelMap::initPubSubTimer()
 
   if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
     // Publisher for collision visualizations
-	  // collision_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("collision_viz");
-	  check_collisions_timer_ = this->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
+	  // collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("collision_viz");
+	  check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
   }
 
 }
 
 void VoxelMap::initParams()
 {
-	/**
-	 * Declare params
-	 */
+  std::string param_ns = "voxel_map";
 
   /* Map parameters */
-  this->declare_parameter("verbose_print", false);
+  node_->declare_parameter(param_ns+".verbose_print", false);
 
-  this->declare_parameter("debug_input_entire_map", false);
-  this->declare_parameter("entire_pcd_map_topic", "/fake_map");
+  node_->declare_parameter(param_ns+".debug_input_entire_map", false);
+  node_->declare_parameter(param_ns+".entire_pcd_map_topic", "/fake_map");
 
-  this->declare_parameter("map_slicing/min_height_cm", -1);
-  this->declare_parameter("map_slicing/max_height_cm",  -1);
-  this->declare_parameter("map_slicing/z_separation_cm",  -1);
+  node_->declare_parameter(param_ns+".map_slicing.min_height_cm", -1);
+  node_->declare_parameter(param_ns+".map_slicing.max_height_cm",  -1);
+  node_->declare_parameter(param_ns+".map_slicing.z_separation_cm",  -1);
+
+  auto cmToM = [&](const int& val_cm){ 
+    /* Convert from units of centimeters to meters*/
+    return ((double) val_cm)/100.0;  
+  };
+
   bool_map_3d_.z_separation_m = cmToM(bool_map_3d_.z_separation_cm); 
   bool_map_3d_.min_height_m = cmToM(bool_map_3d_.min_height_cm);  
   bool_map_3d_.max_height_m = cmToM(bool_map_3d_.max_height_cm);   
 
-  this->declare_parameter("global_map/size_x", -1.0);
-  this->declare_parameter("global_map/size_y", -1.0);
-  this->declare_parameter("global_map/size_z", -1.0);
+  node_->declare_parameter(param_ns+".global_map.size_x", -1.0);
+  node_->declare_parameter(param_ns+".global_map.size_y", -1.0);
+  node_->declare_parameter(param_ns+".global_map.size_z", -1.0);
 
-  this->declare_parameter("local_map/size_x", -1.0);
-  this->declare_parameter("local_map/size_y", -1.0);
-  this->declare_parameter("local_map/size_z", -1.0);
-  this->declare_parameter("local_map/update_local_map_frequency",  -1.0);
-  this->declare_parameter("local_map/viz_map_frequency",  -1.0);
-  this->declare_parameter("local_map/check_collision_frequency",  -1.0);
+  node_->declare_parameter(param_ns+".local_map.size_x", -1.0);
+  node_->declare_parameter(param_ns+".local_map.size_y", -1.0);
+  node_->declare_parameter(param_ns+".local_map.size_z", -1.0);
+  node_->declare_parameter(param_ns+".local_map.update_local_map_frequency",  -1.0);
+  node_->declare_parameter(param_ns+".local_map.viz_map_frequency",  -1.0);
 
-  this->declare_parameter("occ_map/resolution", -1.0);
-  this->declare_parameter("occ_map/inflation", -1.0);
-  this->declare_parameter("occ_map/max_range", -1.0);
-  this->declare_parameter("occ_map/ground_height", 0.0);
+  node_->declare_parameter(param_ns+".occ_map.resolution", -1.0);
+  node_->declare_parameter(param_ns+".occ_map.inflation", -1.0);
+  node_->declare_parameter(param_ns+".occ_map.max_range", -1.0);
+  node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
   mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
   /* Frame IDs */
-  this->declare_parameter("cam_frame", std::string("cam_link"));
-  this->declare_parameter("global_frame", std::string("world"));
-  this->declare_parameter("uav_origin_frame", std::string("map"));
+  node_->declare_parameter(param_ns+".cam_frame", std::string("cam_link"));
+  node_->declare_parameter(param_ns+".global_frame", std::string("world"));
+  node_->declare_parameter(param_ns+".uav_origin_frame", std::string("map"));
 
   /* Camera extrinsic parameters  */
-  this->declare_parameter("camera_to_body/roll",  0.0);
-  this->declare_parameter("camera_to_body/pitch", 0.0);
-  this->declare_parameter("camera_to_body/yaw",   0.0);
-  this->declare_parameter("camera_to_body/t_x", 0.0);
-  this->declare_parameter("camera_to_body/t_y", 0.0);
-  this->declare_parameter("camera_to_body/t_z", 0.0);
+  node_->declare_parameter(param_ns+".camera_to_body.roll",  0.0);
+  node_->declare_parameter(param_ns+".camera_to_body.pitch", 0.0);
+  node_->declare_parameter(param_ns+".camera_to_body.yaw",   0.0);
+  node_->declare_parameter(param_ns+".camera_to_body.t_x", 0.0);
+  node_->declare_parameter(param_ns+".camera_to_body.t_y", 0.0);
+  node_->declare_parameter(param_ns+".camera_to_body.t_z", 0.0);
 
   /* Collision checking*/
-  this->declare_parameter("collision_check/enable",  false);
-  this->declare_parameter("collision_check/warn_radius",  -1.0); 
-  this->declare_parameter("collision_check/fatal_radius",  -1.0); 
+  node_->declare_parameter(param_ns+".collision_check.enable",  false);
+  node_->declare_parameter(param_ns+".collision_check.warn_radius",  -1.0); 
+  node_->declare_parameter(param_ns+".collision_check.fatal_radius",  -1.0); 
+  node_->declare_parameter(param_ns+".collision_check.check_collision_frequency",  -1.0); 
 
 	/**
 	 * Get params
 	 */
 
   /* Map parameters */
-  verbose_print_ = this->get_parameter("verbose_print").as_bool();
+  verbose_print_ = node_->get_parameter(param_ns+".verbose_print").as_bool();
 
-  dbg_input_entire_map_ = this->get_parameter("debug_input_entire_map").as_bool();
-  entire_pcd_map_topic_ = this->get_parameter("entire_pcd_map_topic").as_string();
+  dbg_input_entire_map_ = node_->get_parameter(param_ns+".debug_input_entire_map").as_bool();
+  entire_pcd_map_topic_ = node_->get_parameter(param_ns+".entire_pcd_map_topic").as_string();
 
-  bool_map_3d_.min_height_cm = this->get_parameter("map_slicing/min_height_cm").as_int();
-  bool_map_3d_.max_height_cm = this->get_parameter("map_slicing/max_height_cm").as_int();
-  bool_map_3d_.z_separation_cm = this->get_parameter("map_slicing/z_separation_cm").as_int();
+  bool_map_3d_.min_height_cm = node_->get_parameter(param_ns+".map_slicing.min_height_cm").as_int();
+  bool_map_3d_.max_height_cm = node_->get_parameter(param_ns+".map_slicing.max_height_cm").as_int();
+  bool_map_3d_.z_separation_cm = node_->get_parameter(param_ns+".map_slicing.z_separation_cm").as_int();
   bool_map_3d_.z_separation_m = cmToM(bool_map_3d_.z_separation_cm); 
   bool_map_3d_.min_height_m = cmToM(bool_map_3d_.min_height_cm);  
   bool_map_3d_.max_height_m = cmToM(bool_map_3d_.max_height_cm);   
 
-  mp_.global_map_size_(0) = this->get_parameter("global_map/size_x").as_double();
-  mp_.global_map_size_(1) = this->get_parameter("global_map/size_y").as_double();
-  mp_.global_map_size_(2) = this->get_parameter("global_map/size_z").as_double();
+  mp_.global_map_size_(0) = node_->get_parameter(param_ns+".global_map.size_x").as_double();
+  mp_.global_map_size_(1) = node_->get_parameter(param_ns+".global_map.size_y").as_double();
+  mp_.global_map_size_(2) = node_->get_parameter(param_ns+".global_map.size_z").as_double();
 
-  mp_.local_map_size_(0) = this->get_parameter("local_map/size_x").as_double();
-  mp_.local_map_size_(1) = this->get_parameter("local_map/size_y").as_double();
-  mp_.local_map_size_(2) = this->get_parameter("local_map/size_z").as_double();
+  mp_.local_map_size_(0) = node_->get_parameter(param_ns+".local_map.size_x").as_double();
+  mp_.local_map_size_(1) = node_->get_parameter(param_ns+".local_map.size_y").as_double();
+  mp_.local_map_size_(2) = node_->get_parameter(param_ns+".local_map.size_z").as_double();
+  update_local_map_freq_ = node_->get_parameter(param_ns+".local_map.update_local_map_frequency").as_double();
+  viz_occ_map_freq_ = node_->get_parameter(param_ns+".local_map.viz_map_frequency").as_double();
 
-  update_local_map_freq_ = this->get_parameter("local_map/update_local_map_frequency").as_double();
-  viz_occ_map_freq_ = this->get_parameter("local_map/viz_map_frequency").as_double();
-
-  mp_.resolution_ = this->get_parameter("occ_map/resolution").as_double();
-  mp_.inflation_ = this->get_parameter("occ_map/inflation").as_double();
-  mp_.max_range = this->get_parameter("occ_map/max_range").as_double();
-  mp_.ground_height_ = this->get_parameter("occ_map/ground_height").as_double();
+  mp_.resolution_ = node_->get_parameter(param_ns+".occ_map.resolution").as_double();
+  mp_.inflation_ = node_->get_parameter(param_ns+".occ_map.inflation").as_double();
+  mp_.max_range = node_->get_parameter(param_ns+".occ_map.max_range").as_double();
+  mp_.ground_height_ = node_->get_parameter(param_ns+".occ_map.ground_height").as_double();
   mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
   /* Frame IDs */
-  mp_.sensor_frame_ = this->get_parameter("cam_frame").as_string();
-  mp_.global_frame_ = this->get_parameter("global_frame").as_string();
-  mp_.uav_origin_frame_ = this->get_parameter("uav_origin_frame").as_string();
+  mp_.sensor_frame_ = node_->get_parameter(param_ns+".cam_frame").as_string();
+  mp_.global_frame_ = node_->get_parameter(param_ns+".global_frame").as_string();
+  mp_.uav_origin_frame_ = node_->get_parameter(param_ns+".uav_origin_frame").as_string();
 
   /* Camera extrinsic parameters  */
-  md_.cam2body_rpy_deg(0) = this->get_parameter("camera_to_body/roll").as_double();
-  md_.cam2body_rpy_deg(1) = this->get_parameter("camera_to_body/pitch").as_double();
-  md_.cam2body_rpy_deg(2) = this->get_parameter("camera_to_body/yaw").as_double();
-  md_.cam2body_.col(3)(0) = this->get_parameter("camera_to_body/t_x").as_double();
-  md_.cam2body_.col(3)(1) = this->get_parameter("camera_to_body/t_y").as_double();
-  md_.cam2body_.col(3)(2) = this->get_parameter("camera_to_body/t_z").as_double();
+  md_.cam2body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
+  md_.cam2body_rpy_deg(1) = node_->get_parameter(param_ns+".camera_to_body.pitch").as_double();
+  md_.cam2body_rpy_deg(2) = node_->get_parameter(param_ns+".camera_to_body.yaw").as_double();
+  md_.cam2body_.col(3)(0) = node_->get_parameter(param_ns+".camera_to_body.t_x").as_double();
+  md_.cam2body_.col(3)(1) = node_->get_parameter(param_ns+".camera_to_body.t_y").as_double();
+  md_.cam2body_.col(3)(2) = node_->get_parameter(param_ns+".camera_to_body.t_z").as_double();
 
   /* Collision checking*/
-  check_collisions_ = this->get_parameter("collision_check/enable").as_bool();
-  col_warn_radius_ = this->get_parameter("collision_check/warn_radius").as_double();
-  col_fatal_radius_ = this->get_parameter("collision_check/fatal_radius").as_double();
-  check_col_freq_ = this->get_parameter("collision_check/check_collision_frequency").as_double();
+  check_collisions_ = node_->get_parameter(param_ns+".collision_check.enable").as_bool();
+  col_warn_radius_ = node_->get_parameter(param_ns+".collision_check.warn_radius").as_double();
+  col_fatal_radius_ = node_->get_parameter(param_ns+".collision_check.fatal_radius").as_double();
+  check_col_freq_ = node_->get_parameter(param_ns+".collision_check.check_collision_frequency").as_double();
 
 }
 
@@ -199,7 +207,7 @@ void VoxelMap::reset(const double& resolution){
   local_global_occ_map_pts_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   global_map_in_origin_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
-  md_.last_sensor_msg_time = this->get_clock()->now().seconds();
+  md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
 
   // Camera to body transform
   md_.cam2body_.block<3, 3>(0, 0) =  (Eigen::AngleAxisd((M_PI/180.0) * md_.cam2body_rpy_deg(2), Eigen::Vector3d::UnitZ())
@@ -357,7 +365,7 @@ void VoxelMap::updateLocalMap(){
 std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness) {
   std::vector<bool> bool_map(mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
 
-  double slice_z = cmToM(slice_z_cm); 
+  double slice_z = ((double) slice_z_cm)/100.0;
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_layer(new pcl::PointCloud<pcl::PointXYZ>);
   // Apply passthrough filter
@@ -431,7 +439,7 @@ void VoxelMap::updateLocalMapTimerCB()
   // broadcast tf link from global map frame to local map origin 
   geometry_msgs::msg::TransformStamped gbl_to_lcl_origin_tf;
 
-  gbl_to_lcl_origin_tf.header.stamp = this->get_clock()->now();
+  gbl_to_lcl_origin_tf.header.stamp = node_->get_clock()->now();
   gbl_to_lcl_origin_tf.header.frame_id = mp_.uav_origin_frame_;
   gbl_to_lcl_origin_tf.child_frame_id = "d" +std::to_string(drone_id_) + "_local_map_origin";
 
@@ -477,40 +485,7 @@ void VoxelMap::cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_p
 {
   getCamToGlobalPose(msg_odom->pose.pose);
   pcd2MsgToMap(*msg_pc);
-  md_.last_sensor_msg_time = this->get_clock()->now().seconds();
-}
-
-/* Checks */
-
-bool VoxelMap::isPoseValid() {
-  if (dbg_input_entire_map_){ // If in debug mode, no need to check for valid camera pose
-    return true;
-  }
-
-  if (!md_.has_pose_){
-    logger_->logErrorThrottle(strFmt("No pose/odom received"), 1.0);
-    return false;
-  }
-
-  if (isTimeout(md_.last_sensor_msg_time, 0.25)){
-    logger_->logErrorThrottle(strFmt("Sensor message timeout exceeded 0.25s: (%f, %f)",  
-                                      md_.last_sensor_msg_time, this->get_clock()->now().seconds()), 1.0);
-    return false;
-  }
-
-	if (md_.cam2origin_.array().isNaN().any()){
-    logger_->logError(strFmt("Camera pose has NAN value"));
-    return false;
-	}
-
-  if (!isInGlobalMap(md_.cam2origin_.block<3,1>(0,3)))
-  {
-    logger_->logError(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
-       md_.cam2origin_.col(3)(0), md_.cam2origin_.col(3)(1), md_.cam2origin_.col(3)(2)));
-    return false;
-  }
-
-  return true;
+  md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
 }
 
 /** Publishers */
@@ -527,7 +502,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
   }
   
   cloud_msg.header.frame_id = mp_.uav_origin_frame_;
-  cloud_msg.header.stamp = this->get_clock()->now();
+  cloud_msg.header.stamp = node_->get_clock()->now();
   occ_map_pub_->publish(cloud_msg);
 }
 
@@ -538,7 +513,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 //     pcl::toROSMsg(*slice_map, cloud_msg);
 
 //     cloud_msg.header.frame_id = "local_map_origin";
-//     cloud_msg.header.stamp = this->get_clock()->now();
+//     cloud_msg.header.stamp = node_->get_clock()->now();
 //     slice_map_pub_->publish(cloud_msg);
 //     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", local_occ_map_pts_.points.size()));
 //   }
@@ -553,7 +528,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 
 //   visualization_msgs::Marker sphere;
 //   sphere.header.frame_id = mp_.uav_origin_frame_;
-//   sphere.header.stamp = this->get_clock()->now();
+//   sphere.header.stamp = node_->get_clock()->now();
 //   sphere.type = visualization_msgs::Marker::SPHERE;
 //   sphere.action = visualization_msgs::Marker::ADD;
 //   sphere.ns = "collision_viz";
@@ -594,7 +569,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 // {
 //   geometry_msgs::PolygonStamped local_map_poly;
 //   local_map_poly.header.frame_id = mp_.uav_origin_frame_;
-//   local_map_poly.header.stamp = this->get_clock()->now();
+//   local_map_poly.header.stamp = node_->get_clock()->now();
 
 //   geometry_msgs::Point32 min_corner, corner_0, corner_1, max_corner;
 //   min_corner.x = mp_.local_map_origin_(0);

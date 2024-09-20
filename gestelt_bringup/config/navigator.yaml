@@ -1,0 +1,19 @@
+/**: 
+  ros__parameters:
+    navigator:
+      local_map_origin: "local_map_origin"
+      global_origin: "world"
+
+      planner_frequency: 1.0            # [Hz] Frequency at which plan is generated
+      generate_voronoi_frequency: 5.0  # [Hz] Frequency at which voronoi is generated
+
+      planner: 
+        verbose_print: false  # If enabled, print debug information such as timing information
+        goal_tolerance: 0.3   # [m] Tolerance for goal execution to be complete
+        plan_once: true       # Only plan once
+        t_unit: 0.1           # [s] Duration of each time unit            
+
+      reservation_table:
+        inflation: 0.4    # [m] buffer for reservation table in spatial domain
+        time_buffer: 0.3  # [s] buffer for reservation table in time domain
+        window_size: 30  # [voxels] Reserve only up to a given number of points on plan. Negative numbers reserve the whole plan.

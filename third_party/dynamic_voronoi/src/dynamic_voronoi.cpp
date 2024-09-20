@@ -2,18 +2,14 @@
 namespace dynamic_voronoi{
 
 DynamicVoronoi::DynamicVoronoi() {
-  sqrt2 = sqrt(2.0);
   data = NULL;
   alternativeDiagram = NULL;
-  allocatedGridMap = false;
 }
 
 DynamicVoronoi::DynamicVoronoi(const DynamicVoronoiParams& params): params_(params)
 {
-  sqrt2 = sqrt(2.0);
   data = NULL;
   alternativeDiagram = NULL;
-  allocatedGridMap = false; 
 
 }
 

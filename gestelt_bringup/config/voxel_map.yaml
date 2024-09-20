@@ -1,0 +1,47 @@
+/**: 
+  ros__parameters:
+    voxel_map:
+      debug_input_entire_map: true
+      entire_pcd_map_topic: "/fake_map"
+
+      verbose_print: false       # If enabled, print debug information such as timing information
+
+      map_slicing: # 2D boolean map slices used for voronoi generation
+        min_height_cm:    40    # [cm] Minimum slice height
+        max_height_cm:    400   # [cm] Maximum slice height
+        z_separation_cm:  40    # [cm] Separation between slices
+        
+      global_map: 
+        size_x: 50.0  # [m]
+        size_y: 50.0  # [m]
+        size_z: 20.0  # [m]
+
+      local_map:  # Local map used by planner
+        size_x: 17.0  # [m]
+        size_y: 17.0  # [m]
+        size_z: 5.0   # [m]
+        update_local_map_frequency: 15.0 # [Hz] Frequency to update the local map
+        viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
+
+      occ_map:  # Occupancy map parameters
+        resolution: 0.1   # [m] Resolution of voxel
+        inflation: 0.2    # [m] Inflation of voxel
+        ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
+        max_range: 30.0   # [m] Maximum range of sensor
+
+      collision_check: # For visualizing collision with static obstacles
+        enable: true    # Enable checking of collisions
+        warn_radius: 0.25  # [m]  Distance to collision to display warning sphere
+        fatal_radius: 0.14  # [m] Distance to collision to display fatal sphere
+        check_collision_frequency: 10.0 # [Hz]  Frequency to check for collision
+
+      camera_to_body: # camera extrinsic parameters 
+        # roll: 90.0
+        # pitch: 180.0
+        # yaw: 90.0
+        roll: 0.0
+        pitch: 0.0
+        yaw: 0.0 
+        t_x: 0.0  # x translation
+        t_y: 0.0  # y translation
+        t_z: 0.0  # z translation

@@ -13,7 +13,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(PCL REQUIRED COMPONENTS common io)
+find_package(PCL REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -44,14 +44,13 @@ endforeach()
 add_library(voxel_map src/voxel_map.cpp)
 add_library(voxel_map::voxel_map ALIAS voxel_map)
 ament_target_dependencies(voxel_map 
-  PCL
   Eigen3  
+  pcl_conversions
   rclcpp
   sensor_msgs
   nav_msgs
   geometry_msgs
   visualization_msgs
-  pcl_conversions
   tf2_ros
   message_filters
   logger_wrapper
@@ -60,6 +59,9 @@ target_compile_features(voxel_map PUBLIC c_std_99 cxx_std_17)  # Require C99 and
 target_include_directories(voxel_map PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_link_libraries(voxel_map
+  ${PCL_LIBRARIES}
+)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
@@ -93,10 +95,6 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(
-  ${EXPORTED_DEPENDENCIES}
-)
-
 ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
@@ -105,6 +103,10 @@ ament_export_libraries(
 )
 ament_export_targets(
   export_${PROJECT_NAME}
+)
+
+ament_export_dependencies(
+  ${EXPORTED_DEPENDENCIES}
 )
 
 ament_package()

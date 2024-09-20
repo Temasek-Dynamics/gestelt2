@@ -9,8 +9,7 @@ namespace logger_wrapper
     {}
 
     LoggerWrapper::~LoggerWrapper()
-    {
-    }
+    {}
 
     /* Normal Logging */
 

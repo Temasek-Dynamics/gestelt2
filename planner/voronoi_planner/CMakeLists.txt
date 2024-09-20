@@ -37,7 +37,9 @@ foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
 endforeach()
 
 
-add_executable(voronoi_planner_node src/voronoi_planner_node.cpp)
+add_executable(voronoi_planner_node 
+  src/voronoi_planner_node.cpp 
+  src/voronoi_planner.cpp)
 ament_target_dependencies(voronoi_planner_node 
   Eigen3
   rclcpp

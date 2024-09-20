@@ -55,7 +55,7 @@ private:
   
   int count;
   
-  typedef std::map< int, std::queue<T> > BucketType;
+  using BucketType = std::map< int, std::queue<T> >;
   BucketType buckets;
   typename BucketType::iterator nextPop;
 };

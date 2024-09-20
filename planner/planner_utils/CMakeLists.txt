@@ -18,8 +18,6 @@ find_package(ament_cmake_ros REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/ConfigExtras.cmake)
-
 add_library(planner_utils src/planner_utils.cpp)
 add_library(planner_utils::planner_utils ALIAS planner_utils)
 ament_target_dependencies(planner_utils 

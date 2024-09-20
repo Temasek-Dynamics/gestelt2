@@ -108,23 +108,20 @@ namespace voxel_map
     std::map<int, std::vector<bool>> bool_maps; // Map of BoolMap objects
   };
 
-class VoxelMap : public rclcpp::Node
+class VoxelMap
 {
 public: 
   // Custom type definition for message filters
-  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, nav_msgs::msg::Odometry>
-      SyncPolicyCloudOdom;
-  typedef std::shared_ptr<message_filters::Synchronizer<SyncPolicyCloudOdom>> SynchronizerCloudOdom;
+  using SyncPolicyCloudOdom = message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, nav_msgs::msg::Odometry>;
+  using SynchronizerCloudOdom =  std::shared_ptr<message_filters::Synchronizer<SyncPolicyCloudOdom>>;
 
   // Custom type definition for Bonxai
-  typedef std::shared_ptr<VoxelMap> Ptr;
   using BonxaiT = Bonxai::ProbabilisticMap;
 
 public:
 
   /** Initialization methods */
-
-  VoxelMap();
+  VoxelMap(rclcpp::Node::SharedPtr node);
 
   virtual ~VoxelMap();
 
@@ -208,7 +205,7 @@ public:
    */
   void checkCollisionsTimerCB();
 
-private:
+public:
 
   /* Getter methods */
 
@@ -232,7 +229,8 @@ private:
 
   bool getBoolMap3D(BoolMap3D& bool_map_3d);
 
-  /* Checks */
+/* Checks */
+private: 
 
   // Checks if time elapsed has exceeded a given threshold
   bool isTimeout(const double& last_state_time, const double& threshold);
@@ -246,15 +244,9 @@ private:
   // True if given GLOBAL position is within the LOCAL map boundaries, else False
   bool isInLocalMap(const Eigen::Vector3d &pos);
 
-  /* Helper methods */
-
-  // Convert from meters to centimeters
-  int mToCm(const double& val_m);
-
-  // Convert from centimeters to meters
-  double cmToM(const int& val_cm);
-
 private: 
+  rclcpp::Node::SharedPtr node_;
+
   /* Params */
   int drone_id_{0}; //Drone ID
 
@@ -320,19 +312,19 @@ private:
 
 /* Getters */
 
-double VoxelMap::getRes() const{ return mp_.resolution_; }
+inline double VoxelMap::getRes() const{ return mp_.resolution_; }
 
-Eigen::Vector3d VoxelMap::getGlobalOrigin() const{ return mp_.global_map_origin_; }
+inline Eigen::Vector3d VoxelMap::getGlobalOrigin() const{ return mp_.global_map_origin_; }
 
-Eigen::Vector3d VoxelMap::getLocalOrigin() const{ return mp_.local_map_origin_; }
+inline Eigen::Vector3d VoxelMap::getLocalOrigin() const{ return mp_.local_map_origin_; }
 
-Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { return mp_.global_map_num_voxels_; }
+inline Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { return mp_.global_map_num_voxels_; }
 
-Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { return mp_.local_map_num_voxels_; }
+inline Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { return mp_.local_map_num_voxels_; }
 
-double VoxelMap::getInflation() const{ return mp_.inflation_; }
+inline double VoxelMap::getInflation() const{ return mp_.inflation_; }
 
-bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
+inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
   if (bool_map_3d_.z_separation_cm < 0){
     return false;
   }
@@ -346,11 +338,11 @@ bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
 
 /* Checks */
 
-bool VoxelMap::isTimeout(const double& last_state_time, const double& threshold){
-  return (this->get_clock()->now().seconds() - last_state_time) >= threshold;
+inline bool VoxelMap::isTimeout(const double& last_state_time, const double& threshold){
+  return (node_->get_clock()->now().seconds() - last_state_time) >= threshold;
 } 
 
-bool VoxelMap::isInGlobalMap(const Eigen::Vector3d &pos)
+inline bool VoxelMap::isInGlobalMap(const Eigen::Vector3d &pos)
 {
   if (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
     && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
@@ -362,7 +354,7 @@ bool VoxelMap::isInGlobalMap(const Eigen::Vector3d &pos)
   return false;
 }
 
-bool VoxelMap::isInLocalMap(const Eigen::Vector3d &pos)
+inline bool VoxelMap::isInLocalMap(const Eigen::Vector3d &pos)
 {
   if (pos(0) >= mp_.local_map_origin_(0)   && pos(0) < mp_.local_map_max_(0)
     && pos(1) >= mp_.local_map_origin_(1)  && pos(1) < mp_.local_map_max_(1)
@@ -374,16 +366,36 @@ bool VoxelMap::isInLocalMap(const Eigen::Vector3d &pos)
   return false;
 }
 
-/* Helper */
+inline bool VoxelMap::isPoseValid() {
+  if (dbg_input_entire_map_){ // If in debug mode, no need to check for valid camera pose
+    return true;
+  }
 
-int VoxelMap::mToCm(const double& val_m){
-  return (int) (val_m * 100.0);
+  if (!md_.has_pose_){
+    logger_->logErrorThrottle(strFmt("No pose/odom received"), 1.0);
+    return false;
+  }
+
+  if (isTimeout(md_.last_sensor_msg_time, 0.25)){
+    logger_->logErrorThrottle(strFmt("Sensor message timeout exceeded 0.25s: (%f, %f)",  
+                                      md_.last_sensor_msg_time, node_->get_clock()->now().seconds()), 1.0);
+    return false;
+  }
+
+	if (md_.cam2origin_.array().isNaN().any()){
+    logger_->logError(strFmt("Camera pose has NAN value"));
+    return false;
+	}
+
+  if (!isInGlobalMap(md_.cam2origin_.block<3,1>(0,3)))
+  {
+    logger_->logError(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
+       md_.cam2origin_.col(3)(0), md_.cam2origin_.col(3)(1), md_.cam2origin_.col(3)(2)));
+    return false;
+  }
+
+  return true;
 }
-
-double VoxelMap::cmToM(const int& val_cm) {
-  return ((double) val_cm)/100.0;  
-}
-
 
 }  // namespace voxel_map
 

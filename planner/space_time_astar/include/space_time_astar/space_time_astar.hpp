@@ -69,7 +69,7 @@ public:
                      const VoronoiParams& voro_params);
 
   /* Update the assignement of the reservation table. TO be executed when the reservation table is updated*/
-  void setReservationTable(const std::map<int, RsvnTable>& rsvn_tbl);
+  void setReservationTable(const std::map<int, RsvnTbl>& rsvn_tbl);
 
   /* Generate space-time plan on voronoi graph  */
   bool generatePlan( const Eigen::Vector3d& start_pos_3d, 
@@ -104,7 +104,8 @@ public:
   std::vector<Eigen::Vector4d> getPathWithTime();
 
   /**
-   * @brief Get successful plan in terms of space i,e. (x,y,z)
+   * @brief Get successful plan in terms of space i,e. (x,y,z) 
+   * with current starting pose inserted 
    *
    * @return std::vector<Eigen::Vector3d>
    */
@@ -132,15 +133,6 @@ public:
 
 /* Helper methods */
 private:
-
-  /**
-   * @brief Round to nearest multiple 
-   * 
-   * @param num Number to be rounded
-   * @param mult Multiple
-   * @return int 
-   */
-  int roundToMultInt(const int& num, const int& mult);
 
   /* Convert from time [s] to space-time units */
   long tToSpaceTimeUnits(const double& t);
@@ -177,25 +169,29 @@ private:
   std::unordered_set<VCell_T> closed_list_vt_; // All closed nodes
 
   // map{drone_id : unordered_set{(x,y,z,t)}}
-  std::map<int, RsvnTable> rsvn_tbl_; // Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
-};
+  std::map<int, RsvnTbl> rsvn_tbl_; // Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
+}; // class SpaceTimeAStar
 
-void SpaceTimeAStar::setReservationTable(const std::map<int, RsvnTable>& rsvn_tbl)
+/* Setter methods */
+
+inline void SpaceTimeAStar::setReservationTable(const std::map<int, RsvnTbl>& rsvn_tbl)
 {
   rsvn_tbl_ = rsvn_tbl;
 }
 
-std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath()
+/* Getter methods */
+
+inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath()
 {
   return path_pos_;
 }
 
-std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime()
+inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime()
 {
   return path_pos_t_;
 }
 
-std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath(const Eigen::Vector3d& cur_pos)
+inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath(const Eigen::Vector3d& cur_pos)
 {
   std::vector<Eigen::Vector3d> path_pos = path_pos_;
 
@@ -208,7 +204,7 @@ std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath(const Eigen::Vector3d& cur_
   return path_pos;
 }
 
-std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen::Vector3d& cur_pos)
+inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen::Vector3d& cur_pos)
 {
   std::vector<Eigen::Vector4d> path_pos_t = path_pos_t_;
 
@@ -237,17 +233,17 @@ std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen::Vector
   return path_pos_t;
 }
 
-std::vector<Eigen::Vector4d> SpaceTimeAStar::getSmoothedPathWithTime()
+inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getSmoothedPathWithTime()
 {
   return path_smoothed_t_;
 }
 
-std::vector<Eigen::Vector3d> SpaceTimeAStar::getSmoothedPath()
+inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getSmoothedPath()
 {
   return path_smoothed_;
 }
 
-std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
+inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
 {
   std::vector<Eigen::Vector3d> closed_list_pos;
   for (auto itr = closed_list_vt_.begin(); itr != closed_list_vt_.end(); ++itr) {
@@ -262,33 +258,13 @@ std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
   return closed_list_pos; 
 }
 
-int SpaceTimeAStar::roundToMultInt(const int& num, const int& mult)
-{
-  if (mult == 0){
-    return num;
-  }
+/* Helper methods */
 
-  if (num >= voro_params_.max_height_cm){
-    return voro_params_.max_height_cm;
-  }
-
-  if (num <= voro_params_.min_height_cm){
-    return voro_params_.min_height_cm;
-  }
-
-  int rem = (int)num % mult;
-  if (rem == 0){
-    return num;
-  }
-
-  return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
-}
-
-long SpaceTimeAStar::tToSpaceTimeUnits(const double& t){
+inline long SpaceTimeAStar::tToSpaceTimeUnits(const double& t){
   return std::lround(t / astar_params_.t_unit);
 }
 
-bool SpaceTimeAStar::lineOfSight(IntPoint s, IntPoint s_, int z_cm)
+inline bool SpaceTimeAStar::lineOfSight(IntPoint s, IntPoint s_, int z_cm)
 {
     int x0 = s.x;
     int y0 = s.y;

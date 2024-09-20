@@ -99,7 +99,6 @@ void TrajectoryServer::initParams()
 
 void TrajectoryServer::initPubSubTimers()
 {
-
     auto fcu_sub_opt = rclcpp::SubscriptionOptions();
 		fcu_sub_opt.callback_group = fcu_cb_group_;
 

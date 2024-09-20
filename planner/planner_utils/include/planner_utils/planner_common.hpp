@@ -21,7 +21,7 @@
 
 using namespace Eigen;
 
-#define SQRT2 1.4142135623
+inline int SQRT2 = 1.4142135623;
 
 /**
  * @brief Priority queue used for open list in A* search
@@ -31,7 +31,7 @@ using namespace Eigen;
  */
 template<typename T, typename priority_t>
 struct PriorityQueue {
-  typedef std::pair<priority_t, T> PQElement;
+  using PQElement = std::pair<priority_t, T>;
   struct PQComp {
       constexpr bool operator()(
           PQElement const& a,
@@ -114,43 +114,6 @@ struct std::hash<VCell> {
 };
 
 
-// /**
-//  * Cost operations for voronoi A* search
-//  */
-
-// // Get euclidean distance between node_1 and node_2
-// // NOTE: This is in units of indices
-// inline double getL1NormV(const VCell& a, const VCell& b) {
-//   return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z);
-// }
-
-// // Get euclidean distance between node_1 and node_2
-// // NOTE: This is in units of indices
-// inline double getL2NormV(const VCell& a, const VCell& b) {
-//   double dx = abs(a.x - b.x);
-//   double dy = abs(a.y - b.y);
-//   double dz = abs(a.z - b.z);
-
-//   return sqrt(dx*dx + dy*dy + dz*dz);
-// }
-
-// // // Get octile distance
-// inline double getChebyshevDistV(const VCell& a, const VCell& b)  {
-//   double dx = abs(a.x - b.x);
-//   double dy = abs(a.y - b.y);
-//   double dz = abs(a.z - b.z);
-
-//   return (dx + dy + dz) - std::min(dx, std::min(dy, dz)); 
-// }
-
-// // // Get chebyshev distance
-// inline double getOctileDistV(const VCell& a, const VCell& b)  {
-//   double dx = abs(a.x - b.x);
-//   double dy = abs(a.y - b.y);
-//   double dz = abs(a.z - b.z);
-
-//   return (dx + dy + dz) + (SQRT2 - 2) * std::min(dx, std::min(dy, dz)); 
-// }
 
 /**
  * VCell_T: A space-time voronoi graph cell
@@ -225,13 +188,13 @@ struct std::hash<VCell_T> {
 
 // Get euclidean distance between node_1 and node_2
 // NOTE: This is in units of indices
-inline double getL1NormVT(const VCell_T& a, const VCell_T& b) {
+static inline double getL1NormVT(const VCell_T& a, const VCell_T& b) {
   return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z);
 }
 
 // Get euclidean distance between node_1 and node_2
 // NOTE: This is in units of indices
-inline double getL2NormVT(const VCell_T& a, const VCell_T& b) {
+static inline double getL2NormVT(const VCell_T& a, const VCell_T& b) {
   double dx = abs(a.x - b.x);
   double dy = abs(a.y - b.y);
   double dz = abs(a.z - b.z);
@@ -239,8 +202,8 @@ inline double getL2NormVT(const VCell_T& a, const VCell_T& b) {
   return sqrt(dx*dx + dy*dy + dz*dz);
 }
 
-// // Get octile distance
-inline double getChebyshevDistVT(const VCell_T& a, const VCell_T& b)  {
+// Get octile distance
+static inline double getChebyshevDistVT(const VCell_T& a, const VCell_T& b)  {
   double dx = abs(a.x - b.x);
   double dy = abs(a.y - b.y);
   double dz = abs(a.z - b.z);
@@ -249,7 +212,7 @@ inline double getChebyshevDistVT(const VCell_T& a, const VCell_T& b)  {
 }
 
 // // Get chebyshev distance
-inline double getOctileDistVT(const VCell_T& a, const VCell_T& b)  {
+static inline double getOctileDistVT(const VCell_T& a, const VCell_T& b)  {
   double dx = abs(a.x - b.x);
   double dy = abs(a.y - b.y);
   double dz = abs(a.z - b.z);
@@ -309,13 +272,12 @@ struct std::hash<Eigen::Vector4i> {
   }
 };
 
-
-/* Reservation table for each agent
+/* Reservation table for space-time A*
 */
-struct RsvnTable{
-  RsvnTable(){}
+struct RsvnTbl{
+  RsvnTbl(){}
   
-  RsvnTable(const double& t_plan_start): t_plan_start(t_plan_start)
+  RsvnTbl(const double& t_plan_start): t_plan_start(t_plan_start)
   {}
 
   /**
@@ -330,77 +292,49 @@ struct RsvnTable{
 
   double t_plan_start; 
   std::unordered_set<Eigen::Vector4i> table;
-};  // struct RsvnTable
+};  // struct RsvnTbl
+
+/* Helper */
+
+// Convert from meters to centimeters
+static inline int mToCm(const double& val_m){
+  return (int) (val_m * 100.0);
+}
+
+// Convert from centimeters to meters
+static inline double cmToM(const int& val_cm) {
+  return ((double) val_cm)/100.0;  
+}
+
+/**
+ * @brief Round to nearest multiple 
+ * 
+ * @param num Number to be rounded
+ * @param mult Multiple
+ * @return int 
+ */
+static inline int roundToMultInt(const int& num, const int& mult, const int& min, const int& max)
+{
+  if (mult == 0){
+    return num;
+  }
+
+  if (num > max){
+    return max;
+  }
+
+  if (num < min){
+    return min;
+  }
+
+  int rem = (int)num % mult;
+  if (rem == 0){
+    return num;
+  }
+
+  return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
+}
+
 
 #endif // _PLANNER_COMMON_HPP_
 
-
-// /**
-//  * PosIdx: Used for index-based 3d grid operations
-//  */
-// struct PosIdx {
-//   PosIdx() {}
-
-//   PosIdx(const int& x, const int& y, const int& z)
-//     : x(x), y(y), z(z)
-//   {}
-
-//   void setIdx(const Eigen::Vector3i& idx)
-//   {
-//     x = idx(0);
-//     y = idx(1);
-//     z = idx(2);
-//   }
-
-//   Eigen::Vector3i getIdx() const
-//   {
-//     return Eigen::Vector3i{x, y, z};
-//   }
-
-//   // Equality
-//   bool operator == (const PosIdx& pos) const
-//   {
-//     return (this->x == pos.x && this->y == pos.y && this->z == pos.z);
-//   }
-
-//   int x, y, z;
-// }; // struct PosIdx
-
-
-// /**
-//  * Cost operations for 3D A* search
-//  */
-
-// // Get euclidean distance between node_1 and node_2
-// // NOTE: This is in units of indices
-// inline double getL1Norm(const PosIdx& a, const PosIdx& b) {
-//   return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z);
-// }
-
-// // Get euclidean distance between node_1 and node_2
-// // NOTE: This is in units of indices
-// inline double getL2Norm(const PosIdx& a, const PosIdx& b) {
-//   double dx = abs(a.x - b.x);
-//   double dy = abs(a.y - b.y);
-//   double dz = abs(a.z - b.z);
-
-//   return sqrt(dx*dx + dy*dy + dz*dz);
-// }
-
-// // // Get octile distance
-// inline double getChebyshevDist(const PosIdx& a, const PosIdx& b)  {
-//   double dx = abs(a.x - b.x);
-//   double dy = abs(a.y - b.y);
-//   double dz = abs(a.z - b.z);
-
-//   return (dx + dy + dz) - std::min(dx, std::min(dy, dz)); 
-// }
-
-// // // Get chebyshev distance
-// inline double getOctileDist(const PosIdx& a, const PosIdx& b)  {
-//   double dx = abs(a.x - b.x);
-//   double dy = abs(a.y - b.y);
-//   double dz = abs(a.z - b.z);
-
-//   return (dx + dy + dz) + (SQRT2 - 2) * std::min(dx, std::min(dy, dz)); 
-// }

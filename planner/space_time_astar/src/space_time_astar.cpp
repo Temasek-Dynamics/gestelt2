@@ -118,8 +118,14 @@ bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d,
 {
     reset();
     
-    int start_z_cm = roundToMultInt((int) (start_pos_3d(2) * 100), voro_params_.z_separation_cm);
-    int goal_z_cm = roundToMultInt((int) (goal_pos_3d(2) * 100), voro_params_.z_separation_cm);
+    int start_z_cm = roundToMultInt((int) (start_pos_3d(2) * 100), 
+                                        voro_params_.z_separation_cm, 
+                                        voro_params_.min_height_cm, 
+                                        voro_params_.max_height_cm);
+    int goal_z_cm = roundToMultInt((int) (goal_pos_3d(2) * 100), 
+                                        voro_params_.z_separation_cm, 
+                                        voro_params_.min_height_cm, 
+                                        voro_params_.max_height_cm);
     // std::cout << astar_params_.drone_id << ": start_z: " <<  start_pos_3d(2) << " m rounded to " << start_z_cm << " cm" << std::endl;
     // std::cout << astar_params_.drone_id << ": goal_z: " <<  goal_pos_3d(2) << " m rounded to " << goal_z_cm << " cm" << std::endl;
     
