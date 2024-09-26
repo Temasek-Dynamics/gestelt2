@@ -16,9 +16,9 @@
 
 // #include <pcl/point_types.h>
 // #include <pcl/conversions.h>
-#include <pcl/io/pcd_io.h>
+// #include <pcl/io/pcd_io.h>
+// #include <pcl/point_cloud.h>
 
-#include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -42,42 +42,50 @@ public:
     frame_id_ = this->get_parameter(param_ns+".frame_id").as_string();
     pub_freq_ = this->get_parameter(param_ns+".publishing_frequency").as_double();
 
+    RCLCPP_INFO(this->get_logger(), "Params: pcd_filepath(%s), frame_id(%s), pub_freq(%f)", 
+                pcd_filepath_.c_str(), frame_id_.c_str(), pub_freq_);
+
     /* Publisher */
     fake_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fake_map", 10);
 
+    cloud_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
+
     /* Load point cloud file */
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_map = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-
-    printf("[fake_map_publisher] Loading pcd file path: %s\n", pcd_filepath_.c_str());
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>(pcd_filepath_, *cloud_map) == -1) 
+    RCLCPP_INFO(this->get_logger(), "Loading pcd file path: %s", pcd_filepath_.c_str());
+    if (pcl::io::loadPCDFile(pcd_filepath_, *cloud_msg_) == -1) 
     {
-        printf("[fake_map_publisher] Invalid pcd file! Shutting down!\n");
-        rclcpp::shutdown();
+      RCLCPP_ERROR(this->get_logger(), "Invalid pcd file! Shutting down!");
+      rclcpp::shutdown();
     }
 
-    pcl::toROSMsg(*cloud_map, cloud_msg_);
-    cloud_msg_.header.stamp = this->get_clock()->now();
-    cloud_msg_.header.frame_id = frame_id_;
+    cloud_msg_->header.stamp = this->get_clock()->now();
+    cloud_msg_->header.frame_id = frame_id_;
+    cloud_msg_->is_dense = true;
 
     pub_fake_map_timer_ = this->create_wall_timer((1.0/pub_freq_) *1000ms, 
                                           std::bind(&FakeMapPublisher::pubFakeMapTimerCB, this));
   }
 
   void pubFakeMapTimerCB(){
-    fake_map_pub_->publish(cloud_msg_);
+    // std::cout << "cloud_msg_->points.size(): " << cloud_msg_->data.size() << std::endl;
+    // std::cout << "cloud_msg_->height: " << cloud_msg_->height << std::endl;
+    // std::cout << "cloud_msg_->width: " << cloud_msg_->width << std::endl;
+    // std::cout << "cloud_msg_->is_dense: " << cloud_msg_->is_dense << std::endl;
+    // RCLCPP_INFO(this->get_logger(), "Publishing fake point cloud map!");
+
+    fake_map_pub_->publish(*cloud_msg_);
   }
 
 private:
-    std::string pcd_filepath_; // Path to pcd file
-    std::string frame_id_;  // Frame id of map
-    double pub_freq_;       // [Hz] map publishing frequency
+  std::string pcd_filepath_; // Path to pcd file
+  std::string frame_id_;  // Frame id of map
+  double pub_freq_;       // [Hz] map publishing frequency
 
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr fake_map_pub_; // Publisher for z slice of map
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr fake_map_pub_; // Publisher of fake map
 
-	rclcpp::TimerBase::SharedPtr pub_fake_map_timer_;	    // Timer for publishing fake map
+  rclcpp::TimerBase::SharedPtr pub_fake_map_timer_;	    // Timer for publishing fake map
 
-    sensor_msgs::msg::PointCloud2 cloud_msg_;   // Stored message for publishing
+  std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud_msg_;   // Stored message of map for publishing
 };
 
 #endif  // FAKE_MAP_PUBLISHER_HPP_

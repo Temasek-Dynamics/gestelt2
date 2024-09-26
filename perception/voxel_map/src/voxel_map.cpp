@@ -10,6 +10,8 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node)
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(node_->get_logger(), node_->get_clock());
 
+  gbl_to_lcl_origin_tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_);
+
   initParams();
 
   reset(mp_.resolution_);
@@ -53,29 +55,26 @@ void VoxelMap::initPubSubTimer()
 	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>("local_map/bounds", rclcpp::SensorDataQoS());
 
   /* Initialize ROS Timers */
-	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, std::bind(&VoxelMap::vizMapTimerCB, this));
-	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, std::bind(&VoxelMap::updateLocalMapTimerCB, this));
+	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
+                                            std::bind(&VoxelMap::vizMapTimerCB, this));
+	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
+                                              std::bind(&VoxelMap::updateLocalMapTimerCB, this));
 
   if (dbg_input_entire_map_){
     logger_->logInfo(strFmt("DEBUG: INPUT ENTIRE MAP"));
 
-    // Wait for entire point cloud map
-		sensor_msgs::msg::PointCloud2::UniquePtr pc_msg;
     logger_->logInfo(strFmt("Waiting for point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
 
-    auto fake_map_sub = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-      entire_pcd_map_topic_, 1, [](const std::shared_ptr<const sensor_msgs::msg::PointCloud2>) {});
+		sensor_msgs::msg::PointCloud2 pcd_map_msg;
 
-    //https://github.com/ros2/rclcpp/issues/1864
-
-    bool got_pcd = rclcpp::wait_for_message(*pc_msg, fake_map_sub, node_->get_node_options().context(), 10s);
-    logger_->logInfo(strFmt("After point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
+    //https://github.com/ros2/rclcpp/issues/1953
+    auto got_pcd = rclcpp::wait_for_message(pcd_map_msg, node_, entire_pcd_map_topic_, 10s);
 
     if (!got_pcd){
 			logger_->logError(strFmt("No point cloud topic %s received. Shutting down.",  entire_pcd_map_topic_.c_str()));
 			rclcpp::shutdown();
     }
-    pcd2MsgToMap(*pc_msg);
+    pcd2MsgToMap(pcd_map_msg);
   }
 
   if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
@@ -295,6 +294,7 @@ void VoxelMap::pcdToMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc
 }
 
 void VoxelMap::updateLocalMap(){
+
   if (!isPoseValid()){
     return;
   }
@@ -352,7 +352,6 @@ void VoxelMap::updateLocalMap(){
     }
   }
 
-  // build kdtree for local map
   local_occ_map_pts_->width = local_occ_map_pts_->points.size();
   local_occ_map_pts_->height = 1;
   local_occ_map_pts_->is_dense = true; 
@@ -360,6 +359,7 @@ void VoxelMap::updateLocalMap(){
   local_global_occ_map_pts_->width = local_global_occ_map_pts_->points.size();
   local_global_occ_map_pts_->height = 1;
   local_global_occ_map_pts_->is_dense = true; 
+
 }
 
 std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness) {
@@ -452,7 +452,8 @@ void VoxelMap::updateLocalMapTimerCB()
   gbl_to_lcl_origin_tf.transform.rotation.z = 0.0;
   gbl_to_lcl_origin_tf.transform.rotation.w = 1.0;
   
-  tf_broadcaster_->sendTransform(gbl_to_lcl_origin_tf);
+  gbl_to_lcl_origin_tf_broadcaster_->sendTransform(gbl_to_lcl_origin_tf);
+
 }
 
 void VoxelMap::checkCollisionsTimerCB()

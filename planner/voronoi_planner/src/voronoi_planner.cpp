@@ -82,13 +82,13 @@ void VoronoiPlanner::initPubSubTimer(){
     "goals", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
 
   /* Timers */
-	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
-                                        std::bind(&VoronoiPlanner::planFETimerCB, this), 
-                                        planning_cb_group_);
+	// plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
+  //                                       std::bind(&VoronoiPlanner::planFETimerCB, this), 
+  //                                       planning_cb_group_);
 
-	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
-                                        std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
-                                        mapping_cb_group_);
+	// gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
+  //                                       std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
+  //                                       mapping_cb_group_);
 }
 
 void VoronoiPlanner::initParams()

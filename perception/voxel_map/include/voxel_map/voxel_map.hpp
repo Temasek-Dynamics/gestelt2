@@ -283,7 +283,7 @@ private:
 	rclcpp::TimerBase::SharedPtr update_local_map_timer_; // Timer for updating local map
 
   // TF transformation 
-  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; // broadcast tf link from global map frame to local map origin 
+  std::unique_ptr<tf2_ros::TransformBroadcaster> gbl_to_lcl_origin_tf_broadcaster_; // broadcast tf link from global map frame to local map origin 
  
   /* Data structures for maps */
   MappingData md_;  // Mapping data

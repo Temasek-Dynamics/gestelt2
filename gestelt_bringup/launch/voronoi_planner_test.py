@@ -29,6 +29,12 @@ def generate_launch_description():
       'forest_single.pcd'
     )
 
+    rviz_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'default.rviz'
+    )
+
+
     fake_map = Node(
         package='fake_map',
         executable='fake_map_publisher_node',
@@ -58,8 +64,9 @@ def generate_launch_description():
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
-        output='screen',
+        output='log',
         shell=True,
+        arguments=['-d' + rviz_cfg]
     )
 
     return LaunchDescription([
