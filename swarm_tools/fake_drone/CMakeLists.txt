@@ -13,18 +13,41 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
 
-add_executable(fake_drone src/fake_drone.cpp)
-target_include_directories(fake_drone PUBLIC
+set(ROS_LIBRABRIES
+	ament_cmake
+	ament_cmake_ros
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  gestelt_interfaces
+  tf2_ros
+)
+# find dependencies
+foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
+
+add_executable(fake_drone_node 
+  src/fake_drone_node.cpp
+  src/fake_drone.cpp
+)
+ament_target_dependencies(fake_drone_node 
+  Eigen3
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  gestelt_interfaces
+  tf2_ros
+)
+target_include_directories(fake_drone_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(fake_drone PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(fake_drone_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-install(TARGETS fake_drone
+install(TARGETS fake_drone_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

@@ -82,13 +82,13 @@ void VoronoiPlanner::initPubSubTimer(){
     "goals", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
 
   /* Timers */
-	// plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
-  //                                       std::bind(&VoronoiPlanner::planFETimerCB, this), 
-  //                                       planning_cb_group_);
+	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
+                                            std::bind(&VoronoiPlanner::planFETimerCB, this), 
+                                            planning_cb_group_);
 
-	// gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
-  //                                       std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
-  //                                       mapping_cb_group_);
+	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
+                                                  std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
+                                                  mapping_cb_group_);
 }
 
 void VoronoiPlanner::initParams()
@@ -110,7 +110,7 @@ void VoronoiPlanner::initParams()
   this->declare_parameter(param_ns+".reservation_table.window_size", -1);
 
   this->declare_parameter(param_ns+".local_map_origin", "local_map_origin");
-  this->declare_parameter(param_ns+".global_origin", "world");
+  this->declare_parameter(param_ns+".global_frame", "world");
 
 	/**
 	 * Get params
@@ -133,13 +133,13 @@ void VoronoiPlanner::initParams()
   t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer/t_unit_);  // [space-time units] for time buffer
 
   local_map_origin_ = this->get_parameter(param_ns+".local_map_origin").as_string();
-  global_origin_ = this->get_parameter(param_ns+".global_origin").as_string();
+  global_frame_ = this->get_parameter(param_ns+".global_frame").as_string();
 }
 
 /* Core methods */
 bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal){
   if (!init_voro_maps_){
-    std::cout << "Voronoi maps not initialized! Request a plan after initialization!" << std::endl;
+    logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
     return false;
   }
 
@@ -236,9 +236,9 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
 
-  // viz_helper_->pubSpaceTimePath(space_time_path_, global_origin_, fe_plan_viz_pub_) ;
+  // viz_helper_->pubSpaceTimePath(space_time_path_, global_frame_, fe_plan_viz_pub_) ;
 
-  viz_helper_->pubFrontEndPath(front_end_path_, global_origin_, fe_plan_viz_pub_);
+  viz_helper_->pubFrontEndPath(front_end_path_, global_frame_, fe_plan_viz_pub_);
 
   // double min_clr = DBL_MAX; // minimum path clearance 
   // double max_clr = 0.0;     // maximum path clearance 
@@ -293,9 +293,9 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
 
-  std::vector<Eigen::Vector3d> voro_verts;
+  // std::vector<Eigen::Vector3d> voro_verts;
 
-  for (auto const& bool_map : bool_map_3d_.bool_maps)
+  for (auto const& bool_map : bool_map_3d_.bool_maps) // For each boolean map
   {
     int z_cm = bool_map.first;
     double z_m = cmToM(bool_map.first);
@@ -318,26 +318,26 @@ void VoronoiPlanner::genVoroMapTimerCB()
     dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
     dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();  
 
-    // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
-    auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){
-      std::vector<Eigen::Vector3d> voronoi_vertices;
-      if (dyn_voro->getData() != nullptr){  
-        for (int x=0; x < dyn_voro->getSizeX(); x++) {
-          for (int y=0; y < dyn_voro->getSizeY(); y++) {
-            if (dyn_voro->isVoronoiVertex(x, y)){
-              voronoi_vertices.push_back(Eigen::Vector3d{ x * dyn_voro->getRes(), 
-                                                          y * dyn_voro->getRes(), 
-                                                          dyn_voro->getOriginZ()});
-            }
-          }
-        }
-      }
+    // // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
+    // auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){
+    //   std::vector<Eigen::Vector3d> voronoi_vertices;
+    //   if (dyn_voro->getData() != nullptr){  
+    //     for (int x=0; x < dyn_voro->getSizeX(); x++) {
+    //       for (int y=0; y < dyn_voro->getSizeY(); y++) {
+    //         if (dyn_voro->isVoronoiVertex(x, y)){
+    //           voronoi_vertices.push_back(Eigen::Vector3d{ x * dyn_voro->getRes(), 
+    //                                                       y * dyn_voro->getRes(), 
+    //                                                       dyn_voro->getOriginZ()});
+    //         }
+    //       }
+    //     }
+    //   }
 
-      return voronoi_vertices;
-    };
+    //   return voronoi_vertices;
+    // };
     // voro_verts_cur_layer: voronoi vertices at current layer
-    std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
-    voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
+    // std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
+    // voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
 
     nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
 
@@ -351,13 +351,13 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
     voro_occ_grid_pub_->publish(voro_occ_grid);
     occ_map_pub_->publish(occ_grid);
-
   }
 
   // Link to the layer on top for bottommost layer
   dyn_voro_arr_[bool_map_3d_.min_height_cm]->top_voro_ = dyn_voro_arr_[bool_map_3d_.min_height_cm + bool_map_3d_.z_separation_cm];
   // Link to layer below for topmost layer
   dyn_voro_arr_[bool_map_3d_.max_height_cm]->bottom_voro_ = dyn_voro_arr_[bool_map_3d_.max_height_cm - bool_map_3d_.z_separation_cm];
+
 
   // Link all voronoi layers together
   for (int z_cm = bool_map_3d_.min_height_cm + bool_map_3d_.z_separation_cm ; 
@@ -370,7 +370,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   tm_voro_map_init_.stop(false);
 
-  viz_helper_->pubVoroVertices(voro_verts, local_map_origin_, voronoi_graph_pub_);
+  // viz_helper_->pubVoroVertices(voro_verts, local_map_origin_, voronoi_graph_pub_);
 
   init_voro_maps_ = true; // Flag to indicate that all voronoi maps have been initialized
 }
@@ -442,7 +442,7 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
 
 void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 {
-    if (msg->transforms.size() <= 0)
+    if (msg->waypoints.size() <= 0)
     {
       logger_->logError(strFmt("Received empty waypoints. Ignoring waypoints."));
 
@@ -457,12 +457,12 @@ void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr 
 
     std::vector<Eigen::Vector3d> wp_vec;
 
-    for (auto& pos : msg->transforms) {
+    for (auto& wp : msg->waypoints) {
       // Transform received waypoints from world to UAV origin frame
       wp_vec.push_back(Eigen::Vector3d(
-                        pos.translation.x - bool_map_3d_.origin(0), 
-                        pos.translation.y - bool_map_3d_.origin(1), 
-                        pos.translation.z));
+                        wp.position.x - bool_map_3d_.origin(0), 
+                        wp.position.y - bool_map_3d_.origin(1), 
+                        wp.position.z));
     }
 
     waypoints_.addMultipleWP(wp_vec);

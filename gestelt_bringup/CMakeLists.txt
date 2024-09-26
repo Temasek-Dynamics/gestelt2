@@ -24,7 +24,7 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
 # Install config files
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME}/)
 
-# Install config files
+# Install simulation files
 install(DIRECTORY simulation DESTINATION share/${PROJECT_NAME}/)
 
 if(BUILD_TESTING)

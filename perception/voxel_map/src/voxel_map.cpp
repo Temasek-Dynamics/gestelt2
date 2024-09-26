@@ -50,9 +50,9 @@ void VoxelMap::initPubSubTimer()
   }
 
   /* Initialize Publishers */
-	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", rclcpp::SensorDataQoS());
+	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", 10);
 	// slice_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("slice", rclcpp::SensorDataQoS());
-	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>("local_map/bounds", rclcpp::SensorDataQoS());
+	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>("local_map/bounds", 10);
 
   /* Initialize ROS Timers */
 	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
@@ -99,15 +99,6 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".map_slicing.max_height_cm",  -1);
   node_->declare_parameter(param_ns+".map_slicing.z_separation_cm",  -1);
 
-  auto cmToM = [&](const int& val_cm){ 
-    /* Convert from units of centimeters to meters*/
-    return ((double) val_cm)/100.0;  
-  };
-
-  bool_map_3d_.z_separation_m = cmToM(bool_map_3d_.z_separation_cm); 
-  bool_map_3d_.min_height_m = cmToM(bool_map_3d_.min_height_cm);  
-  bool_map_3d_.max_height_m = cmToM(bool_map_3d_.max_height_cm);   
-
   node_->declare_parameter(param_ns+".global_map.size_x", -1.0);
   node_->declare_parameter(param_ns+".global_map.size_y", -1.0);
   node_->declare_parameter(param_ns+".global_map.size_z", -1.0);
@@ -125,9 +116,9 @@ void VoxelMap::initParams()
   mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
   /* Frame IDs */
-  node_->declare_parameter(param_ns+".cam_frame", std::string("cam_link"));
   node_->declare_parameter(param_ns+".global_frame", std::string("world"));
-  node_->declare_parameter(param_ns+".uav_origin_frame", std::string("map"));
+  node_->declare_parameter(param_ns+".map_frame", std::string("map"));
+  node_->declare_parameter(param_ns+".uav_origin_frame", std::string("local_map_origin"));
 
   /* Camera extrinsic parameters  */
   node_->declare_parameter(param_ns+".camera_to_body.roll",  0.0);
@@ -156,6 +147,12 @@ void VoxelMap::initParams()
   bool_map_3d_.min_height_cm = node_->get_parameter(param_ns+".map_slicing.min_height_cm").as_int();
   bool_map_3d_.max_height_cm = node_->get_parameter(param_ns+".map_slicing.max_height_cm").as_int();
   bool_map_3d_.z_separation_cm = node_->get_parameter(param_ns+".map_slicing.z_separation_cm").as_int();
+
+  auto cmToM = [&](const int& val_cm){ 
+    /* Convert from units of centimeters to meters*/
+    return ((double) val_cm)/100.0;  
+  };
+
   bool_map_3d_.z_separation_m = cmToM(bool_map_3d_.z_separation_cm); 
   bool_map_3d_.min_height_m = cmToM(bool_map_3d_.min_height_cm);  
   bool_map_3d_.max_height_m = cmToM(bool_map_3d_.max_height_cm);   
@@ -177,9 +174,9 @@ void VoxelMap::initParams()
   mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
   /* Frame IDs */
-  mp_.sensor_frame_ = node_->get_parameter(param_ns+".cam_frame").as_string();
-  mp_.global_frame_ = node_->get_parameter(param_ns+".global_frame").as_string();
-  mp_.uav_origin_frame_ = node_->get_parameter(param_ns+".uav_origin_frame").as_string();
+  mp_.global_frame = node_->get_parameter(param_ns+".global_frame").as_string();
+  mp_.map_frame = node_->get_parameter(param_ns+".map_frame").as_string();
+  mp_.uav_origin_frame = node_->get_parameter(param_ns+".uav_origin_frame").as_string();
 
   /* Camera extrinsic parameters  */
   md_.cam2body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
@@ -283,7 +280,7 @@ void VoxelMap::pcdToMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc
 {
   // Transform point cloud from camera frame to uav origin frame (the global reference frame)
   pcl::transformPointCloud(*pcd, *global_map_in_origin_, md_.cam2origin_);
-  global_map_in_origin_->header.frame_id = mp_.uav_origin_frame_;
+  global_map_in_origin_->header.frame_id = mp_.map_frame;
 
   // Getting the Translation from the sensor to the Global Reference Frame
   const pcl::PointXYZ sensor_origin(md_.cam2origin_(0, 3), md_.cam2origin_(1, 3), md_.cam2origin_(2, 3));
@@ -362,7 +359,8 @@ void VoxelMap::updateLocalMap(){
 
 }
 
-std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness) {
+std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness) 
+{
   std::vector<bool> bool_map(mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
 
   double slice_z = ((double) slice_z_cm)/100.0;
@@ -440,8 +438,8 @@ void VoxelMap::updateLocalMapTimerCB()
   geometry_msgs::msg::TransformStamped gbl_to_lcl_origin_tf;
 
   gbl_to_lcl_origin_tf.header.stamp = node_->get_clock()->now();
-  gbl_to_lcl_origin_tf.header.frame_id = mp_.uav_origin_frame_;
-  gbl_to_lcl_origin_tf.child_frame_id = "d" +std::to_string(drone_id_) + "_local_map_origin";
+  gbl_to_lcl_origin_tf.header.frame_id = mp_.map_frame; 
+  gbl_to_lcl_origin_tf.child_frame_id = mp_.uav_origin_frame; 
 
   gbl_to_lcl_origin_tf.transform.translation.x = mp_.local_map_origin_(0);
   gbl_to_lcl_origin_tf.transform.translation.y = mp_.local_map_origin_(1);
@@ -454,6 +452,7 @@ void VoxelMap::updateLocalMapTimerCB()
   
   gbl_to_lcl_origin_tf_broadcaster_->sendTransform(gbl_to_lcl_origin_tf);
 
+  local_map_updated_ = true;
 }
 
 void VoxelMap::checkCollisionsTimerCB()
@@ -502,7 +501,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
     pcl::toROSMsg(*occ_map_pts, cloud_msg);
   }
   
-  cloud_msg.header.frame_id = mp_.uav_origin_frame_;
+  cloud_msg.header.frame_id = mp_.uav_origin_frame;
   cloud_msg.header.stamp = node_->get_clock()->now();
   occ_map_pub_->publish(cloud_msg);
 }

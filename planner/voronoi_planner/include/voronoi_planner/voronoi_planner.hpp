@@ -213,7 +213,7 @@ private:
   int drone_id_{-1};
 
   std::string local_map_origin_;  // Frame ID of UAV's local map
-  std::string global_origin_;     // Global origin of all UAVs
+  std::string global_frame_;     // Global origin of all UAVs
 
   // Planning params
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit

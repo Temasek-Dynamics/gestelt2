@@ -24,6 +24,11 @@ def generate_launch_description():
       'voxel_map.yaml'
     )
 
+    fake_drone_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'fake_drone.yaml'
+    )
+
     fake_map_pcd_filepath = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'simulation/fake_maps',
       'forest_single.pcd'
@@ -34,6 +39,9 @@ def generate_launch_description():
       'default.rviz'
     )
 
+    world_to_map_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                       arguments = ["0", "0", "0", "0", "0", "0", "world", "map"])
 
     fake_map = Node(
         package='fake_map',
@@ -61,6 +69,25 @@ def generate_launch_description():
         ],
     )
 
+    planner_dbg_node = Node(
+        package='gestelt_mission',
+        executable='planner_dbg',
+        output='screen',
+        shell=True,
+        name='planner_dbg_node',
+    )
+
+    fake_drone_node = Node(
+        package='fake_drone',
+        executable='fake_drone_node',
+        output='screen',
+        shell=True,
+        name='fake_drone_node',
+        parameters = [
+            fake_drone_cfg
+        ]
+    )
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -70,7 +97,14 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        fake_map,
+        # Planner
         navigator_node,
+        # Debugging nodes
+        fake_map,
+        fake_drone_node,
+        # Mission 
+        planner_dbg_node,
+        # Tools
+        world_to_map_tf,
         rviz_node
     ])

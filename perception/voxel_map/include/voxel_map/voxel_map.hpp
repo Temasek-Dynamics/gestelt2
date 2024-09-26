@@ -64,9 +64,9 @@ namespace voxel_map
     /* visualization and computation time display */
     double ground_height_; // Lowest possible height (z-axis)
 
-    std::string sensor_frame_; // Frame id of sensor
-    std::string global_frame_; // frame id of global reference 
-    std::string uav_origin_frame_; // frame id of UAV origin
+    std::string global_frame; // frame id of global reference 
+    std::string map_frame; // frame id of map reference 
+    std::string uav_origin_frame; // frame id of UAV origin
   };
 
   /* Dynamic data used during mapping */
@@ -296,6 +296,9 @@ private:
 
   BoolMap3D bool_map_3d_; // Bool map slices 
 
+  /* Flags */
+  bool local_map_updated_{false}; // Indicates if first local map update is done 
+
   /* Mutexes */
   std::mutex bool_map_3d_mtx_;  // Mutex lock for bool map 3d
   std::mutex lcl_occ_map_mtx_;  // Mutex lock for local_occ_map_pts_
@@ -325,7 +328,7 @@ inline Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { return mp_.local
 inline double VoxelMap::getInflation() const{ return mp_.inflation_; }
 
 inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
-  if (bool_map_3d_.z_separation_cm < 0){
+  if (!local_map_updated_){
     return false;
   }
   {

@@ -116,10 +116,12 @@ void TrajectoryServer::initPubSubTimers()
 
 	/* Subscribers */
 	odometry_sub_ = this->create_subscription<VehicleOdometry>(
-		"/fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
+		"/fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
 
 	vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
-		"/fmu/out/vehicle_status", rclcpp::SensorDataQoS(), std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
+		"/fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	/* Timers */
 

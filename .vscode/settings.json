@@ -91,6 +91,7 @@
         "variant": "cpp",
         "eigen": "cpp",
         "bitset": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "dense": "cpp"
     }
 }

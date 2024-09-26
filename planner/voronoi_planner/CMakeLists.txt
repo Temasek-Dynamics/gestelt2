@@ -36,7 +36,6 @@ foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-
 add_executable(voronoi_planner_node 
   src/voronoi_planner_node.cpp 
   src/voronoi_planner.cpp)

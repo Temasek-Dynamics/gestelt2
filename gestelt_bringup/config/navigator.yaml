@@ -2,7 +2,7 @@
   ros__parameters:
     navigator:
       local_map_origin: "local_map_origin"
-      global_origin: "world"
+      global_frame: "world"
 
       planner_frequency: 1.0            # [Hz] Frequency at which plan is generated
       generate_voronoi_frequency: 5.0  # [Hz] Frequency at which voronoi is generated
