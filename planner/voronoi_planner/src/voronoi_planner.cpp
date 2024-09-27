@@ -109,7 +109,7 @@ void VoronoiPlanner::initParams()
   this->declare_parameter(param_ns+".reservation_table.time_buffer", 0.5);
   this->declare_parameter(param_ns+".reservation_table.window_size", -1);
 
-  this->declare_parameter(param_ns+".local_map_origin", "local_map_origin");
+  this->declare_parameter(param_ns+".local_map_frame", "local_map_frame");
   this->declare_parameter(param_ns+".global_frame", "world");
 
 	/**
@@ -132,7 +132,7 @@ void VoronoiPlanner::initParams()
   double rsvn_tbl_t_buffer = this->get_parameter(param_ns+".reservation_table.time_buffer").as_double();
   t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer/t_unit_);  // [space-time units] for time buffer
 
-  local_map_origin_ = this->get_parameter(param_ns+".local_map_origin").as_string();
+  local_map_frame_ = this->get_parameter(param_ns+".local_map_frame").as_string();
   global_frame_ = this->get_parameter(param_ns+".global_frame").as_string();
 }
 
@@ -184,22 +184,21 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     rsvn_tbl_.clear();
   }
 
-  viz_helper_->pubStartGoalPts(start, goal, local_map_origin_, start_pt_pub_, goal_pt_pub_);
+  viz_helper_->pubStartGoalPts(start, goal, local_map_frame_, start_pt_pub_, goal_pt_pub_);
 
   tm_front_end_plan_.start();
 
   // Generate plan 
   if (!fe_planner_->generatePlan(start, goal))
   {
-    logger_->logError(strFmt("Drone %d: Failed to generate plan from (%f, %f, %f) to (%f, %f, %f)", 
+    logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f)", 
                               drone_id_, start(0), start(1), start(2), goal(0), goal(1), goal(2)));
 
     tm_front_end_plan_.stop(verbose_print_);
 
     logger_->logError(strFmt("Closed list size: %ld", fe_planner_->getClosedList().size()));
     // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
-    //                   fe_closed_list_viz_pub_, local_map_origin_);
-
+    //                   fe_closed_list_viz_pub_, local_map_frame_);
 
     return false;
   }
@@ -254,6 +253,12 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   //   }
   // }
   // std::cout << "Maximum clearance: " << max_clr << ", Minimum clearance: " << min_clr << std::endl;
+
+  if (verbose_print_)
+  {
+    logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
+                              drone_id_, start(0), start(1), start(2), goal(0), goal(1), goal(2)));
+  }
 
   plan_complete_ = true;
 
@@ -370,7 +375,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   tm_voro_map_init_.stop(false);
 
-  // viz_helper_->pubVoroVertices(voro_verts, local_map_origin_, voronoi_graph_pub_);
+  // viz_helper_->pubVoroVertices(voro_verts, local_map_frame_, voronoi_graph_pub_);
 
   init_voro_maps_ = true; // Flag to indicate that all voronoi maps have been initialized
 }

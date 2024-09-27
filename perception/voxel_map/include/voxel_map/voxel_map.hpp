@@ -66,7 +66,7 @@ namespace voxel_map
 
     std::string global_frame; // frame id of global reference 
     std::string map_frame; // frame id of map reference 
-    std::string uav_origin_frame; // frame id of UAV origin
+    std::string local_map_frame; // frame id of UAV origin
   };
 
   /* Dynamic data used during mapping */

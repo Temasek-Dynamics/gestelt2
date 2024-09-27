@@ -84,7 +84,11 @@ def generate_launch_description():
         shell=True,
         name='fake_drone_node',
         parameters = [
-            fake_drone_cfg
+            fake_drone_cfg,
+            {'fake_drone.drone_id': drone_id_},
+            {'fake_drone.init.x': -6.0},
+            {'fake_drone.init.y': -4.5},
+            {'fake_drone.init.z': 1.0},
         ]
     )
 

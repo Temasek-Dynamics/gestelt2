@@ -14,6 +14,8 @@
 
 #include <gestelt_interfaces/msg/space_time_path.hpp>
 
+#include <minco_traj_gen/minco_traj_gen.hpp>
+
 // #include "tinysplinecxx.h"  // For spline interpolation
 
 using namespace std::chrono;
@@ -56,6 +58,7 @@ class FakeDrone : public rclcpp::Node
 	    rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_sub_;  // Front end plan subscription
 
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; // Publish odometry
+        rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_; // Publish pose
 
         rclcpp::TimerBase::SharedPtr tf_update_timer_; // Timer for tf broadcast
         rclcpp::TimerBase::SharedPtr state_update_timer_; // Timer for state update and publishing 
@@ -66,7 +69,7 @@ class FakeDrone : public rclcpp::Node
         int drone_id_{-1};
         double t_unit_{0.1};     // [s] Time duration of each space-time A* unit
 
-        std::string global_frame_, local_map_origin_, uav_frame_;
+        std::string global_frame_, local_map_frame_, uav_frame_;
 
         /* Data */
         nav_msgs::msg::Odometry odom_msg_;
@@ -77,8 +80,7 @@ class FakeDrone : public rclcpp::Node
         // std::shared_ptr<tinyspline::BSpline> spline_; // Spline formed from interpolating control points of front end path
         std::vector<Eigen::Vector4d> fe_space_time_path_; // Front end space time path
 
-        double plan_start_exec_t_; // Time that plan started execution
-        double plan_start_t_; // Time that plan started
+        double plan_start_t_; // [s] Time that plan started
 
         /* Mutexes  */
         std::mutex state_mutex_;

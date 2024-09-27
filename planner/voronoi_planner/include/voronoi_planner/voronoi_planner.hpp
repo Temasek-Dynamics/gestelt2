@@ -212,7 +212,7 @@ private:
   /* Params */
   int drone_id_{-1};
 
-  std::string local_map_origin_;  // Frame ID of UAV's local map
+  std::string local_map_frame_;  // Frame ID of UAV's local map
   std::string global_frame_;     // Global origin of all UAVs
 
   // Planning params

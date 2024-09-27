@@ -1,14 +1,14 @@
 /**: 
   ros__parameters:
     navigator:
-      local_map_origin: "local_map_origin"
+      local_map_frame: "local_map_origin"
       global_frame: "world"
 
       planner_frequency: 1.0            # [Hz] Frequency at which plan is generated
       generate_voronoi_frequency: 5.0  # [Hz] Frequency at which voronoi is generated
 
       planner: 
-        verbose_print: false  # If enabled, print debug information such as timing information
+        verbose_print: true  # If enabled, print debug information such as timing information
         goal_tolerance: 0.3   # [m] Tolerance for goal execution to be complete
         plan_once: true       # Only plan once
         t_unit: 0.1           # [s] Duration of each time unit            

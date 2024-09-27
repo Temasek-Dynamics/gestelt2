@@ -6,8 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /fake_map1
-        - /front_end1
+        - /odom1/Shape1
       Splitter Ratio: 0.5675675868988037
     Tree Height: 542
   - Class: rviz_common/Selection
@@ -74,8 +73,8 @@ Visualization Manager:
           Value: true
         Value: true
       Enabled: true
-      Keep: 10
-      Name: Odometry
+      Keep: 5
+      Name: odom
       Position Tolerance: 0.10000000149011612
       Shape:
         Alpha: 1
@@ -84,7 +83,7 @@ Visualization Manager:
         Color: 255; 25; 0
         Head Length: 0.30000001192092896
         Head Radius: 0.10000000149011612
-        Shaft Length: 1
+        Shaft Length: 0.5
         Shaft Radius: 0.05000000074505806
         Value: Arrow
       Topic:
@@ -95,6 +94,26 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /odom
       Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/Pose
+      Color: 255; 25; 0
+      Enabled: false
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: pose
+      Shaft Length: 0.5
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /pose
+      Value: false
     - Alpha: 0.10000000149011612
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -213,7 +232,7 @@ Visualization Manager:
           Enabled: true
           Name: fe_start
           Namespaces:
-            {}
+            start_goal_points: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -226,7 +245,7 @@ Visualization Manager:
           Enabled: true
           Name: fe_goal
           Namespaces:
-            {}
+            start_goal_points: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -239,7 +258,9 @@ Visualization Manager:
           Enabled: true
           Name: /fe_plan/viz
           Namespaces:
-            {}
+            front_end_path_lines: true
+            front_end_sphere_list: true
+            start_end_points: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -248,7 +269,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /fe_plan/viz
           Value: true
-      Enabled: false
+      Enabled: true
       Name: front_end
   Enabled: true
   Global Options:
@@ -295,21 +316,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz_default_plugins/TopDownOrtho
+      Class: rviz_default_plugins/XYOrbit
+      Distance: 15.50533390045166
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: -0.7139350175857544
+        Y: -4.567872047424316
+        Z: 4.76837158203125e-06
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 33.380619049072266
+      Pitch: 1.4147964715957642
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz_default_plugins)
-      X: -1.284477710723877
-      Y: -0.5475084185600281
+      Value: XYOrbit (rviz_default_plugins)
+      Yaw: 4.842370986938477
     Saved: ~
 Window Geometry:
   Displays:
@@ -327,5 +353,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 66
-  Y: 60
+  X: 541
+  Y: 196

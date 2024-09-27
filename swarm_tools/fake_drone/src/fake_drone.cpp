@@ -3,65 +3,62 @@
 FakeDrone::FakeDrone()
 : Node("fake_drone")
 {
+	bl_broadcaster_tf_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
-  bl_broadcaster_tf_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+	sim_update_cb_group_ = this->create_callback_group(
+		rclcpp::CallbackGroupType::Reentrant);
 
-  sim_update_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::Reentrant);
-
-  std::string param_ns = "fake_drone";
-  
-  this->declare_parameter(param_ns+".drone_id", -1);
-
-  this->declare_parameter(param_ns+".state_update_frequency", -1.0);
-  this->declare_parameter(param_ns+".tf_broadcast_frequency", -1.0);
-
-  this->declare_parameter(param_ns+".global_frame", "world");
-  this->declare_parameter(param_ns+".local_map_origin",  "local_map_origin");
-  this->declare_parameter(param_ns+".uav_frame","base_link");
-
-  this->declare_parameter(param_ns+".t_unit", 0.1);
-
-  this->declare_parameter(param_ns+".init.x", 0.0);
-  this->declare_parameter(param_ns+".init.y", 0.0);
-  this->declare_parameter(param_ns+".init.z", 0.0);
-
-
-  drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
-
-  double state_update_freq = this->get_parameter(param_ns+".state_update_frequency").as_double();
-  double tf_broadcast_freq = this->get_parameter(param_ns+".tf_broadcast_frequency").as_double();
-
-  global_frame_ = this->get_parameter(param_ns+".global_frame").as_string();
-  local_map_origin_ = this->get_parameter(param_ns+".local_map_origin").as_string();
-  uav_frame_ = this->get_parameter(param_ns+".uav_frame").as_string();
-
-  t_unit_ = this->get_parameter(param_ns+".t_unit").as_double();
-
-  Eigen::Vector3d init_pos;
-  init_pos(0) = this->get_parameter(param_ns+".init.x").as_double();
-  init_pos(1) = this->get_parameter(param_ns+".init.y").as_double();
-  init_pos(2) = this->get_parameter(param_ns+".init.z").as_double();
-
-  // Set initial position
-
-  odom_msg_.pose.pose.position.x = init_pos(0);
-  odom_msg_.pose.pose.position.y = init_pos(1);
-  odom_msg_.pose.pose.position.z = init_pos(2);
-  odom_msg_.pose.pose.orientation.x = 0.0;
-  odom_msg_.pose.pose.orientation.y = 0.0;
-  odom_msg_.pose.pose.orientation.z = 0.0;
-  odom_msg_.pose.pose.orientation.w = 1.0;
-
-  pose_msg_.pose = odom_msg_.pose.pose;
-  odom_msg_.header.frame_id = pose_msg_.header.frame_id = local_map_origin_;
+	std::string param_ns = "fake_drone";
 	
-	/* Subscribers and publishers*/
-  fe_plan_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
-    "fe_plan", rclcpp::SystemDefaultsQoS(), std::bind(&FakeDrone::frontEndPlanCB, this, _1));
+	this->declare_parameter(param_ns+".drone_id", -1);
 
-  // pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", 10);
-  odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+	this->declare_parameter(param_ns+".state_update_frequency", -1.0);
+	this->declare_parameter(param_ns+".tf_broadcast_frequency", -1.0);
+
+	this->declare_parameter(param_ns+".global_frame", "world");
+	this->declare_parameter(param_ns+".local_map_frame",  "local_map_origin");
+	this->declare_parameter(param_ns+".uav_frame","base_link");
+
+	this->declare_parameter(param_ns+".t_unit", 0.1);
+
+	this->declare_parameter(param_ns+".init.x", 0.0);
+	this->declare_parameter(param_ns+".init.y", 0.0);
+	this->declare_parameter(param_ns+".init.z", 0.0);
+
+	drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
+
+	double state_update_freq = this->get_parameter(param_ns+".state_update_frequency").as_double();
+	double tf_broadcast_freq = this->get_parameter(param_ns+".tf_broadcast_frequency").as_double();
+
+	global_frame_ = this->get_parameter(param_ns+".global_frame").as_string();
+	local_map_frame_ = this->get_parameter(param_ns+".local_map_frame").as_string();
+	uav_frame_ = this->get_parameter(param_ns+".uav_frame").as_string();
+
+	t_unit_ = this->get_parameter(param_ns+".t_unit").as_double();
+
+	Eigen::Vector3d init_pos;
+	init_pos(0) = this->get_parameter(param_ns+".init.x").as_double();
+	init_pos(1) = this->get_parameter(param_ns+".init.y").as_double();
+	init_pos(2) = this->get_parameter(param_ns+".init.z").as_double();
+
+	// Set initial position
+	odom_msg_.pose.pose.position.x = init_pos(0);
+	odom_msg_.pose.pose.position.y = init_pos(1);
+	odom_msg_.pose.pose.position.z = init_pos(2);
+	odom_msg_.pose.pose.orientation.x = 0.0;
+	odom_msg_.pose.pose.orientation.y = 0.0;
+	odom_msg_.pose.pose.orientation.z = 0.0;
+	odom_msg_.pose.pose.orientation.w = 1.0;
+
+	pose_msg_.pose = odom_msg_.pose.pose;
+	odom_msg_.header.frame_id = pose_msg_.header.frame_id = global_frame_;
+		
+		/* Subscribers and publishers*/
+	fe_plan_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
+		"fe_plan", rclcpp::SystemDefaultsQoS(), std::bind(&FakeDrone::frontEndPlanCB, this, _1));
+
+	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+	pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", 10);
 
 	/**
 	 * Timer for drone state update  
@@ -111,7 +108,6 @@ void FakeDrone::frontEndPlanCB(const gestelt_interfaces::msg::SpaceTimePath::Uni
 
 	// spline_ = std::make_shared<tinyspline::BSpline>(tinyspline::BSpline::interpolateCubicNatural(points, 3));
 
-	plan_start_exec_t_ = this->get_clock()->now().seconds();
 	plan_start_t_ = msg->t_plan_start;
 
 	plan_received_ = true;
@@ -124,7 +120,7 @@ void FakeDrone::tfUpdateTimerCB()
   geometry_msgs::msg::TransformStamped bl_to_map_tf;
 
   bl_to_map_tf.header.stamp = this->get_clock()->now();
-  bl_to_map_tf.header.frame_id = local_map_origin_; 
+  bl_to_map_tf.header.frame_id = local_map_frame_; 
   bl_to_map_tf.child_frame_id = uav_frame_; 
 
   bl_to_map_tf.transform.translation.x = pose_msg_.pose.position.x;
@@ -141,13 +137,14 @@ void FakeDrone::stateUpdateTimerCB()
   odom_msg_.header.stamp = pose_msg_.header.stamp = this->get_clock()->now();
 
 	if (plan_received_){
-    setStateFromPlan(fe_space_time_path_, plan_start_t_);
+    	setStateFromPlan(fe_space_time_path_, plan_start_t_);
 	}
-  {
-    std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
-    odom_pub_->publish(odom_msg_);
-    // pose_pub_.publish(pose_msg_);
-  }
+	
+	{
+		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
+		odom_pub_->publish(odom_msg_);
+		pose_pub_->publish(pose_msg_);
+	}
 
 }
 
@@ -159,9 +156,9 @@ void FakeDrone::setStateFromPlan(	const std::vector<Eigen::Vector4d>& space_time
 	double e_t_start = t_now.seconds() - plan_start_t;			 	// [s] Elapsed time since plan start
 	int e_t_start_st = (int) tToSpaceTimeUnits(e_t_start); 	// [space-time units] Elapsed time since plan start
 
-	if (e_t_start < 0){
-		std::cout << "trajectory starts in the future" << std::endl;
+	if (e_t_start_st < 0){
 		// trajectory starts in the future
+		std::cout << "trajectory starts in the future" << std::endl;
 		return;
 	}
 
@@ -203,7 +200,7 @@ void FakeDrone::setStateFromPlan(	const std::vector<Eigen::Vector4d>& space_time
 	// double y = result[1];
 	// double z = result[2];
 
-  std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
+  	std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
 
 	odom_msg_.header.stamp = pose_msg_.header.stamp = t_now;
 
@@ -219,7 +216,30 @@ void FakeDrone::setStateFromPlan(	const std::vector<Eigen::Vector4d>& space_time
 
 	// pose_msg_.header.stamp = t_now;
 
-	// // pose_msg_.pose = fe_plan_msg.plan[cur_plan_idx];
-	// pose_msg_.pose = odom_msg_.pose.pose;
+	// pose_msg_.pose = fe_plan_msg.plan[cur_plan_idx];
+	pose_msg_.pose = odom_msg_.pose.pose;
 }
 
+void FakeDrone::genMinJerkTraj(const std::vector<Eigen::Vector4d>& space_time_path)
+{
+	Eigen::Matrix3d start_PVA = space_time_path[0].head<3>();
+	Eigen::Matrix3d end_PVA = space_time_path.last().head<3>();
+	
+	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+	Eigen::VectorXd seg_durations(space_time_path.size()-1);
+
+	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+		inner_pts.col(j) = space_time_path[i].head<3>();
+	}
+
+	for (size_t i = 0; i < space_time_path.size(); i++){
+		// TODO: calculate durations from time stamps
+		// seg_durations(i) = space_time_path[i].tail<1>();
+	}
+
+	poly_traj::MinJerkOpt initial_mjo; // Initial minimum jerk trajectory
+	initial_mjo.reset(startPVA, endPVA, num_segs);
+
+	initial_mjo.generate(start_PVA, end_PVA, inner_pts, seg_durations);
+
+}

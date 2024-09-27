@@ -8,7 +8,7 @@
 
       global_frame: "world"
       map_frame: "map"
-      uav_origin_frame: "local_map_origin"
+      local_map_frame: "local_map_origin"
 
       map_slicing: # 2D boolean map slices used for voronoi generation
         min_height_cm:    40    # [cm] Minimum slice height

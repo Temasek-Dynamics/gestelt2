@@ -18,6 +18,8 @@
   <depend> geometry_msgs </depend>
   <depend> gestelt_interfaces </depend>
 
+  <depend> minco_traj_gen </depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

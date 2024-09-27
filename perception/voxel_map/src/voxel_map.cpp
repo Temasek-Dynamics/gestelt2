@@ -118,7 +118,7 @@ void VoxelMap::initParams()
   /* Frame IDs */
   node_->declare_parameter(param_ns+".global_frame", std::string("world"));
   node_->declare_parameter(param_ns+".map_frame", std::string("map"));
-  node_->declare_parameter(param_ns+".uav_origin_frame", std::string("local_map_origin"));
+  node_->declare_parameter(param_ns+".local_map_frame", std::string("local_map_origin"));
 
   /* Camera extrinsic parameters  */
   node_->declare_parameter(param_ns+".camera_to_body.roll",  0.0);
@@ -176,7 +176,7 @@ void VoxelMap::initParams()
   /* Frame IDs */
   mp_.global_frame = node_->get_parameter(param_ns+".global_frame").as_string();
   mp_.map_frame = node_->get_parameter(param_ns+".map_frame").as_string();
-  mp_.uav_origin_frame = node_->get_parameter(param_ns+".uav_origin_frame").as_string();
+  mp_.local_map_frame = node_->get_parameter(param_ns+".local_map_frame").as_string();
 
   /* Camera extrinsic parameters  */
   md_.cam2body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
@@ -439,7 +439,7 @@ void VoxelMap::updateLocalMapTimerCB()
 
   gbl_to_lcl_origin_tf.header.stamp = node_->get_clock()->now();
   gbl_to_lcl_origin_tf.header.frame_id = mp_.map_frame; 
-  gbl_to_lcl_origin_tf.child_frame_id = mp_.uav_origin_frame; 
+  gbl_to_lcl_origin_tf.child_frame_id = mp_.local_map_frame; 
 
   gbl_to_lcl_origin_tf.transform.translation.x = mp_.local_map_origin_(0);
   gbl_to_lcl_origin_tf.transform.translation.y = mp_.local_map_origin_(1);
@@ -501,7 +501,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
     pcl::toROSMsg(*occ_map_pts, cloud_msg);
   }
   
-  cloud_msg.header.frame_id = mp_.uav_origin_frame;
+  cloud_msg.header.frame_id = mp_.local_map_frame;
   cloud_msg.header.stamp = node_->get_clock()->now();
   occ_map_pub_->publish(cloud_msg);
 }
@@ -512,7 +512,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 //     sensor_msgs::msg::PointCloud2 cloud_msg;
 //     pcl::toROSMsg(*slice_map, cloud_msg);
 
-//     cloud_msg.header.frame_id = "local_map_origin";
+//     cloud_msg.header.frame_id = "local_map_frame";
 //     cloud_msg.header.stamp = node_->get_clock()->now();
 //     slice_map_pub_->publish(cloud_msg);
 //     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", local_occ_map_pts_.points.size()));
@@ -527,7 +527,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 //   static int col_viz_id = 0;
 
 //   visualization_msgs::Marker sphere;
-//   sphere.header.frame_id = mp_.uav_origin_frame_;
+//   sphere.header.frame_id = mp_.local_map_frame_;
 //   sphere.header.stamp = node_->get_clock()->now();
 //   sphere.type = visualization_msgs::Marker::SPHERE;
 //   sphere.action = visualization_msgs::Marker::ADD;
@@ -568,7 +568,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 // void VoxelMap::publishLocalMapBounds()
 // {
 //   geometry_msgs::PolygonStamped local_map_poly;
-//   local_map_poly.header.frame_id = mp_.uav_origin_frame_;
+//   local_map_poly.header.frame_id = mp_.local_map_frame_;
 //   local_map_poly.header.stamp = node_->get_clock()->now();
 
 //   geometry_msgs::Point32 min_corner, corner_0, corner_1, max_corner;

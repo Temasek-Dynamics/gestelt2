@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(traj_opt)
+project(minco_traj_gen)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
@@ -16,27 +16,30 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
 
-add_library(traj_opt src/traj_opt.cpp)
-add_library(traj_opt::traj_opt ALIAS traj_opt)
-target_compile_features(traj_opt PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(traj_opt PUBLIC
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+add_library(minco_traj_gen src/minco_traj_gen.cpp)
+add_library(minco_traj_gen::minco_traj_gen ALIAS minco_traj_gen)
+target_compile_features(minco_traj_gen PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(minco_traj_gen PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_link_libraries(minco_traj_gen
+  Eigen3::Eigen
+)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(traj_opt PRIVATE "TRAJ_OPT_BUILDING_LIBRARY")
+target_compile_definitions(minco_traj_gen PRIVATE "MINCO_TRAJ_GEN_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 install(
-  TARGETS traj_opt
+  TARGETS minco_traj_gen
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -59,7 +62,7 @@ ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
 ament_export_libraries(
-  traj_opt
+  minco_traj_gen
 )
 ament_export_targets(
   export_${PROJECT_NAME}
