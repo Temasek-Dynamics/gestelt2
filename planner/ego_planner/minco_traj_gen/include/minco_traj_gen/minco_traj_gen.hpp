@@ -6,6 +6,7 @@
 #include "root_finder.hpp"
 
 #include <iostream>
+#include <memory>
 #include <cmath>
 #include <vector>
 
@@ -13,7 +14,7 @@
 
 // #include <boost/math/special_functions/factorials.hpp>
 
-namespace poly_traj
+namespace minco
 {
 
   // using namespace boost::math;
@@ -1299,17 +1300,17 @@ namespace poly_traj
           return objective;
       }
 
-      Trajectory getTraj(void) const
+      std::shared_ptr<Trajectory> getTraj(void) const
       {
-          Trajectory traj;
-          traj.reserve(N);
+          std::shared_ptr<Trajectory> traj = std::make_shared<Trajectory>();
+          traj->reserve(N);
           for (int i = 0; i < N; i++) // For each polynomial segment
           {
               // Block of size (6,3) at (0,0), (6,0), ... (6*(N-1), 0)
               // Reverse rowwise (i.e. left to right -> right to left)
 
               // To trajectory, append (time duration of each piece, 5th order polynomial coefficients of 3 axes (x,y,z))
-              traj.emplace_back(T1(i), b.block<6, 3>(6 * i, 0).transpose().rowwise().reverse());
+              traj->emplace_back(T1(i), b.block<6, 3>(6 * i, 0).transpose().rowwise().reverse());
           }
           return traj;
       }
@@ -1317,74 +1318,27 @@ namespace poly_traj
       /**
        * @brief Get Trajectory and set starting time
        * 
-       * @param traj_start_t 
+       * @param traj_start_t global time at which trajectory started
        * @return Trajectory 
        */
-      Trajectory getTraj(const double& traj_start_t) const
+      std::shared_ptr<Trajectory> getTraj(const double& traj_start_t) const
       {
-          Trajectory traj;
-          traj.reserve(N);
+          std::shared_ptr<Trajectory> traj = std::make_shared<Trajectory>();
+          traj->reserve(N);
           for (int i = 0; i < N; i++) // For each polynomial segment
           {
               // Block of size (6,3) at (0,0), (6,0), ... (6*(N-1), 0)
               // Reverse rowwise (i.e. left to right -> right to left)
 
               // To trajectory, append (time duration of each piece, 5th order polynomial coefficients of 3 axes (x,y,z))
-              traj.emplace_back(T1(i), b.block<6, 3>(6 * i, 0).transpose().rowwise().reverse());
+              traj->emplace_back(T1(i), b.block<6, 3>(6 * i, 0).transpose().rowwise().reverse());
           }
 
-          traj.setGlobalStartTime(traj_start_t);
+          traj->setGlobalStartTime(traj_start_t);
           
           return traj;
       }
 
-      
-      /**
-       * @brief Given desired number of constraint points per segment, get all constraint points 
-       * along trajectory. This is done by stepping through time and sampling the polynomial segment
-       * 
-       * @param num_cp Number of constraint points per piece
-       * @return Eigen::MatrixXd Matrix of points of size (3, N*num_cp+1)
-       */
-      std::vector<std::vector<std::pair<double, Eigen::Vector3d>>> getTimePositionPairs(const int num_cp) const
-      {   
-          std::vector<std::vector<std::pair<double, Eigen::Vector3d>>> pts_check;
-          pts_check.resize(N);
-
-          Eigen::Vector3d pos;
-          Eigen::Matrix<double, 6, 1> beta0; //Time values
-          double s1, s2, s3, s4, s5; //Time basis
-          double traj_t = 0.0; // Time from start of trajectory
-
-          for (int i = 0; i < N; ++i) // For each trajectory segment/piece
-          {
-              const auto &c = b.block<6, 3>(i * 6, 0);
-              double step = T1(i) / num_cp; // step is time duration / number of constraint points
-              s1 = 0.0; // Time stamp
-
-              std::vector<std::pair<double, Eigen::Vector3d>> segment;
-              for (int j = 0; j <= num_cp; ++j) // For each constraint point
-              {
-                  s2 = s1 * s1; // t^2
-                  s3 = s2 * s1; // t^3
-                  s4 = s2 * s2; // t^4
-                  s5 = s4 * s1; // t^5
-                  beta0 << 1.0, s1, s2, s3, s4, s5;
-                  
-                  
-                  pos = c.transpose() * beta0; // pos = c_5*(t**5) + c_4*(t**4) + c_3*(t**3) + c_2*(t**2) + c_1*(t) + c_0
-                  segment.push_back(std::make_pair(traj_t, pos));
-
-                  // step through time
-                  s1 += step; 
-                  traj_t += step;
-              }
-              // add entire segment 
-              pts_check.push_back(segment);
-          }
-
-          return pts_check;
-      }
 
       /**
        * @brief Given desired number of constraint points per segment, get all constraint points 
@@ -1393,7 +1347,7 @@ namespace poly_traj
        * @param num_cp Number of constraint points per piece
        * @return Eigen::MatrixXd Matrix of points of size (3, N*num_cp+1)
        */
-      Eigen::MatrixXd getInitConstraintPoints(const int num_cp) const
+      Eigen::MatrixXd getConstraintPts(const int& num_cp) const
       {   
           Eigen::MatrixXd pts(3, N * num_cp + 1); // Each column of pts is a 3d position value
           Eigen::Vector3d pos;
@@ -1407,8 +1361,6 @@ namespace poly_traj
               const auto &c = b.block<6, 3>(i * 6, 0);
               step = T1(i) / num_cp; // step is time duration / number of constraint points
               s1 = 0.0; // Time stamp
-              double t = 0;
-              // innerLoop = num_cp;
 
               for (int j = 0; j <= num_cp; ++j) // For each constraint point
               {
@@ -1437,8 +1389,6 @@ namespace poly_traj
 
           return pts;
       }
-
-
 
       // /**
       //  * @brief Get the cost of jerk for the entire trajectory 
@@ -1503,6 +1453,6 @@ namespace poly_traj
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
   };
 
-}  // namespace traj_opt
+}  // namespace minco
 
 #endif  // MINCO_TRAJ_GEN__MINCO_TRAJ_GEN_HPP_

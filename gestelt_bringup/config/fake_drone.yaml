@@ -8,4 +8,7 @@
       state_update_frequency: 50.0  # [Hz] Frequency at which state is published
       tf_broadcast_frequency: 30.0  # [Hz] Frequency at which tf is broadcasteds
 
-      t_unit: 0.1
+      t_unit: 0.1 #[s] Duration of each space-time unit 
+
+      t_step: 0.5 # [s] Forward time step to obtain yaw 
+      fe_stride: 3 # Number of front-end path points to skip. Affects fidelity of front end path being processed

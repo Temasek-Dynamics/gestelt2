@@ -1,25 +1,18 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>fake_drone</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <name>viz_helper</name>
+  <version>0.0.1</version>
+  <description>Library for visualizing planner paths and trajectories</description>
   <maintainer email="john_tanguanzhong@hotmail.com">john</maintainer>
   <license>MIT</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_ros</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
   <depend> rclcpp </depend>
-  <depend> tf2_ros </depend>
-  <depend> nav_msgs </depend>
-  <depend> geometry_msgs </depend>
-  <depend> gestelt_interfaces </depend>
-
-  <depend> minco_traj_gen </depend>
-  <depend> viz_helper </depend>
   <depend> visualization_msgs </depend>
 
   <export>

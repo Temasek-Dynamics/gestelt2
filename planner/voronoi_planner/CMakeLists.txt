@@ -29,6 +29,7 @@ set(ROS_LIBRABRIES
   space_time_astar
   logger_wrapper
   planner_utils
+  viz_helper
 )
 
 # find dependencies
@@ -50,6 +51,7 @@ ament_target_dependencies(voronoi_planner_node
   dynamic_voronoi
   space_time_astar
   logger_wrapper
+  viz_helper
 )
 target_include_directories(voronoi_planner_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

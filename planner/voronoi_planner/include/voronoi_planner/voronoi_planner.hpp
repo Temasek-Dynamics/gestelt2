@@ -25,7 +25,7 @@
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
 
-#include "viz_helper.hpp"
+#include <viz_helper/viz_helper.hpp>
 
 namespace navigator
 {
@@ -255,7 +255,7 @@ private:
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
 
   // Visualization
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr start_pt_pub_, goal_pt_pub_; // start and goal visualization publisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
@@ -303,7 +303,7 @@ private:
   logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Timer to measure runtime
 
   /* Visualization */
-  std::shared_ptr<VizHelper> viz_helper_; // Class to aid visualization
+  std::shared_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_; // Class for logging

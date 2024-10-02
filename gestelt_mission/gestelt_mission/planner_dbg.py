@@ -64,7 +64,7 @@ def main(args=None):
     mission = Mission()
 
     mission.setPlanReq([-6.0, -4.5, 1.0], 
-                     [6.0, 4.5, 1.0])
+                     [6.0, 4.5, 2.0])
     
     mission.startTimer()
 

@@ -31,7 +31,7 @@ VoronoiPlanner::VoronoiPlanner()
   astar_params_.t_unit = t_unit_;
 
   // Initialize visualization helper
-  viz_helper_ = std::make_shared<VizHelper>(this->get_clock());
+  viz_helper_ = std::make_shared<viz_helper::VizHelper>(this->get_clock());
 }
 
 void VoronoiPlanner::init()
@@ -64,8 +64,7 @@ void VoronoiPlanner::initPubSubTimer(){
   fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", rclcpp::SensorDataQoS());
 
   // Visualization
-  start_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_start", 10);
-  goal_pt_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_goal", 10);
+  plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan_req", 10);
   fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/closed_list", 10);
   fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz", 10);
 
@@ -184,7 +183,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     rsvn_tbl_.clear();
   }
 
-  viz_helper_->pubStartGoalPts(start, goal, local_map_frame_, start_pt_pub_, goal_pt_pub_);
+  viz_helper_->pubStartGoalPts(start, goal, plan_req_pub_, local_map_frame_);
 
   tm_front_end_plan_.start();
 
@@ -211,7 +210,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   space_time_path_ = fe_planner_->getPathWithTime(cur_pos_);
   // smoothed_path_ = fe_planner_->getSmoothedPath();
   // smoothed_path_t_ = fe_planner_->getSmoothedPathWithTime();
-  // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_origin_);
+  // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_frame_);
 
   // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
   gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
@@ -235,9 +234,9 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
 
-  // viz_helper_->pubSpaceTimePath(space_time_path_, global_frame_, fe_plan_viz_pub_) ;
+  // viz_helper_->pubSpaceTimePath(space_time_path_, fe_plan_viz_pub_, global_frame_) ;
 
-  viz_helper_->pubFrontEndPath(front_end_path_, global_frame_, fe_plan_viz_pub_);
+  viz_helper_->pubFrontEndPath(front_end_path_, fe_plan_viz_pub_, global_frame_);
 
   // double min_clr = DBL_MAX; // minimum path clearance 
   // double max_clr = 0.0;     // maximum path clearance 
@@ -375,7 +374,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   tm_voro_map_init_.stop(false);
 
-  // viz_helper_->pubVoroVertices(voro_verts, local_map_frame_, voronoi_graph_pub_);
+  // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
 
   init_voro_maps_ = true; // Flag to indicate that all voronoi maps have been initialized
 }

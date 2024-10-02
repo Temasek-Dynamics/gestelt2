@@ -22,9 +22,11 @@ set(ROS_LIBRABRIES
   rclcpp
   nav_msgs
   geometry_msgs
+  visualization_msgs
   gestelt_interfaces
   tf2_ros
   minco_traj_gen
+  viz_helper
 )
 # find dependencies
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
@@ -40,9 +42,11 @@ ament_target_dependencies(fake_drone_node
   rclcpp
   nav_msgs
   geometry_msgs
+  visualization_msgs
   gestelt_interfaces
   tf2_ros
   minco_traj_gen
+  viz_helper
 )
 target_include_directories(fake_drone_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

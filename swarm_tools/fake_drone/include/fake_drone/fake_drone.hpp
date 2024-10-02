@@ -16,6 +16,8 @@
 
 #include <minco_traj_gen/minco_traj_gen.hpp>
 
+#include <viz_helper/viz_helper.hpp>
+
 // #include "tinysplinecxx.h"  // For spline interpolation
 
 using namespace std::chrono;
@@ -45,12 +47,34 @@ class FakeDrone : public rclcpp::Node
         /* Checks */
 
         /** Helper methods */
-        void setStateFromPlan(	const std::vector<Eigen::Vector4d>& space_time_path, 
-                                const double& plan_start_t);
+
+        // Set the current state of the drone from the spatial-temporal trajectory
+        void setStateFromTraj(	const std::shared_ptr<minco::Trajectory>& traj);
+
+        // Generate minimum jerk trajectory from the spatial-temporal trajectory
+        void genMinJerkTraj(	const std::vector<Eigen::Vector4d>& space_time_path);
+
+        /**
+         * @brief 
+         * 
+         * @param t_cur Current time
+         * @param pos Current position
+         * @param dt Used to calculate rate of change of yaw
+         * @return std::pair<double, double> 
+         */
+        std::pair<double, double> calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj, 
+                                                const double& t_cur, const double& dt);
 
         /* Convert from time [s] to space-time units */
         long tToSpaceTimeUnits(const double& t){
             return std::lround(t / t_unit_);
+        }
+
+        /* Convert from RPY to quaternion */
+        Eigen::Quaterniond RPYToQuaternion(const double& roll, const double& pitch, const double& yaw){
+            return Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) 
+                    * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
         }
 
     private:
@@ -60,6 +84,8 @@ class FakeDrone : public rclcpp::Node
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; // Publish odometry
         rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_; // Publish pose
 
+        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
+        
         rclcpp::TimerBase::SharedPtr tf_update_timer_; // Timer for tf broadcast
         rclcpp::TimerBase::SharedPtr state_update_timer_; // Timer for state update and publishing 
             
@@ -69,18 +95,31 @@ class FakeDrone : public rclcpp::Node
         int drone_id_{-1};
         double t_unit_{0.1};     // [s] Time duration of each space-time A* unit
 
+        int fe_stride_;     // stride to sample front-end path
+
+        double t_step_;    // time step used for getting yaw
+
+        const double YAW_DOT_MAX_PER_SEC{2 * M_PI};
+        const double YAW_DOT_DOT_MAX_PER_SEC{5 * M_PI};
+
         std::string global_frame_, local_map_frame_, uav_frame_;
 
         /* Data */
         nav_msgs::msg::Odometry odom_msg_;
         geometry_msgs::msg::PoseStamped pose_msg_;
 
-        bool plan_received_{false}; // indicates that plan is received
+        bool new_plan_rcv_{false}; // indicates that a new unexecuted plan is received
 
         // std::shared_ptr<tinyspline::BSpline> spline_; // Spline formed from interpolating control points of front end path
         std::vector<Eigen::Vector4d> fe_space_time_path_; // Front end space time path
 
         double plan_start_t_; // [s] Time that plan started
+
+        std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_; // Initial minimum jerk trajectory
+        std::shared_ptr<minco::Trajectory> fe_minco_traj_; // Front-end MINCO Trajectory
+        double t_last_traj_samp_{0.0};
+        double prev_yaw_{0.0};
+        double prev_yaw_dot_{0.0};
 
         /* Mutexes  */
         std::mutex state_mutex_;

@@ -25,6 +25,8 @@
   <depend>space_time_astar</depend>
   <depend>logger_wrapper</depend>
 
+  <depend>viz_helper</depend>
+  
   <export>
     <build_type>ament_cmake</build_type>
   </export>
