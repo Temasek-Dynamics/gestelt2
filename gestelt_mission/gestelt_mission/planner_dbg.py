@@ -10,7 +10,7 @@ class Mission(Node):
     def __init__(self):
         super().__init__('mission_node')
         self.plan_req_pub_ = self.create_publisher(PlanRequest, 
-                                                    '/plan_request_dbg', 10)
+                                                    'd0/plan_request_dbg', 10)
 
         self.plan_req_timer_ = self.create_timer(1.0, self.planReqTimerCB, autostart=False)
         self.plan_req_msg = None
