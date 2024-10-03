@@ -1,0 +1,30 @@
+{
+    "forest_dense_1" : {
+        "description": "Single path for single agent",
+        "map": "forest_dense_10x10",
+        "num_agents": 1,
+        "spawns_pos": [
+            [-6.0, -4.5, 1.0]
+        ],
+        "goals_pos": [
+            [6.0, 4.5, 2.0]
+        ]
+    },
+    "forest_dense_4" : {
+        "description": "Single path for 4 agents",
+        "map": "forest_dense_10x10",
+        "num_agents": 4,
+        "spawns_pos": [
+            [-5.5, -5.5, 2.0],
+            [5.5, 5.5, 2.0],
+            [-5.5, 5.5, 2.0],
+            [5.5, -5.5, 2.0]
+        ],
+        "goals_pos": [
+            [5.5, 5.5, 2.0],
+            [-5.5, -5.5, 2.0],
+            [5.5, -5.5, 2.0],
+            [-5.5, 5.5, 2.0]
+        ]
+    }
+}

@@ -15,6 +15,7 @@
   <depend>fake_map</depend>
   <depend>fake_drone</depend>
   <depend>trajectory_server</depend>
+  
   <depend>gestelt_mission</depend>
 
   <export>

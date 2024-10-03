@@ -15,6 +15,12 @@ namespace viz_helper{
   static const Eigen::Vector4d fe_plan_path_color{1.0, 0.5, 0.0, 0.5}; // Front-end path
   static const  Eigen::Vector4d exec_traj_color{1, 51.0/221.0, 51.0/221.0, 0.5}; // #FF3333
 
+  static const double EXEC_TRAJ_ALPHA{0.2};
+  static const double EXEC_TRAJ_RADIUS{0.1};
+
+  static const double FRONT_END_ALPHA{0.2};
+  static const double FRONT_END_RADIUS{0.1};
+
   using namespace visualization_msgs::msg;
 
   struct VizHelper{
@@ -126,8 +132,8 @@ namespace viz_helper{
     {
       visualization_msgs::msg::Marker wps, lines;
       visualization_msgs::msg::Marker start_sphere, goal_sphere;
-      double radius = 0.1;
-      double alpha = 0.6; 
+      double radius = FRONT_END_RADIUS;
+      double alpha = FRONT_END_ALPHA; 
 
       geometry_msgs::msg::Point pt;
 
@@ -301,8 +307,8 @@ namespace viz_helper{
                             const std::string& frame_id)
     {
       visualization_msgs::msg::Marker wps, lines;
-      double radius = 0.1;
-      double alpha = 0.6; 
+      double radius = EXEC_TRAJ_RADIUS;
+      double alpha = EXEC_TRAJ_ALPHA; 
 
       geometry_msgs::msg::Point pt;
 

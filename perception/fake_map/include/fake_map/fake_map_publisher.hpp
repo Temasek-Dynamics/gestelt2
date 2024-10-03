@@ -42,8 +42,8 @@ public:
     frame_id_ = this->get_parameter(param_ns+".frame_id").as_string();
     pub_freq_ = this->get_parameter(param_ns+".publishing_frequency").as_double();
 
-    RCLCPP_INFO(this->get_logger(), "Params: pcd_filepath(%s), frame_id(%s), pub_freq(%f)", 
-                pcd_filepath_.c_str(), frame_id_.c_str(), pub_freq_);
+    // RCLCPP_INFO(this->get_logger(), "Params: pcd_filepath(%s), frame_id(%s), pub_freq(%f)", 
+    //             pcd_filepath_.c_str(), frame_id_.c_str(), pub_freq_);
 
     /* Publisher */
     fake_map_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fake_map", 10);
@@ -51,7 +51,7 @@ public:
     cloud_msg_ = std::make_shared<sensor_msgs::msg::PointCloud2>();
 
     /* Load point cloud file */
-    RCLCPP_INFO(this->get_logger(), "Loading pcd file path: %s", pcd_filepath_.c_str());
+    // RCLCPP_INFO(this->get_logger(), "Loading pcd file path: %s", pcd_filepath_.c_str());
     if (pcl::io::loadPCDFile(pcd_filepath_, *cloud_msg_) == -1) 
     {
       RCLCPP_ERROR(this->get_logger(), "Invalid pcd file! Shutting down!");

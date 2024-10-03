@@ -24,7 +24,7 @@ VoronoiPlanner::VoronoiPlanner()
   tm_voro_map_init_.updateID(drone_id_);
 
   astar_params_.drone_id = drone_id_;
-  astar_params_.max_iterations = 9999;
+  astar_params_.max_iterations = 99999;
   astar_params_.debug_viz = true;
   astar_params_.tie_breaker = 1.001;
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
@@ -142,6 +142,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     return false;
   }
 
+  std::cout << "Plan_once_? " << plan_once_ << std::endl;
+
   if (plan_once_ && plan_complete_){
     return true;
   }
@@ -159,6 +161,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   rclcpp::Rate loop_rate(1000);
   while (!isAllPrioPlansRcv()){
     loop_rate.sleep();
+    std::cout << "agent " << drone_id_ << " waiting to receive higher priority plans" << std::endl;
   }
 
   // Assign voronoi map
@@ -201,7 +204,6 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
     return false;
   }
-
 
   tm_front_end_plan_.stop(verbose_print_);
 
@@ -399,6 +401,8 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
   if (msg->agent_id >= drone_id_ ){
     return;
   }
+
+  logger_->logInfo(strFmt("Received plan from agent %d", msg->agent_id));
 
   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
 

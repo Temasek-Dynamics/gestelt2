@@ -1,4 +1,5 @@
 import os
+import json
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -8,38 +9,76 @@ from launch_ros.actions import Node, PushROSNamespace
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, GroupAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, TextSubstitution
+from launch.substitutions import PathJoinSubstitution
 
-def generateFakeDrone(id, x, y, z):
-    voronoi_planner_launchfile = IncludeLaunchDescription(
+# SCENARIO_NAME = "forest_dense_1"
+SCENARIO_NAME = "forest_dense_4"
+
+class Scenario:
+    """Scenario class that contains all the attributes of a scenario, used to start the fake_map
+    and define the number of drones and their spawn positions
+    """
+    def __init__(self, filepath, scenario_name):
+        with open(filepath) as f:
+            json_dict = json.loads(f.read())
+
+        scenario_dict = json_dict.get(scenario_name, None)
+
+        if scenario_dict == None:
+            raise Exception("Specified scenario does not exist!")
+
+        self.name = scenario_name
+        self.map = scenario_dict.get("map", None)
+        self.spawns_pos = scenario_dict.get("spawns_pos", None )
+        self.goals_pos = scenario_dict.get("goals_pos", None )
+        self.num_agents = scenario_dict.get("num_agents", None )
+
+        self.checks()
+
+    def checks(self):
+        if (len(self.spawns_pos) != self.num_agents):
+            raise Exception("Number of spawn positions does not match number of agents!")
+
+        if (len(self.goals_pos) != self.num_agents):
+            raise Exception("Number of goal positions does not match number of agents!")
+
+        if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
+            raise Exception("map_name and/or spawns_pos field does not exist!")
+
+def generateFakeDrone(id, spawn_pos):
+
+    fake_drone_complete_launchfile = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
                 FindPackageShare('gestelt_bringup'),
                 'launch',
-                'voronoi_planner.py'
+                'fake_drone_complete.py'
             ])
         ]),
         launch_arguments={
-            'drone_id': id,
-            'init_x': str(x),
-            'init_y': str(y),
-            'init_z': str(z),
+            'drone_id': str(id),
+            'init_x': str(spawn_pos[0]),
+            'init_y': str(spawn_pos[1]),
+            'init_z': str(spawn_pos[2]),
         }.items()
     )
 
     return GroupAction(
       actions=[
           PushROSNamespace('d' + str(id)),
-          voronoi_planner_launchfile,
+          fake_drone_complete_launchfile,
         ]
     )
 
 def generate_launch_description():
 
+    scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
+        SCENARIO_NAME
+    )
 
     fake_map_pcd_filepath = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'simulation/fake_maps',
-      'forest_single.pcd'
+      scenario.map + '.pcd'
     )
 
     rviz_cfg = os.path.join(
@@ -47,10 +86,12 @@ def generate_launch_description():
       'default.rviz'
     )
 
+    # World to map transformation
     world_to_map_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        arguments = ["0", "0", "0", "0", "0", "0", "world", "map"])
 
+    # Fake map
     fake_map = Node(
         package='fake_map',
         executable='fake_map_publisher_node',
@@ -64,6 +105,7 @@ def generate_launch_description():
         ],
     )
 
+    # RVIZ Visualization
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -72,18 +114,21 @@ def generate_launch_description():
         arguments=['-d' + rviz_cfg]
     )
 
-    # Mission node
-    planner_dbg_node = Node(
+    # Mission node: Sends goals to agents
+    mission_node = Node(
         package='gestelt_mission',
-        executable='planner_dbg',
+        executable='mission',
         output='screen',
         shell=True,
-        name='planner_dbg_node',
+        name='mission_node',
+        parameters = [
+            {'scenario': scenario.name},
+        ]
     )
 
-    d0 = generateFakeDrone(0, -6.0, -4.5, 1.0)
-    d1 = generateFakeDrone(1, 6.0, -4.5, 1.0)
-    d2 = generateFakeDrone(2, 6.0, 4.5, 1.0)
+    fake_drone_nodes = []
+    for id in range(scenario.num_agents):
+        fake_drone_nodes.append(generateFakeDrone(id, scenario.spawns_pos[id]))
 
     return LaunchDescription([
         # Central nodes
@@ -91,12 +136,7 @@ def generate_launch_description():
         world_to_map_tf,
         rviz_node,
 
-        # Mission nodes
-        planner_dbg_node,
+        mission_node,
 
-        # Fake drone unit
-        # voronoi_planner_launchfile
-        d0,
-        d1,
-        d2,
+        *fake_drone_nodes
     ])
