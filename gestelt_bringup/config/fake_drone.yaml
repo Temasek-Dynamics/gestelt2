@@ -11,4 +11,4 @@
       t_unit: 0.1 #[s] Duration of each space-time unit 
 
       t_step: 0.5 # [s] Forward time step to obtain yaw 
-      fe_stride: 3 # Number of front-end path points to skip. Affects fidelity of front end path being processed
+      fe_stride: 1 # Number of front-end path points to skip. Affects fidelity of front end path being processed

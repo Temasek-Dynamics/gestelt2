@@ -13,6 +13,12 @@ from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
+      
+    output_json_filepath = os.path.join(
+      os.path.expanduser("~"), 'gestelt_ws/src/Gestelt2/gestelt_bringup',
+      'map0_a_star_raw.json'
+    )
+
     ''' Get launch argument values '''
     drone_id = LaunchConfiguration('drone_id')
     init_x = LaunchConfiguration('init_x')
@@ -61,6 +67,7 @@ def generate_launch_description():
         name='voronoi_planner',
         parameters=[
             {'navigator.drone_id': drone_id},
+            {'navigator.planner.output_json_filepath': output_json_filepath},
             navigator_cfg,
             voxel_map_cfg,
         ],

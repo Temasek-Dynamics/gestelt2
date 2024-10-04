@@ -103,6 +103,8 @@ void VoronoiPlanner::initParams()
   this->declare_parameter(param_ns+".planner.verbose_print", false);
   this->declare_parameter(param_ns+".planner.plan_once", false);
   this->declare_parameter(param_ns+".planner.t_unit", 0.1);
+  this->declare_parameter(param_ns+".planner.line_of_sight_smooth", false);
+  this->declare_parameter(param_ns+".planner.output_json_filepath", "");
 
   this->declare_parameter(param_ns+".reservation_table.inflation", 0.3);
   this->declare_parameter(param_ns+".reservation_table.time_buffer", 0.5);
@@ -125,6 +127,8 @@ void VoronoiPlanner::initParams()
   verbose_print_ = this->get_parameter(param_ns+".planner.verbose_print").as_bool();
   plan_once_ = this->get_parameter(param_ns+".planner.plan_once").as_bool();
   t_unit_ = this->get_parameter(param_ns+".planner.t_unit").as_double();
+  planner_los_smooth_ = this->get_parameter(param_ns+".planner.line_of_sight_smooth").as_bool();
+  output_json_filepath_ = this->get_parameter(param_ns+".planner.output_json_filepath").as_string();
 
   rsvn_tbl_inflation_ = this->get_parameter(param_ns+".reservation_table.inflation").as_double();
   rsvn_tbl_window_size_ = this->get_parameter(param_ns+".reservation_table.window_size").as_int();
@@ -142,8 +146,6 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     return false;
   }
 
-  std::cout << "Plan_once_? " << plan_once_ << std::endl;
-
   if (plan_once_ && plan_complete_){
     return true;
   }
@@ -158,10 +160,9 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     return true;
   };
 
-  rclcpp::Rate loop_rate(1000);
+  rclcpp::Rate loop_rate(200);
   while (!isAllPrioPlansRcv()){
     loop_rate.sleep();
-    std::cout << "agent " << drone_id_ << " waiting to receive higher priority plans" << std::endl;
   }
 
   // Assign voronoi map
@@ -208,10 +209,15 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   tm_front_end_plan_.stop(verbose_print_);
 
   // Retrieve space time path and publish it
-  front_end_path_ = fe_planner_->getPath(cur_pos_);
-  space_time_path_ = fe_planner_->getPathWithTime(cur_pos_);
-  // smoothed_path_ = fe_planner_->getSmoothedPath();
-  // smoothed_path_t_ = fe_planner_->getSmoothedPathWithTime();
+  if (planner_los_smooth_){
+    fe_path_ = fe_planner_->getSmoothedPath();
+    fe_path_with_t_ = fe_planner_->getSmoothedPathWithTime();
+  }
+  else {
+    fe_path_ = fe_planner_->getPath(cur_pos_);
+    fe_path_with_t_ = fe_planner_->getPathWithTime(cur_pos_);
+  }
+
   // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_frame_);
 
   // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
@@ -220,30 +226,47 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   fe_plan_msg.agent_id = drone_id_;
   fe_plan_msg.header.stamp = this->get_clock()->now();
 
-  for (size_t i = 0; i < space_time_path_.size(); i++){
+  for (size_t i = 0; i < fe_path_with_t_.size(); i++){
     geometry_msgs::msg::Pose pose;
-    pose.position.x = space_time_path_[i](0);
-    pose.position.y = space_time_path_[i](1);
-    pose.position.z = space_time_path_[i](2);
+    pose.position.x = fe_path_with_t_[i](0);
+    pose.position.y = fe_path_with_t_[i](1);
+    pose.position.z = fe_path_with_t_[i](2);
     pose.orientation.w = 1.0; 
 
     fe_plan_msg.plan.push_back(pose);
-    fe_plan_msg.plan_time.push_back(int(space_time_path_[i](3)));
+    fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
   }
 
   fe_plan_msg.t_plan_start = this->get_clock()->now().seconds();
 
   fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
+  // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, global_frame_) ;
+  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, global_frame_);
 
-  // viz_helper_->pubSpaceTimePath(space_time_path_, fe_plan_viz_pub_, global_frame_) ;
+  if (json_output_)
+  {
+    json path_json;
+    path_json["map"] = "map0";
 
-  viz_helper_->pubFrontEndPath(front_end_path_, fe_plan_viz_pub_, global_frame_);
+    for (auto& pt : fe_path_with_t_)
+    {
+				path_json["a_star_path"].push_back({
+					{"point", {pt(0), pt(1), pt(2)}},
+					{"time", {pt(3)}},
+				});
+    }
+
+    std::ofstream o(output_json_filepath_.c_str());
+    o << std::setw(4) << path_json << std::endl;
+
+    printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
+  }
 
   // double min_clr = DBL_MAX; // minimum path clearance 
   // double max_clr = 0.0;     // maximum path clearance 
 
-  // for (const Eigen::Vector4d& pos_4d : space_time_path_)
+  // for (const Eigen::Vector4d& pos_4d : fe_path_with_t_)
   // {
   //   Eigen::Vector3d pos{pos_4d(0), pos_4d(1), pos_4d(2)}; 
   //   Eigen::Vector3d occ_nearest; 
@@ -322,7 +345,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     
     dyn_voro_arr_[z_cm]->update(); // update distance map and Voronoi diagram
     dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
-    dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();  
+    // dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();  
 
     // // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
     // auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){

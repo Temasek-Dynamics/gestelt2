@@ -29,32 +29,36 @@ void SpaceTimeAStar::setVoroMap(const std::map<int, std::shared_ptr<dynamic_voro
     voro_params_ = voro_params;
 }
 
-void SpaceTimeAStar::expandVoronoiBubbleT(const VCell_T& origin_cell)
+void SpaceTimeAStar::expandVoroBubble(const VCell_T& origin_cell)
 {
     std::queue<IntPoint> q;
     q.push(IntPoint(origin_cell.x, origin_cell.y));
-
-    IntPoint grid(origin_cell.x, origin_cell.y);
-
-    marked_bubble_cells_[origin_cell.z_cm].insert(grid);
+    marked_bubble_cells_[origin_cell.z_cm].insert(IntPoint(origin_cell.x, origin_cell.y));
 
     while(!q.empty()) {
         IntPoint cur_cell = q.front();
         q.pop();
 
-        for (int dx=-1; dx<=1; dx++) {
-            int nx = cur_cell.x + dx;
+        // Iterate through all neighbors
+        for (int nx = cur_cell.x - 1; nx <= cur_cell.x + 1; nx++) {
             if (nx<0 || nx >= (int) dyn_voro_arr_[origin_cell.z_cm]->getSizeX()) {
                 continue; // Skip if outside map
             }
-            for (int dy=-1; dy<=1; dy++) {
-                int ny = cur_cell.y + dy;
-                if (dx && dy) {
-                    continue; // skip if not 4 connected connection
-                }
+
+            for (int ny = cur_cell.y - 1; ny <= cur_cell.y + 1; ny++) {
+
                 if (ny<0 || ny >= (int) dyn_voro_arr_[origin_cell.z_cm]->getSizeY()){
                     continue; // Skip if outside map
                 } 
+
+                if (abs(nx - cur_cell.x) == 1 && abs(ny - cur_cell.y) == 1) {
+                    continue; // skip if not 4 connected connection
+                }
+
+                if (dyn_voro_arr_[origin_cell.z_cm]->getSqrDistToObs(nx,ny) < 1) 
+                {
+                    continue;   // Skip if occupied or near obstacle
+                }
 
                 IntPoint nb_grid(nx, ny);
 
@@ -63,12 +67,6 @@ void SpaceTimeAStar::expandVoronoiBubbleT(const VCell_T& origin_cell)
                     continue; // If already added to marked bubble list, then skip
                 }
 
-                if (dyn_voro_arr_[origin_cell.z_cm]->getSqrDistance(nx,ny) < 1) 
-                {
-                    continue;   // Skip if occupied or near obstacle
-                }
-
-                // mark as closed bubble cells
                 marked_bubble_cells_[origin_cell.z_cm].insert(nb_grid);
 
                 if (!dyn_voro_arr_[origin_cell.z_cm]->isVoronoi(nx,ny)){ 
@@ -163,11 +161,9 @@ bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d,
     dyn_voro_arr_[start_node.z_cm]->update(); // update distance map and Voronoi diagram
     dyn_voro_arr_[goal_node.z_cm]->update(); // update distance map and Voronoi diagram
 
-    // marked_bubble_cells_[start_node.z_cm].clear();
-    // marked_bubble_cells_[goal_node.z_cm].clear();
     // Create voronoi bubble around start and goal
-    expandVoronoiBubbleT(start_node);
-    expandVoronoiBubbleT(goal_node);
+    expandVoroBubble(start_node);
+    expandVoroBubble(goal_node);
 
     dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
     dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
@@ -373,41 +369,41 @@ for (const VCell_T& cell : path_idx_vt_)
 
 // /* Get smoothed path */
 
-// // For each gridnode, get the position and index,
-// // So we can obtain a path in terms of indices and positions
-// path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
-// for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
-// {
-//   if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
-//     // Add current point to smoothed path
-//     path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-//   }
-//   else {
-//     IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
-//     IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
+// For each gridnode, get the position and index,
+// So we can obtain a path in terms of indices and positions
+path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
+for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
+{
+  if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
+    // Add current point to smoothed path
+    path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+  }
+  else {
+    IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
+    IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
 
-//     if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
-//       // Add current point to smoothed path
-//       path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-//     }
-//   }
-// }
-// path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+    if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
+      // Add current point to smoothed path
+      path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+    }
+  }
+}
+path_idx_smoothed_t_.push_back(path_idx_vt_.back());
 
-// // For each gridnode, get the position and index,
-// // So we can obtain a path in terms of indices and positions
-// for (const VCell_T& cell : path_idx_smoothed_t_)
-// {
-//   DblPoint map_2d_pos;
+// For each gridnode, get the position and index,
+// So we can obtain a path in terms of indices and positions
+for (const VCell_T& cell : path_idx_smoothed_t_)
+{
+  DblPoint map_2d_pos;
 
-//   // Convert to map position
-//   dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
-//   // Add space time map position to path and transform it from local map to world frame
-//   path_smoothed_t_.push_back(Eigen::Vector4d{map_2d_pos.x + voro_params_.local_origin_x, 
-//                                         map_2d_pos.y + voro_params_.local_origin_y, cell.z_m, (double) cell.t});
-//   path_smoothed_.push_back(Eigen::Vector3d{map_2d_pos.x + voro_params_.local_origin_x, 
-//                                         map_2d_pos.y + voro_params_.local_origin_y, cell.z_m});
-// }
+  // Convert to map position
+  dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
+  // Add space time map position to path and transform it from local map to world frame
+  path_smoothed_t_.push_back(Eigen::Vector4d{map_2d_pos.x + voro_params_.local_origin_x, 
+                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m, (double) cell.t});
+  path_smoothed_.push_back(Eigen::Vector3d{map_2d_pos.x + voro_params_.local_origin_x, 
+                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m});
+}
 }
 
 } // namespace global_planner

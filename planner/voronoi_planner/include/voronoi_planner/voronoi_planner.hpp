@@ -6,6 +6,8 @@
 #include <limits>
 #include <queue>
 
+#include <nlohmann/json.hpp>
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
@@ -26,6 +28,8 @@
 #include <logger_wrapper/timer.hpp>
 
 #include <viz_helper/viz_helper.hpp>
+
+using json = nlohmann::json;
 
 namespace navigator
 {
@@ -222,6 +226,10 @@ private:
   double sqr_goal_tol_{0.1}; // [m] Distance to goal before it is considered fulfilled.
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time
+  bool planner_los_smooth_; // Enable line of sight smoothing for planner
+  std::string output_json_filepath_;  // Output filepath for JSON file
+
+  bool json_output_{true};  // output path to json file
 
   // For use when populating reservation table 
   double rsvn_tbl_inflation_{-1.0}; // [m] Inflation of cells in the reservation table
@@ -293,10 +301,8 @@ private:
 
   Waypoint waypoints_; // Goal waypoint handler object
 
-  std::vector<Eigen::Vector3d> front_end_path_; // Front-end Space path in space coordinates (x,y,z) in world frame
-  std::vector<Eigen::Vector4d> space_time_path_; // Front-end Space time  path in space-time coordinates (x,y,z,t) in world frame
-  std::vector<Eigen::Vector3d> smoothed_path_; // Front end smoothed path in space coordinates (x,y,z) in world frame
-  std::vector<Eigen::Vector4d> smoothed_path_t_; // Front end smoothed space-time path in space coordinates (x,y,z) in world frame
+  std::vector<Eigen::Vector3d> fe_path_; // Front-end Space path in space coordinates (x,y,z) in world frame
+  std::vector<Eigen::Vector4d> fe_path_with_t_; // Front-end Space time  path in space-time coordinates (x,y,z,t) in world frame
 
   /* Debugging Use */
   logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Timer to measure runtime

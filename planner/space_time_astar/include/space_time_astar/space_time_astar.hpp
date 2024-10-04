@@ -82,7 +82,7 @@ private:
                           std::function<double(const VCell_T&, const VCell_T&)> cost_function);
 
   // Expand voronio bubble around given cell
-  void expandVoronoiBubbleT(const VCell_T& origin_cell);
+  void expandVoroBubble(const VCell_T& origin_cell);
 
   /* Trace path from planning results */
   void tracePath(const VCell_T& final_node);

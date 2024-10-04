@@ -75,7 +75,7 @@ public:
   int getNumVoronoiNeighborsAlternative(int x, int y);
 
   //! returns the squared obstacle distance at the specified location
-  int getSqrDistance( int x, int y ) {
+  int getSqrDistToObs( int x, int y ) {
     if( (x>0) && (x<sizeX) && (y>0) && (y<sizeY)){
       return data[x][y].sqdist; 
 

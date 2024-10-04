@@ -12,7 +12,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
-SCENARIO_NAME = "forest_dense_4"
+SCENARIO_NAME = "map_test"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -77,7 +77,7 @@ def generate_launch_description():
     )
 
     fake_map_pcd_filepath = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'simulation/fake_maps',
+      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
       scenario.map + '.pcd'
     )
 

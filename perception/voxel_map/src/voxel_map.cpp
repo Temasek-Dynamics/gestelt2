@@ -393,11 +393,31 @@ std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thi
         bool_map[idx] = true;
       }
     }
+
+    // set map boundaries as occupied
+
+    // Left and right side of map (iterate along y)
+    for(int y = 0; y < mp_.local_map_num_voxels_(1); y++)
+    {
+      int idx_l = 0 + y * mp_.local_map_num_voxels_(0);
+      int idx_r = (mp_.local_map_num_voxels_(0)-1) + y * mp_.local_map_num_voxels_(0);
+
+      bool_map[idx_l] = bool_map[idx_r] = true;
+    }
+
+    // Top and bottom side of map (iterate along x)
+    for(int x = 0; x < mp_.local_map_num_voxels_(0); x++)
+    {
+      int idx_top = x + 0 * mp_.local_map_num_voxels_(0);
+      int idx_btm = x + (mp_.local_map_num_voxels_(1)-1) * mp_.local_map_num_voxels_(0);
+
+      bool_map[idx_top] = bool_map[idx_btm] = true;
+    }
   }
 
-  return bool_map;
-
   // publishSliceMap(pcd_layer);
+
+  return bool_map;
 }
 
 /** Timer callbacks */

@@ -1,0 +1,26 @@
+/**: 
+  ros__parameters:
+    map:
+      resolution: 0.1 # [m]
+      x_size: 10.0 # [m]
+      y_size: 10.0 # [m]
+      z_size: 3.0 # [m]
+
+    random_forest: 
+      num_cylindrical_obs: 20  # Number of cylinder obstacles
+      num_hoop_obs: 0         # Number of hoops
+      rnd_seed: 1             # Random seed
+
+    cylinder:
+      lower_radius: 0.1 # [m]
+      upper_radius: 0.5 # [m]
+      lower_height: 5.0 # [m]
+      upper_height: 5.0 # [m]
+      inter_obstacle_clearance: 1.0 # [m] Minimum separation distance between center of obstacle primitives
+
+    hoop:
+      lower_radius: 7.0 # [m]
+      upper_radius: 7.0 # [m]
+      lower_height: 7.0 # [m]
+      upper_height: 7.0 # [m]
+      theta: 7.0        # [rad]

@@ -41,7 +41,7 @@ namespace viz_helper{
       const std::string& frame_id)
     {
       visualization_msgs::msg::Marker start_sphere, goal_sphere;
-      double radius = 0.1;
+      double radius = 0.75;
       double alpha = 0.5; 
 
       /* Start/goal sphere*/

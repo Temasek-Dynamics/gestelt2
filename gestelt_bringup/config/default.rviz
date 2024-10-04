@@ -6,7 +6,9 @@ Panels:
       Expanded:
         - /d01
         - /d01/state1
+        - /d01/front_end1
         - /d01/back_end1
+        - /d01/maps1
         - /d11
         - /d11/state1
         - /d21
@@ -166,9 +168,24 @@ Visualization Manager:
           Displays:
             - Class: rviz_default_plugins/Marker
               Enabled: true
+              Name: fe_plan_req
+              Namespaces:
+                plan_req_viz: true
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d0/fe_plan_req
+              Value: true
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                {}
+                fe_path_lines: true
+                fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -177,7 +194,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/fe_plan/viz
               Value: true
-          Enabled: false
+          Enabled: true
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -185,8 +202,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -195,7 +211,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/minco_traj_viz
               Value: true
-          Enabled: true
+          Enabled: false
           Name: back_end
         - Class: rviz_common/Group
           Displays:
@@ -238,7 +254,7 @@ Visualization Manager:
               Class: rviz_default_plugins/Map
               Color Scheme: map
               Draw Behind: false
-              Enabled: false
+              Enabled: true
               Name: voro_map
               Topic:
                 Depth: 5
@@ -254,7 +270,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/voro/voro_map_updates
               Use Timestamp: false
-              Value: false
+              Value: true
             - Alpha: 0.699999988079071
               Binary representation: false
               Binary threshold: 100
@@ -278,7 +294,7 @@ Visualization Manager:
                 Value: /d0/voro/occ_map_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
       Enabled: true
       Name: d0
@@ -409,8 +425,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -633,8 +648,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -857,8 +871,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -5783,26 +5796,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 13.11346435546875
+      Angle: 0.005000126548111439
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 0.8688743114471436
-        Y: -4.17908239364624
-        Z: 1.555522612761706e-05
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5097970366477966
+      Scale: 67.03398895263672
       Target Frame: <Fixed Frame>
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.987350940704346
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0.5375689268112183
+      Y: -0.07761746644973755
     Saved: ~
 Window Geometry:
   Displays:

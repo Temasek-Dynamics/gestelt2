@@ -1,4 +1,15 @@
 {
+    "map_test" : {
+        "description": "Single path for 4 agents",
+        "map": "map_test",
+        "num_agents": 1,
+        "spawns_pos": [
+            [-6.0, -6.0, 1.2]
+        ],
+        "goals_pos": [
+            [6.0, 6.0, 1.2]
+        ]
+    },
     "forest_dense_1" : {
         "description": "Single path for single agent",
         "map": "forest_dense_10x10",

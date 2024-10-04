@@ -17,6 +17,7 @@ find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 set(ROS_LIBRABRIES
 	ament_cmake
@@ -39,14 +40,22 @@ ament_target_dependencies(pcd_map_generator
 target_compile_features(pcd_map_generator PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_link_libraries(pcd_map_generator
   ${PCL_LIBRARIES}
+  nlohmann_json::nlohmann_json
 )
 
 ############
 # Install ##
 ############
 
+# Install executables.
 install(TARGETS pcd_map_generator
   DESTINATION lib/${PROJECT_NAME})
+
+# Install launch files.
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME}/)
+
+# Install config files
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME}/)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

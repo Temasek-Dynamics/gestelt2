@@ -11,7 +11,8 @@
         verbose_print: true  # If enabled, print debug information such as timing information
         goal_tolerance: 0.3   # [m] Tolerance for goal execution to be complete
         plan_once: false       # Only plan once
-        t_unit: 0.1           # [s] Duration of each time unit            
+        t_unit: 0.1           # [s] Duration of each time unit           
+        line_of_sight_smooth: false # Enables line of sight smoothing of raw A* path 
 
       reservation_table:
         inflation: 0.4    # [m] buffer for reservation table in spatial domain

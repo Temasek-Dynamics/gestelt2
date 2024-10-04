@@ -73,47 +73,50 @@ void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY) {
 
 void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, 
                                     const std::vector<bool>& bool_map_1d_arr) {
-  
   initializeEmpty(_sizeX, _sizeY);
 
   for (int x=0; x<sizeX; x++) {
     for (int y=0; y<sizeY; y++) {
-      if (bool_map_1d_arr[x + y * _sizeX]) {
-        dataCell c = data[x][y];
-        if (!isOccupied(x,y,c)) {
-          
-          bool isSurrounded = true;
-          for (int dx=-1; dx<=1; dx++) {
-            int nx = x+dx;
-            if (nx<=0 || nx>=sizeX-1) {
+      if (!bool_map_1d_arr[x + y * _sizeX]){
+        continue; // If NOT obstacle
+      }
+      dataCell c = data[x][y];
+
+      if (!isOccupied(x,y,c)) {
+        bool isSurrounded = true;
+
+        // Routine to check if cell is surrounded
+        for (int dx=-1; dx<=1; dx++) {
+          int nx = x+dx;
+          if (nx<=0 || nx>=sizeX-1) {
+            continue;
+          }
+          for (int dy=-1; dy<=1; dy++) {
+            if (dx==0 && dy==0) {
               continue;
             }
-            for (int dy=-1; dy<=1; dy++) {
-              if (dx==0 && dy==0) {
-                continue;
-              }
-              int ny = y+dy;
-              if (ny<=0 || ny>=sizeY-1){
-                continue;
-              }
-              if (!bool_map_1d_arr[nx + ny * _sizeX]) { 
-                isSurrounded = false;
-                break;
-              }
+            int ny = y+dy;
+            if (ny<=0 || ny>=sizeY-1){
+              continue;
+            }
+            if (!bool_map_1d_arr[nx + ny * _sizeX]) { 
+              isSurrounded = false;
+              break;
             }
           }
-          if (isSurrounded) {
-            c.obstX = x;
-            c.obstY = y;
-            c.sqdist = 0;
-            c.dist=0;
-            c.voronoi=occupied;
-            c.queueing = fwProcessed;
-            data[x][y] = c;
-          } 
-          else {
-            setObstacle(x,y);
-          }
+        }
+
+        if (isSurrounded) {
+          c.obstX = x;
+          c.obstY = y;
+          c.sqdist = 0;
+          c.dist=0;
+          c.voronoi=occupied;
+          c.queueing = fwProcessed;
+          data[x][y] = c;
+        } 
+        else {
+          setObstacle(x,y);
         }
       }
     }
