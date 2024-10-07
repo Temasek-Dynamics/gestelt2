@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(ego_interfaces)
+project(traj_adaptor_base)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -7,19 +7,27 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+find_package(pluginlib REQUIRED)
 
-find_package(std_msgs REQUIRED)
+# add_executable(area_node src/area_node.cpp)
+# target_include_directories(area_node PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+# target_compile_features(area_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+# ament_target_dependencies(
+#   area_node
+#   "pluginlib"
+# )
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/MINCOTraj.msg"
-  "msg/PolyTraj.msg"
-  DEPENDENCIES std_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
+###########################
+install(
+  DIRECTORY include/
+  DESTINATION include
 )
+###########################
 
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+install(TARGETS area_node
+  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -33,4 +41,12 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+###########################
+ament_export_include_directories(
+  include
+)
+###########################
+
 ament_package()
+
+

@@ -92,6 +92,10 @@
         "eigen": "cpp",
         "bitset": "cpp",
         "queue": "cpp",
-        "dense": "cpp"
+        "dense": "cpp",
+        "any": "cpp",
+        "ranges": "cpp",
+        "valarray": "cpp",
+        "regex": "cpp"
     }
 }

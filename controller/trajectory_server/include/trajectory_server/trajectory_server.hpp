@@ -52,11 +52,11 @@
 
 #include <gestelt_interfaces/srv/uav_command.hpp>
 
-#include <frame_transforms.hpp>
-
-#include <uavsm.hpp>
-
 #include <logger_wrapper/logger_wrapper.hpp>
+
+#include <frame_transforms.hpp>
+#include <uavsm.hpp>
+#include <trajectory_server/poly_traj_cmd.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
@@ -94,7 +94,11 @@ enum PX4_CUSTOM_SUB_MODE_AUTO {
 	PX4_CUSTOM_SUB_MODE_EXTERNAL5,
 	PX4_CUSTOM_SUB_MODE_EXTERNAL6,
 	PX4_CUSTOM_SUB_MODE_EXTERNAL7,
-	PX4_CUSTOM_SUB_MODE_EXTERNAL8,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL8
+};
+
+enum TrajectoryType {
+	MINCO,
 };
 
 class TrajectoryServer : public rclcpp::Node
@@ -102,8 +106,10 @@ class TrajectoryServer : public rclcpp::Node
 public:
 	TrajectoryServer();
 	virtual ~TrajectoryServer();
+	void init();
 
 private:
+
 	void initParams();
 	void initPubSubTimers();
 	void initSrv();
@@ -114,9 +120,35 @@ private:
 	void SMTickTimerCB();
 
 	/* Publisher methods */
+
+	/**
+	 * @brief Publish vehicle commands
+	 * @param command   Command code (matches VehicleCommand and MAVLink MAV_CMD codes)
+	 * @param param1    Command parameter 1
+	 * @param param2    Command parameter 2
+	 */
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0, float param3=0.0);
+	
+	/**
+	 * @brief Publish the offboard control mode.
+	 *        For this example, only position and altitude controls are active.
+	 * @param offb_ctrl_mode    Offboard control mode
+	 */
 	void publishOffboardCtrlMode(const int& offb_ctrl_mode);
-	void publishTrajectorySetpoint(const Eigen::Vector3d& pos_enu, const double& yaw);
+
+	/**
+	 * @brief Publish a trajectory setpoint
+	 * 
+	 * @param pos Position (ENU frame)
+	 * @param yaw Yaw 
+	 * @param vel Velociyy (ENU frame)
+	 * @param acc Acceleration (ENU frame)
+	 */
+	void publishTrajectorySetpoint(
+		const Eigen::Vector3d& pos, 
+		const Eigen::Vector2d& yaw_yawrate,
+		const Eigen::Vector3d& vel = Eigen::Vector3d(0.0, 0.0, 0.0), 
+		const Eigen::Vector3d& acc = Eigen::Vector3d(0.0, 0.0, 0.0));
 	void publishAttitudeSetpoint(const double& thrust, const Eigen::Vector4d& q_d);
 	void publishRatesSetpoint(const double& thrust, const Eigen::Vector3d& rates);
 	void publishTorqueThrustSetpoint(const double& thrust, const Eigen::Vector3d& torques);
@@ -134,10 +166,20 @@ private:
 
 	/* Helper methods */
 
+	/* Load Back-end Trajectory plugin*/
+	TrajectoryType getTrajAdaptorType(const std::string& name)
+	{
+		// Check all states
+		if (name == "MINCO"){
+			return TrajectoryType::MINCO;
+		}
+		else {
+			return TrajectoryType::MINCO;
+		}
+	}
+
 	/* Checking methods */
 	
-private:
-	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
 private:
 	/* Callback groups */
@@ -170,26 +212,10 @@ private:
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr odometry_sub_;
 	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
 
-	// std::atomic<uint64_t> timestamp_;   //!< common synced timestamped
-	uint64_t offboard_setpoint_counter_;   //!< counter for the number of setpoints sent
-
 	/* Services */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
 
-	/* Stored Data */
-	Eigen::Vector3d cur_pos_;	// current position
-	Eigen::Quaterniond cur_ori_;	// current orientation
-	Eigen::Vector3d cur_vel_;	// current velocity
-	Eigen::Vector3d cur_ang_vel_;	// current angular velocity
-
-	/* UAV state*/
-
-	int arming_state_; // Arming state
-	int nav_state_; // Navigation state 
-	bool pre_flight_checks_pass_; // Pre flight checks pass
-	bool connected_to_fcu_; // Indicates connection to FCU
-
-	/* Param */
+	/* Params */
 	int drone_id_{1};
 
 	std::string origin_frame_; // Origin frame of uav i.e. "world" or "map"
@@ -202,6 +228,25 @@ private:
 	double pub_odom_freq_; // [Hz] Frequency of state machine ticks
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
-};
+
+	TrajectoryType traj_type_;	// Trajectory plugin type
+	PolyTrajCmd poly_traj_cmd_; // MINCO trajectory command reader
+
+	/* Stored Data */
+	Eigen::Vector3d cur_pos_;	// current position
+	Eigen::Quaterniond cur_ori_;	// current orientation
+	Eigen::Vector3d cur_vel_;	// current velocity
+	Eigen::Vector3d cur_ang_vel_;	// current angular velocity
+
+	/* Logger */
+	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
+
+	/* UAV state*/
+	int arming_state_; // Arming state
+	int nav_state_; // Navigation state 
+	bool pre_flight_checks_pass_; // Pre flight checks pass
+	bool connected_to_fcu_; // Indicates connection to FCU
+	
+}; // class TrajectoryServer
 
 #endif //TRAJECTORY_SERVER_HPP_

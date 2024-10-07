@@ -87,9 +87,19 @@ public:
     return offb_ctrl_mode_;
   }
 
-  /* Get offboard control mode */
+  /* Get take off height */
   double const getTakeoffHeight() const{
     return take_off_height_;
+  }
+
+  /* Set take off height */
+  bool setTakeoffHeight(const double& val){
+    if (val <= 0.0){
+      return false;
+    }
+    take_off_height_ = val;
+
+    return true;
   }
 
 protected:

@@ -54,14 +54,23 @@ TrajectoryServer::TrajectoryServer()
 
 	initSrv();
 
-	offboard_setpoint_counter_ = 0;
-	logger_->logInfo("Initialized");
+
+
 }
 
 TrajectoryServer::~TrajectoryServer()
 {
-	//Disarm drone 
 }
+
+void TrajectoryServer::init()
+{
+	// Initialize Trajectory command reader
+	poly_traj_cmd_ = std::make_unique<PolyTrajCmd>(this->shared_from_this());
+
+	logger_->logInfo("Initialized");
+}
+
+
 
 void TrajectoryServer::initParams()
 {
@@ -82,6 +91,8 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("pub_cmd_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 
+	this->declare_parameter("trajectory_type", "");
+
 	/**
 	 * Get params
 	 */
@@ -95,7 +106,10 @@ void TrajectoryServer::initParams()
 	pub_odom_freq_ = this->get_parameter("pub_odom_freq").as_double();
 	pub_cmd_freq_ = this->get_parameter("pub_cmd_freq").as_double();
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
+
+	traj_type_ = getTrajAdaptorType(this->get_parameter("trajectory_type").as_string());
 }
+
 
 void TrajectoryServer::initPubSubTimers()
 {
@@ -435,18 +449,23 @@ void TrajectoryServer::SMTickTimerCB()
 	else if (UAV::is_in_state<TakingOff>()){
 		publishTrajectorySetpoint(
 			Eigen::Vector3d(0.0, 0.0, fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()), 
-			0.0);
+			Eigen::Vector2d(0.0, 0.0));
 	}
 	else if (UAV::is_in_state<Hovering>()){
 		publishTrajectorySetpoint(
 			Eigen::Vector3d(0.0, 0.0, fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()), 
-			0.0);
+			Eigen::Vector2d(0.0, 0.0));
 	}
 	else if (UAV::is_in_state<Mission>()){
 
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
-				publishTrajectorySetpoint(Eigen::Vector3d(1.0, 3.0, 2.0), 1.57);
+
+				if (getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
+				{
+					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
+				}
+
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 
 				publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
@@ -504,10 +523,7 @@ void TrajectoryServer::pubOdomTimerCB()
 /****************** */
 /* PUBLISHER METHODS */
 /****************** */
-/**
- * @brief Publish the offboard control mode.
- *        For this example, only position and altitude controls are active.
- */
+
 void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 {
 	OffboardControlMode msg{};
@@ -548,12 +564,11 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 	offboard_control_mode_pub_->publish(msg);
 }
 
-/**
- * @brief Publish a trajectory setpoint
- *        For this example, it sends a trajectory setpoint to make the
- *        vehicle hover at 5 meters with a yaw angle of 180 degrees.
- */
-void TrajectoryServer::publishTrajectorySetpoint(const Eigen::Vector3d& pos_enu, const double& yaw)
+void TrajectoryServer::publishTrajectorySetpoint(
+	const Eigen::Vector3d& pos, 
+	const Eigen::Vector2d& yaw_yawrate,
+	const Eigen::Vector3d& vel,
+	const Eigen::Vector3d& acc)
 {
 	TrajectorySetpoint msg{};
 
@@ -567,15 +582,17 @@ void TrajectoryServer::publishTrajectorySetpoint(const Eigen::Vector3d& pos_enu,
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
 	// Convert from ENU to NED
-	Eigen::Vector3d pos_ned = transform_static_frame(pos_enu, frame_transforms::StaticTF::ENU_TO_NED);
+	Eigen::Vector3d pos_ned = transform_static_frame(pos, frame_transforms::StaticTF::ENU_TO_NED);
+	Eigen::Vector3d vel_ned = transform_static_frame(vel, frame_transforms::StaticTF::ENU_TO_NED);
+	Eigen::Vector3d acc_ned = transform_static_frame(acc, frame_transforms::StaticTF::ENU_TO_NED);
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};
-	// msg.velocity = {(float) vel_ned(0), (float) vel_ned(1), (float) vel_ned(2)};
-	// msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
+	msg.velocity = {(float) vel_ned(0), (float) vel_ned(1), (float) vel_ned(2)};
+	msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
 
-	msg.yaw = (float) yaw; // [-PI:PI]
-	// msg.yawspeed = (float) yaw; // angular velocity around NED frame z-axis in radians/second
+	msg.yaw = (float) yaw_yawrate(0); // [-PI:PI]
+	msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 
 	trajectory_setpoint_pub_->publish(msg);
 }
@@ -593,7 +610,6 @@ void TrajectoryServer::publishAttitudeSetpoint(const double& thrust, const Eigen
 
 	attitude_setpoint_pub_->publish(msg);
 }
-
 
 void TrajectoryServer::publishRatesSetpoint(const double& thrust, const Eigen::Vector3d& rates)
 {
@@ -647,12 +663,6 @@ void TrajectoryServer::publishActuatorCmds(const Eigen::Vector4d& motor_in )
 	actuator_cmd_pub_->publish(msg);
 }
 
-/**
- * @brief Publish vehicle commands
- * @param command   Command code (matches VehicleCommand and MAVLink MAV_CMD codes)
- * @param param1    Command parameter 1
- * @param param2    Command parameter 2
- */
 void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, float param2, float param3)
 {
 	// Refer to https://docs.px4.io/main/en/msg_docs/VehicleCommand.html for message format
@@ -794,6 +804,9 @@ int main(int argc, char *argv[])
 	rclcpp::executors::MultiThreadedExecutor executor;
 
 	auto node = std::make_shared<TrajectoryServer>();
+
+	node->init();
+
 	executor.add_node(node);
 	executor.spin();
 

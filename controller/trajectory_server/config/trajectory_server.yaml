@@ -1,5 +1,7 @@
 /**:
   ros__parameters:
+    trajectory_type: MINCO
+
     origin_frame: world
     base_link_frame: base_link
 

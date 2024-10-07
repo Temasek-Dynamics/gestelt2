@@ -30,8 +30,6 @@ VoronoiPlanner::VoronoiPlanner()
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
   astar_params_.t_unit = t_unit_;
 
-  // Initialize visualization helper
-  viz_helper_ = std::make_shared<viz_helper::VizHelper>(this->get_clock());
 }
 
 void VoronoiPlanner::init()
@@ -41,6 +39,12 @@ void VoronoiPlanner::init()
 
   // Initialize map
   voxel_map_ = std::make_shared<voxel_map::VoxelMap>(this->shared_from_this());
+
+  // Initialize minimum jerk optimizer
+	min_jerk_opt_ = std::make_unique<minco::MinJerkOpt>();
+
+  // Initialize visualization helper
+  viz_helper_ = std::make_shared<viz_helper::VizHelper>(this->get_clock());
 
 	logger_->logInfo("Initialized");
 } 
@@ -62,6 +66,9 @@ void VoronoiPlanner::initPubSubTimer(){
   // Planner publishers
   fe_plan_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan", 10);
   fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", rclcpp::SensorDataQoS());
+
+  poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>("poly_traj", rclcpp::SensorDataQoS());
+  minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>("minco_traj/broadcast", rclcpp::SensorDataQoS());
 
   // Visualization
   plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan_req", 10);
@@ -239,10 +246,25 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
   fe_plan_msg.t_plan_start = this->get_clock()->now().seconds();
 
+  /* Generate minimum jerk trajectory */
+  poly_traj_ = genMinJerkTraj(min_jerk_opt_, fe_path_with_t_);
+	// Eigen::MatrixXd cstr_pts = min_jerk_opt_->getConstraintPts(5);
+
+  traj_utils::PolyTraj poly_msg; 
+  traj_utils::MINCOTraj MINCO_msg; 
+
+  mjoToMsg(mjo_opt, ros::Time::now().toSec(), poly_msg, MINCO_msg);
+
+
   fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
   // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, global_frame_) ;
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, global_frame_);
+
+	// viz_helper::VizHelper::pubExecTraj(cstr_pts, minco_traj_viz_pub_, global_frame_);
+
+  poly_traj_pub_.publish(poly_msg); // [global frame] Publish to corresponding drone for execution
+  minco_traj_broadcast_pub_.publish(MINCO_msg); // [global frame] Broadcast to all other drones
 
   if (json_output_)
   {
@@ -287,6 +309,36 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   plan_complete_ = true;
 
   return true;
+}
+
+minco::Trajectory VoronoiPlanner::genMinJerkTraj(
+  std::shared_ptr<minco::MinJerkOpt>& min_jerk_opt,
+  const std::vector<Eigen::Vector4d>& space_time_path)
+{
+	Eigen::Matrix3d start_PVA, goal_PVA;
+
+	start_PVA.block<3,1>(0, 0) =  space_time_path[0].head<3>();
+	start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
+	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
+
+	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
+	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
+	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
+
+	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+	Eigen::VectorXd seg_durations(space_time_path.size()-1);
+
+	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+		inner_pts.col(j) = space_time_path[i].head<3>();
+	}
+
+	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+	}
+
+	min_jerk_opt->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+
+	return min_jerk_opt->getTraj(msg->t_plan_start);
 }
 
 /* Timer callbacks*/

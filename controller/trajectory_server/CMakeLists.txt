@@ -26,6 +26,8 @@ set(ROS_LIBRABRIES
 	nav_msgs
 	sensor_msgs
 	gestelt_interfaces
+	minco_interfaces
+	minco_traj_gen
 	logger_wrapper)
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
@@ -40,7 +42,8 @@ set(EXPORTED_DEPENDENCIES
 	px4_msgs
 	geometry_msgs
 	sensor_msgs
-	gestelt_interfaces)
+	gestelt_interfaces
+	minco_interfaces)
 
 #################
 # Setup targets #
@@ -69,6 +72,8 @@ ament_target_dependencies(trajectory_server_node
 	nav_msgs
 	sensor_msgs
 	gestelt_interfaces
+	minco_interfaces
+	minco_traj_gen
 	logger_wrapper)
 target_include_directories(trajectory_server_node PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

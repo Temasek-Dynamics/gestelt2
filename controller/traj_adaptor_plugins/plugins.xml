@@ -1,0 +1,5 @@
+<library path="traj_adaptor_plugins">
+  <class type="traj_adaptor_plugins::MINCO" base_class_type="traj_adaptor_base::TrajectoryAdaptor">
+    <description>Plugin for MINCO trajectory</description>
+  </class>
+</library>

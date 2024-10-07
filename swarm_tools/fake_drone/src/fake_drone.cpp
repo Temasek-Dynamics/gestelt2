@@ -60,7 +60,7 @@ FakeDrone::FakeDrone()
 	pose_msg_.pose = odom_msg_.pose.pose;
 	odom_msg_.header.frame_id = pose_msg_.header.frame_id = global_frame_;
 		
-		/* Subscribers and publishers*/
+	/* Subscribers and publishers*/
 	fe_plan_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
 		"fe_plan", rclcpp::SystemDefaultsQoS(), std::bind(&FakeDrone::frontEndPlanCB, this, _1));
 
@@ -260,14 +260,11 @@ void FakeDrone::setStateFromTraj(const std::shared_ptr<minco::Trajectory>& traj)
 	Eigen::Vector3d acc = traj->getAcc(e_t_start);
 	Eigen::Vector3d jer = traj->getJer(e_t_start);
 
-	std::pair<double, double> yaw_yawdot(0, 0);
-	Eigen::Quaterniond quat{0.0, 0.0, 0.0, 1};
-
-	/*** calculate yaw ***/
-	yaw_yawdot = calculate_yaw(traj, e_t_start, t_now.seconds() - t_last_traj_samp_);
-	quat = RPYToQuaternion(0.0, 0.0, yaw_yawdot.first);
-
+	/*** calculate yaw, yaw_dot***/
+	Eigen::Vector2d  yaw_yawdot = calculate_yaw(traj, e_t_start, t_now.seconds() - t_last_traj_samp_);
+	Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, yaw_yawdot(0));
 	t_last_traj_samp_ = t_now.seconds();
+
 	{
 		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
 
@@ -286,98 +283,96 @@ void FakeDrone::setStateFromTraj(const std::shared_ptr<minco::Trajectory>& traj)
 	}
 }
 
-void FakeDrone::genMinJerkTraj(const std::vector<Eigen::Vector4d>& space_time_path)
-{
-	Eigen::Matrix3d start_PVA, goal_PVA;
+// void FakeDrone::genMinJerkTraj(const std::vector<Eigen::Vector4d>& space_time_path)
+// {
+// 	Eigen::Matrix3d start_PVA, goal_PVA;
 
-	start_PVA.block<3,1>(0, 0) =  space_time_path[0].head<3>();
-	start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	start_PVA.block<3,1>(0, 0) =  space_time_path[0].head<3>();
+// 	start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
 
-	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
-	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
+// 	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
 
-	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
-	Eigen::VectorXd seg_durations(space_time_path.size()-1);
+// 	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+// 	Eigen::VectorXd seg_durations(space_time_path.size()-1);
 
-	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
-		inner_pts.col(j) = space_time_path[i].head<3>();
-	}
+// 	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+// 		inner_pts.col(j) = space_time_path[i].head<3>();
+// 	}
 
-	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
-		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
-	}
+// 	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+// 		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+// 	}
 
-	min_jerk_opt_->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+// 	min_jerk_opt_->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
 
-	return;
-}
+// 	return;
+// }
 
+// Eigen::Vector2d FakeDrone::calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj, 
+// 													const double& t_cur, const double& dt)
+// {
+// 	Eigen::Vector2d yaw_yawdot(0, 0);
 
+// 	// get direction vector
+// 	Eigen::Vector3d dir = t_cur + t_step_ <= traj->getTotalDuration()
+// 								? traj->getPos(t_cur + t_step_) - traj->getPos(t_cur)
+// 								: traj->getPos(traj->getTotalDuration()) - traj->getPos(t_cur);
 
-std::pair<double, double> FakeDrone::calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj, 
-													const double& t_cur, const double& dt)
-{
-	std::pair<double, double> yaw_yawdot(0, 0);
+// 	double yaw_temp = dir.norm() > 0.1
+// 							? atan2(dir(1), dir(0))
+// 							: prev_yaw_;
 
-	// get direction vector
-	Eigen::Vector3d dir = t_cur + t_step_ <= traj->getTotalDuration()
-								? traj->getPos(t_cur + t_step_) - traj->getPos(t_cur)
-								: traj->getPos(traj->getTotalDuration()) - traj->getPos(t_cur);
-
-	double yaw_temp = dir.norm() > 0.1
-							? atan2(dir(1), dir(0))
-							: prev_yaw_;
-
-	double yawdot = 0;
-	double d_yaw = yaw_temp - prev_yaw_;
-	if (d_yaw >= M_PI)
-	{
-		d_yaw -= 2 * M_PI;
-	}
-	if (d_yaw <= -M_PI)
-	{
-		d_yaw += 2 * M_PI;
-	}
+// 	double yawdot = 0;
+// 	double d_yaw = yaw_temp - prev_yaw_;
+// 	if (d_yaw >= M_PI)
+// 	{
+// 		d_yaw -= 2 * M_PI;
+// 	}
+// 	if (d_yaw <= -M_PI)
+// 	{
+// 		d_yaw += 2 * M_PI;
+// 	}
 	
-	// Set maximum values for yaw_dot and yaw_ddot
-	const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
-	const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
-	double d_yaw_max;
+// 	// Set maximum values for yaw_dot and yaw_ddot
+// 	const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
+// 	const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
+// 	double d_yaw_max;
 
-	if (fabs(prev_yaw_dot_ + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
-	{
-		// yawdot = prev_yaw_dot_ + dt * YDDM;
-		d_yaw_max = (prev_yaw_dot_ * dt) + (0.5 * YDDM * dt * dt);
-	}
-	else // exceed yaw_dot limits
-	{
-		// yawdot = YDM;
-		double t1 = (YDM - prev_yaw_dot_) / YDDM;
-		d_yaw_max = ((dt - t1) + dt) * (YDM - prev_yaw_dot_) / 2.0;
-	}
+// 	if (fabs(prev_yaw_dot_ + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
+// 	{
+// 		// yawdot = prev_yaw_dot_ + dt * YDDM;
+// 		d_yaw_max = (prev_yaw_dot_ * dt) + (0.5 * YDDM * dt * dt);
+// 	}
+// 	else // exceed yaw_dot limits
+// 	{
+// 		// yawdot = YDM;
+// 		double t1 = (YDM - prev_yaw_dot_) / YDDM;
+// 		d_yaw_max = ((dt - t1) + dt) * (YDM - prev_yaw_dot_) / 2.0;
+// 	}
 
-	if (fabs(d_yaw) > fabs(d_yaw_max))
-	{
-		d_yaw = d_yaw_max;
-	}
-	yawdot = d_yaw / dt;
+// 	if (fabs(d_yaw) > fabs(d_yaw_max))
+// 	{
+// 		d_yaw = d_yaw_max;
+// 	}
+// 	yawdot = d_yaw / dt;
 
-	double yaw = prev_yaw_ + d_yaw;
-	if (yaw > M_PI)
-		yaw -= 2 * M_PI;
-	if (yaw < -M_PI)
-		yaw += 2 * M_PI;
-	yaw_yawdot.first = yaw;
-	yaw_yawdot.second = yawdot;
+// 	double yaw = prev_yaw_ + d_yaw;
+// 	if (yaw > M_PI)
+// 		yaw -= 2 * M_PI;
+// 	if (yaw < -M_PI)
+// 		yaw += 2 * M_PI;
+// 	yaw_yawdot(0) = yaw;
+// 	yaw_yawdot(1) = yawdot;
 
-	prev_yaw_ = yaw_yawdot.first;
-	prev_yaw_dot_ = yaw_yawdot.second;
+// 	prev_yaw_ = yaw_yawdot(0);
+// 	prev_yaw_dot_ = yaw_yawdot(1);
 
-	yaw_yawdot.second = yaw_temp;
+// 	yaw_yawdot(1) = yaw_temp;
 
-	return yaw_yawdot;
-}
+// 	return yaw_yawdot;
+// }
 
 

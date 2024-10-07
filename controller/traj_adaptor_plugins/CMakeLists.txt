@@ -1,13 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(traj_utils)
-
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
-# Default to C++17
-if(NOT CMAKE_CXX_STANDARD)
-	set(CMAKE_CXX_STANDARD 17)
-endif()
-
+project(traj_adaptor_plugins)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -16,27 +8,33 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(trajectory_adaptor_base REQUIRED)
+find_package(pluginlib REQUIRED)
 
-add_library(traj_utils src/traj_utils.cpp)
-add_library(traj_utils::traj_utils ALIAS traj_utils)
-target_compile_features(traj_utils PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(traj_utils PUBLIC
+pluginlib_export_plugin_description_file(traj_adaptor_base plugins.xml)
+
+add_library(traj_adaptor_plugins src/minco.cpp)
+add_library(traj_adaptor_plugins::traj_adaptor_plugins ALIAS traj_adaptor_plugins)
+target_compile_features(traj_adaptor_plugins PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(traj_adaptor_plugins PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+ament_target_dependencies(
+  traj_adaptor_plugins
+  "trajectory_adaptor_base"
+  "pluginlib"
+)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(traj_utils PRIVATE "TRAJ_UTILS_BUILDING_LIBRARY")
+target_compile_definitions(traj_adaptor_plugins PRIVATE "TRAJECTORY_ADAPTOR_PLUGINS_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 install(
-  TARGETS traj_utils
+  TARGETS traj_adaptor_plugins
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -59,7 +57,7 @@ ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
 ament_export_libraries(
-  traj_utils
+  traj_adaptor_plugins
 )
 ament_export_targets(
   export_${PROJECT_NAME}

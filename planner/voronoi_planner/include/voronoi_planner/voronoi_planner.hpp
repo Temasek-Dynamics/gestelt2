@@ -262,6 +262,9 @@ private:
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_pub_; // Publish front-end plans
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
 
+  rclcpp::Publisher<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr poly_traj_pub_; // Publish polynomial trajectories for execution
+  rclcpp::Publisher<minco_interfaces::msg::MincoTrajectory>::SharedPtr minco_traj_broadcast_pub_; // Publish MINCO trajectories broadcasted to other agents
+
   // Visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
@@ -303,6 +306,9 @@ private:
 
   std::vector<Eigen::Vector3d> fe_path_; // Front-end Space path in space coordinates (x,y,z) in world frame
   std::vector<Eigen::Vector4d> fe_path_with_t_; // Front-end Space time  path in space-time coordinates (x,y,z,t) in world frame
+
+  std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_; // Initial minimum jerk trajectory
+  std::shared_ptr<minco::Trajectory> poly_traj_; // Front-end MINCO Trajectory
 
   /* Debugging Use */
   logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Timer to measure runtime
@@ -397,6 +403,84 @@ inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVorono
       occ_grid.data[idx] = dyn_voro.isOccupied(i, j) ? 255: 0;
     }
   }
+}
+
+
+void VoronoiPlanner::mjoToMsg(const minco::MinJerkOpt& mjo, const double& traj_start_time,
+                          minco::PolynomialTrajectory &poly_msg, minco::MincoTrajetory &MINCO_msg)
+{
+
+  minco::Trajectory traj = mjo.getTraj();
+
+  Eigen::VectorXd durs = traj.getDurations();
+  int piece_num = traj.getPieceSize();
+  poly_msg.drone_id = drone_id_;
+  poly_msg.traj_id = traj_id_;
+  poly_msg.start_time = ros::Time(traj_start_time);
+  poly_msg.order = 5; 
+  poly_msg.duration.resize(piece_num);
+  poly_msg.coef_x.resize(6 * piece_num);
+  poly_msg.coef_y.resize(6 * piece_num);
+  poly_msg.coef_z.resize(6 * piece_num);
+
+  // For each segment
+  for (int i = 0; i < piece_num; ++i)
+  {
+    // Assign timestamp
+    poly_msg.duration[i] = durs(i);
+
+    // Assign coefficient matrix values
+    minco::CoefficientMat cMat = traj.getPiece(i).getCoeffMat();
+    int i6 = i * 6;
+    for (int j = 0; j < 6; j++)
+    {
+      poly_msg.coef_x[i6 + j] = cMat(0, j);
+      poly_msg.coef_y[i6 + j] = cMat(1, j);
+      poly_msg.coef_z[i6 + j] = cMat(2, j);
+    }
+  }
+
+  MINCO_msg.drone_id = drone_id_;
+  MINCO_msg.traj_id = traj_id_;
+  MINCO_msg.start_time = ros::Time(traj_start_time);
+  MINCO_msg.order = 5; 
+  MINCO_msg.duration.resize(piece_num);
+
+  Eigen::Vector3d vec; // Vector representing x,y,z values or their derivatives
+  // Start Position
+  vec = traj.getPos(0);
+  MINCO_msg.start_p[0] = vec(0), MINCO_msg.start_p[1] = vec(1), MINCO_msg.start_p[2] = vec(2);
+  // Start Velocity
+  vec = traj.getVel(0);
+  MINCO_msg.start_v[0] = vec(0), MINCO_msg.start_v[1] = vec(1), MINCO_msg.start_v[2] = vec(2);
+  // Start Acceleration
+  vec = traj.getAcc(0);
+  MINCO_msg.start_a[0] = vec(0), MINCO_msg.start_a[1] = vec(1), MINCO_msg.start_a[2] = vec(2);
+  // End position
+  vec = traj.getPos(traj.getTotalDuration());
+  MINCO_msg.end_p[0] = vec(0), MINCO_msg.end_p[1] = vec(1), MINCO_msg.end_p[2] = vec(2);
+  // End velocity
+  vec = traj.getVel(traj.getTotalDuration());
+  MINCO_msg.end_v[0] = vec(0), MINCO_msg.end_v[1] = vec(1), MINCO_msg.end_v[2] = vec(2);
+  // End Acceleration
+  vec = traj.getAcc(traj.getTotalDuration());
+  MINCO_msg.end_a[0] = vec(0), MINCO_msg.end_a[1] = vec(1), MINCO_msg.end_a[2] = vec(2);
+
+  // Assign inner points
+  MINCO_msg.inner_x.resize(piece_num - 1);
+  MINCO_msg.inner_y.resize(piece_num - 1);
+  MINCO_msg.inner_z.resize(piece_num - 1);
+  Eigen::MatrixXd pos = traj.getPositions();
+  for (int i = 0; i < piece_num - 1; i++)
+  {
+    MINCO_msg.inner_x[i] = pos(0, i + 1);
+    MINCO_msg.inner_y[i] = pos(1, i + 1);
+    MINCO_msg.inner_z[i] = pos(2, i + 1);
+  }
+  for (int i = 0; i < piece_num; i++){
+    MINCO_msg.duration[i] = durs[i];
+  }
+
 }
 
 } // namespace navigator
