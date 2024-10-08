@@ -52,6 +52,8 @@
 
 #include <gestelt_interfaces/srv/uav_command.hpp>
 
+#include <gestelt_interfaces/msg/uav_state.hpp>
+
 #include <logger_wrapper/logger_wrapper.hpp>
 
 #include <frame_transforms.hpp>
@@ -109,7 +111,6 @@ public:
 	void init();
 
 private:
-
 	void initParams();
 	void initPubSubTimers();
 	void initSrv();
@@ -166,18 +167,6 @@ private:
 
 	/* Helper methods */
 
-	/* Load Back-end Trajectory plugin*/
-	TrajectoryType getTrajAdaptorType(const std::string& name)
-	{
-		// Check all states
-		if (name == "MINCO"){
-			return TrajectoryType::MINCO;
-		}
-		else {
-			return TrajectoryType::MINCO;
-		}
-	}
-
 	/* Checking methods */
 	
 
@@ -207,6 +196,7 @@ private:
 
 	// State publishers
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+	rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
 
 	/* Subscribers */
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr odometry_sub_;
@@ -216,7 +206,7 @@ private:
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
 
 	/* Params */
-	int drone_id_{1};
+	int drone_id_{0};
 
 	std::string origin_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // base link frame of uav
@@ -230,13 +220,18 @@ private:
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
 
 	TrajectoryType traj_type_;	// Trajectory plugin type
-	PolyTrajCmd poly_traj_cmd_; // MINCO trajectory command reader
+	std::unique_ptr<PolyTrajCmd> poly_traj_cmd_; // MINCO trajectory command reader
 
 	/* Stored Data */
-	Eigen::Vector3d cur_pos_;	// current position
-	Eigen::Quaterniond cur_ori_;	// current orientation
-	Eigen::Vector3d cur_vel_;	// current velocity
-	Eigen::Vector3d cur_ang_vel_;	// current angular velocity
+	Eigen::Vector3d cur_pos_;		// Current position
+	Eigen::Vector3d cur_vel_;		// Current velocity
+	Eigen::Quaterniond cur_ori_;	// Current orientation
+	Eigen::Vector3d cur_ang_vel_;	// Current angular velocity
+
+	Eigen::Vector3d pos_enu_;		// Commanded position [ENU frame]
+	Eigen::Vector2d yaw_yawrate_;	
+	Eigen::Vector3d vel_enu_;		
+	Eigen::Vector3d acc_enu_;		
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;

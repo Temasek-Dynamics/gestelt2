@@ -1,10 +1,10 @@
 {
     "map_test" : {
-        "description": "Single path for 4 agents",
+        "description": "Test for single agent",
         "map": "map_test",
         "num_agents": 1,
         "spawns_pos": [
-            [-6.0, -6.0, 1.2]
+            [0.0, 0.0, 0.4]
         ],
         "goals_pos": [
             [6.0, 6.0, 1.2]

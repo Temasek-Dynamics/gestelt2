@@ -83,12 +83,12 @@ public:
   void         exit(void)  { };  /* no exit actions at all */
 
   /* Get offboard control mode */
-  int const getControlMode() const {
+  int getControlMode() const {
     return offb_ctrl_mode_;
   }
 
   /* Get take off height */
-  double const getTakeoffHeight() const{
+  double getTakeoffHeight() const{
     return take_off_height_;
   }
 
@@ -128,7 +128,7 @@ class Unconnected
   void entry() override {
   }
 
-  void react(Idle_E const & e) override {
+  void react(Idle_E const & ) override {
     // Connected to PX4
     transit<Idle>();
   };
@@ -163,7 +163,7 @@ class Landing
   void entry() override {
   }
 
-  void react(Idle_E const & e) override {
+  void react(Idle_E const & ) override {
     transit<Idle>();
   };
 
@@ -180,11 +180,11 @@ class TakingOff
   void entry() override {
   }
 
-  void react(Land_E const & e) override {
+  void react(Land_E const & ) override {
     transit<Landing>();
   };
 
-  void react(Hover_E const & e) override {
+  void react(Hover_E const & ) override {
     transit<Hovering>();
   };
 
@@ -201,7 +201,7 @@ class Hovering
   void entry() override {
   }
 
-  void react(Land_E const & e) override {
+  void react(Land_E const &) override {
     transit<Landing>();
   };
 
@@ -223,11 +223,11 @@ class Mission
   void entry() override {
   }
 
-  void react(Land_E const & e) override {
+  void react(Land_E const & ) override {
     transit<Landing>();
   };
 
-  void react(StopMission_E const & e) override {
+  void react(StopMission_E const & ) override {
     transit<Hovering>();
   };
 };

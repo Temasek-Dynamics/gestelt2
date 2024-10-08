@@ -25,9 +25,11 @@ set(ROS_LIBRABRIES
   tf2_geometry_msgs
   visualization_msgs
   gestelt_interfaces
+  minco_interfaces
   voxel_map
   dynamic_voronoi
   space_time_astar
+  minco_traj_gen
   logger_wrapper
   planner_utils
   viz_helper
@@ -48,9 +50,11 @@ ament_target_dependencies(voronoi_planner_node
   tf2_geometry_msgs
   visualization_msgs
   gestelt_interfaces
+  minco_interfaces
   voxel_map
   dynamic_voronoi
   space_time_astar
+  minco_traj_gen
   logger_wrapper
   viz_helper
 )

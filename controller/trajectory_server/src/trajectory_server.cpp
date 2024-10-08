@@ -53,9 +53,6 @@ TrajectoryServer::TrajectoryServer()
 	initPubSubTimers();
 
 	initSrv();
-
-
-
 }
 
 TrajectoryServer::~TrajectoryServer()
@@ -107,6 +104,17 @@ void TrajectoryServer::initParams()
 	pub_cmd_freq_ = this->get_parameter("pub_cmd_freq").as_double();
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
+	auto getTrajAdaptorType = [=](const std::string& name) -> TrajectoryType
+	{
+		// Check all states
+		if (name == "MINCO"){
+			return TrajectoryType::MINCO;
+		}
+		else {
+			return TrajectoryType::MINCO;
+		}
+	};
+
 	traj_type_ = getTrajAdaptorType(this->get_parameter("trajectory_type").as_string());
 }
 
@@ -117,24 +125,26 @@ void TrajectoryServer::initPubSubTimers()
 		fcu_sub_opt.callback_group = fcu_cb_group_;
 
 	/* Publishers */
-	vehicle_command_pub_ = this->create_publisher<VehicleCommand>("/fmu/in/vehicle_command", 10);
+	vehicle_command_pub_ = this->create_publisher<VehicleCommand>("fmu/in/vehicle_command", 10);
 
-	offboard_control_mode_pub_ = this->create_publisher<OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
+	offboard_control_mode_pub_ = this->create_publisher<OffboardControlMode>("fmu/in/offboard_control_mode", 10);
 	
-	trajectory_setpoint_pub_ = this->create_publisher<TrajectorySetpoint>("/fmu/in/trajectory_setpoint", 10);
-	actuator_cmd_pub_ = this->create_publisher<ActuatorMotors>("/fmu/in/actuator_motors", 10);
-	torque_setpoint_pub_ = this->create_publisher<VehicleTorqueSetpoint>("/fmu/in/vehicle_torque_setpoint", 10);
-	thrust_setpoint_pub_ = this->create_publisher<VehicleThrustSetpoint>("/fmu/in/vehicle_thrust_setpoint", 10);
+	trajectory_setpoint_pub_ = this->create_publisher<TrajectorySetpoint>("fmu/in/trajectory_setpoint", 10);
+	actuator_cmd_pub_ = this->create_publisher<ActuatorMotors>("fmu/in/actuator_motors", 10);
+	torque_setpoint_pub_ = this->create_publisher<VehicleTorqueSetpoint>("fmu/in/vehicle_torque_setpoint", 10);
+	thrust_setpoint_pub_ = this->create_publisher<VehicleThrustSetpoint>("fmu/in/vehicle_thrust_setpoint", 10);
 
-	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("/odom", 10);
+	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+
+	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>("uav_state", 10);
 
 	/* Subscribers */
 	odometry_sub_ = this->create_subscription<VehicleOdometry>(
-		"/fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
+		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
 
 	vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
-		"/fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
+		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	/* Timers */
@@ -149,7 +159,7 @@ void TrajectoryServer::initPubSubTimers()
 
 void TrajectoryServer::initSrv()
 {
-	uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>("/uav_command", 
+	uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>("uav_command", 
 																			std::bind(&TrajectoryServer::uavCmdSrvCB, this, 
 																						_1, _2),
 																			rclcpp::ServicesQoS(),
@@ -346,8 +356,12 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 
 void TrajectoryServer::setOffboardTimerCB()
 {
+	gestelt_interfaces::msg::UAVState uav_state;
+
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::UNCONNECTED;
+
 		logger_->logInfoThrottle("[Unconnected]", 1.0);
 		
 		if (connected_to_fcu_){
@@ -355,16 +369,20 @@ void TrajectoryServer::setOffboardTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<Idle>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::IDLE;
+
 		logger_->logInfoThrottle("[Idle]", 1.0);
 		
 		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
 		{ 
 			// Disarm vehicle
-			publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
 									VehicleCommand::ARMING_ACTION_DISARM);
 		}
 	}
 	else if (UAV::is_in_state<Landing>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::LANDING;
+
 		logger_->logInfoThrottle("[Landing]", 1.0);
 
 		if (nav_state_ != VehicleStatus::NAVIGATION_STATE_AUTO_LAND)
@@ -381,6 +399,8 @@ void TrajectoryServer::setOffboardTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<TakingOff>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::TAKINGOFF;
+
 		logger_->logInfoThrottle("[TakingOff]", 1.0);
 		
 		if (arming_state_ != VehicleStatus::ARMING_STATE_ARMED)
@@ -406,18 +426,24 @@ void TrajectoryServer::setOffboardTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<Hovering>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::HOVERING;
+
 		logger_->logInfoThrottle("[Hovering]", 1.0);
 		
 		// PERIODICALLY: Publish offboard control mode message 
 		publishOffboardCtrlMode(0);	// Position control
 	}
 	else if (UAV::is_in_state<Mission>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
+
 		logger_->logInfoThrottle("[Mission]", 1.0);
 		
 		// PERIODICALLY: Publish offboard control mode message
 		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::EMERGENCYSTOP;
+
 		logger_->logInfoThrottle("[EmergencyStop]", 1.0);
 
 		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
@@ -429,9 +455,11 @@ void TrajectoryServer::setOffboardTimerCB()
 		}
 	}
 	else {
+		uav_state.state = gestelt_interfaces::msg::UAVState::UNDEFINED;
 		logger_->logInfoThrottle("Undefined UAV state", 1.0);
 	}
 
+	uav_state_pub_->publish(uav_state);
 }
 
 void TrajectoryServer::SMTickTimerCB()
@@ -461,7 +489,7 @@ void TrajectoryServer::SMTickTimerCB()
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
 
-				if (getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
+				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
 				{
 					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
 				}
@@ -603,10 +631,10 @@ void TrajectoryServer::publishAttitudeSetpoint(const double& thrust, const Eigen
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;	// In microseconds
 
 	// body angular rates in FRD frame
-	msg.q_d = {q_d(0), q_d(1), q_d(2), q_d(3)};
+	msg.q_d = {(float)q_d(0), (float)q_d(1), (float)q_d(2), (float)q_d(3)};
 
 	// Normalized thrust command in body NED frame [-1,1]
-	msg.thrust_body = {0.0, 0.0, thrust}; // NED Frame
+	msg.thrust_body = {0.0, 0.0, (float)thrust}; // NED Frame
 
 	attitude_setpoint_pub_->publish(msg);
 }
@@ -622,7 +650,7 @@ void TrajectoryServer::publishRatesSetpoint(const double& thrust, const Eigen::V
 	msg.yaw = rates(2);		// [rad/s] yaw rate setpoint
 
 	// Normalized thrust command in body NED frame [-1,1]
-	msg.thrust_body = {0.0, 0.0, thrust}; // NED Frame
+	msg.thrust_body = {0.0, 0.0, (float)thrust}; // NED Frame
 
 	rates_setpoint_pub_->publish(msg);
 }
@@ -638,7 +666,7 @@ void TrajectoryServer::publishTorqueThrustSetpoint(const double& thrust, const E
 	// xyz: torque setpoint about X, Y, Z body axis (normalized)
 	torque_msg.xyz = {(float) torques(0), (float) torques(1), (float) torques(2)};
 	// Normalized thrust command in body NED frame [-1,1]
-	thrust_msg.xyz = {0.0, 0.0, thrust}; // NED Frame
+	thrust_msg.xyz = {0.0, 0.0, (float)thrust}; // NED Frame
 
 	torque_setpoint_pub_->publish(torque_msg);
 	thrust_setpoint_pub_->publish(thrust_msg);
@@ -672,9 +700,9 @@ void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, f
 	msg.param2 = param2;	// custom_main_mode. 6 is PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD
 	msg.param3 = param3;	// sub mode
 	msg.command = command;	// command id
-	msg.target_system = drone_id_;		// System which should execute the command
+	msg.target_system = drone_id_+1;		// System which should execute the command
 	msg.target_component = 1;	// Component which should execute the command, 0 for all components
-	msg.source_system = drone_id_;		// System sending the command
+	msg.source_system = drone_id_+1;		// System sending the command
 	msg.source_component = 1;	//  Component / mode executor sending the command
 	msg.from_external = true;
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
@@ -748,7 +776,7 @@ void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv
 
 			while (!UAV::is_in_state<Hovering>() && !timeout)
 			{
-				if ((srv_rcv_t - this->get_clock()->now().seconds()) >= start_mission_timeout){
+				if ((srv_rcv_t - this->get_clock()->now().seconds()) >= stop_mission_timeout){
 					timeout = true;
 					break;
 				}

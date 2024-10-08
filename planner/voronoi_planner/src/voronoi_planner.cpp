@@ -227,11 +227,13 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
   // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_frame_);
 
+  auto plan_start_clock = this->get_clock()->now();
+
   // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
   gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
 
   fe_plan_msg.agent_id = drone_id_;
-  fe_plan_msg.header.stamp = this->get_clock()->now();
+  fe_plan_msg.header.stamp = plan_start_clock;
 
   for (size_t i = 0; i < fe_path_with_t_.size(); i++){
     geometry_msgs::msg::Pose pose;
@@ -244,17 +246,16 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
   }
 
-  fe_plan_msg.t_plan_start = this->get_clock()->now().seconds();
+  fe_plan_msg.t_plan_start = plan_start_clock.seconds();
 
   /* Generate minimum jerk trajectory */
-  poly_traj_ = genMinJerkTraj(min_jerk_opt_, fe_path_with_t_);
+  poly_traj_ = genMinJerkTraj(min_jerk_opt_, fe_path_with_t_, plan_start_clock.seconds());
 	// Eigen::MatrixXd cstr_pts = min_jerk_opt_->getConstraintPts(5);
 
-  traj_utils::PolyTraj poly_msg; 
-  traj_utils::MINCOTraj MINCO_msg; 
+  minco_interfaces::msg::PolynomialTrajectory poly_msg; 
+  minco_interfaces::msg::MincoTrajectory MINCO_msg; 
 
-  mjoToMsg(mjo_opt, ros::Time::now().toSec(), poly_msg, MINCO_msg);
-
+  polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
 
   fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
@@ -263,8 +264,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
 	// viz_helper::VizHelper::pubExecTraj(cstr_pts, minco_traj_viz_pub_, global_frame_);
 
-  poly_traj_pub_.publish(poly_msg); // [global frame] Publish to corresponding drone for execution
-  minco_traj_broadcast_pub_.publish(MINCO_msg); // [global frame] Broadcast to all other drones
+  poly_traj_pub_->publish(poly_msg); // [global frame] Publish to corresponding drone for execution
+  minco_traj_broadcast_pub_->publish(MINCO_msg); // [global frame] Broadcast to all other drones
 
   if (json_output_)
   {
@@ -311,9 +312,10 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   return true;
 }
 
-minco::Trajectory VoronoiPlanner::genMinJerkTraj(
-  std::shared_ptr<minco::MinJerkOpt>& min_jerk_opt,
-  const std::vector<Eigen::Vector4d>& space_time_path)
+std::shared_ptr<minco::Trajectory> VoronoiPlanner::genMinJerkTraj(
+  std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
+  const std::vector<Eigen::Vector4d>& space_time_path,
+  const double& t_plan_start)
 {
 	Eigen::Matrix3d start_PVA, goal_PVA;
 
@@ -338,7 +340,7 @@ minco::Trajectory VoronoiPlanner::genMinJerkTraj(
 
 	min_jerk_opt->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
 
-	return min_jerk_opt->getTraj(msg->t_plan_start);
+	return min_jerk_opt->getTraj(t_plan_start);
 }
 
 /* Timer callbacks*/

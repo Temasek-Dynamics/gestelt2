@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 """
-Example to launch a sensor_combined listener node.
+Complete set of nodes required to simulate an agent (without dynamics)
 """
 import os
 
@@ -59,6 +61,7 @@ def generate_launch_description():
       'fake_drone.yaml'
     )
 
+    ''' Navigator: Planner module '''
     navigator_node = Node(
         package='voronoi_planner',
         executable='voronoi_planner_node',
@@ -73,6 +76,7 @@ def generate_launch_description():
         ],
     )
 
+    ''' Fake drone without dynamics '''
     fake_drone_node = Node(
         package='fake_drone',
         executable='fake_drone_node',

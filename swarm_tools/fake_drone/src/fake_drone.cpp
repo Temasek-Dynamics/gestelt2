@@ -4,7 +4,6 @@ FakeDrone::FakeDrone()
 : Node("fake_drone")
 {
 	bl_broadcaster_tf_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
-	min_jerk_opt_ = std::make_unique<minco::MinJerkOpt>();
 
 	sim_update_cb_group_ = this->create_callback_group(
 		rclcpp::CallbackGroupType::Reentrant);
@@ -115,14 +114,6 @@ void FakeDrone::frontEndPlanCB(const gestelt_interfaces::msg::SpaceTimePath::Uni
 	}
 
 	// spline_ = std::make_shared<tinyspline::BSpline>(tinyspline::BSpline::interpolateCubicNatural(points, 3));
-
-	// Generate minimum jerk from space time path
-	genMinJerkTraj(fe_space_time_path_);
-	fe_minco_traj_ = min_jerk_opt_->getTraj(msg->t_plan_start);
-	Eigen::MatrixXd cstr_pts = min_jerk_opt_->getConstraintPts(5);
-	viz_helper::VizHelper::pubExecTraj(cstr_pts, minco_traj_viz_pub_, global_frame_);
-
-	new_plan_rcv_ = true;
 }
 
 /* Timer Callbacks*/
@@ -148,9 +139,6 @@ void FakeDrone::stateUpdateTimerCB()
 {
   odom_msg_.header.stamp = pose_msg_.header.stamp = this->get_clock()->now();
 
-	if (new_plan_rcv_){
-    	setStateFromTraj(fe_minco_traj_);
-	}
 	
 	{
 		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
@@ -233,146 +221,7 @@ void FakeDrone::stateUpdateTimerCB()
 // }
 
 
-void FakeDrone::setStateFromTraj(const std::shared_ptr<minco::Trajectory>& traj)
-{
-	if (traj == nullptr )
-	{
-		return;
-	}
-
-	auto t_now = this->get_clock()->now();
-	double e_t_start = t_now.seconds() - traj->getGlobalStartTime();			 	// [s] Elapsed time since plan start
-
-	if (e_t_start < 0.0){
-		// trajectory starts in the future
-		std::cout << "trajectory starts in the future" << std::endl;
-		return;
-	}
-	else if (e_t_start >= traj->getTotalDuration()){
-		// Time exceeded end of trajectory. Trajectory has finished executing in the past
-		std::cout << "Trajectory has finished executing in the past" << std::endl;
-		new_plan_rcv_ = false;
-		return;
-	}
-
-	Eigen::Vector3d pos = traj->getPos(e_t_start);
-	Eigen::Vector3d vel = traj->getVel(e_t_start);
-	Eigen::Vector3d acc = traj->getAcc(e_t_start);
-	Eigen::Vector3d jer = traj->getJer(e_t_start);
-
-	/*** calculate yaw, yaw_dot***/
-	Eigen::Vector2d  yaw_yawdot = calculate_yaw(traj, e_t_start, t_now.seconds() - t_last_traj_samp_);
-	Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, yaw_yawdot(0));
-	t_last_traj_samp_ = t_now.seconds();
-
-	{
-		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
-
-		odom_msg_.header.stamp = pose_msg_.header.stamp = t_now;
-
-		odom_msg_.pose.pose.position.x = pos(0);
-		odom_msg_.pose.pose.position.y = pos(1);
-		odom_msg_.pose.pose.position.z = pos(2);
-
-		odom_msg_.pose.pose.orientation.x = quat.x();
-		odom_msg_.pose.pose.orientation.y = quat.y();
-		odom_msg_.pose.pose.orientation.z = quat.z();
-		odom_msg_.pose.pose.orientation.w = quat.w();
-
-		pose_msg_.pose = odom_msg_.pose.pose;
-	}
-}
-
-// void FakeDrone::genMinJerkTraj(const std::vector<Eigen::Vector4d>& space_time_path)
+// void FakeDrone::setStateFromTraj(const std::shared_ptr<minco::Trajectory>& traj)
 // {
-// 	Eigen::Matrix3d start_PVA, goal_PVA;
-
-// 	start_PVA.block<3,1>(0, 0) =  space_time_path[0].head<3>();
-// 	start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-// 	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
-
-// 	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
-// 	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-// 	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
-
-// 	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
-// 	Eigen::VectorXd seg_durations(space_time_path.size()-1);
-
-// 	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
-// 		inner_pts.col(j) = space_time_path[i].head<3>();
-// 	}
-
-// 	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
-// 		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
-// 	}
-
-// 	min_jerk_opt_->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
-
 // 	return;
 // }
-
-// Eigen::Vector2d FakeDrone::calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj, 
-// 													const double& t_cur, const double& dt)
-// {
-// 	Eigen::Vector2d yaw_yawdot(0, 0);
-
-// 	// get direction vector
-// 	Eigen::Vector3d dir = t_cur + t_step_ <= traj->getTotalDuration()
-// 								? traj->getPos(t_cur + t_step_) - traj->getPos(t_cur)
-// 								: traj->getPos(traj->getTotalDuration()) - traj->getPos(t_cur);
-
-// 	double yaw_temp = dir.norm() > 0.1
-// 							? atan2(dir(1), dir(0))
-// 							: prev_yaw_;
-
-// 	double yawdot = 0;
-// 	double d_yaw = yaw_temp - prev_yaw_;
-// 	if (d_yaw >= M_PI)
-// 	{
-// 		d_yaw -= 2 * M_PI;
-// 	}
-// 	if (d_yaw <= -M_PI)
-// 	{
-// 		d_yaw += 2 * M_PI;
-// 	}
-	
-// 	// Set maximum values for yaw_dot and yaw_ddot
-// 	const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
-// 	const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
-// 	double d_yaw_max;
-
-// 	if (fabs(prev_yaw_dot_ + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
-// 	{
-// 		// yawdot = prev_yaw_dot_ + dt * YDDM;
-// 		d_yaw_max = (prev_yaw_dot_ * dt) + (0.5 * YDDM * dt * dt);
-// 	}
-// 	else // exceed yaw_dot limits
-// 	{
-// 		// yawdot = YDM;
-// 		double t1 = (YDM - prev_yaw_dot_) / YDDM;
-// 		d_yaw_max = ((dt - t1) + dt) * (YDM - prev_yaw_dot_) / 2.0;
-// 	}
-
-// 	if (fabs(d_yaw) > fabs(d_yaw_max))
-// 	{
-// 		d_yaw = d_yaw_max;
-// 	}
-// 	yawdot = d_yaw / dt;
-
-// 	double yaw = prev_yaw_ + d_yaw;
-// 	if (yaw > M_PI)
-// 		yaw -= 2 * M_PI;
-// 	if (yaw < -M_PI)
-// 		yaw += 2 * M_PI;
-// 	yaw_yawdot(0) = yaw;
-// 	yaw_yawdot(1) = yawdot;
-
-// 	prev_yaw_ = yaw_yawdot(0);
-// 	prev_yaw_dot_ = yaw_yawdot(1);
-
-// 	yaw_yawdot(1) = yaw_temp;
-
-// 	return yaw_yawdot;
-// }
-
-

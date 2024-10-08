@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   {
     auto response = result.get();
     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Got response: State[%d] State_name[%s] Success[%d]", 
-		response->state, response->state_name, response->success);
+		response->state, response->state_name.c_str(), response->success);
   } else {
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Failed to call service add_two_ints");
   }

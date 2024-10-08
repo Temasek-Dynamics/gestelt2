@@ -1,17 +1,21 @@
+#!/usr/bin/env python
+"""
+Complete set of nodes for trajectory server
+"""
+
 import os
 import json
 
 from ament_index_python.packages import get_package_share_directory
 
-from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace
-
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction
+from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
-# SCENARIO_NAME = "forest_dense_1"
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.actions import Node, PushROSNamespace
+
 SCENARIO_NAME = "map_test"
 
 class Scenario:
@@ -45,64 +49,75 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-def generateFakeDrone(id, spawn_pos):
+def generateSITLDrone(id, spawn_pos):
 
-    fake_drone_complete_launchfile = IncludeLaunchDescription(
+    sitl_drone_launchfile = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
                 FindPackageShare('gestelt_bringup'),
                 'launch',
-                'fake_drone_complete.py'
+                'sitl_drone.py'
             ])
         ]),
         launch_arguments={
             'drone_id': str(id),
             'init_x': str(spawn_pos[0]),
             'init_y': str(spawn_pos[1]),
-            'init_z': str(spawn_pos[2]),
+            'init_yaw': str(spawn_pos[2]),
         }.items()
     )
 
     return GroupAction(
       actions=[
           PushROSNamespace('d' + str(id)),
-          fake_drone_complete_launchfile,
+          sitl_drone_launchfile,
         ]
     )
 
 def generate_launch_description():
-
     scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
         SCENARIO_NAME
     )
 
-    fake_map_pcd_filepath = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
-      scenario.map + '.pcd'
-    )
-
+    '''ROS parameters'''
     rviz_cfg = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'config',
       'default.rviz'
     )
+
+    """Directory"""
+    px4_dir = os.path.join(
+      os.path.expanduser("~"), 'PX4-Autopilot'
+    )
+
+    px4_gz = os.path.join(
+      px4_dir, "Tools/simulation/gz/simulation-gazebo"
+    )
+
 
     # World to map transformation
     world_to_map_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        arguments = ["0", "0", "0", "0", "0", "0", "world", "map"])
 
-    # Fake map
-    fake_map = Node(
-        package='fake_map',
-        executable='fake_map_publisher_node',
-        output='screen',
-        shell=True,
-        name='fake_map_publisher_node',
-        parameters=[
-            {'fake_map.pcd_filepath': fake_map_pcd_filepath},
-            {'fake_map.frame_id': "world"},
-            {'fake_map.publishing_frequency': 1.0},
+    """Gazebo"""
+    gazebo = ExecuteProcess(
+        cmd=[
+            'python3', px4_gz,
+            '--world', 'default',
+            # '--headless',
         ],
+        name='gazebo',
+        shell=True
+    )
+
+    # XRCE Agent that will connect to ALL clients
+    xrce_agent = ExecuteProcess(
+        cmd=[[
+            'MicroXRCEAgent udp4 -p 8888 -v'
+        ]],
+        name='microxrceagent',
+        shell=True
     )
 
     # RVIZ Visualization
@@ -123,20 +138,23 @@ def generate_launch_description():
         name='mission_node',
         parameters = [
             {'scenario': scenario.name},
+            {'init_delay': 5},
         ]
     )
 
-    fake_drone_nodes = []
+    # Generate nodes of SITL drone instances according to scenario
+    sitl_drone_nodes = []
     for id in range(scenario.num_agents):
-        fake_drone_nodes.append(generateFakeDrone(id, scenario.spawns_pos[id]))
+        sitl_drone_nodes.append(generateSITLDrone(id, scenario.spawns_pos[id]))
 
     return LaunchDescription([
-        # Central nodes
-        fake_map,
+        # Processes
         world_to_map_tf,
+        gazebo,
+        xrce_agent,
+        # Nodes
         rviz_node,
-
         mission_node,
-
-        *fake_drone_nodes
+        # Simulation instances
+        *sitl_drone_nodes,
     ])

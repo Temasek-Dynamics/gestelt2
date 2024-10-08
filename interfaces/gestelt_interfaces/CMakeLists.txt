@@ -17,6 +17,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Goals.msg"
   "msg/PlanRequest.msg"
   "msg/SpaceTimePath.msg"
+  "msg/UAVState.msg"
   DEPENDENCIES 
     std_msgs 
     geometry_msgs 

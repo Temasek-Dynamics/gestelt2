@@ -110,7 +110,7 @@ private:
 		size_t N = msg->duration.size(); // number of trajectory segments 
 		std::vector<double> ts(N); // vector of segment time durations
 		std::vector<minco::CoefficientMat> cMats(N);	// Coefficient matrices
-		for (int i = 0; i < N; i++)	// For each segment
+		for (size_t i = 0; i < N; i++)	// For each segment
 		{
 			int i6 = i * 6;
 			cMats[i].row(0) <<  msg->coef_x[i6 + 0], msg->coef_x[i6 + 1], msg->coef_x[i6 + 2],

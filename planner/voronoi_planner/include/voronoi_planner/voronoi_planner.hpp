@@ -19,10 +19,15 @@
 #include <gestelt_interfaces/msg/space_time_path.hpp>
 #include <gestelt_interfaces/msg/goals.hpp>
 
+#include <minco_interfaces/msg/polynomial_trajectory.hpp>
+#include <minco_interfaces/msg/minco_trajectory.hpp>
+
 #include <voxel_map/voxel_map.hpp> 
 
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
 #include <space_time_astar/space_time_astar.hpp>
+
+#include <minco_traj_gen/minco_traj_gen.hpp>
 
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
@@ -163,7 +168,12 @@ public:
    */
   bool plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal);
 
+
 private:
+  /* Generate minimum jerk trajectory*/
+  std::shared_ptr<minco::Trajectory> genMinJerkTraj(std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
+                                    const std::vector<Eigen::Vector4d>& space_time_path,
+                                    const double& t_plan_start);
 
   /* Timer callbacks */
 
@@ -200,6 +210,12 @@ private:
                       const double& origin_x, const double& origin_y,
                       nav_msgs::msg::OccupancyGrid& occ_grid);
 
+  // Convert from polynomial trajectory to minco msg
+  void polyTrajToMincoMsg(const std::shared_ptr<minco::Trajectory>& traj, 
+                const double& traj_start_time,
+                minco_interfaces::msg::PolynomialTrajectory &poly_msg, 
+                minco_interfaces::msg::MincoTrajectory &MINCO_msg);
+
   /* Checks */
 
   /**
@@ -229,7 +245,7 @@ private:
   bool planner_los_smooth_; // Enable line of sight smoothing for planner
   std::string output_json_filepath_;  // Output filepath for JSON file
 
-  bool json_output_{true};  // output path to json file
+  bool json_output_{false};  // output path to json file
 
   // For use when populating reservation table 
   double rsvn_tbl_inflation_{-1.0}; // [m] Inflation of cells in the reservation table
@@ -406,17 +422,18 @@ inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVorono
 }
 
 
-void VoronoiPlanner::mjoToMsg(const minco::MinJerkOpt& mjo, const double& traj_start_time,
-                          minco::PolynomialTrajectory &poly_msg, minco::MincoTrajetory &MINCO_msg)
+
+inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Trajectory>& traj, 
+                              const double& traj_start_time,
+                              minco_interfaces::msg::PolynomialTrajectory &poly_msg, 
+                              minco_interfaces::msg::MincoTrajectory &MINCO_msg)
 {
 
-  minco::Trajectory traj = mjo.getTraj();
-
-  Eigen::VectorXd durs = traj.getDurations();
-  int piece_num = traj.getPieceSize();
+  Eigen::VectorXd durs = traj->getDurations();
+  int piece_num = traj->getPieceSize();
   poly_msg.drone_id = drone_id_;
-  poly_msg.traj_id = traj_id_;
-  poly_msg.start_time = ros::Time(traj_start_time);
+  // poly_msg.traj_id = 0;
+  poly_msg.start_time = traj_start_time;
   poly_msg.order = 5; 
   poly_msg.duration.resize(piece_num);
   poly_msg.coef_x.resize(6 * piece_num);
@@ -430,7 +447,7 @@ void VoronoiPlanner::mjoToMsg(const minco::MinJerkOpt& mjo, const double& traj_s
     poly_msg.duration[i] = durs(i);
 
     // Assign coefficient matrix values
-    minco::CoefficientMat cMat = traj.getPiece(i).getCoeffMat();
+    minco::CoefficientMat cMat = traj->getPiece(i).getCoeffMat();
     int i6 = i * 6;
     for (int j = 0; j < 6; j++)
     {
@@ -441,36 +458,36 @@ void VoronoiPlanner::mjoToMsg(const minco::MinJerkOpt& mjo, const double& traj_s
   }
 
   MINCO_msg.drone_id = drone_id_;
-  MINCO_msg.traj_id = traj_id_;
-  MINCO_msg.start_time = ros::Time(traj_start_time);
+  // MINCO_msg.traj_id = 0;
+  MINCO_msg.start_time = traj_start_time;
   MINCO_msg.order = 5; 
   MINCO_msg.duration.resize(piece_num);
 
   Eigen::Vector3d vec; // Vector representing x,y,z values or their derivatives
   // Start Position
-  vec = traj.getPos(0);
+  vec = traj->getPos(0);
   MINCO_msg.start_p[0] = vec(0), MINCO_msg.start_p[1] = vec(1), MINCO_msg.start_p[2] = vec(2);
   // Start Velocity
-  vec = traj.getVel(0);
+  vec = traj->getVel(0);
   MINCO_msg.start_v[0] = vec(0), MINCO_msg.start_v[1] = vec(1), MINCO_msg.start_v[2] = vec(2);
   // Start Acceleration
-  vec = traj.getAcc(0);
+  vec = traj->getAcc(0);
   MINCO_msg.start_a[0] = vec(0), MINCO_msg.start_a[1] = vec(1), MINCO_msg.start_a[2] = vec(2);
   // End position
-  vec = traj.getPos(traj.getTotalDuration());
+  vec = traj->getPos(traj->getTotalDuration());
   MINCO_msg.end_p[0] = vec(0), MINCO_msg.end_p[1] = vec(1), MINCO_msg.end_p[2] = vec(2);
   // End velocity
-  vec = traj.getVel(traj.getTotalDuration());
+  vec = traj->getVel(traj->getTotalDuration());
   MINCO_msg.end_v[0] = vec(0), MINCO_msg.end_v[1] = vec(1), MINCO_msg.end_v[2] = vec(2);
   // End Acceleration
-  vec = traj.getAcc(traj.getTotalDuration());
+  vec = traj->getAcc(traj->getTotalDuration());
   MINCO_msg.end_a[0] = vec(0), MINCO_msg.end_a[1] = vec(1), MINCO_msg.end_a[2] = vec(2);
 
   // Assign inner points
   MINCO_msg.inner_x.resize(piece_num - 1);
   MINCO_msg.inner_y.resize(piece_num - 1);
   MINCO_msg.inner_z.resize(piece_num - 1);
-  Eigen::MatrixXd pos = traj.getPositions();
+  Eigen::MatrixXd pos = traj->getPositions();
   for (int i = 0; i < piece_num - 1; i++)
   {
     MINCO_msg.inner_x[i] = pos(0, i + 1);
