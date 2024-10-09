@@ -85,6 +85,11 @@ def generate_launch_description():
       'default.rviz'
     )
 
+    fake_map_pcd_filepath = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
+      scenario.map + '.pcd'
+    )
+
     """Directory"""
     px4_dir = os.path.join(
       os.path.expanduser("~"), 'PX4-Autopilot'
@@ -120,6 +125,20 @@ def generate_launch_description():
         shell=True
     )
 
+    # Fake map
+    fake_map = Node(
+        package='fake_map',
+        executable='fake_map_publisher_node',
+        output='screen',
+        shell=True,
+        name='fake_map_publisher_node',
+        parameters=[
+            {'fake_map.pcd_filepath': fake_map_pcd_filepath},
+            {'fake_map.frame_id': "world"},
+            {'fake_map.publishing_frequency': 1.0},
+        ],
+    )
+
     # RVIZ Visualization
     rviz_node = Node(
         package='rviz2',
@@ -153,8 +172,9 @@ def generate_launch_description():
         gazebo,
         xrce_agent,
         # Nodes
-        rviz_node,
+        fake_map,
         mission_node,
+        rviz_node,
         # Simulation instances
         *sitl_drone_nodes,
     ])

@@ -25,8 +25,6 @@ FakeDrone::FakeDrone()
 	this->declare_parameter(param_ns+".init.y", 0.0);
 	this->declare_parameter(param_ns+".init.z", 0.0);
 
-	this->declare_parameter(param_ns+".fe_stride", -1);
-
 	this->declare_parameter(param_ns+".t_step", -1.0);
 
 	drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
@@ -44,8 +42,6 @@ FakeDrone::FakeDrone()
 	init_pos(0) = this->get_parameter(param_ns+".init.x").as_double();
 	init_pos(1) = this->get_parameter(param_ns+".init.y").as_double();
 	init_pos(2) = this->get_parameter(param_ns+".init.z").as_double();
-
-	fe_stride_ = this->get_parameter(param_ns+".fe_stride").as_int();
 
 	t_step_ = this->get_parameter(param_ns+".t_step").as_double();
 
@@ -65,8 +61,6 @@ FakeDrone::FakeDrone()
 
 	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 	pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", 10);
-	
-	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("minco_traj_viz", 10);
 
 	/**
 	 * Timer for drone state update  
@@ -98,20 +92,20 @@ void FakeDrone::frontEndPlanCB(const gestelt_interfaces::msg::SpaceTimePath::Uni
 
 	fe_space_time_path_.clear();
 
-	for (size_t i = 0; i < msg->plan.size(); i += fe_stride_)
-	{	
-		// // Add control point
-		// points.push_back(fe_plan_msg_.plan[i].position.x);
-		// points.push_back(fe_plan_msg_.plan[i].position.y);
-		// points.push_back(fe_plan_msg_.plan[i].position.z);
+	// for (size_t i = 0; i < msg->plan.size(); i += 1)
+	// {	
+	// 	// // Add control point
+	// 	// points.push_back(fe_plan_msg_.plan[i].position.x);
+	// 	// points.push_back(fe_plan_msg_.plan[i].position.y);
+	// 	// points.push_back(fe_plan_msg_.plan[i].position.z);
 
-		fe_space_time_path_.push_back(Eigen::Vector4d{
-			msg->plan[i].position.x,
-			msg->plan[i].position.y, 
-			msg->plan[i].position.z,
-			(double) msg->plan_time[i],
-		});
-	}
+	// 	fe_space_time_path_.push_back(Eigen::Vector4d{
+	// 		msg->plan[i].position.x,
+	// 		msg->plan[i].position.y, 
+	// 		msg->plan[i].position.z,
+	// 		(double) msg->plan_time[i],
+	// 	});
+	// }
 
 	// spline_ = std::make_shared<tinyspline::BSpline>(tinyspline::BSpline::interpolateCubicNatural(points, 3));
 }
@@ -152,56 +146,6 @@ void FakeDrone::stateUpdateTimerCB()
 // 									const double& plan_start_t)
 // {
 
-// 	auto t_now = this->get_clock()->now();
-// 	double e_t_start = t_now.seconds() - plan_start_t;			 	// [s] Elapsed time since plan start
-// 	int e_t_start_st = (int) tToSpaceTimeUnits(e_t_start); 	// [space-time units] Elapsed time since plan start
-
-// 	if (e_t_start_st < 0){
-// 		// trajectory starts in the future
-// 		std::cout << "trajectory starts in the future" << std::endl;
-// 		return;
-// 	}
-
-// 	if (e_t_start_st >= space_time_path.back()(3)){
-// 		// Time exceeded end of trajectory. Trajectory has finished executing in the past
-// 		std::cout << "Trajectory has finished executing in the past" << std::endl;
-// 		new_plan_rcv_ = false;
-// 		return;
-// 	}
-
-// 	// Iterate through plan and choose state at current time
-// 	int cur_idx = 0;
-// 	bool exceed_prev = false;
-
-// 	for (size_t i = 0; i < space_time_path.size(); i++){	// for each point in the path
-// 		cur_idx = i;
-// 		if (exceed_prev){
-// 			// if elapsed time exceeded previous timestamp and <= current timestamp, end loop
-// 			if (e_t_start_st < space_time_path[i](3))
-// 			{
-// 				// std::cout << "e_t_start_st(" << e_t_start_st << ") <= " << space_time_path[i](3) << std::endl;
-// 				break;
-// 			}
-// 		}
-// 		else {
-// 			exceed_prev = e_t_start_st >= space_time_path[i](3) ? true : false;
-// 		}
-// 	}
-
-// 	double x = space_time_path[cur_idx](0);
-// 	double y = space_time_path[cur_idx](1);
-// 	double z = space_time_path[cur_idx](2);
-
-// 	// alpha: Arc length parameterization of spline. Formed by time ratio
-// 	// double alpha = ((double)e_t_start_st) / (fe_plan_msg.plan_time.back());
-
-// 	// std::vector<tinyspline::real> result = spline_->eval(alpha).result();
-// 	// double x = result[0];
-// 	// double y = result[1];
-// 	// double z = result[2];
-
-//   	std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
-
 // 	odom_msg_.header.stamp = pose_msg_.header.stamp = t_now;
 
 // 	// odom_msg_.pose.pose = fe_plan_msg.plan[cur_plan_idx];
@@ -220,8 +164,3 @@ void FakeDrone::stateUpdateTimerCB()
 // 	pose_msg_.pose = odom_msg_.pose.pose;
 // }
 
-
-// void FakeDrone::setStateFromTraj(const std::shared_ptr<minco::Trajectory>& traj)
-// {
-// 	return;
-// }

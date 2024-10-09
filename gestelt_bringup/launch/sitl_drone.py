@@ -41,7 +41,7 @@ def generate_launch_description():
       default_value='0.0'
     )
 
-    ''' Get parameter files '''
+    ''' Get directories '''
 
     px4_dir = os.path.join(
       os.path.expanduser("~"), 'PX4-Autopilot'
@@ -51,11 +51,23 @@ def generate_launch_description():
       px4_dir, "build/px4_sitl_default"
     )
 
+    ''' Get parameter files '''
     traj_server_config = os.path.join(
       get_package_share_directory('trajectory_server'),
       'config',
       'trajectory_server.yaml'
     )
+
+    navigator_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'navigator.yaml'
+    )
+
+    voxel_map_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'voxel_map.yaml'
+    )
+
 
     """Nodes"""
 
@@ -83,6 +95,22 @@ def generate_launch_description():
         shell=True
     )
 
+
+    ''' Navigator: Planner module '''
+    navigator_node = Node(
+        package='voronoi_planner',
+        executable='voronoi_planner_node',
+        output='screen',
+        shell=True,
+        name='voronoi_planner',
+        parameters=[
+            {'navigator.drone_id': drone_id},
+            # {'navigator.planner.output_json_filepath': output_json_filepath},
+            navigator_cfg,
+            voxel_map_cfg,
+        ],
+    )
+
     trajectory_server = Node(
         package='trajectory_server',
         executable='trajectory_server_node',
@@ -100,7 +128,9 @@ def generate_launch_description():
         init_x_launch_arg,
         init_y_launch_arg,
         init_yaw_launch_arg,
-        # Nodes
+        # Processes
         px4_sitl,
+        # Nodes
+        navigator_node,
         trajectory_server,
     ])

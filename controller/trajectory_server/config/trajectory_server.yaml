@@ -5,11 +5,8 @@
     origin_frame: world
     base_link_frame: base_link
 
-    # Default take_off height
-    default_takeoff_height: 1.0 # [m]
-
     # Frequency for timers
-    set_offb_ctrl_freq: 4.0  #[ Hz] Offboard control mode publish frequency
-    pub_odom_freq: 30.0  # [Hz] Publish odometry frequency 
-    pub_cmd_freq: 30.0  # [Hz] Publish control input command frequency
+    set_offb_ctrl_freq: 5.0  #[ Hz] Offboard control mode publish frequency
+    pub_state_freq: 50.0  # [Hz] Publish state frequency 
     state_machine_tick_freq: 50.0  # [Hz] Frequency to tick state machine
+    pub_ctrl_freq: 100.0  # [Hz] Publish control input command frequency

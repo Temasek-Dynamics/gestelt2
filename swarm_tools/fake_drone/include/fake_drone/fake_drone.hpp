@@ -69,7 +69,6 @@ class FakeDrone : public rclcpp::Node
         rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; // Publish odometry
         rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_; // Publish pose
 
-        rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
         
         rclcpp::TimerBase::SharedPtr tf_update_timer_; // Timer for tf broadcast
         rclcpp::TimerBase::SharedPtr state_update_timer_; // Timer for state update and publishing 
@@ -79,8 +78,6 @@ class FakeDrone : public rclcpp::Node
         /* Params */
         int drone_id_{-1};
         double t_unit_{0.1};     // [s] Time duration of each space-time A* unit
-
-        int fe_stride_;     // stride to sample front-end path
 
         double t_step_;    // time step used for getting yaw
 

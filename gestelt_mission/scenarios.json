@@ -4,10 +4,10 @@
         "map": "map_test",
         "num_agents": 1,
         "spawns_pos": [
-            [0.0, 0.0, 0.4]
+            [-6.0, -6.0, 0.4]
         ],
         "goals_pos": [
-            [6.0, 6.0, 1.2]
+            [6.0, 6.0, 2.4]
         ]
     },
     "forest_dense_1" : {

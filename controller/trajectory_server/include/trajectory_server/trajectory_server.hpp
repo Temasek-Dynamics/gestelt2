@@ -116,8 +116,14 @@ private:
 	void initSrv();
 
 	/* Time callbacks */
+
+	/* Timer for publishign controls to FCU */
+	void pubCtrlTimerCB();
+	/* Timer sending offboard mode to FCU, required for maintaining offboard mode */
 	void setOffboardTimerCB();
-	void pubOdomTimerCB();
+	/* Timer for publishing state information */
+	void pubStateTimerCB();
+	/* Timer for state machine ticking, to query current state and execute actions relevant to the state  */
 	void SMTickTimerCB();
 
 	/* Publisher methods */
@@ -178,8 +184,8 @@ private:
 
 	/* Timers */
 	rclcpp::TimerBase::SharedPtr set_offb_timer_;	
-	rclcpp::TimerBase::SharedPtr pub_cmd_timer_;
-	rclcpp::TimerBase::SharedPtr pub_odom_timer_;
+	rclcpp::TimerBase::SharedPtr pub_ctrl_timer_;
+	rclcpp::TimerBase::SharedPtr pub_state_timer_;
 	rclcpp::TimerBase::SharedPtr sm_tick_timer_;
 
 	/* Publishers */
@@ -211,22 +217,27 @@ private:
 	std::string origin_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // base link frame of uav
 
-	double default_takeoff_height_; // [m] Take off height
 	double take_off_landing_tol_{0.15}; // [m] Take off and landing tolerance
 
-	double pub_cmd_freq_; // [Hz] Frequency to publish PVA commands
-	double pub_odom_freq_; // [Hz] Frequency of state machine ticks
+	double pub_ctrl_freq_; // [Hz] Frequency of publishing controls
+	double pub_state_freq_; // [Hz] Frequency to publish odometry
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
 
 	TrajectoryType traj_type_;	// Trajectory plugin type
+
+	/* Trajectory command data */
+
 	std::unique_ptr<PolyTrajCmd> poly_traj_cmd_; // MINCO trajectory command reader
 
 	/* Stored Data */
 	Eigen::Vector3d cur_pos_;		// Current position
+	Eigen::Vector3d cur_pos_corr_;		// Current position with corrected ground height
+	
 	Eigen::Vector3d cur_vel_;		// Current velocity
 	Eigen::Quaterniond cur_ori_;	// Current orientation
 	Eigen::Vector3d cur_ang_vel_;	// Current angular velocity
+	double ground_height_{0.0}; // Starting ground height
 
 	Eigen::Vector3d pos_enu_;		// Commanded position [ENU frame]
 	Eigen::Vector2d yaw_yawrate_;	
@@ -242,6 +253,8 @@ private:
 	bool pre_flight_checks_pass_; // Pre flight checks pass
 	bool connected_to_fcu_; // Indicates connection to FCU
 	
+	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
+
 }; // class TrajectoryServer
 
 #endif //TRAJECTORY_SERVER_HPP_

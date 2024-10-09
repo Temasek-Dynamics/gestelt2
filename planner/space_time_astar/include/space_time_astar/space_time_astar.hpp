@@ -210,14 +210,14 @@ inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen:
 
   // Transform to world frame
   Eigen::Vector4d cur_pos_t(cur_pos(0)+voro_params_.local_origin_x, 
-                          cur_pos(1)+voro_params_.local_origin_y, 
-                          cur_pos(2), 
-                          0);
+                            cur_pos(1)+voro_params_.local_origin_y, 
+                            cur_pos(2), 
+                            0);
 
-  // offset_t: time from current position to start of path
-  int offset_t = (int)round((cur_pos_t.segment(0,3) - path_pos_t[0].segment(0,3)).norm()/voro_params_.res) * astar_params_.st_straight; 
+  // offset_t: [s] time from current position to start of path
+  int offset_t = (int)round(  (cur_pos_t.segment(0,3) - path_pos_t[0].segment(0,3)).norm()/voro_params_.res) * astar_params_.st_straight; 
 
-  if (offset_t == 0){ // Distance between start and path start is very close
+  if (offset_t <= 1){ // Distance between start and path start is very close
     // Replace start point of path with current point
     path_pos_t[0] = cur_pos_t;
   }

@@ -40,8 +40,10 @@ void VoxelMap::initPubSubTimer()
 {
   /* Initialize Subscribers */
   if (!dbg_input_entire_map_){
-    cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(node_, "cloud", rmw_qos_profile_sensor_data);
-    odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(node_, "odom", rmw_qos_profile_sensor_data);
+    cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
+      node_, "cloud", rmw_qos_profile_sensor_data);
+    odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(
+      node_, "odom", rmw_qos_profile_sensor_data);
 
     sync_cloud_odom_ = std::make_shared<message_filters::Synchronizer<SyncPolicyCloudOdom>>(
         SyncPolicyCloudOdom(5), *cloud_sub_, *odom_sub_);

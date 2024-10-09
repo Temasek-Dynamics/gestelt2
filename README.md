@@ -57,6 +57,7 @@ colcon build
 ```
 
 6. Configuration
+- NAV_DLL_ACT: Set to disabled to disable checks for GCS connection
 - MAV_MODE_FLAG: needs to be set to 1
 - COM_RC_IN_MODE: Set to 4 to disable need for manual controller to arm
 - COM_OF_LOSS_T: Time-out (in seconds) to wait when offboard connection is lost before triggering offboard lost failsafe (COM_OBL_RC_ACT)

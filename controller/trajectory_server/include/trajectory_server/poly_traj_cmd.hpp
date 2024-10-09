@@ -65,11 +65,11 @@ public:
 		double e_t_start = t_now.seconds() - traj_->getGlobalStartTime();			 	// [s] Elapsed time since plan start
 
 		if (e_t_start < 0.0){
-			std::cout << "Trajectory start time is in the future" << std::endl;
+			// std::cout << "Trajectory start time is in the future" << std::endl;
 			return false;
 		}
 		else if (e_t_start >= traj_->getTotalDuration()){
-			std::cout << "Trajectory has finished executing in the past" << std::endl;
+			// std::cout << "Trajectory has finished executing in the past" << std::endl;
 			return false;
 		}
 

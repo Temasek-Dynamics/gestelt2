@@ -16,10 +16,12 @@ A new scenario is created by adding a new dictionary entry to the JSON file [sce
         "map": "MAP_NAME",
         "num_agents": 2,
         "spawns_pos": [
+            // [x, y, yaw]
             [-5.5, -5.5, 2.0],
             [5.5, 5.5, 2.0]
         ],
         "goals_pos": [
+            // [x, y, z]
             [5.5, 5.5, 2.0],
             [-5.5, -5.5, 2.0]
         ]

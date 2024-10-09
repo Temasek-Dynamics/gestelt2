@@ -75,6 +75,8 @@ void VoronoiPlanner::initPubSubTimer(){
   fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/closed_list", 10);
   fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz", 10);
 
+	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("minco_traj_viz", 10);
+
   /* Subscribers */
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
@@ -117,6 +119,8 @@ void VoronoiPlanner::initParams()
   this->declare_parameter(param_ns+".reservation_table.time_buffer", 0.5);
   this->declare_parameter(param_ns+".reservation_table.window_size", -1);
 
+  this->declare_parameter(param_ns+".min_jerk_trajectory.front_end_stride", 3);
+
   this->declare_parameter(param_ns+".local_map_frame", "local_map_frame");
   this->declare_parameter(param_ns+".global_frame", "world");
 
@@ -136,6 +140,8 @@ void VoronoiPlanner::initParams()
   t_unit_ = this->get_parameter(param_ns+".planner.t_unit").as_double();
   planner_los_smooth_ = this->get_parameter(param_ns+".planner.line_of_sight_smooth").as_bool();
   output_json_filepath_ = this->get_parameter(param_ns+".planner.output_json_filepath").as_string();
+
+  fe_stride_ = this->get_parameter(param_ns+".min_jerk_trajectory.front_end_stride").as_int();
 
   rsvn_tbl_inflation_ = this->get_parameter(param_ns+".reservation_table.inflation").as_double();
   rsvn_tbl_window_size_ = this->get_parameter(param_ns+".reservation_table.window_size").as_int();
@@ -248,24 +254,48 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
   fe_plan_msg.t_plan_start = plan_start_clock.seconds();
 
-  /* Generate minimum jerk trajectory */
-  poly_traj_ = genMinJerkTraj(min_jerk_opt_, fe_path_with_t_, plan_start_clock.seconds());
-	// Eigen::MatrixXd cstr_pts = min_jerk_opt_->getConstraintPts(5);
 
-  minco_interfaces::msg::PolynomialTrajectory poly_msg; 
-  minco_interfaces::msg::MincoTrajectory MINCO_msg; 
+  std::vector<Eigen::Vector4d> mjo_fe_path;
 
-  polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
+  // Sample at regular intervals from front-end path
+  for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
+	{	
+		// // Add control point
+		// points.push_back(fe_plan_msg_.plan[i].position.x);
+		// points.push_back(fe_plan_msg_.plan[i].position.y);
+		// points.push_back(fe_plan_msg_.plan[i].position.z);
 
-  fe_plan_pub_->publish(fe_plan_msg);
+		mjo_fe_path.push_back(Eigen::Vector4d{
+			fe_path_with_t_[i](0),
+			fe_path_with_t_[i](1),
+			fe_path_with_t_[i](2),
+			fe_path_with_t_[i](3)
+		});
+	}
+
+  if (mjo_fe_path.size() >= 2){
+    /* Generate minimum jerk trajectory */
+    poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, plan_start_clock.seconds());
+    Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
+
+    minco_interfaces::msg::PolynomialTrajectory poly_msg; 
+    minco_interfaces::msg::MincoTrajectory MINCO_msg; 
+
+    polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
+
+    poly_traj_pub_->publish(poly_msg); // [global frame] Publish to corresponding drone for execution
+    minco_traj_broadcast_pub_->publish(MINCO_msg); // [global frame] Broadcast to all other drones
+	  
+    // Publish visualization
+    viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, global_frame_);
+  }
+
+  // fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
+
+  // Visualization
   // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, global_frame_) ;
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, global_frame_);
-
-	// viz_helper::VizHelper::pubExecTraj(cstr_pts, minco_traj_viz_pub_, global_frame_);
-
-  poly_traj_pub_->publish(poly_msg); // [global frame] Publish to corresponding drone for execution
-  minco_traj_broadcast_pub_->publish(MINCO_msg); // [global frame] Broadcast to all other drones
 
   if (json_output_)
   {
@@ -304,7 +334,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
   if (verbose_print_)
   {
     logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
-                              drone_id_, start(0), start(1), start(2), goal(0), goal(1), goal(2)));
+                              drone_id_, fe_path_[0](0), fe_path_[0](1), fe_path_[0](2), 
+                              fe_path_.back()(0), fe_path_.back()(1), fe_path_.back()(2)));
   }
 
   plan_complete_ = true;
@@ -527,10 +558,9 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
 
 void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 {
-    if (msg->waypoints.size() <= 0)
+    if (msg->waypoints.empty())
     {
       logger_->logError(strFmt("Received empty waypoints. Ignoring waypoints."));
-
 
       return;
     }

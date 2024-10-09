@@ -25,7 +25,7 @@ def generate_launch_description():
     drone_id = LaunchConfiguration('drone_id')
     init_x = LaunchConfiguration('init_x')
     init_y = LaunchConfiguration('init_y')
-    init_z = LaunchConfiguration('init_z')
+    init_yaw = LaunchConfiguration('init_yaw')
 
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
@@ -40,8 +40,8 @@ def generate_launch_description():
       'init_y',
       default_value='0.0'
     )
-    init_z_launch_arg = DeclareLaunchArgument(
-      'init_z',
+    init_yaw_launch_arg = DeclareLaunchArgument(
+      'init_yaw',
       default_value='0.0'
     )
 
@@ -88,7 +88,7 @@ def generate_launch_description():
             {'fake_drone.drone_id': drone_id},
             {'fake_drone.init.x': init_x},
             {'fake_drone.init.y': init_y},
-            {'fake_drone.init.z': init_z},
+            {'fake_drone.init.yaw': init_yaw},
         ]
     )
 
@@ -97,7 +97,7 @@ def generate_launch_description():
         drone_id_launch_arg,
         init_x_launch_arg,
         init_y_launch_arg,
-        init_z_launch_arg,
+        init_yaw_launch_arg,
 
         # Planner
         navigator_node,

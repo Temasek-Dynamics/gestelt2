@@ -9,7 +9,7 @@ from rclpy.node import Node
 from rclpy.wait_for_message import wait_for_message
 
 from geometry_msgs.msg import Pose
-from gestelt_interfaces.msg import PlanRequest, UAVState
+from gestelt_interfaces.msg import PlanRequest, Goals, UAVState
 from gestelt_interfaces.srv import UAVCommand
 
 class Scenario:
@@ -79,11 +79,11 @@ class Mission(Node):
                 self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
 
         """Publishers"""
-        self.plan_req_pubs_ = []
+        self.goals_pubs_ = []
         for id in range(self.scenario.num_agents):
-            self.plan_req_pubs_.append(self.create_publisher(
-                                        PlanRequest, 
-                                        'd' + str(id) + '/plan_request_dbg', 10))
+            self.goals_pubs_.append(self.create_publisher(
+                                        Goals, 
+                                        'd' + str(id) + '/goals', 10))
 
         """Subscribers"""
         # self.uav_state_subs_ = []
@@ -96,10 +96,10 @@ class Mission(Node):
         """Set goals_pos"""
         self.plan_req_msgs = []
         for id in range(self.scenario.num_agents):
-            self.plan_req_msgs.append(self.createPlanReqMsg(id, self.scenario.spawns_pos[id], self.scenario.goals_pos[id]))
+            self.plan_req_msgs.append(self.createGoalsMsg(self.scenario.goals_pos[id]))
 
         """Timers"""
-        self.plan_req_timer_ = self.create_timer(1.0, self.planReqTimerCB, autostart=True)
+        # self.plan_req_timer_ = self.create_timer(1.0, self.planReqTimerCB, autostart=True)
 
         for id in range(self.scenario.num_agents):
             while not self.isInReqState(id, UAVState.IDLE):
@@ -133,8 +133,8 @@ class Mission(Node):
         self.uav_states[id] = msg.state
         in_req_state = (self.uav_states[id] == req_state)
 
-        if (not in_req_state):
-            self.get_logger().info(f'Drone{id} is in state {msg.state}. Not in required state {req_state}')
+        # if (not in_req_state):
+        #     self.get_logger().info(f'Drone{id} is in state {msg.state}. Not in required state {req_state}')
 
         return in_req_state
 
@@ -174,7 +174,33 @@ class Mission(Node):
 
         return True
 
-    def createPlanReqMsg(self, id, start, goal):
+    # def createPlanReqMsg(self, id, start, goal):
+    #     """Set goals_pos
+
+    #     Args:
+    #         start (list): [x,y,z]
+    #         goal (list): [x,y,z]
+    #     """
+
+    #     def createPose(x, y, z):
+    #         msg = Pose()
+    #         msg.position.x = x
+    #         msg.position.y = y
+    #         msg.position.z = z
+
+    #         return msg
+
+    #     plan_req_msg = PlanRequest()
+    #     plan_req_msg.header.stamp = self.get_clock().now().to_msg()
+    #     plan_req_msg.header.frame_id = 'world'
+    #     plan_req_msg.agent_id = id
+
+    #     plan_req_msg.start = createPose(start[0], start[1], start[2])
+    #     plan_req_msg.goal = createPose(goal[0], goal[1], goal[2])
+
+    #     return plan_req_msg
+
+    def createGoalsMsg(self, goal):
         """Set goals_pos
 
         Args:
@@ -190,27 +216,32 @@ class Mission(Node):
 
             return msg
 
-        plan_req_msg = PlanRequest()
-        plan_req_msg.header.stamp = self.get_clock().now().to_msg()
-        plan_req_msg.header.frame_id = 'world'
-        plan_req_msg.agent_id = id
+        goal_msg = Goals()
+        goal_msg.header.stamp = self.get_clock().now().to_msg()
+        goal_msg.header.frame_id = 'world'
 
-        plan_req_msg.start = createPose(start[0], start[1], start[2])
-        plan_req_msg.goal = createPose(goal[0], goal[1], goal[2])
+        goal_msg.waypoints.append(createPose(goal[0], goal[1], goal[2]))
 
-        return plan_req_msg
+        return goal_msg
+
     
-    def planReqTimerCB(self):
+    # def planReqTimerCB(self):
 
-        self.get_logger().info(f"Publishing plan request to all drones")
+    #     self.get_logger().info(f"Publishing plan request to all drones")
 
-        # Publish to all drones
+    #     # Publish to all drones
+    #     for id in range(self.scenario.num_agents):
+    #         self.goals_pubs_[id].publish(self.plan_req_msgs[id])
+
+    #     # Timer only runs once
+    #     if not self.plan_req_timer_.is_canceled(): 
+    #         self.plan_req_timer_.cancel()
+
+    def pubGoals(self):
+        # Publish goals to all drones
         for id in range(self.scenario.num_agents):
-            self.plan_req_pubs_[id].publish(self.plan_req_msgs[id])
+            self.goals_pubs_[id].publish(self.plan_req_msgs[id])
 
-        # Timer only runs once
-        if not self.plan_req_timer_.is_canceled(): 
-            self.plan_req_timer_.cancel()
 
 def main(args=None):
     rclpy.init(args=args)
@@ -218,11 +249,17 @@ def main(args=None):
     mission = Mission()
 
     # Take off 
-    mission.cmdAllDrones(UAVState.IDLE ,UAVCommand.Request.COMMAND_TAKEOFF, value=5.0)
+    mission.cmdAllDrones(UAVState.IDLE ,UAVCommand.Request.COMMAND_TAKEOFF, value=2.5)
+    print("All drones switched to HOVER state")
     # Mission mode
     mission.cmdAllDrones(UAVState.HOVERING ,UAVCommand.Request.COMMAND_START_MISSION, mode=0)
+    print("All drones switched to MISSION state")
 
-    print("Finished commanding all drones")
+    print(f"Publishing mission goals to all drones")
+    mission.pubGoals()
+
+    # # Land mode
+    # mission.cmdAllDrones(UAVState.MISSION ,UAVCommand.Request.COMMAND_LAND)
 
     rclpy.spin(mission)
 

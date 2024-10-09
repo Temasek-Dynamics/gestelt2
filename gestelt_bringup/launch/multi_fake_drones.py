@@ -65,7 +65,7 @@ def generateFakeDrone(id, spawn_pos):
             'drone_id': str(id),
             'init_x': str(spawn_pos[0]),
             'init_y': str(spawn_pos[1]),
-            'init_z': str(spawn_pos[2]),
+            'init_yaw': str(spawn_pos[2]),
         }.items()
     )
 

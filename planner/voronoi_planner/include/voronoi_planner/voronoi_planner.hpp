@@ -247,6 +247,8 @@ private:
 
   bool json_output_{false};  // output path to json file
 
+  int fe_stride_;     // stride to sample front-end path for minimum jerk trajectory generation
+
   // For use when populating reservation table 
   double rsvn_tbl_inflation_{-1.0}; // [m] Inflation of cells in the reservation table
   int rsvn_tbl_window_size_{-1}; // [s] Time buffer in the reservation table
@@ -286,6 +288,8 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
+
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
 
   /**
    * ROS Subscribers

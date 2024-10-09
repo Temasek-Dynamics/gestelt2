@@ -46,7 +46,7 @@ TrajectoryServer::TrajectoryServer()
     control_cb_group_ = this->create_callback_group(
       rclcpp::CallbackGroupType::MutuallyExclusive);
     fcu_cb_group_ = this->create_callback_group(
-      rclcpp::CallbackGroupType::MutuallyExclusive);
+      rclcpp::CallbackGroupType::Reentrant);
     others_cb_group_ = this->create_callback_group(
       rclcpp::CallbackGroupType::Reentrant);
 
@@ -79,13 +79,12 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("base_link_frame", "base_link");
 
 	/* Offboard params */
-	this->declare_parameter("default_takeoff_height", 1.0);
 	this->declare_parameter("offboard_control_mode", 1);
 
 	/* Frequencies for timers and periodic publishers*/
 	this->declare_parameter("set_offb_ctrl_freq", 4.0);
-	this->declare_parameter("pub_odom_freq", 30.0);
-	this->declare_parameter("pub_cmd_freq", 30.0);
+	this->declare_parameter("pub_state_freq", 30.0);
+	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 
 	this->declare_parameter("trajectory_type", "");
@@ -96,12 +95,10 @@ void TrajectoryServer::initParams()
 	origin_frame_ = this->get_parameter("origin_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
-	default_takeoff_height_ = this->get_parameter("default_takeoff_height").as_double();
-
 	/* Frequencies for timers and periodic publishers*/
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
-	pub_odom_freq_ = this->get_parameter("pub_odom_freq").as_double();
-	pub_cmd_freq_ = this->get_parameter("pub_cmd_freq").as_double();
+	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
+	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
 	auto getTrajAdaptorType = [=](const std::string& name) -> TrajectoryType
@@ -148,13 +145,15 @@ void TrajectoryServer::initPubSubTimers()
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	/* Timers */
-
-	set_offb_timer_ = this->create_wall_timer((1.0/set_offb_ctrl_freq_) *1000ms, 
-												std::bind(&TrajectoryServer::setOffboardTimerCB, this));
-	pub_odom_timer_ = this->create_wall_timer((1.0/pub_odom_freq_) *1000ms, 
-												std::bind(&TrajectoryServer::pubOdomTimerCB, this));
+	pub_ctrl_timer_ = this->create_wall_timer((1.0/pub_ctrl_freq_)*1000ms, 
+												std::bind(&TrajectoryServer::pubCtrlTimerCB, this), control_cb_group_);
 	sm_tick_timer_ = this->create_wall_timer((1.0/sm_tick_freq_)*1000ms, 
-												std::bind(&TrajectoryServer::SMTickTimerCB, this), control_cb_group_);
+												std::bind(&TrajectoryServer::SMTickTimerCB, this), others_cb_group_);
+	set_offb_timer_ = this->create_wall_timer((1.0/set_offb_ctrl_freq_) *1000ms, 
+												std::bind(&TrajectoryServer::setOffboardTimerCB, this), others_cb_group_);
+	pub_state_timer_ = this->create_wall_timer((1.0/pub_state_freq_) *1000ms, 
+												std::bind(&TrajectoryServer::pubStateTimerCB, this), others_cb_group_);
+
 }
 
 void TrajectoryServer::initSrv()
@@ -333,15 +332,19 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 		pos_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
 	}
 
-	cur_pos_ = transform_static_frame(Eigen::Vector3d(position_d.data()), pos_frame_tf);
-	cur_ori_ = transform_orientation(Eigen::Quaterniond(q_d.data()), pos_frame_tf);
+	if (msg->velocity_frame == VehicleOdometry::VELOCITY_FRAME_NED){	// NED Earth-fixed frame
+		vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
+	}
+	if (msg->velocity_frame == VehicleOdometry::VELOCITY_FRAME_FRD) { // FRD world-fixed frame
+		vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
+	}
 
-	if (msg->pose_frame == VehicleOdometry::POSE_FRAME_NED){	// NED Earth-fixed frame
-		vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
-	}
-	if (msg->pose_frame == VehicleOdometry::POSE_FRAME_FRD) { // FRD world-fixed frame
-		vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
-	}
+	cur_pos_ = transform_static_frame(Eigen::Vector3d(position_d.data()), pos_frame_tf);
+	
+	cur_pos_corr_ = cur_pos_;
+	cur_pos_corr_(2) -=  ground_height_; // Adjust for ground height
+
+	cur_ori_ = transform_orientation(Eigen::Quaterniond(q_d.data()), pos_frame_tf);
 
 	cur_vel_ = transform_static_frame(Eigen::Vector3d(velocity_d.data()), vel_frame_tf);
 	cur_ang_vel_ = transform_static_frame(Eigen::Vector3d(angular_velocity_d.data()), vel_frame_tf);
@@ -361,29 +364,12 @@ void TrajectoryServer::setOffboardTimerCB()
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::UNCONNECTED;
-
-		logger_->logInfoThrottle("[Unconnected]", 1.0);
-		
-		if (connected_to_fcu_){
-			sendEvent(Idle_E());
-		}
 	}
 	else if (UAV::is_in_state<Idle>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::IDLE;
-
-		logger_->logInfoThrottle("[Idle]", 1.0);
-		
-		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
-		{ 
-			// Disarm vehicle
-			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
-									VehicleCommand::ARMING_ACTION_DISARM);
-		}
 	}
 	else if (UAV::is_in_state<Landing>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::LANDING;
-
-		logger_->logInfoThrottle("[Landing]", 1.0);
 
 		if (nav_state_ != VehicleStatus::NAVIGATION_STATE_AUTO_LAND)
 		{
@@ -392,17 +378,10 @@ void TrajectoryServer::setOffboardTimerCB()
 											PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO,
 											PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND);
 		}
-
-		if (arming_state_ == VehicleStatus::ARMING_STATE_DISARMED)
-		{
-			sendEvent(Idle_E());
-		}
 	}
 	else if (UAV::is_in_state<TakingOff>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::TAKINGOFF;
 
-		logger_->logInfoThrottle("[TakingOff]", 1.0);
-		
 		if (arming_state_ != VehicleStatus::ARMING_STATE_ARMED)
 		{ 
 			// Arm vehicle
@@ -419,51 +398,34 @@ void TrajectoryServer::setOffboardTimerCB()
 
 		// PERIODICALLY: Publish offboard control mode message 
 		publishOffboardCtrlMode(0);	// Position control
-
-		if (abs(cur_pos_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) < take_off_landing_tol_)
-		{
-			sendEvent(Hover_E());
-		}
 	}
 	else if (UAV::is_in_state<Hovering>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::HOVERING;
-
-		logger_->logInfoThrottle("[Hovering]", 1.0);
 		
 		// PERIODICALLY: Publish offboard control mode message 
 		publishOffboardCtrlMode(0);	// Position control
 	}
 	else if (UAV::is_in_state<Mission>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
-
-		logger_->logInfoThrottle("[Mission]", 1.0);
 		
 		// PERIODICALLY: Publish offboard control mode message
 		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::EMERGENCYSTOP;
-
-		logger_->logInfoThrottle("[EmergencyStop]", 1.0);
-
-		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
-		{ 
-			// Disarm vehicle forcefully
-			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
-									VehicleCommand::ARMING_ACTION_DISARM,
-									21196);
-		}
 	}
 	else {
 		uav_state.state = gestelt_interfaces::msg::UAVState::UNDEFINED;
-		logger_->logInfoThrottle("Undefined UAV state", 1.0);
 	}
 
 	uav_state_pub_->publish(uav_state);
 }
 
-void TrajectoryServer::SMTickTimerCB()
+void TrajectoryServer::pubCtrlTimerCB()
 {
+	static double take_off_hover_T = 1.0/5.0;// Take off and landing period
+	static double estop_T = 1.0/50.0;// EStop period
+
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
 		// Do nothing
@@ -475,37 +437,47 @@ void TrajectoryServer::SMTickTimerCB()
 		// Do nothing
 	}
 	else if (UAV::is_in_state<TakingOff>()){
-		publishTrajectorySetpoint(
-			Eigen::Vector3d(0.0, 0.0, fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()), 
-			Eigen::Vector2d(0.0, 0.0));
+		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
+			publishTrajectorySetpoint(
+				Eigen::Vector3d(0.0, 0.0, 
+					fsm_list::fsmtype::current_state_ptr->getTakeoffHeight() + ground_height_), 
+				Eigen::Vector2d(0.0, 0.0));
+
+			last_cmd_pub_t_ = this->get_clock()->now().seconds();
+		}
+
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		publishTrajectorySetpoint(
-			Eigen::Vector3d(0.0, 0.0, fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()), 
-			Eigen::Vector2d(0.0, 0.0));
+		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
+			publishTrajectorySetpoint(
+				Eigen::Vector3d(0.0, 0.0, 
+					fsm_list::fsmtype::current_state_ptr->getTakeoffHeight() + ground_height_), 
+				Eigen::Vector2d(0.0, 0.0));
+
+			last_cmd_pub_t_ = this->get_clock()->now().seconds();
+		}
+
 	}
 	else if (UAV::is_in_state<Mission>()){
-
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
-
 				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
 				{
-					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
+					pos_enu_(2) +=  ground_height_; // Adjust for ground height
+					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_);
 				}
-
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 
-				publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
+				// publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_RATES: 
-				publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
+				// publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_THRUST_TORQUE: 
-				publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
+				// publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_MOTORS:
-				publishActuatorCmds(Eigen::Vector4d(1.0, 1.0, 1.0, 1.0));
+				// publishActuatorCmds(Eigen::Vector4d(1.0, 1.0, 1.0, 1.0));
 				break;
 			default:
 				// Undefined. Do nothing
@@ -513,13 +485,72 @@ void TrajectoryServer::SMTickTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
+		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > estop_T){
+			// Disarm vehicle forcefully
+			if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
+			{ 
+				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+										VehicleCommand::ARMING_ACTION_DISARM,
+										21196);
+			}
+
+			last_cmd_pub_t_ = this->get_clock()->now().seconds();
+		}
 	}
 	else {
 	}
 
 }
 
-void TrajectoryServer::pubOdomTimerCB()
+void TrajectoryServer::SMTickTimerCB()
+{
+	// Check all states
+	if (UAV::is_in_state<Unconnected>()){
+		logger_->logInfoThrottle("[Unconnected]", 1.0);
+		if (connected_to_fcu_){
+			sendEvent(Idle_E());
+		}
+	}
+	else if (UAV::is_in_state<Idle>()){
+		// logger_->logInfoThrottle("[Idle]", 1.0);
+		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
+		{ 
+			// Disarm vehicle
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+									VehicleCommand::ARMING_ACTION_DISARM);
+		}
+
+		ground_height_ = cur_pos_(2); // Set ground height to last z value
+	}
+	else if (UAV::is_in_state<Landing>()){
+		logger_->logInfoThrottle("[Landing]", 1.0);
+		if (arming_state_ == VehicleStatus::ARMING_STATE_DISARMED)
+		{
+			sendEvent(Idle_E());
+		}
+	}
+	else if (UAV::is_in_state<TakingOff>()){
+		logger_->logInfoThrottle("[TakingOff]", 1.0);
+		if (abs(cur_pos_corr_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) < take_off_landing_tol_)
+		{
+			sendEvent(Hover_E());
+		}
+	}
+	else if (UAV::is_in_state<Hovering>()){
+		logger_->logInfoThrottle("[Hovering]", 1.0);
+	}
+	else if (UAV::is_in_state<Mission>()){
+		// logger_->logInfoThrottle("[Mission]", 1.0);
+	}
+	else if (UAV::is_in_state<EmergencyStop>()){
+		// logger_->logInfoThrottle("[EmergencyStop]", 1.0);
+	}
+	else {
+		// logger_->logInfoThrottle("Undefined UAV state", 1.0);
+	}
+}
+
+void TrajectoryServer::pubStateTimerCB()
 {
 	nav_msgs::msg::Odometry odom_msg;
 
@@ -528,9 +559,9 @@ void TrajectoryServer::pubOdomTimerCB()
 
 	odom_msg.child_frame_id = base_link_frame_;
 
-	odom_msg.pose.pose.position.x = cur_pos_(0);
-	odom_msg.pose.pose.position.y = cur_pos_(1);
-	odom_msg.pose.pose.position.z = cur_pos_(2);
+	odom_msg.pose.pose.position.x = cur_pos_corr_(0);
+	odom_msg.pose.pose.position.y = cur_pos_corr_(1);
+	odom_msg.pose.pose.position.z = cur_pos_corr_(2);
 
 	odom_msg.pose.pose.orientation.w = cur_ori_.w();
 	odom_msg.pose.pose.orientation.x = cur_ori_.x();
@@ -721,17 +752,50 @@ void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv
 	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
 					request->command, request->mode, request->value));
 
+
+	// Checkn if value and mode is within bounds for specific commands
+	switch (request->command)
+	{
+		case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:  
+			if (request->value < 0.5 || request->value > 3.0){
+				response->success = false;
+				response->state = (int) getUAVState();
+				response->state_name = getUAVStateString();
+				logger_->logError("Value for COMMAND_TAKEOFF should be between 0.5 and 3.0, inclusive");
+
+				return;
+			}
+
+			break;
+		case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION: 
+
+			if (request->mode < 0 || request->mode > 4){
+				response->success = false;
+				response->state = (int) getUAVState();
+				response->state_name = getUAVStateString();
+				logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4, inclusive");
+
+				return;
+			}
+
+			break;
+		default:                    
+			break;
+	}
+
 	static double takeoff_timeout = 10.0;
 	static double start_mission_timeout = 1.0;
-	static double land_timeout = 7.5;
+	static double land_timeout = 10.0;
 	static double stop_mission_timeout = 1.0;
 	static double estop_timeout = 0.1;
 
+	// Send event to state machine
 	sendUAVCommandEvent(request->command, request->value, request->mode);
 
 	double srv_rcv_t = this->get_clock()->now().seconds();
 	bool timeout = false;
 
+	// Wait for state change to be completed
 	switch (request->command)
 	{
 		case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:  
@@ -800,7 +864,7 @@ void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv
 		default:                    
 			break;
 	}
-	
+
 	response->state = (int) getUAVState();
 	response->state_name = getUAVStateString();
 

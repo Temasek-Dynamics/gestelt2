@@ -92,16 +92,6 @@ public:
     return take_off_height_;
   }
 
-  /* Set take off height */
-  bool setTakeoffHeight(const double& val){
-    if (val <= 0.0){
-      return false;
-    }
-    take_off_height_ = val;
-
-    return true;
-  }
-
 protected:
   static double take_off_height_;
   static int offb_ctrl_mode_;
@@ -327,7 +317,7 @@ inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& 
   {
     case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:  
       {
-        std::cout << "Sending take off event" << std::endl;
+        // std::cout << "Sending take off event" << std::endl;
         auto evt = TakeOff_E();
         evt.value = value;
         sendEvent(evt);
@@ -335,14 +325,14 @@ inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& 
       break;
     case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_LAND:  
       {      
-        std::cout << "Sending land event" << std::endl;
+        // std::cout << "Sending land event" << std::endl;
         auto evt = Land_E();
         sendEvent(evt);
       }
       break;
     case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION:  
       {      
-        std::cout << "Sending start mission event" << std::endl;
+        // std::cout << "Sending start mission event" << std::endl;
         auto evt = StartMission_E();
         evt.mode = mode;
         sendEvent(evt);
@@ -350,14 +340,14 @@ inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& 
       break;
     case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_STOP_MISSION:  
       {      
-        std::cout << "Sending stop mission event" << std::endl;
+        // std::cout << "Sending stop mission event" << std::endl;
         auto evt = StopMission_E();
         sendEvent(evt);
       }
       break;
     case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_EMERGENCY_STOP:  
       {      
-        std::cout << "Sending emergency stop event" << std::endl;
+        // std::cout << "Sending emergency stop event" << std::endl;
         auto evt = EmergencyStop_E();
         sendEvent(evt);
       }
