@@ -5,7 +5,7 @@ Only need 1 agent for multiple drones
 MicroXRCEAgent udp4 -p 8888 -v
 ```
 
-# Starting the client
+# Starting the clients
 Start client 
 
 ```bash

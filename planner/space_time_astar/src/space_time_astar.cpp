@@ -79,8 +79,8 @@ void SpaceTimeAStar::expandVoroBubble(const VCell_T& origin_cell)
     }
 }
 
-bool SpaceTimeAStar::generatePlan(  const Eigen::Vector3d& start_pos_3d, 
-                                        const Eigen::Vector3d& goal_pos_3d)
+bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d, 
+                                    const Eigen::Vector3d& goal_pos_3d)
 {
     std::function<double(const VCell_T&, const VCell_T&)> cost_function;
 
@@ -110,9 +110,9 @@ bool SpaceTimeAStar::generatePlan(  const Eigen::Vector3d& start_pos_3d,
     return generatePlan(start_pos_3d, goal_pos_3d, cost_function);
 }
 
-bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d, 
-                                        const Eigen::Vector3d& goal_pos_3d, 
-                                        std::function<double(const VCell_T&, const VCell_T&)> cost_function)
+bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d, 
+                                const Eigen::Vector3d& goal_pos_3d, 
+                                std::function<double(const VCell_T&, const VCell_T&)> cost_function)
 {
     reset();
     
@@ -329,81 +329,84 @@ bool SpaceTimeAStar::generatePlan(   const Eigen::Vector3d& start_pos_3d,
 
 void SpaceTimeAStar::tracePath(const VCell_T& final_node)
 {
-// Clear existing data structures
-path_idx_vt_.clear();
+    // Clear existing data structures
+    path_idx_vt_.clear();
 
-path_pos_t_.clear();
-path_pos_.clear();
+    path_pos_t_.clear();
+    path_pos_.clear();
 
-path_idx_smoothed_t_.clear();
-path_smoothed_.clear();
-path_smoothed_t_.clear();
+    path_idx_smoothed_t_.clear();
+    path_smoothed_.clear();
+    path_smoothed_t_.clear();
 
-// Trace back the nodes through the pointer to their parent
-VCell_T cur_node = final_node;
-while (!(cur_node == came_from_vt_[cur_node])) // Start node's parents was initially set as itself, hence this indicates the end of the path
-{
-    path_idx_vt_.push_back(cur_node);
-    cur_node = came_from_vt_[cur_node];
-}
-// Push back the start node
-path_idx_vt_.push_back(cur_node);
-
-// Reverse the order of the path so that it goes from start to goal
-std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
-
-// For each gridnode, get the position and index,
-// So we can obtain a path in terms of indices and positions
-for (const VCell_T& cell : path_idx_vt_)
-{
-    DblPoint map_2d_pos;
-
-    // Convert to map position
-    dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
-    // Add space time map position to path and transform it from local map to world frame
-    path_pos_t_.push_back(Eigen::Vector4d{map_2d_pos.x + voro_params_.local_origin_x, 
-                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m, (double) cell.t});
-    path_pos_.push_back(Eigen::Vector3d{map_2d_pos.x + voro_params_.local_origin_x, 
-                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m});
-}
-
-// /* Get smoothed path */
-
-// For each gridnode, get the position and index,
-// So we can obtain a path in terms of indices and positions
-path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
-for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
-{
-  if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
-    // Add current point to smoothed path
-    path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-  }
-  else {
-    IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
-    IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
-
-    if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
-      // Add current point to smoothed path
-      path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+    // Trace back the nodes through the pointer to their parent
+    VCell_T cur_node = final_node;
+    while (!(cur_node == came_from_vt_[cur_node])) // Start node's parents was initially set as itself, hence this indicates the end of the path
+    {
+        path_idx_vt_.push_back(cur_node);
+        cur_node = came_from_vt_[cur_node];
     }
-  }
-}
-path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+    // Push back the start node
+    path_idx_vt_.push_back(cur_node);
 
-// For each gridnode, get the position and index,
-// So we can obtain a path in terms of indices and positions
-for (const VCell_T& cell : path_idx_smoothed_t_)
-{
-  DblPoint map_2d_pos;
+    // // Reverse the order of the path so that it goes from start to goal
+    // std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
 
-  // Convert to map position
-  dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
-  // Add space time map position to path and transform it from local map to world frame
-  path_smoothed_t_.push_back(Eigen::Vector4d{map_2d_pos.x + voro_params_.local_origin_x, 
-                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m, (double) cell.t});
-  path_smoothed_.push_back(Eigen::Vector3d{map_2d_pos.x + voro_params_.local_origin_x, 
-                                        map_2d_pos.y + voro_params_.local_origin_y, cell.z_m});
-}
+    // For each gridnode, get the position and index,
+    // So we can obtain a path in terms of indices and positions
+    // for (const VCell_T& cell : path_idx_vt_)
+    // {
+    for (int i = path_idx_vt_.size()-1; i >= 0; i--)
+    {
+        DblPoint map_2d_pos;
+
+        // Convert to map position
+        dyn_voro_arr_[path_idx_vt_[i].z_cm]->idxToPos(IntPoint(path_idx_vt_[i].x, path_idx_vt_[i].y), map_2d_pos);
+        // Add space time map position to path 
+        path_pos_.push_back(
+            Eigen::Vector3d{map_2d_pos.x, map_2d_pos.y, path_idx_vt_[i].z_m});
+        path_pos_t_.push_back(
+            Eigen::Vector4d{map_2d_pos.x, map_2d_pos.y, path_idx_vt_[i].z_m, (double) path_idx_vt_[i].t});
+
+    }
+
+    // // /* Get smoothed path */
+
+    // // For each gridnode, get the position and index,
+    // // So we can obtain a path in terms of indices and positions
+    // path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
+    // for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
+    // {
+    // if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
+    //     // Add current point to smoothed path
+    //     path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+    // }
+    // else {
+    //     IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
+    //     IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
+
+    //     if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
+    //     // Add current point to smoothed path
+    //     path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+    //     }
+    // }
+    // }
+    // path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+
+    // // For each gridnode, get the position and index,
+    // // So we can obtain a path in terms of indices and positions
+    // for (const VCell_T& cell : path_idx_smoothed_t_)
+    // {
+    // DblPoint map_2d_pos;
+
+    // // Convert to map position
+    // dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
+    // // Add space time map position to path and transform it from local map to world frame
+    // path_smoothed_t_.push_back(
+    //     Eigen::Vector4d{map_2d_pos.x, map_2d_pos.y, cell.z_m, (double) cell.t});
+    // path_smoothed_.push_back(
+    //     Eigen::Vector3d{map_2d_pos.x, map_2d_pos.y, cell.z_m});
+    // }
 }
 
 } // namespace global_planner

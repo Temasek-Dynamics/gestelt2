@@ -97,13 +97,36 @@ void VoronoiPlanner::initPubSubTimer(){
 	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
                                                   std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
                                                   mapping_cb_group_);
+
+  tf_buffer_ =
+    std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  tf_listener_ =
+    std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+  try {
+    auto tf_world_to_map = tf_buffer_->lookupTransform(
+      map_frame_, "world",
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+    // Set fixed map origin
+    map_origin_(0) = tf_world_to_map.transform.translation.x;
+    map_origin_(1) = tf_world_to_map.transform.translation.y;
+    
+  } catch (const tf2::TransformException & ex) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Could not get transform from world to %s: %s",
+      map_frame_.c_str(), ex.what());
+    rclcpp::shutdown();
+    return;
+  }
+
 }
 
 void VoronoiPlanner::initParams()
 {
   std::string param_ns = "navigator";
   
-  this->declare_parameter(param_ns+".drone_id", -1);
+  this->declare_parameter("drone_id", -1);
 
   this->declare_parameter(param_ns+".planner_frequency", 10.0);
   this->declare_parameter(param_ns+".generate_voronoi_frequency", 10.0);
@@ -121,14 +144,14 @@ void VoronoiPlanner::initParams()
 
   this->declare_parameter(param_ns+".min_jerk_trajectory.front_end_stride", 3);
 
-  this->declare_parameter(param_ns+".local_map_frame", "local_map_frame");
-  this->declare_parameter(param_ns+".global_frame", "world");
+  this->declare_parameter("map_frame", "map");
+  this->declare_parameter("local_map_frame", "local_map_frame");
 
 	/**
 	 * Get params
 	 */
 
-  drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
+  drone_id_ = this->get_parameter("drone_id").as_int();
 
   fe_planner_freq_ = this->get_parameter(param_ns+".planner_frequency").as_double();
   gen_voro_map_freq_ = this->get_parameter(param_ns+".generate_voronoi_frequency").as_double();
@@ -148,12 +171,12 @@ void VoronoiPlanner::initParams()
   double rsvn_tbl_t_buffer = this->get_parameter(param_ns+".reservation_table.time_buffer").as_double();
   t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer/t_unit_);  // [space-time units] for time buffer
 
-  local_map_frame_ = this->get_parameter(param_ns+".local_map_frame").as_string();
-  global_frame_ = this->get_parameter(param_ns+".global_frame").as_string();
+  map_frame_ = this->get_parameter("map_frame").as_string();
+  local_map_frame_ = this->get_parameter("local_map_frame").as_string();
 }
 
 /* Core methods */
-bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal){
+bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
   if (!init_voro_maps_){
     logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
     return false;
@@ -178,6 +201,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     loop_rate.sleep();
   }
 
+
   // Assign voronoi map
   {
     std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
@@ -200,12 +224,15 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     rsvn_tbl_.clear();
   }
 
-  viz_helper_->pubStartGoalPts(start, goal, plan_req_pub_, local_map_frame_);
+  Eigen::Vector3d start = cur_pos_;
+  viz_helper_->pubStartGoalPts(start, goal, plan_req_pub_, map_frame_);
 
   tm_front_end_plan_.start();
 
+  auto plan_start_clock = this->get_clock()->now();
+
   // Generate plan 
-  if (!fe_planner_->generatePlan(start, goal))
+  if (!fe_planner_->generatePlan(mapToLclMap(start), mapToLclMap(goal)))
   {
     logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f)", 
                               drone_id_, start(0), start(1), start(2), goal(0), goal(1), goal(2)));
@@ -214,36 +241,54 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
 
     logger_->logError(strFmt("Closed list size: %ld", fe_planner_->getClosedList().size()));
     // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
-    //                   fe_closed_list_viz_pub_, local_map_frame_);
+    //                   fe_closed_list_viz_pub_, map_frame_);
 
     return false;
   }
 
   tm_front_end_plan_.stop(verbose_print_);
 
-  // Retrieve space time path and publish it
+  // Retrieve space time path 
+  std::vector<Eigen::Vector4d> lcl_map_path;
   if (planner_los_smooth_){
-    fe_path_ = fe_planner_->getSmoothedPath();
-    fe_path_with_t_ = fe_planner_->getSmoothedPathWithTime();
+    lcl_map_path = fe_planner_->getSmoothedPathWithTime();
   }
   else {
-    fe_path_ = fe_planner_->getPath(cur_pos_);
-    fe_path_with_t_ = fe_planner_->getPathWithTime(cur_pos_);
+    // Current pose must converted from fixed map frame to local map frame before passing to planner
+    lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
   }
 
-  // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_frame_);
+  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
+                             std::vector<Eigen::Vector4d>& map_path_w_t,
+                             std::vector<Eigen::Vector3d>& map_path) {
+    map_path.clear();
+    map_path_w_t.clear();
+    
+    for (size_t i = 0; i < lcl_map_path.size(); i++){
+      Eigen::Vector4d map_pt;
+      map_pt.head<3>() = lclMapToMap(lcl_map_path[i].head<3>());
+      map_pt(3) = lcl_map_path[i](3);
 
-  auto plan_start_clock = this->get_clock()->now();
+      map_path.push_back(map_pt.head<3>());
+      map_path_w_t.push_back(map_pt);
+    }
+  };
+
+  // Convert front-end path from local map frame to fixed map frame
+  lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
+
+  // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), fe_closed_list_viz_pub_, local_map_frame_);
 
   // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
   gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
 
   fe_plan_msg.agent_id = drone_id_;
-  fe_plan_msg.header.stamp = plan_start_clock;
+  fe_plan_msg.header.stamp = this->get_clock()->now();
+  fe_plan_msg.t_plan_start = plan_start_clock.seconds();
 
   for (size_t i = 0; i < fe_path_with_t_.size(); i++){
     geometry_msgs::msg::Pose pose;
-    pose.position.x = fe_path_with_t_[i](0);
+    pose.position.x = fe_path_with_t_[i](0); 
     pose.position.y = fe_path_with_t_[i](1);
     pose.position.z = fe_path_with_t_[i](2);
     pose.orientation.w = 1.0; 
@@ -252,19 +297,10 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
   }
 
-  fe_plan_msg.t_plan_start = plan_start_clock.seconds();
-
-
   std::vector<Eigen::Vector4d> mjo_fe_path;
-
   // Sample at regular intervals from front-end path
   for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
 	{	
-		// // Add control point
-		// points.push_back(fe_plan_msg_.plan[i].position.x);
-		// points.push_back(fe_plan_msg_.plan[i].position.y);
-		// points.push_back(fe_plan_msg_.plan[i].position.z);
-
 		mjo_fe_path.push_back(Eigen::Vector4d{
 			fe_path_with_t_[i](0),
 			fe_path_with_t_[i](1),
@@ -287,34 +323,34 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& start, const Eigen::Vector3d& g
     minco_traj_broadcast_pub_->publish(MINCO_msg); // [global frame] Broadcast to all other drones
 	  
     // Publish visualization
-    viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, global_frame_);
+    viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
   }
 
   // fe_plan_pub_->publish(fe_plan_msg);
   fe_plan_broadcast_pub_->publish(fe_plan_msg);
 
   // Visualization
-  // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, global_frame_) ;
-  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, global_frame_);
+  // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, map_frame_) ;
+  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
-  if (json_output_)
-  {
-    json path_json;
-    path_json["map"] = "map0";
+  // if (json_output_)
+  // {
+  //   json path_json;
+  //   path_json["map"] = "map0";
 
-    for (auto& pt : fe_path_with_t_)
-    {
-				path_json["a_star_path"].push_back({
-					{"point", {pt(0), pt(1), pt(2)}},
-					{"time", {pt(3)}},
-				});
-    }
+  //   for (auto& pt : fe_path_with_t_)
+  //   {
+	// 			path_json["a_star_path"].push_back({
+	// 				{"point", {pt(0), pt(1), pt(2)}},
+	// 				{"time", {pt(3)}},
+	// 			});
+  //   }
 
-    std::ofstream o(output_json_filepath_.c_str());
-    o << std::setw(4) << path_json << std::endl;
+  //   std::ofstream o(output_json_filepath_.c_str());
+  //   o << std::setw(4) << path_json << std::endl;
 
-    printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
-  }
+  //   printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
+  // }
 
   // double min_clr = DBL_MAX; // minimum path clearance 
   // double max_clr = 0.0;     // maximum path clearance 
@@ -394,7 +430,7 @@ void VoronoiPlanner::planFETimerCB()
   }
 
   // Plan from current position to next waypoint
-  plan(cur_pos_, waypoints_.nextWP());
+  plan(waypoints_.nextWP());
 }
 
 void VoronoiPlanner::genVoroMapTimerCB()
@@ -417,8 +453,8 @@ void VoronoiPlanner::genVoroMapTimerCB()
     // Create DynamicVoronoi object if it does not exist
     dynamic_voronoi::DynamicVoronoi::DynamicVoronoiParams dyn_voro_params;
     dyn_voro_params.res = bool_map_3d_.resolution;
-    dyn_voro_params.origin_x = 0.0;
-    dyn_voro_params.origin_y = 0.0;
+    // dyn_voro_params.origin_x = 0.0;
+    // dyn_voro_params.origin_y = 0.0;
     dyn_voro_params.origin_z = z_m;
     dyn_voro_params.origin_z_cm = z_cm;
 
@@ -493,8 +529,8 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
 void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 {
-  cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x - bool_map_3d_.origin(0), 
-                            msg->pose.pose.position.y - bool_map_3d_.origin(1), 
+  cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x, 
+                            msg->pose.pose.position.y, 
                             msg->pose.pose.position.z};
   // cur_vel_= Eigen::Vector3d{msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z};
 }
@@ -564,42 +600,71 @@ void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr 
 
       return;
     }
-    if (msg->header.frame_id != "world" && msg->header.frame_id != "map" )
-    {
-      logger_->logError(strFmt("Only accepting goals in 'world' or 'map' frame, ignoring goals."));
-      return;
-    }
+
 
     std::vector<Eigen::Vector3d> wp_vec;
 
-    for (auto& wp : msg->waypoints) {
-      // Transform received waypoints from world to UAV origin frame
-      wp_vec.push_back(Eigen::Vector3d(
-                        wp.position.x - bool_map_3d_.origin(0), 
-                        wp.position.y - bool_map_3d_.origin(1), 
-                        wp.position.z));
+    if (msg->header.frame_id == "world")
+    {
+      // Transform from world to fixed map frame
+      for (auto& wp : msg->waypoints) {
+        wp_vec.push_back(worldToMap(Eigen::Vector3d(
+          wp.position.x, wp.position.y, wp.position.z)));
+      }
     }
+    else if (msg->header.frame_id == map_frame_)
+    {
+      // Keep in map frame
+      for (auto& wp : msg->waypoints) {
+        wp_vec.push_back(Eigen::Vector3d(
+          wp.position.x, wp.position.y, wp.position.z));
+      }
+    }
+    else {
+      logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
+      return;
+    }
+
 
     waypoints_.addMultipleWP(wp_vec);
 }
 
 void VoronoiPlanner::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg)
 {
-  Eigen::Vector3d plan_start( 
-                  msg->start.position.x - bool_map_3d_.origin(0),
-                  msg->start.position.y - bool_map_3d_.origin(1),
-                  msg->start.position.z);
+  // Transform from map to local map
+  // Eigen::Vector3d plan_start = mapToLclMap(
+  //   Eigen::Vector3d(msg->start.position.x, msg->start.position.y, msg->start.position.z));
+  // Eigen::Vector3d plan_end = mapToLclMap(
+  //   Eigen::Vector3d(msg->goal.position.x, msg->goal.position.y, msg->goal.position.z));
 
-  Eigen::Vector3d plan_end( 
-                  msg->goal.position.x - bool_map_3d_.origin(0),
-                  msg->goal.position.y - bool_map_3d_.origin(1),
-                  msg->goal.position.z);
+  Eigen::Vector3d plan_end;
+
+  if (msg->header.frame_id == "world")
+  {
+    cur_pos_ = worldToMap(Eigen::Vector3d(
+      msg->start.position.x, msg->start.position.y, msg->start.position.z));
+    plan_end = worldToMap(Eigen::Vector3d(
+      msg->goal.position.x, msg->goal.position.y, msg->goal.position.z));
+  }
+  else if (msg->header.frame_id == map_frame_)
+  {
+    // Keep in map frame
+    cur_pos_ = Eigen::Vector3d(
+      msg->start.position.x, msg->start.position.y, msg->start.position.z);
+    plan_end = Eigen::Vector3d(
+      msg->goal.position.x, msg->goal.position.y, msg->goal.position.z);
+  }
+  else {
+    logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
+    return;
+  }
 
   std::cout << "Agent " << msg->agent_id << ": plan request from ("<< 
-                plan_start.transpose() << ") to (" << plan_end.transpose() << ")" << std::endl;
+                cur_pos_.transpose() << ") to (" << plan_end.transpose() << ")" << std::endl;
 
-  plan(plan_start, plan_end);
+  plan(plan_end);
 }
+
 
 } // namespace navigator
 

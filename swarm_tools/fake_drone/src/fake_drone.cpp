@@ -15,7 +15,7 @@ FakeDrone::FakeDrone()
 	this->declare_parameter(param_ns+".state_update_frequency", -1.0);
 	this->declare_parameter(param_ns+".tf_broadcast_frequency", -1.0);
 
-	this->declare_parameter(param_ns+".global_frame", "world");
+	this->declare_parameter(param_ns+".map_frame", "world");
 	this->declare_parameter(param_ns+".local_map_frame",  "local_map_origin");
 	this->declare_parameter(param_ns+".uav_frame","base_link");
 
@@ -32,7 +32,7 @@ FakeDrone::FakeDrone()
 	double state_update_freq = this->get_parameter(param_ns+".state_update_frequency").as_double();
 	double tf_broadcast_freq = this->get_parameter(param_ns+".tf_broadcast_frequency").as_double();
 
-	global_frame_ = this->get_parameter(param_ns+".global_frame").as_string();
+	map_frame_ = this->get_parameter(param_ns+".map_frame").as_string();
 	local_map_frame_ = this->get_parameter(param_ns+".local_map_frame").as_string();
 	uav_frame_ = this->get_parameter(param_ns+".uav_frame").as_string();
 
@@ -53,7 +53,7 @@ FakeDrone::FakeDrone()
 	odom_msg_.pose.pose.orientation.w = 1.0;
 
 	pose_msg_.pose = odom_msg_.pose.pose;
-	odom_msg_.header.frame_id = pose_msg_.header.frame_id = global_frame_;
+	odom_msg_.header.frame_id = pose_msg_.header.frame_id = map_frame_;
 		
 	/* Subscribers and publishers*/
 	fe_plan_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(

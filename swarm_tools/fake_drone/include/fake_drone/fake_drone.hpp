@@ -84,7 +84,7 @@ class FakeDrone : public rclcpp::Node
         const double YAW_DOT_MAX_PER_SEC{2 * M_PI};
         const double YAW_DOT_DOT_MAX_PER_SEC{5 * M_PI};
 
-        std::string global_frame_, local_map_frame_, uav_frame_;
+        std::string map_frame_, local_map_frame_, uav_frame_;
 
         /* Data */
         nav_msgs::msg::Odometry odom_msg_;

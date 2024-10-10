@@ -72,11 +72,28 @@ public:
   void setReservationTable(const std::map<int, RsvnTbl>& rsvn_tbl);
 
   /* Generate space-time plan on voronoi graph  */
+
+  /**
+   * @brief Generate space-time path on voronoi graph
+   * 
+   * @param start_pos_3d [LOCAL MAP FRAME]
+   * @param goal_pos_3d [LOCAL MAP FRAME]
+   * @return true 
+   * @return false 
+   */
   bool generatePlan( const Eigen::Vector3d& start_pos_3d, 
                           const Eigen::Vector3d& goal_pos_3d);
 
 private: 
-  /* Generate space-time plan on voronoi graph  */
+  /**
+   * @brief Generate space-time path on voronoi graph
+   * 
+   * @param start_pos_3d [LOCAL MAP FRAME]
+   * @param goal_pos_3d [LOCAL MAP FRAME]
+   * @param cost_function Cost function
+   * @return true 
+   * @return false 
+   */
   bool generatePlan( const Eigen::Vector3d& start_pos_3d, 
                           const Eigen::Vector3d& goal_pos_3d, 
                           std::function<double(const VCell_T&, const VCell_T&)> cost_function);
@@ -92,14 +109,12 @@ public:
   /**
    * @brief Get successful plan in terms of space i,e. (x,y,z)
    *
-   * @return std::vector<Eigen::Vector3d>
    */
   std::vector<Eigen::Vector3d> getPath();
 
   /**
    * @brief Get successful plan in terms of space and time i.e. (x,y,z,t)
    *
-   * @return std::vector<Eigen::Vector3d>
    */
   std::vector<Eigen::Vector4d> getPathWithTime();
 
@@ -107,14 +122,15 @@ public:
    * @brief Get successful plan in terms of space i,e. (x,y,z) 
    * with current starting pose inserted 
    *
-   * @return std::vector<Eigen::Vector3d>
+   * @return std::vector<Eigen::Vector3d> current position in LOCAL MAP frame
    */
   std::vector<Eigen::Vector3d> getPath(const Eigen::Vector3d& cur_pos);
 
   /**
    * @brief Get successful plan in terms of space and time i.e. (x,y,z,t)
+   * PATH IN 
    *
-   * @return std::vector<Eigen::Vector4d>
+   * @return std::vector<Eigen::Vector4d> current position in LOCAL MAP frame
    */
   std::vector<Eigen::Vector4d> getPathWithTime(const Eigen::Vector3d& cur_pos);
 
@@ -195,10 +211,7 @@ inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath(const Eigen::Vector3
 {
   std::vector<Eigen::Vector3d> path_pos = path_pos_;
 
-  // convert from local frame to world frame
-  Eigen::Vector3d start_pos(cur_pos(0)+voro_params_.local_origin_x, 
-                            cur_pos(1)+voro_params_.local_origin_y, 
-                            cur_pos(2));
+  Eigen::Vector3d start_pos(cur_pos(0), cur_pos(1), cur_pos(2));
   path_pos.insert(path_pos.begin(), start_pos);
 
   return path_pos;
@@ -209,13 +222,12 @@ inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen:
   std::vector<Eigen::Vector4d> path_pos_t = path_pos_t_;
 
   // Transform to world frame
-  Eigen::Vector4d cur_pos_t(cur_pos(0)+voro_params_.local_origin_x, 
-                            cur_pos(1)+voro_params_.local_origin_y, 
-                            cur_pos(2), 
-                            0);
+  Eigen::Vector4d cur_pos_t(cur_pos(0), cur_pos(1), cur_pos(2), 0);
 
   // offset_t: [s] time from current position to start of path
-  int offset_t = (int)round(  (cur_pos_t.segment(0,3) - path_pos_t[0].segment(0,3)).norm()/voro_params_.res) * astar_params_.st_straight; 
+  int offset_t = (int)round(  
+    (cur_pos_t.segment(0,3) - path_pos_t[0].segment(0,3)).norm()/voro_params_.res) 
+    * astar_params_.st_straight; 
 
   if (offset_t <= 1){ // Distance between start and path start is very close
     // Replace start point of path with current point

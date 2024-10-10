@@ -12,7 +12,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
 
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 
 SCENARIO_NAME = "forest_dense_1"
 
@@ -40,6 +40,12 @@ def generate_launch_description():
       'init_yaw',
       default_value='0.0'
     )
+
+    '''Frames'''
+    map_frame = ["d", drone_id, "_origin"]
+    lcl_map_frame = ["d", drone_id, "_lcl_map"]
+    base_link_frame = ["d", drone_id, "_base_link"]
+
 
     ''' Get directories '''
 
@@ -70,6 +76,12 @@ def generate_launch_description():
 
 
     """Nodes"""
+    # Publish TF for map to fixed drone origin
+    # This is necessary because PX4 SITL is not able to change it's initial starting position
+    drone_origin_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                      arguments = [init_x, init_y, "0", "0", "0", "0", 
+                              "world", map_frame])
 
     # PX4 SITL
     px4_sitl = ExecuteProcess(
@@ -79,11 +91,12 @@ def generate_launch_description():
             'PX4_GZ_WORLD=default',
             'PX4_SIM_MODEL=gz_x500',
             'PX4_GZ_STANDALONE=1',
-            ['PX4_GZ_MODEL_POSE="', init_x, init_y, '0,0,0', init_yaw, '"'],
+            # ['PX4_GZ_MODEL_POSE="', init_x, ',', init_y, ',0,0,0,', init_yaw, '"'],
+            ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
             'ROS_DOMAIN_ID=0',
             'PX4_UXRCE_DDS_PORT=8888',
             ['PX4_UXRCE_DDS_NS=d', drone_id],
-
+            # PX4 Executable
             os.path.join(px4_build_dir, 'bin/px4'),      # PX4 executable
             os.path.join(px4_build_dir, 'etc'),          # ?
             '-w', os.path.join(px4_build_dir, 'rootfs'), # Working directory
@@ -104,8 +117,9 @@ def generate_launch_description():
         shell=True,
         name='voronoi_planner',
         parameters=[
-            {'navigator.drone_id': drone_id},
-            # {'navigator.planner.output_json_filepath': output_json_filepath},
+            {'drone_id': drone_id},
+            {'map_frame': map_frame},
+            {'local_map_frame': lcl_map_frame},
             navigator_cfg,
             voxel_map_cfg,
         ],
@@ -117,7 +131,11 @@ def generate_launch_description():
         output='screen',
         shell=True,
         name=['traj_server_', drone_id],
-        parameters=[traj_server_config],
+        parameters=[
+          {'map_frame': map_frame},
+          {'base_link_frame': base_link_frame},
+          traj_server_config
+        ],
     )
 
     # Publish Transform from world to base_link
@@ -131,6 +149,7 @@ def generate_launch_description():
         # Processes
         px4_sitl,
         # Nodes
+        drone_origin_tf,
         navigator_node,
         trajectory_server,
     ])

@@ -64,7 +64,6 @@ namespace voxel_map
     /* visualization and computation time display */
     double ground_height_; // Lowest possible height (z-axis)
 
-    std::string global_frame; // frame id of global reference 
     std::string map_frame; // frame id of map reference 
     std::string local_map_frame; // frame id of UAV origin
   };

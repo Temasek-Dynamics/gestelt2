@@ -207,6 +207,7 @@ class Mission(Node):
             start (list): [x,y,z]
             goal (list): [x,y,z]
         """
+        self.get_logger().info(f'Publishing mission goals to all drones')
 
         def createPose(x, y, z):
             msg = Pose()
@@ -255,7 +256,6 @@ def main(args=None):
     mission.cmdAllDrones(UAVState.HOVERING ,UAVCommand.Request.COMMAND_START_MISSION, mode=0)
     print("All drones switched to MISSION state")
 
-    print(f"Publishing mission goals to all drones")
     mission.pubGoals()
 
     # # Land mode

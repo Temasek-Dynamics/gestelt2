@@ -10,6 +10,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2/exceptions.h>
+
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -166,7 +170,7 @@ public:
    * @return true 
    * @return false 
    */
-  bool plan(const Eigen::Vector3d& start, const Eigen::Vector3d& goal);
+  bool plan(const Eigen::Vector3d& goal);
 
 
 private:
@@ -200,6 +204,42 @@ private:
 /* Helper methods */
 private:
 
+  /* Convert point from world to fixed map origin*/
+  Eigen::Vector3d worldToMap(const Eigen::Vector3d& pt)
+  {
+    return Eigen::Vector3d(
+      pt(0) + map_origin_(0), 
+      pt(1) + map_origin_(1), 
+      pt(2));
+  }
+
+  /* Convert point from fixed map origin to world*/
+  Eigen::Vector3d mapToWorld(const Eigen::Vector3d& pt)
+  {
+    return Eigen::Vector3d(
+      pt(0) - map_origin_(0), 
+      pt(1) - map_origin_(1), 
+      pt(2));
+  }
+
+  /* Convert point from fixed map origin to local map origin*/
+  Eigen::Vector3d mapToLclMap(const Eigen::Vector3d& pt)
+  {
+    return Eigen::Vector3d(
+      pt(0) - bool_map_3d_.origin(0), 
+      pt(1) - bool_map_3d_.origin(1), 
+      pt(2));
+  }
+
+  /* Convert point from local map origin to fixed map origin*/
+  Eigen::Vector3d lclMapToMap(const Eigen::Vector3d& pt)
+  {
+    return Eigen::Vector3d(
+      pt(0) + bool_map_3d_.origin(0), 
+      pt(1) + bool_map_3d_.origin(1), 
+      pt(2));
+  }
+
   // Convert from map to occupancy grid type
   void voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                             const double& origin_x, const double& origin_y, 
@@ -232,8 +272,8 @@ private:
   /* Params */
   int drone_id_{-1};
 
+  std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
-  std::string global_frame_;     // Global origin of all UAVs
 
   // Planning params
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
@@ -300,9 +340,14 @@ private:
 
 	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
 
+  /* TF2 */
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+
 private:
   /* Stored sensor data */
   Eigen::Vector3d cur_pos_, cur_vel_;   // [LOCAL FRAME] current state
+  Eigen::Vector3d map_origin_{0.0, 0.0, 0.0}; // Fixed Map origin relative to world
 
   /* Mutexes*/
   std::mutex rsvn_tbl_mtx_;
@@ -324,8 +369,8 @@ private:
 
   Waypoint waypoints_; // Goal waypoint handler object
 
-  std::vector<Eigen::Vector3d> fe_path_; // Front-end Space path in space coordinates (x,y,z) in world frame
-  std::vector<Eigen::Vector4d> fe_path_with_t_; // Front-end Space time  path in space-time coordinates (x,y,z,t) in world frame
+  std::vector<Eigen::Vector3d> fe_path_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
+  std::vector<Eigen::Vector4d> fe_path_with_t_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
 
   std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_; // Initial minimum jerk trajectory
   std::shared_ptr<minco::Trajectory> poly_traj_; // Front-end MINCO Trajectory
@@ -352,7 +397,7 @@ inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicV
                           nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
-  occ_grid.header.frame_id = "map";
+  occ_grid.header.frame_id = map_frame_;
   occ_grid.info.width = dyn_voro.getSizeX();
   occ_grid.info.height = dyn_voro.getSizeY();
   occ_grid.info.resolution = bool_map_3d_.resolution;
@@ -392,7 +437,7 @@ inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVorono
                     nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
-  occ_grid.header.frame_id = "map";
+  occ_grid.header.frame_id = map_frame_;
   occ_grid.info.width = dyn_voro.getSizeX();
   occ_grid.info.height = dyn_voro.getSizeY();
   occ_grid.info.resolution = bool_map_3d_.resolution;
@@ -424,8 +469,6 @@ inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVorono
     }
   }
 }
-
-
 
 inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Trajectory>& traj, 
                               const double& traj_start_time,

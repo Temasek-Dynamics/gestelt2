@@ -99,12 +99,6 @@ def generate_launch_description():
       px4_dir, "Tools/simulation/gz/simulation-gazebo"
     )
 
-
-    # World to map transformation
-    world_to_map_tf = Node(package = "tf2_ros", 
-                       executable = "static_transform_publisher",
-                       arguments = ["0", "0", "0", "0", "0", "0", "world", "map"])
-
     """Gazebo"""
     gazebo = ExecuteProcess(
         cmd=[
@@ -168,7 +162,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         # Processes
-        world_to_map_tf,
         gazebo,
         xrce_agent,
         # Nodes

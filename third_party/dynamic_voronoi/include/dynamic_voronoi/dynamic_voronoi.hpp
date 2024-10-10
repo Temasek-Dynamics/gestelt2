@@ -153,15 +153,15 @@ public:
   // Convert from position to index
   void idxToPos(const IntPoint& grid_pos, DblPoint& map_pos);
 
-  // Get x origin of map
-  double getOriginX() const {
-    return params_.origin_x;
-  }
+  // // Get x origin of map
+  // double getOriginX() const {
+  //   return params_.origin_x;
+  // }
 
-  // Get y origin of map
-  double getOriginY() const {
-    return params_.origin_y;
-  }
+  // // Get y origin of map
+  // double getOriginY() const {
+  //   return params_.origin_y;
+  // }
 
   // Get z origin of map
   double getOriginZ() const {

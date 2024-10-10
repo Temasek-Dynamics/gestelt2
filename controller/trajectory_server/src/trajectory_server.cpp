@@ -67,15 +67,13 @@ void TrajectoryServer::init()
 	logger_->logInfo("Initialized");
 }
 
-
-
 void TrajectoryServer::initParams()
 {
 	/**
 	 * Declare params
 	 */
 
-	this->declare_parameter("origin_frame", "world");
+	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("base_link_frame", "base_link");
 
 	/* Offboard params */
@@ -92,7 +90,7 @@ void TrajectoryServer::initParams()
 	/**
 	 * Get params
 	 */
-	origin_frame_ = this->get_parameter("origin_frame").as_string();
+	map_frame_ = this->get_parameter("map_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
 	/* Frequencies for timers and periodic publishers*/
@@ -175,8 +173,8 @@ void TrajectoryServer::vehicleStatusSubCB(const VehicleStatus::UniquePtr msg)
 	nav_state_ = msg->nav_state;
 	pre_flight_checks_pass_ = msg->pre_flight_checks_pass;
 
-	logger_->logInfoThrottle(strFmt("arming_state[%d], nav_state[%d], pre_flight_checks_pass_[%d]", 
-								arming_state_, nav_state_, pre_flight_checks_pass_), 1.0);
+	// logger_->logInfoThrottle(strFmt("arming_state[%d], nav_state[%d], pre_flight_checks_pass_[%d]", 
+	// 							arming_state_, nav_state_, pre_flight_checks_pass_), 1.0);
 
 	connected_to_fcu_ = true;
 	{
@@ -464,7 +462,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
 				{
 					pos_enu_(2) +=  ground_height_; // Adjust for ground height
-					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_);
+					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
 				}
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 
@@ -554,7 +552,7 @@ void TrajectoryServer::pubStateTimerCB()
 {
 	nav_msgs::msg::Odometry odom_msg;
 
-	odom_msg.header.frame_id = origin_frame_;
+	odom_msg.header.frame_id = map_frame_;
 	odom_msg.header.stamp = this->get_clock()->now();
 
 	odom_msg.child_frame_id = base_link_frame_;

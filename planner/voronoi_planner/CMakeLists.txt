@@ -22,6 +22,8 @@ set(ROS_LIBRABRIES
 	ament_cmake_ros
   rclcpp
   nav_msgs
+  tf2
+  tf2_ros
   tf2_geometry_msgs
   visualization_msgs
   gestelt_interfaces
@@ -46,6 +48,8 @@ add_executable(voronoi_planner_node
 ament_target_dependencies(voronoi_planner_node 
   Eigen3
   rclcpp
+  tf2
+  tf2_ros
   nav_msgs
   tf2_geometry_msgs
   visualization_msgs

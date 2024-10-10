@@ -117,11 +117,6 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
   mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
-  /* Frame IDs */
-  node_->declare_parameter(param_ns+".global_frame", std::string("world"));
-  node_->declare_parameter(param_ns+".map_frame", std::string("map"));
-  node_->declare_parameter(param_ns+".local_map_frame", std::string("local_map_origin"));
-
   /* Camera extrinsic parameters  */
   node_->declare_parameter(param_ns+".camera_to_body.roll",  0.0);
   node_->declare_parameter(param_ns+".camera_to_body.pitch", 0.0);
@@ -139,6 +134,8 @@ void VoxelMap::initParams()
 	/**
 	 * Get params
 	 */
+
+  drone_id_ = node_->get_parameter("drone_id").as_int();
 
   /* Map parameters */
   verbose_print_ = node_->get_parameter(param_ns+".verbose_print").as_bool();
@@ -176,9 +173,8 @@ void VoxelMap::initParams()
   mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
   /* Frame IDs */
-  mp_.global_frame = node_->get_parameter(param_ns+".global_frame").as_string();
-  mp_.map_frame = node_->get_parameter(param_ns+".map_frame").as_string();
-  mp_.local_map_frame = node_->get_parameter(param_ns+".local_map_frame").as_string();
+  mp_.map_frame = node_->get_parameter("map_frame").as_string();
+  mp_.local_map_frame = node_->get_parameter("local_map_frame").as_string();
 
   /* Camera extrinsic parameters  */
   md_.cam2body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
