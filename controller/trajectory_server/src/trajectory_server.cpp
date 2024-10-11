@@ -73,6 +73,8 @@ void TrajectoryServer::initParams()
 	 * Declare params
 	 */
 
+	this->declare_parameter("drone_id", 0);
+	
 	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("base_link_frame", "base_link");
 
@@ -90,6 +92,8 @@ void TrajectoryServer::initParams()
 	/**
 	 * Get params
 	 */
+	drone_id_ = this->get_parameter("drone_id").as_int();
+
 	map_frame_ = this->get_parameter("map_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
@@ -407,7 +411,7 @@ void TrajectoryServer::setOffboardTimerCB()
 		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
 		
 		// PERIODICALLY: Publish offboard control mode message
-		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
+		// publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::EMERGENCYSTOP;
@@ -462,7 +466,10 @@ void TrajectoryServer::pubCtrlTimerCB()
 				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
 				{
 					pos_enu_(2) +=  ground_height_; // Adjust for ground height
+					yaw_yawrate_ = Eigen::Vector2d(NAN, NAN); 
+					// publishTrajectorySetpoint(pos_enu_, yaw_yawrate_);
 					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
+					// publishTrajectorySetpoint(Eigen::Vector3d(NAN, NAN, NAN), yaw_yawrate_, vel_enu_, acc_enu_);
 				}
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 
@@ -535,7 +542,7 @@ void TrajectoryServer::SMTickTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		logger_->logInfoThrottle("[Hovering]", 1.0);
+		// logger_->logInfoThrottle("[Hovering]", 1.0);
 	}
 	else if (UAV::is_in_state<Mission>()){
 		// logger_->logInfoThrottle("[Mission]", 1.0);
@@ -629,6 +636,17 @@ void TrajectoryServer::publishTrajectorySetpoint(
 {
 	TrajectorySetpoint msg{};
 
+	OffboardControlMode offb_msg{};
+
+	offb_msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+	offb_msg.position = true;
+	offb_msg.velocity = true;
+	offb_msg.acceleration = true;
+	offb_msg.attitude = false;
+	offb_msg.body_rate = false;
+	offb_msg.thrust_and_torque = false;
+	offb_msg.direct_actuator = false;
+	
 	// # NED local world frame
 	// float32[3] position # in meters
 	// float32[3] velocity # in meters/second
@@ -651,6 +669,7 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	msg.yaw = (float) yaw_yawrate(0); // [-PI:PI]
 	msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 
+	offboard_control_mode_pub_->publish(offb_msg);
 	trajectory_setpoint_pub_->publish(msg);
 }
 

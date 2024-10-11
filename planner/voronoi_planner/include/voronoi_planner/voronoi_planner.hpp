@@ -174,10 +174,10 @@ public:
 
 
 private:
-  /* Generate minimum jerk trajectory*/
-  std::shared_ptr<minco::Trajectory> genMinJerkTraj(std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
-                                    const std::vector<Eigen::Vector4d>& space_time_path,
-                                    const double& t_plan_start);
+  // /* Generate minimum jerk trajectory*/
+  // std::shared_ptr<minco::Trajectory> genMinJerkTraj(std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
+  //                                   const std::vector<Eigen::Vector4d>& space_time_path,
+  //                                   const double& t_plan_start);
 
   /* Timer callbacks */
 
@@ -238,6 +238,34 @@ private:
       pt(0) + bool_map_3d_.origin(0), 
       pt(1) + bool_map_3d_.origin(1), 
       pt(2));
+  }
+
+
+  bool sampleTrajectory(
+    const std::shared_ptr<minco::Trajectory>& traj,
+    const double& time_samp, 
+    Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
+  {
+    if (traj == nullptr){
+      return false;
+    }
+    if (traj->getGlobalStartTime() < 0.0){ 
+      // Planning has not started
+      return false;
+    }
+
+    double e_t_start = time_samp - traj->getGlobalStartTime(); // Get time t relative to start of trajectory
+
+    if (e_t_start < 0.0 || e_t_start > traj->getTotalDuration())
+    {
+      return false;
+    }
+
+    pos = traj->getPos(e_t_start);
+    vel = traj->getVel(e_t_start);
+    acc = traj->getAcc(e_t_start);
+
+    return true;
   }
 
   // Convert from map to occupancy grid type
@@ -301,6 +329,7 @@ private:
 private:
 	/* Callback groups */
 	rclcpp::CallbackGroup::SharedPtr planning_cb_group_;
+	rclcpp::CallbackGroup::SharedPtr swarm_plan_cb_group_;
 	rclcpp::CallbackGroup::SharedPtr mapping_cb_group_;
 	rclcpp::CallbackGroup::SharedPtr others_cb_group_;
 
@@ -373,7 +402,7 @@ private:
   std::vector<Eigen::Vector4d> fe_path_with_t_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
 
   std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_; // Initial minimum jerk trajectory
-  std::shared_ptr<minco::Trajectory> poly_traj_; // Front-end MINCO Trajectory
+  std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
 
   /* Debugging Use */
   logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Timer to measure runtime

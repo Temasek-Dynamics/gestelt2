@@ -75,13 +75,16 @@ namespace voxel_map
 
     Eigen::Vector3d cam2body_rpy_deg{0.0, 0.0, 0.0};
 
-    // Homogenous Transformation matrix of camera to body frame
-    Eigen::Matrix4d cam2body_{Eigen::Matrix4d::Identity(4, 4)};
-    // Homogenous Transformation matrix of body to UAV origin frame
-    // NOTE: USE `body2origin_.block<3,1>(0,3)` FOR UAV POSE!
-    Eigen::Matrix4d body2origin_{Eigen::Matrix4d::Identity(4, 4)};
-    // Homogenous Transformation matrix of camera to UAV origin frame
-    Eigen::Matrix4d cam2origin_{Eigen::Matrix4d::Identity(4, 4)};
+    // [FIXED]: Homogenous Transformation matrix of camera to body frame
+    Eigen::Matrix4d cam2body{Eigen::Matrix4d::Identity(4, 4)};
+    // DYNAMIC: Homogenous Transformation matrix of body to fixed map
+    // NOTE: USE `body2origin.block<3,1>(0,3)` FOR UAV POSE!
+    Eigen::Matrix4d body2origin{Eigen::Matrix4d::Identity(4, 4)};
+    // DYNAMIC: Homogenous Transformation matrix of camera to fixed map
+    Eigen::Matrix4d cam2origin{Eigen::Matrix4d::Identity(4, 4)};
+
+    // [FIXED]: Homogenous Transformation matrix of fixed map origin to world origin
+    Eigen::Matrix4d world2origin{Eigen::Matrix4d::Identity(4, 4)};
 
     double last_sensor_msg_time{-1.0}; // True if cloud and odom has timed out
 
@@ -120,7 +123,7 @@ public:
 public:
 
   /** Initialization methods */
-  VoxelMap(rclcpp::Node::SharedPtr node);
+  VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_origin);
 
   virtual ~VoxelMap();
 
@@ -199,6 +202,12 @@ public:
   void updateLocalMapTimerCB();
 
   /**
+   * @brief This timer publishes the map to local map TF
+  */
+  void pubLocalMapTFTimerCB();
+
+
+  /**
    * @brief Timer for checking collision of drone with obstacles
    * 
    */
@@ -246,6 +255,9 @@ private:
 private: 
   rclcpp::Node::SharedPtr node_;
 
+	/* Callback groups */
+	rclcpp::CallbackGroup::SharedPtr reentrant_group_;
+
   /* Params */
   int drone_id_{0}; //Drone ID
 
@@ -280,6 +292,7 @@ private:
 	rclcpp::TimerBase::SharedPtr viz_map_timer_;	 // Timer for visualizing map
 	rclcpp::TimerBase::SharedPtr check_collisions_timer_; // Timer for checking collisions
 	rclcpp::TimerBase::SharedPtr update_local_map_timer_; // Timer for updating local map
+	rclcpp::TimerBase::SharedPtr pub_lcl_map_tf_timer_; // Timer for broadcasting map to local_map tf
 
   // TF transformation 
   std::unique_ptr<tf2_ros::TransformBroadcaster> gbl_to_lcl_origin_tf_broadcaster_; // broadcast tf link from global map frame to local map origin 
@@ -287,9 +300,9 @@ private:
   /* Data structures for maps */
   MappingData md_;  // Mapping data
 
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> local_occ_map_pts_; // (In local frame) Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> local_global_occ_map_pts_; // (In global frame) Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> global_map_in_origin_;  // Point cloud global map in UAV Origin frame
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> local_occ_map_pts_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> local_global_occ_map_pts_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_map_frame_;  // Point cloud global map in UAV Origin frame
 
   std::unique_ptr<BonxaiT> bonxai_map_; // Bonxai data structure 
 
@@ -384,15 +397,15 @@ inline bool VoxelMap::isPoseValid() {
     return false;
   }
 
-	if (md_.cam2origin_.array().isNaN().any()){
+	if (md_.cam2origin.array().isNaN().any()){
     logger_->logError(strFmt("Camera pose has NAN value"));
     return false;
 	}
 
-  if (!isInGlobalMap(md_.cam2origin_.block<3,1>(0,3)))
+  if (!isInGlobalMap(md_.cam2origin.block<3,1>(0,3)))
   {
     logger_->logError(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
-       md_.cam2origin_.col(3)(0), md_.cam2origin_.col(3)(1), md_.cam2origin_.col(3)(2)));
+       md_.cam2origin.col(3)(0), md_.cam2origin.col(3)(1), md_.cam2origin.col(3)(2)));
     return false;
   }
 

@@ -153,9 +153,9 @@ private:
 	 */
 	void publishTrajectorySetpoint(
 		const Eigen::Vector3d& pos, 
-		const Eigen::Vector2d& yaw_yawrate,
-		const Eigen::Vector3d& vel = Eigen::Vector3d(0.0, 0.0, 0.0), 
-		const Eigen::Vector3d& acc = Eigen::Vector3d(0.0, 0.0, 0.0));
+		const Eigen::Vector2d& yaw_yawrate = Eigen::Vector2d(NAN, NAN),
+		const Eigen::Vector3d& vel = Eigen::Vector3d(NAN, NAN, NAN), 
+		const Eigen::Vector3d& acc = Eigen::Vector3d(NAN, NAN, NAN));
 	void publishAttitudeSetpoint(const double& thrust, const Eigen::Vector4d& q_d);
 	void publishRatesSetpoint(const double& thrust, const Eigen::Vector3d& rates);
 	void publishTorqueThrustSetpoint(const double& thrust, const Eigen::Vector3d& torques);

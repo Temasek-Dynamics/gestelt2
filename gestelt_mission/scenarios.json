@@ -4,10 +4,10 @@
         "map": "map_test",
         "num_agents": 1,
         "spawns_pos": [
-            [-6.0, -6.0, 0.4]
+            [-6.0, -6.0, 0.0]
         ],
         "goals_pos": [
-            [6.0, 6.0, 2.4]
+            [6.0, 6.0, 1.5]
         ]
     },
     "forest_dense_1" : {
@@ -21,21 +21,49 @@
             [6.0, 4.5, 2.0]
         ]
     },
-    "forest_dense_4" : {
-        "description": "Single path for 4 agents",
+    "forest_dense_2" : {
+        "description": "Single path for 2 agents",
         "map": "forest_dense_10x10",
-        "num_agents": 4,
+        "num_agents": 2,
         "spawns_pos": [
-            [-5.5, -5.5, 2.0],
-            [5.5, 5.5, 2.0],
-            [-5.5, 5.5, 2.0],
-            [5.5, -5.5, 2.0]
+            [-6.0, -6.0, 0.0],
+            [6.0, 6.0, 0.0]
         ],
         "goals_pos": [
-            [5.5, 5.5, 2.0],
-            [-5.5, -5.5, 2.0],
-            [5.5, -5.5, 2.0],
-            [-5.5, 5.5, 2.0]
+            [6.0, 6.0, 1.5],
+            [-6.0, -6.0, 1.5]
+        ]
+    },
+    "forest_dense_3" : {
+        "description": "Single path for 3 agents",
+        "map": "forest_dense_10x10",
+        "num_agents": 3,
+        "spawns_pos": [
+            [-6.0, -6.0, 0.0],
+            [6.0, 6.0, 0.0],
+            [-6.0, 6.0, 0.0]
+        ],
+        "goals_pos": [
+            [6.0, 6.0, 1.5],
+            [-6.0, -6.0, 1.5],
+            [6.0, -6.0, 1.5]
+        ]
+    },
+    "forest_dense_4" : {
+        "description": "Single path for 4 agents",
+        "map": "map_test",
+        "num_agents": 4,
+        "spawns_pos": [
+            [-6.0, -6.0, 0.0],
+            [6.0, 6.0, 0.0],
+            [-6.0, 6.0, 0.0],
+            [6.0, -6.0, 0.0]
+        ],
+        "goals_pos": [
+            [6.0, 6.0, 2.5],
+            [-6.0, -6.0, 2.5],
+            [6.0, -6.0, 2.5],
+            [-6.0, 6.0, 2.5]
         ]
     }
 }

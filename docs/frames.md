@@ -15,6 +15,8 @@
     - PUBLICATIONS
         - [`MAP FRAME`] Minimum Jerk Trajectory
         - [`MAP FRAME`] Front-end plan
+    - Dynamic Vornonoi
+        - [`LOCAL MAP FRAME`] Map slices
 - Voxel_map
     - SUBSCRIPTIONS
         - [`MAP frame`] Odometry

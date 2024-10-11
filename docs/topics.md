@@ -1,34 +1,55 @@
 # Topics from PX4 
 
-/fmu/in/actuator_motors
-/fmu/in/actuator_servos
-/fmu/in/arming_check_reply
-/fmu/in/aux_global_position
-/fmu/in/config_control_setpoints
-/fmu/in/config_overrides_request
-/fmu/in/goto_setpoint
-/fmu/in/manual_control_input
-/fmu/in/message_format_request
-/fmu/in/mode_completed
-/fmu/in/obstacle_distance
-/fmu/in/offboard_control_mode
+# Input topics
+
 /fmu/in/onboard_computer_status
 /fmu/in/register_ext_component_request
 /fmu/in/sensor_optical_flow
 /fmu/in/telemetry_status
-/fmu/in/trajectory_setpoint
 /fmu/in/unregister_ext_component
 
-/fmu/in/vehicle_attitude_setpoint
+/fmu/in/config_overrides_request
+/fmu/in/arming_check_reply
+/fmu/in/aux_global_position
+    - px4_msgs/msg/VehicleGlobalPosition
+/fmu/in/config_control_setpoints
+    - [px4_msgs/msg/VehicleControlMode]
+/fmu/in/goto_setpoint
+    - [px4_msgs/msg/GotoSetpoint]
+    - Go to position setpoint with velocity constraints
+/fmu/in/manual_control_input
+    - [px4_msgs/msg/ManualControlSetpoint]
+/fmu/in/message_format_request
+/fmu/in/mode_completed
+/fmu/in/obstacle_distance
+
+## Controls
+
+/fmu/in/offboard_control_mode
+    - [px4_msgs/msg/OffboardControlMode]
+    - Control offboard mode
 /fmu/in/vehicle_command
+    - [px4_msgs/msg/VehicleCommand]
 /fmu/in/vehicle_command_mode_executor
-/fmu/in/vehicle_mocap_odometry
+    - [px4_msgs/msg/VehicleCommand]
+/fmu/in/trajectory_setpoint
+    - [px4_msgs/msg/TrajectorySetpoint]
+/fmu/in/vehicle_attitude_setpoint
 /fmu/in/vehicle_rates_setpoint
 /fmu/in/vehicle_thrust_setpoint
 /fmu/in/vehicle_torque_setpoint
+/fmu/in/actuator_motors
+/fmu/in/actuator_servos
+
 /fmu/in/vehicle_trajectory_bezier
+    - [px4_msgs/msg/VehicleTrajectoryBezier]
 /fmu/in/vehicle_trajectory_waypoint
+    - [px4_msgs/msg/VehicleTrajectoryWaypoint]
+
 /fmu/in/vehicle_visual_odometry
+/fmu/in/vehicle_mocap_odometry
+
+# Output topics
 
 /fmu/out/arming_check_request
 /fmu/out/battery_status

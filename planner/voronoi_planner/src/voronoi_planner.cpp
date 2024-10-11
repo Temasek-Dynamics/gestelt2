@@ -15,6 +15,8 @@ VoronoiPlanner::VoronoiPlanner()
     rclcpp::CallbackGroupType::MutuallyExclusive);
   mapping_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive);
+  swarm_plan_cb_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
   others_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::Reentrant);
 
@@ -34,11 +36,33 @@ VoronoiPlanner::VoronoiPlanner()
 
 void VoronoiPlanner::init()
 {
+  tf_buffer_ =
+    std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  tf_listener_ =
+    std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+  try {
+    auto tf_world_to_map = tf_buffer_->lookupTransform(
+      map_frame_, "world",
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+    // Set fixed map origin
+    map_origin_(0) = tf_world_to_map.transform.translation.x;
+    map_origin_(1) = tf_world_to_map.transform.translation.y;
+    
+  } catch (const tf2::TransformException & ex) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Could not get transform from world to %s: %s",
+      map_frame_.c_str(), ex.what());
+    rclcpp::shutdown();
+    return;
+  }
+
   // Initialize planner
   fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_, this->get_clock());
 
   // Initialize map
-  voxel_map_ = std::make_shared<voxel_map::VoxelMap>(this->shared_from_this());
+  voxel_map_ = std::make_shared<voxel_map::VoxelMap>(this->shared_from_this(), map_origin_);
 
   // Initialize minimum jerk optimizer
 	min_jerk_opt_ = std::make_unique<minco::MinJerkOpt>();
@@ -55,6 +79,9 @@ VoronoiPlanner::~VoronoiPlanner()
 void VoronoiPlanner::initPubSubTimer(){
   auto others_sub_opt = rclcpp::SubscriptionOptions();
   others_sub_opt.callback_group = others_cb_group_;
+
+  auto swarm_plan_sub_opt = rclcpp::SubscriptionOptions();
+  swarm_plan_sub_opt.callback_group = swarm_plan_cb_group_;
 
   /* Publishers */
 
@@ -82,7 +109,7 @@ void VoronoiPlanner::initPubSubTimer(){
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
 
   fe_plan_broadcast_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
-    "/fe_plan/broadcast", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), others_sub_opt);
+    "/fe_plan/broadcast", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), swarm_plan_sub_opt);
 
   plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
     "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
@@ -97,29 +124,6 @@ void VoronoiPlanner::initPubSubTimer(){
 	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
                                                   std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
                                                   mapping_cb_group_);
-
-  tf_buffer_ =
-    std::make_unique<tf2_ros::Buffer>(this->get_clock());
-  tf_listener_ =
-    std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
-  try {
-    auto tf_world_to_map = tf_buffer_->lookupTransform(
-      map_frame_, "world",
-      tf2::TimePointZero,
-      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
-    // Set fixed map origin
-    map_origin_(0) = tf_world_to_map.transform.translation.x;
-    map_origin_(1) = tf_world_to_map.transform.translation.y;
-    
-  } catch (const tf2::TransformException & ex) {
-    RCLCPP_ERROR(
-      this->get_logger(), "Could not get transform from world to %s: %s",
-      map_frame_.c_str(), ex.what());
-    rclcpp::shutdown();
-    return;
-  }
-
 }
 
 void VoronoiPlanner::initParams()
@@ -176,7 +180,7 @@ void VoronoiPlanner::initParams()
 }
 
 /* Core methods */
-bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
+bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   if (!init_voro_maps_){
     logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
     return false;
@@ -221,21 +225,29 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
   {
     std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
     fe_planner_->setReservationTable(rsvn_tbl_);
-    rsvn_tbl_.clear();
+    // rsvn_tbl_.clear();
   }
 
-  Eigen::Vector3d start = cur_pos_;
-  viz_helper_->pubStartGoalPts(start, goal, plan_req_pub_, map_frame_);
-
-  tm_front_end_plan_.start();
+  Eigen::Vector3d start_pos, start_vel, start_acc;
 
   auto plan_start_clock = this->get_clock()->now();
 
+  if (!sampleTrajectory(poly_traj_, plan_start_clock.seconds(), start_pos, start_vel, start_acc))
+  {
+    start_pos = cur_pos_;
+    start_vel = cur_vel_;
+    start_acc.setZero();
+  }
+
+  viz_helper_->pubStartGoalPts(start_pos, goal_pos, plan_req_pub_, map_frame_);
+
+  tm_front_end_plan_.start();
+
   // Generate plan 
-  if (!fe_planner_->generatePlan(mapToLclMap(start), mapToLclMap(goal)))
+  if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(goal_pos)))
   {
     logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f)", 
-                              drone_id_, start(0), start(1), start(2), goal(0), goal(1), goal(2)));
+                              drone_id_, start_pos(0), start_pos(1), start_pos(2), goal_pos(0), goal_pos(1), goal_pos(2)));
 
     tm_front_end_plan_.stop(verbose_print_);
 
@@ -255,7 +267,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
   }
   else {
     // Current pose must converted from fixed map frame to local map frame before passing to planner
-    lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
+    // lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
+    lcl_map_path = fe_planner_->getPathWithTime();
   }
 
   auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
@@ -311,7 +324,35 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
 
   if (mjo_fe_path.size() >= 2){
     /* Generate minimum jerk trajectory */
-    poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, plan_start_clock.seconds());
+
+    auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
+                              const std::vector<Eigen::Vector4d>& space_time_path,
+                              const Eigen::Matrix3d& start_PVA,
+                              const Eigen::Matrix3d& goal_PVA,
+                              const double& t_plan_start){
+      
+      Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+      Eigen::VectorXd seg_durations(space_time_path.size()-1);
+
+      for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+        inner_pts.col(j) = space_time_path[i].head<3>();
+      }
+
+      for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+        seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+      }
+
+      mjo->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+
+      return mjo->getTraj(t_plan_start);
+    };
+
+    Eigen::Matrix3d start_PVA, goal_PVA;
+    start_PVA << start_pos, start_vel, start_acc;
+    goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+
+    poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.seconds());
+
     Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
 
     minco_interfaces::msg::PolynomialTrajectory poly_msg; 
@@ -319,8 +360,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
 
     polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
 
-    poly_traj_pub_->publish(poly_msg); // [global frame] Publish to corresponding drone for execution
-    minco_traj_broadcast_pub_->publish(MINCO_msg); // [global frame] Broadcast to all other drones
+    poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
+    // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
 	  
     // Publish visualization
     viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
@@ -379,36 +420,37 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal){
   return true;
 }
 
-std::shared_ptr<minco::Trajectory> VoronoiPlanner::genMinJerkTraj(
-  std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
-  const std::vector<Eigen::Vector4d>& space_time_path,
-  const double& t_plan_start)
-{
-	Eigen::Matrix3d start_PVA, goal_PVA;
+// std::shared_ptr<minco::Trajectory> VoronoiPlanner::genMinJerkTraj(
+//   std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
+//   const std::vector<Eigen::Vector4d>& space_time_path,
+//   const double& t_plan_start)
+// {
+// 	Eigen::Matrix3d start_PVA, goal_PVA;
 
-	start_PVA.block<3,1>(0, 0) =  space_time_path[0].head<3>();
-	start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	start_PVA.block<3,1>(0, 0) = space_time_path[0].head<3>();
+// 	// start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	start_PVA.block<3,1>(0, 1) = cur_vel_;
+// 	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
 
-	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
-	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
+// 	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
+// 	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
 
-	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
-	Eigen::VectorXd seg_durations(space_time_path.size()-1);
+// 	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+// 	Eigen::VectorXd seg_durations(space_time_path.size()-1);
 
-	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
-		inner_pts.col(j) = space_time_path[i].head<3>();
-	}
+// 	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+// 		inner_pts.col(j) = space_time_path[i].head<3>();
+// 	}
 
-	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
-		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
-	}
+// 	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+// 		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+// 	}
 
-	min_jerk_opt->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+// 	min_jerk_opt->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
 
-	return min_jerk_opt->getTraj(t_plan_start);
-}
+// 	return min_jerk_opt->getTraj(t_plan_start);
+// }
 
 /* Timer callbacks*/
 void VoronoiPlanner::planFETimerCB()
@@ -460,13 +502,13 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
     // Initialize dynamic voronoi 
     dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>(dyn_voro_params);
+    // Map is received in local_map_frame_
     dyn_voro_arr_[z_cm]->initializeMap(bool_map_3d_.width, 
                                       bool_map_3d_.height, 
                                       bool_map.second);
     
     dyn_voro_arr_[z_cm]->update(); // update distance map and Voronoi diagram
     dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
-    // dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();  
 
     // // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
     // auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){
@@ -532,7 +574,9 @@ void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
   cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x, 
                             msg->pose.pose.position.y, 
                             msg->pose.pose.position.z};
-  // cur_vel_= Eigen::Vector3d{msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z};
+  cur_vel_= Eigen::Vector3d{msg->twist.twist.linear.x, 
+                            msg->twist.twist.linear.y, 
+                            msg->twist.twist.linear.z};
 }
 
 void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg)

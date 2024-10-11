@@ -91,8 +91,8 @@ def generate_launch_description():
             'PX4_GZ_WORLD=default',
             'PX4_SIM_MODEL=gz_x500',
             'PX4_GZ_STANDALONE=1',
-            # ['PX4_GZ_MODEL_POSE="', init_x, ',', init_y, ',0,0,0,', init_yaw, '"'],
-            ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
+            ['PX4_GZ_MODEL_POSE="', init_x, ',', init_y, ',0,0,0,', init_yaw, '"'],
+            # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
             'ROS_DOMAIN_ID=0',
             'PX4_UXRCE_DDS_PORT=8888',
             ['PX4_UXRCE_DDS_NS=d', drone_id],
@@ -132,6 +132,7 @@ def generate_launch_description():
         shell=True,
         name=['traj_server_', drone_id],
         parameters=[
+          {'drone_id': drone_id},
           {'map_frame': map_frame},
           {'base_link_frame': base_link_frame},
           traj_server_config
