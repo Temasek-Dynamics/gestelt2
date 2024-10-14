@@ -8,7 +8,7 @@ namespace voxel_map
 VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_origin) 
 : node_(node)
 {
-  md_.world2origin.block<3,1>(0,3) = map_origin;
+  md_.world_to_map.block<3,1>(0,3) = map_origin;
 
 	// Create callback groups
   reentrant_group_ = node_->create_callback_group(
@@ -16,7 +16,7 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_orig
 
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(node_->get_logger(), node_->get_clock());
 
-  gbl_to_lcl_origin_tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_);
+  tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_);
 
   initParams();
 
@@ -29,7 +29,7 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_orig
   tm_slice_map_.updateID(drone_id_);
 
   if (dbg_input_entire_map_){
-    md_.cam2origin = md_.world2origin;
+    md_.cam_to_map = md_.world_to_map;
 
     logger_->logInfo(strFmt("DEBUG: INPUT ENTIRE MAP. Waiting for point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
 
@@ -185,12 +185,12 @@ void VoxelMap::initParams()
   mp_.local_map_frame = node_->get_parameter("local_map_frame").as_string();
 
   /* Camera extrinsic parameters  */
-  md_.cam2body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
-  md_.cam2body_rpy_deg(1) = node_->get_parameter(param_ns+".camera_to_body.pitch").as_double();
-  md_.cam2body_rpy_deg(2) = node_->get_parameter(param_ns+".camera_to_body.yaw").as_double();
-  md_.cam2body.col(3)(0) = node_->get_parameter(param_ns+".camera_to_body.t_x").as_double();
-  md_.cam2body.col(3)(1) = node_->get_parameter(param_ns+".camera_to_body.t_y").as_double();
-  md_.cam2body.col(3)(2) = node_->get_parameter(param_ns+".camera_to_body.t_z").as_double();
+  md_.cam_to_body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
+  md_.cam_to_body_rpy_deg(1) = node_->get_parameter(param_ns+".camera_to_body.pitch").as_double();
+  md_.cam_to_body_rpy_deg(2) = node_->get_parameter(param_ns+".camera_to_body.yaw").as_double();
+  md_.cam_to_body.col(3)(0) = node_->get_parameter(param_ns+".camera_to_body.t_x").as_double();
+  md_.cam_to_body.col(3)(1) = node_->get_parameter(param_ns+".camera_to_body.t_y").as_double();
+  md_.cam_to_body.col(3)(2) = node_->get_parameter(param_ns+".camera_to_body.t_z").as_double();
 
   /* Collision checking*/
   check_collisions_ = node_->get_parameter(param_ns+".collision_check.enable").as_bool();
@@ -212,9 +212,9 @@ void VoxelMap::reset(const double& resolution){
   md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
 
   // Camera to body transform
-  md_.cam2body.block<3, 3>(0, 0) =  (Eigen::AngleAxisd((M_PI/180.0) * md_.cam2body_rpy_deg(2), Eigen::Vector3d::UnitZ())
-                                      * Eigen::AngleAxisd((M_PI/180.0) * md_.cam2body_rpy_deg(1), Eigen::Vector3d::UnitY())
-                                      * Eigen::AngleAxisd((M_PI/180.0) * md_.cam2body_rpy_deg(0), Eigen::Vector3d::UnitX())).toRotationMatrix();
+  md_.cam_to_body.block<3, 3>(0, 0) =  (Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(2), Eigen::Vector3d::UnitZ())
+                                      * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(1), Eigen::Vector3d::UnitY())
+                                      * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(0), Eigen::Vector3d::UnitX())).toRotationMatrix();
 
   // Global map origin is FIXED at a corner of the global map i.e. (-W/2, -L/2, 0)
   mp_.global_map_origin_ = Eigen::Vector3d(
@@ -242,20 +242,18 @@ void VoxelMap::reset(const double& resolution){
 
 /* Core methods */
 
-void VoxelMap::getCamToGlobalPose(const geometry_msgs::msg::Pose &pose)
+void VoxelMap::setCamToMapPose(const geometry_msgs::msg::Pose &pose)
 {
-  // Transform camera frame to that of the uav
-  Eigen::Quaterniond body_q = Eigen::Quaterniond(pose.orientation.w,
+  Eigen::Quaterniond map_to_body_q = Eigen::Quaterniond(pose.orientation.w,
                                                 pose.orientation.x,
                                                 pose.orientation.y,
                                                 pose.orientation.z);
   // UAV body to map frame
-  md_.body2origin.block<3, 3>(0, 0) = body_q.toRotationMatrix();
-  // md_.body2origin.col(3) << pose.position.x, pose.position.y, pose.position.z, 1.0;
-  md_.body2origin.block<3,1>(0,3) << pose.position.x, pose.position.y, pose.position.z;
+  md_.body_to_map.block<3, 3>(0, 0) = map_to_body_q.toRotationMatrix();
+  md_.body_to_map.block<3,1>(0,3) << pose.position.x, pose.position.y, pose.position.z;
 
   // Converts camera to UAV origin frame
-  md_.cam2origin = md_.body2origin * md_.cam2body;
+  md_.cam_to_map = md_.cam_to_body * md_.body_to_map;
 
   md_.has_pose_ = true;
 }
@@ -270,26 +268,26 @@ void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
   }
 
   if (msg.data.empty()){
-    logger_->logWarn("Empty point cloud received!");
+    logger_->logWarnThrottle("Empty point cloud received!", 1.0);
     return;
   }
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd;
-  pcd.reset(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
   pcl::fromROSMsg(msg, *pcd);
 
-  pcdToMap(pcd);
+  pcdToVoxelMap(pcd);
 }
 
-void VoxelMap::pcdToMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd)
+void VoxelMap::pcdToVoxelMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_cam_frame)
 {
   // Transform point cloud from camera frame to uav origin frame (the global reference frame)
-  pcl::transformPointCloud(*pcd, *pcd_in_map_frame_, md_.cam2origin);
+  pcl::transformPointCloud(*pcd_in_cam_frame, *pcd_in_map_frame_, md_.cam_to_map);
   pcd_in_map_frame_->header.frame_id = mp_.map_frame;
 
   // Getting the Translation from the sensor to the Global Reference Frame
-  const pcl::PointXYZ sensor_origin(md_.cam2origin(0, 3), md_.cam2origin(1, 3), md_.cam2origin(2, 3));
+  const pcl::PointXYZ sensor_origin(
+    md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
 
   tm_bonxai_insert_.start();
   bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
@@ -308,13 +306,13 @@ void VoxelMap::updateLocalMap(){
 
   // Update local map origin 
   mp_.local_map_origin_ = Eigen::Vector3d(
-    md_.body2origin.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
-    md_.body2origin.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
+    md_.body_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
+    md_.body_to_map.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
     mp_.ground_height_);
   // Update local map max position based on current UAV position
   mp_.local_map_max_ = Eigen::Vector3d(
-    md_.body2origin.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
-    md_.body2origin.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
+    md_.body_to_map.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
+    md_.body_to_map.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
     mp_.ground_height_ + mp_.local_map_size_(2) );
   
   // Get all occupied coordinates 
@@ -463,7 +461,6 @@ void VoxelMap::updateLocalMapTimerCB()
   local_map_updated_ = true;
 }
 
-
 void VoxelMap::pubLocalMapTFTimerCB()
 {
   // broadcast tf link from global map frame to local map origin 
@@ -482,7 +479,7 @@ void VoxelMap::pubLocalMapTFTimerCB()
   gbl_to_lcl_origin_tf.transform.rotation.z = 0.0;
   gbl_to_lcl_origin_tf.transform.rotation.w = 1.0;
   
-  gbl_to_lcl_origin_tf_broadcaster_->sendTransform(gbl_to_lcl_origin_tf);
+  tf_broadcaster_->sendTransform(gbl_to_lcl_origin_tf);
 }
 
 void VoxelMap::checkCollisionsTimerCB()
@@ -491,9 +488,9 @@ void VoxelMap::checkCollisionsTimerCB()
     return;
   }
 
-  // Eigen::Vector3d query_pos( 	body2origin.block<3,1>(0,3)(0),
-  //                             body2origin.block<3,1>(0,3)(1),
-  //                             body2origin.block<3,1>(0,3)(2);
+  // Eigen::Vector3d query_pos( 	body_to_map.block<3,1>(0,3)(0),
+  //                             body_to_map.block<3,1>(0,3)(1),
+  //                             body_to_map.block<3,1>(0,3)(2);
 
   // // Get nearest obstacle position
   // Eigen::Vector3d occ_nearest;
@@ -513,7 +510,7 @@ void VoxelMap::checkCollisionsTimerCB()
 void VoxelMap::cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_pc, 
                             const nav_msgs::msg::Odometry::SharedPtr msg_odom)
 {
-  getCamToGlobalPose(msg_odom->pose.pose);
+  setCamToMapPose(msg_odom->pose.pose);
   pcd2MsgToMap(*msg_pc);
   md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
 }
@@ -522,9 +519,6 @@ void VoxelMap::cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_p
 
 void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_pts)
 {
-  if (occ_map_pub_->get_subscription_count() == 0){
-    return;
-  }
   sensor_msgs::msg::PointCloud2 cloud_msg;
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
@@ -533,6 +527,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
   
   cloud_msg.header.frame_id = mp_.local_map_frame;
   cloud_msg.header.stamp = node_->get_clock()->now();
+
   occ_map_pub_->publish(cloud_msg);
 }
 

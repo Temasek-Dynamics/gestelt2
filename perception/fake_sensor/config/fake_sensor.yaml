@@ -1,0 +1,44 @@
+/**: 
+  ros__parameters:
+    # drone_id: 
+
+    # map_frame: 
+    # local_map_frame:
+    # sensor_frame: 
+
+    # pcd_map:
+      # filepath: 
+    tf:
+      # If enabled, listen to '/tf' topic else subscribe to odometry
+      listen_to_tf: true
+      # [Hz] Frequency to listen to '/tf'
+      listen_freq: 60.0
+
+    pcd_voxel_filter:
+      # Enable voxel filter for downsampling points
+      enable: true
+      # [m] Size of voxels
+      voxel_size: 0.1
+
+    fake_laser:
+      # [Hz] 
+      sensor_refresh_frequency: 30.0
+      # [m] Cut-off range of laser lines
+      sensor_range: 5.0
+      # [m] Resolution of sensor
+      resolution: 0.1
+
+      horizontal:
+        # Number of horizontal laser lines 
+        laser_line_num: 80
+        # [degrees] the horizontal angle range
+        laser_range_dgr: 100.0
+      
+      vertical:
+        # Number of vertical laser lines 
+        laser_line_num: 15
+        # [degrees] vertical angle range
+        laser_range_dgr: 40.0
+
+
+

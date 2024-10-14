@@ -31,7 +31,6 @@ VoronoiPlanner::VoronoiPlanner()
   astar_params_.tie_breaker = 1.001;
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
   astar_params_.t_unit = t_unit_;
-
 }
 
 void VoronoiPlanner::init()
@@ -41,6 +40,7 @@ void VoronoiPlanner::init()
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
+  // Get world to map fixed TF
   try {
     auto tf_world_to_map = tf_buffer_->lookupTransform(
       map_frame_, "world",
@@ -51,9 +51,9 @@ void VoronoiPlanner::init()
     map_origin_(1) = tf_world_to_map.transform.translation.y;
     
   } catch (const tf2::TransformException & ex) {
-    RCLCPP_ERROR(
-      this->get_logger(), "Could not get transform from world to %s: %s",
-      map_frame_.c_str(), ex.what());
+		RCLCPP_ERROR(
+			this->get_logger(), "Could not get transform from world_frame('world') to map_frame_(%s): %s",
+			map_frame_.c_str(), ex.what());
     rclcpp::shutdown();
     return;
   }
@@ -76,7 +76,8 @@ void VoronoiPlanner::init()
 VoronoiPlanner::~VoronoiPlanner()
 {}
 
-void VoronoiPlanner::initPubSubTimer(){
+void VoronoiPlanner::initPubSubTimer()
+{
   auto others_sub_opt = rclcpp::SubscriptionOptions();
   others_sub_opt.callback_group = others_cb_group_;
 
@@ -115,6 +116,8 @@ void VoronoiPlanner::initPubSubTimer(){
     "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
   goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>(
     "goals", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
+  point_goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+    "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::pointGoalSubCB, this, _1));
 
   /* Timers */
 	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
@@ -635,6 +638,31 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
   } 
 
 }
+
+void VoronoiPlanner::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
+{
+    std::vector<Eigen::Vector3d> wp_vec;
+
+    if (msg->header.frame_id == "world")
+    {
+      // Transform from world to fixed map frame
+      wp_vec.push_back(worldToMap(Eigen::Vector3d(
+        msg->pose.position.x, msg->pose.position.y, 1.5)));
+    }
+    else if (msg->header.frame_id == map_frame_)
+    {
+      // Keep in map frame
+      wp_vec.push_back(Eigen::Vector3d(
+        msg->pose.position.x, msg->pose.position.y, 1.5));
+    }
+    else {
+      logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
+      return;
+    }
+
+    waypoints_.addMultipleWP(wp_vec);
+}
+
 
 void VoronoiPlanner::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 {

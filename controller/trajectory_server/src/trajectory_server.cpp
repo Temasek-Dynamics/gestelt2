@@ -35,7 +35,10 @@ TrajectoryServer::TrajectoryServer()
 : Node("trajectory_server")
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
-	logger_->logInfo("Initializing");
+	
+  	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+
+	logger_->logInfo("Initializing...");
 
 	initParams();
 
@@ -317,7 +320,7 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 	// For frame transforms, refer to https://docs.px4.io/main/en/ros2/user_guide.html
 
 	std::vector<double> position_d = std::vector<double>(msg->position.begin(), msg->position.end());
-	std::vector<double> q_d = {msg->q[1], msg->q[2], msg->q[3], msg->q[0] }; // PX4 uses (w,x,y,z), We reorder to (x,y,z,w) 
+	// std::vector<double> q_d = {msg->q[0], msg->q[1], msg->q[2], msg->q[3] }; // in order of (w,x,y,z)
 	std::vector<double> velocity_d = std::vector<double>(msg->velocity.begin(), msg->velocity.end());
 	std::vector<double> angular_velocity_d = std::vector<double>(msg->angular_velocity.begin(), msg->angular_velocity.end());
 
@@ -341,15 +344,19 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 		vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
 	}
 
-	cur_pos_ = transform_static_frame(Eigen::Vector3d(position_d.data()), pos_frame_tf);
+	cur_pos_ = transform_static_frame(
+		Eigen::Vector3d(position_d.data()), pos_frame_tf);
 	
 	cur_pos_corr_ = cur_pos_;
 	cur_pos_corr_(2) -=  ground_height_; // Adjust for ground height
 
-	cur_ori_ = transform_orientation(Eigen::Quaterniond(q_d.data()), pos_frame_tf);
+	cur_ori_ = transform_orientation(
+		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q), pos_frame_tf);
 
-	cur_vel_ = transform_static_frame(Eigen::Vector3d(velocity_d.data()), vel_frame_tf);
-	cur_ang_vel_ = transform_static_frame(Eigen::Vector3d(angular_velocity_d.data()), vel_frame_tf);
+	cur_vel_ = transform_static_frame(
+		Eigen::Vector3d(velocity_d.data()), vel_frame_tf);
+	cur_ang_vel_ = transform_static_frame(
+		Eigen::Vector3d(angular_velocity_d.data()), vel_frame_tf);
 
 	// std::cout << "Current pose (after): " << cur_pos_.transpose() << std::endl;
 	// std::cout << "Yaw (After): " << frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_) << std::endl;
@@ -443,7 +450,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 			publishTrajectorySetpoint(
 				Eigen::Vector3d(0.0, 0.0, 
 					fsm_list::fsmtype::current_state_ptr->getTakeoffHeight() + ground_height_), 
-				Eigen::Vector2d(0.0, 0.0));
+				yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
@@ -454,7 +461,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 			publishTrajectorySetpoint(
 				Eigen::Vector3d(0.0, 0.0, 
 					fsm_list::fsmtype::current_state_ptr->getTakeoffHeight() + ground_height_), 
-				Eigen::Vector2d(0.0, 0.0));
+				yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
@@ -466,7 +473,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
 				{
 					pos_enu_(2) +=  ground_height_; // Adjust for ground height
-					yaw_yawrate_ = Eigen::Vector2d(NAN, NAN); 
+					yaw_yawrate_(1) = NAN; 
 					// publishTrajectorySetpoint(pos_enu_, yaw_yawrate_);
 					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
 					// publishTrajectorySetpoint(Eigen::Vector3d(NAN, NAN, NAN), yaw_yawrate_, vel_enu_, acc_enu_);
@@ -526,6 +533,7 @@ void TrajectoryServer::SMTickTimerCB()
 		}
 
 		ground_height_ = cur_pos_(2); // Set ground height to last z value
+		yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_); 
 	}
 	else if (UAV::is_in_state<Landing>()){
 		logger_->logInfoThrottle("[Landing]", 1.0);
@@ -582,6 +590,24 @@ void TrajectoryServer::pubStateTimerCB()
 	odom_msg.twist.twist.angular.z = cur_ang_vel_(2);
 
 	odom_pub_->publish(odom_msg);
+
+	// broadcast tf link from global map frame to local map origin 
+	geometry_msgs::msg::TransformStamped map_to_base_link_tf;
+
+	map_to_base_link_tf.header.stamp = this->get_clock()->now();
+	map_to_base_link_tf.header.frame_id = map_frame_; 
+	map_to_base_link_tf.child_frame_id = base_link_frame_; 
+
+	map_to_base_link_tf.transform.translation.x = cur_pos_corr_(0);
+	map_to_base_link_tf.transform.translation.y = cur_pos_corr_(1);
+	map_to_base_link_tf.transform.translation.z = cur_pos_corr_(2);
+
+	map_to_base_link_tf.transform.rotation.x = cur_ori_.x();
+	map_to_base_link_tf.transform.rotation.y = cur_ori_.y();
+	map_to_base_link_tf.transform.rotation.z = cur_ori_.z();
+	map_to_base_link_tf.transform.rotation.w = cur_ori_.w();
+	
+	tf_broadcaster_->sendTransform(map_to_base_link_tf);
 }
 
 /****************** */
@@ -786,11 +812,11 @@ void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv
 			break;
 		case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION: 
 
-			if (request->mode < 0 || request->mode > 4){
+			if (request->mode > 4){
 				response->success = false;
 				response->state = (int) getUAVState();
 				response->state_name = getUAVStateString();
-				logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4, inclusive");
+				logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4 inclusive");
 
 				return;
 			}

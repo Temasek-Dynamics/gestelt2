@@ -14,6 +14,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2/exceptions.h>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
+
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -195,6 +197,9 @@ private:
   /* Subscription callback to goals */
   void goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg);
 
+  /* Subscription callback to point goal */
+  void pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg);
+
   /* Plan request (for debug use)*/
   void planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg);
 
@@ -366,6 +371,7 @@ private:
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
 	rclcpp::Subscription<gestelt_interfaces::msg::Goals>::SharedPtr goals_sub_;              // Goal subscriber
 	rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_sub_;  // Subscription to broadcasted front end plan from other agents
+	rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
 
 	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
 

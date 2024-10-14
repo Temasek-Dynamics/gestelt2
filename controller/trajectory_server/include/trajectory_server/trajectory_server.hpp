@@ -34,6 +34,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <tf2_ros/transform_broadcaster.h>
+
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/actuator_motors.hpp>
 #include <px4_msgs/msg/vehicle_torque_setpoint.hpp>
@@ -211,13 +213,16 @@ private:
 	/* Services */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
 
+	/* TF */
+	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; 
+
 	/* Params */
 	int drone_id_{0};
 
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // base link frame of uav
 
-	double take_off_landing_tol_{0.15}; // [m] Take off and landing tolerance
+	double take_off_landing_tol_{0.15}; // [m] Take off and landing tolerance for execution to be completed
 
 	double pub_ctrl_freq_; // [Hz] Frequency of publishing controls
 	double pub_state_freq_; // [Hz] Frequency to publish odometry
@@ -231,18 +236,18 @@ private:
 	std::unique_ptr<PolyTrajCmd> poly_traj_cmd_; // MINCO trajectory command reader
 
 	/* Stored Data */
-	Eigen::Vector3d cur_pos_;		// Current position
-	Eigen::Vector3d cur_pos_corr_;		// Current position with corrected ground height
+	Eigen::Vector3d cur_pos_{0.0, 0.0, 0.0};		// Current position
+	Eigen::Vector3d cur_pos_corr_{0.0, 0.0, 0.0};		// Current position with corrected ground height
 	
-	Eigen::Vector3d cur_vel_;		// Current velocity
-	Eigen::Quaterniond cur_ori_;	// Current orientation
-	Eigen::Vector3d cur_ang_vel_;	// Current angular velocity
+	Eigen::Vector3d cur_vel_{0.0, 0.0, 0.0};		// Current velocity
+	Eigen::Quaterniond cur_ori_{1.0, 0.0, 0.0, 0.0};	// Current orientation
+	Eigen::Vector3d cur_ang_vel_{0.0, 0.0, 0.0};	// Current angular velocity
 	double ground_height_{0.0}; // Starting ground height
 
-	Eigen::Vector3d pos_enu_;		// Commanded position [ENU frame]
-	Eigen::Vector2d yaw_yawrate_;	
-	Eigen::Vector3d vel_enu_;		
-	Eigen::Vector3d acc_enu_;		
+	Eigen::Vector3d pos_enu_{0.0, 0.0, 0.0};;		// Commanded position [ENU frame]
+	Eigen::Vector2d yaw_yawrate_{0.0, 0.0};
+	Eigen::Vector3d vel_enu_{0.0, 0.0, 0.0};		
+	Eigen::Vector3d acc_enu_{0.0, 0.0, 0.0};				
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;

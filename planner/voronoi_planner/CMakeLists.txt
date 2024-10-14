@@ -25,6 +25,7 @@ set(ROS_LIBRABRIES
   tf2
   tf2_ros
   tf2_geometry_msgs
+  geometry_msgs
   visualization_msgs
   gestelt_interfaces
   minco_interfaces
@@ -52,6 +53,7 @@ ament_target_dependencies(voronoi_planner_node
   tf2_ros
   nav_msgs
   tf2_geometry_msgs
+  geometry_msgs
   visualization_msgs
   gestelt_interfaces
   minco_interfaces

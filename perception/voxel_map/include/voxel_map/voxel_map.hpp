@@ -73,18 +73,20 @@ namespace voxel_map
   {
     bool has_pose_{false}; // Indicates if pose has been received
 
-    Eigen::Vector3d cam2body_rpy_deg{0.0, 0.0, 0.0};
-
-    // [FIXED]: Homogenous Transformation matrix of camera to body frame
-    Eigen::Matrix4d cam2body{Eigen::Matrix4d::Identity(4, 4)};
-    // DYNAMIC: Homogenous Transformation matrix of body to fixed map
-    // NOTE: USE `body2origin.block<3,1>(0,3)` FOR UAV POSE!
-    Eigen::Matrix4d body2origin{Eigen::Matrix4d::Identity(4, 4)};
-    // DYNAMIC: Homogenous Transformation matrix of camera to fixed map
-    Eigen::Matrix4d cam2origin{Eigen::Matrix4d::Identity(4, 4)};
+    // [FIXED]: Camera to body (roll pitch yaw) in degrees
+    Eigen::Vector3d cam_to_body_rpy_deg{0.0, 0.0, 0.0};
 
     // [FIXED]: Homogenous Transformation matrix of fixed map origin to world origin
-    Eigen::Matrix4d world2origin{Eigen::Matrix4d::Identity(4, 4)};
+    Eigen::Matrix4d world_to_map{Eigen::Matrix4d::Identity(4, 4)};
+
+    // [FIXED]: Homogenous Transformation matrix of camera to body frame
+    Eigen::Matrix4d cam_to_body{Eigen::Matrix4d::Identity(4, 4)};
+    // DYNAMIC: Homogenous Transformation matrix of body to fixed map
+    // NOTE: USE `body_to_map.block<3,1>(0,3)` FOR UAV POSE!
+    Eigen::Matrix4d body_to_map{Eigen::Matrix4d::Identity(4, 4)};
+    // DYNAMIC: Homogenous Transformation matrix of camera to fixed map
+    //  cam_to_map = cam_to_body * body_to_map
+    Eigen::Matrix4d cam_to_map{Eigen::Matrix4d::Identity(4, 4)};
 
     double last_sensor_msg_time{-1.0}; // True if cloud and odom has timed out
 
@@ -139,13 +141,13 @@ public:
   /* Core methods */
 
   // Get camera-to-global frame transformation
-  void getCamToGlobalPose(const geometry_msgs::msg::Pose &pose);
+  void setCamToMapPose(const geometry_msgs::msg::Pose &pose);
   
   // Convert point cloud message to point cloud map, transform it from camera-to-global frame and save it. 
   void pcd2MsgToMap(const sensor_msgs::msg::PointCloud2& msg);
   
-  // Convert point cloud to point cloud map, transform it from camera-to-global frame and save it. 
-  void pcdToMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd);
+  /* Receives pcd in camera_frame and transforms it to map_frame*/
+  void pcdToVoxelMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_cam_frame);
 
   // Called by planners to update the local map
   void updateLocalMap();
@@ -295,7 +297,7 @@ private:
 	rclcpp::TimerBase::SharedPtr pub_lcl_map_tf_timer_; // Timer for broadcasting map to local_map tf
 
   // TF transformation 
-  std::unique_ptr<tf2_ros::TransformBroadcaster> gbl_to_lcl_origin_tf_broadcaster_; // broadcast tf link from global map frame to local map origin 
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; // broadcast tf link from global map frame to local map origin 
  
   /* Data structures for maps */
   MappingData md_;  // Mapping data
@@ -397,15 +399,15 @@ inline bool VoxelMap::isPoseValid() {
     return false;
   }
 
-	if (md_.cam2origin.array().isNaN().any()){
+	if (md_.cam_to_map.array().isNaN().any()){
     logger_->logError(strFmt("Camera pose has NAN value"));
     return false;
 	}
 
-  if (!isInGlobalMap(md_.cam2origin.block<3,1>(0,3)))
+  if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
   {
     logger_->logError(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
-       md_.cam2origin.col(3)(0), md_.cam2origin.col(3)(1), md_.cam2origin.col(3)(2)));
+       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)));
     return false;
   }
 

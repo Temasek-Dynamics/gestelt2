@@ -8,11 +8,11 @@
         verbose_print: true  # If enabled, print debug information such as timing information
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         plan_once: false       # Only plan once
-        t_unit: 0.075           # [s] Duration of each time unit           
+        t_unit: 0.1           # [s] Duration of each time unit           
         line_of_sight_smooth: false # Enables line of sight smoothing of raw A* path 
 
       min_jerk_trajectory:
-        front_end_stride: 10 # Stride to sample front-end path for trajectory generation
+        front_end_stride: 5 # Stride to sample front-end path for trajectory generation
 
       reservation_table:
         inflation: 0.5    # [m] buffer for reservation table in spatial domain

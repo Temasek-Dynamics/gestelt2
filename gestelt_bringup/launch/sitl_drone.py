@@ -22,6 +22,7 @@ def generate_launch_description():
     init_x = LaunchConfiguration('init_x')
     init_y = LaunchConfiguration('init_y')
     init_yaw = LaunchConfiguration('init_yaw')
+    fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
 
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
@@ -41,11 +42,17 @@ def generate_launch_description():
       default_value='0.0'
     )
 
+    fake_map_pcd_filepath_launch_arg = DeclareLaunchArgument(
+      'fake_map_pcd_filepath',
+      default_value=''
+    )
+
+
     '''Frames'''
     map_frame = ["d", drone_id, "_origin"]
-    lcl_map_frame = ["d", drone_id, "_lcl_map"]
+    local_map_frame = ["d", drone_id, "_lcl_map"]
     base_link_frame = ["d", drone_id, "_base_link"]
-
+    camera_frame = ["d", drone_id, "_camera_link"]
 
     ''' Get directories '''
 
@@ -62,6 +69,12 @@ def generate_launch_description():
       get_package_share_directory('trajectory_server'),
       'config',
       'trajectory_server.yaml'
+    )
+
+    fake_sensor_config = os.path.join(
+      get_package_share_directory('fake_sensor'),
+      'config',
+      'fake_sensor.yaml'
     )
 
     navigator_cfg = os.path.join(
@@ -83,7 +96,13 @@ def generate_launch_description():
                       arguments = [init_x, init_y, "0", "0", "0", "0", 
                               "world", map_frame])
 
-    # PX4 SITL
+    # drone base_link to sensor fixed TF
+    camera_link_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                      arguments = ["0", "0", "0", "0", "0", "0", 
+                              base_link_frame, camera_frame])
+
+    ''' PX4 SITL '''
     px4_sitl = ExecuteProcess(
         cmd=[
             # Environment variables
@@ -119,12 +138,13 @@ def generate_launch_description():
         parameters=[
             {'drone_id': drone_id},
             {'map_frame': map_frame},
-            {'local_map_frame': lcl_map_frame},
+            {'local_map_frame': local_map_frame},
             navigator_cfg,
             voxel_map_cfg,
         ],
     )
 
+    ''' Trajectory server for executing trajectories '''
     trajectory_server = Node(
         package='trajectory_server',
         executable='trajectory_server_node',
@@ -139,7 +159,22 @@ def generate_launch_description():
         ],
     )
 
-    # Publish Transform from world to base_link
+    ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
+    fake_sensor = Node(
+        package='fake_sensor',
+        executable='fake_sensor_node',
+        output='screen',
+        shell=True,
+        name=['fake_sensor_', drone_id],
+        parameters=[
+          {'drone_id': drone_id},
+          {'map_frame': map_frame},
+          {'local_map_frame': local_map_frame},
+          {'sensor_frame': camera_frame},
+          {'pcd_map.filepath': fake_map_pcd_filepath},
+          fake_sensor_config,
+        ],
+    )
 
     return LaunchDescription([
         # Launch arguments
@@ -147,10 +182,14 @@ def generate_launch_description():
         init_x_launch_arg,
         init_y_launch_arg,
         init_yaw_launch_arg,
+        fake_map_pcd_filepath_launch_arg,
+        # Static transforms
+        drone_origin_tf,
+        camera_link_tf,
         # Processes
         px4_sitl,
         # Nodes
-        drone_origin_tf,
+        fake_sensor,
         navigator_node,
         trajectory_server,
     ])

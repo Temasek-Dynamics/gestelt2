@@ -16,8 +16,8 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
-# SCENARIO_NAME = "map_test"
-SCENARIO_NAME = "forest_dense_4"
+SCENARIO_NAME = "map_test"
+# SCENARIO_NAME = "forest_dense_4"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -50,7 +50,7 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-def generateSITLDrone(id, spawn_pos):
+def generateSITLDrone(id, spawn_pos, pcd_filepath):
 
     sitl_drone_launchfile = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -65,6 +65,7 @@ def generateSITLDrone(id, spawn_pos):
             'init_x': str(spawn_pos[0]),
             'init_y': str(spawn_pos[1]),
             'init_yaw': str(spawn_pos[2]),
+            'fake_map_pcd_filepath': str(pcd_filepath),
         }.items()
     )
 
@@ -159,7 +160,7 @@ def generate_launch_description():
     # Generate nodes of SITL drone instances according to scenario
     sitl_drone_nodes = []
     for id in range(scenario.num_agents):
-        sitl_drone_nodes.append(generateSITLDrone(id, scenario.spawns_pos[id]))
+        sitl_drone_nodes.append(generateSITLDrone(id, scenario.spawns_pos[id], fake_map_pcd_filepath))
 
     return LaunchDescription([
         # Processes
