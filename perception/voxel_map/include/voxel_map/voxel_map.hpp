@@ -1,3 +1,28 @@
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
+
 #ifndef VOXEL_MAP__VOXEL_MAP_HPP_
 #define VOXEL_MAP__VOXEL_MAP_HPP_
 
@@ -157,9 +182,10 @@ public:
    * 
    * @param slice_z [cm] Slice at height z
    * @param thickness [m] Thickness of the map
+   * @param bool_map 1D boolean map
    * @return boolean map array
    */
-  std::vector<bool> sliceMap(const double& slice_z_cm, const double& thickness);
+  void sliceMap(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map);
 
   /** Publisher methods */
 
@@ -226,7 +252,12 @@ public:
   Eigen::Vector3d getGlobalOrigin() const;
 
   // Get local map origin (This is defined to be a corner of the local map i.e. (-local_W/2, -local_L/2, 0))
-  Eigen::Vector3d getLocalOrigin() const;
+  Eigen::Vector3d getLocalMapOrigin() const;
+
+  Eigen::Vector3d getLocalMapMax() const;
+
+  Eigen::Vector3d getLocalMapOrigin(const double& offset) const;
+  Eigen::Vector3d getLocalMapMax(const double& offset) const;
 
   // Get number of voxels in global map
   Eigen::Vector3i getGlobalMapNumVoxels() const;
@@ -239,6 +270,9 @@ public:
 
   bool getBoolMap3D(BoolMap3D& bool_map_3d);
 
+  // Takes in position [map_frame] and check if occupied
+  bool isOccupied(const Eigen::Vector3d &pos);
+
 /* Checks */
 private: 
 
@@ -248,10 +282,10 @@ private:
   // Checks if camera pose is valid
   bool isPoseValid();
 
-  // True if given GLOBAL position is within the GLOBAL map boundaries, else False
+  // Takes in position [map_frame] and check if within global map
   bool isInGlobalMap(const Eigen::Vector3d &pos);
 
-  // True if given GLOBAL position is within the LOCAL map boundaries, else False
+  // Takes in position [map_frame] and check if within local map
   bool isInLocalMap(const Eigen::Vector3d &pos);
 
 private: 
@@ -333,7 +367,15 @@ inline double VoxelMap::getRes() const{ return mp_.resolution_; }
 
 inline Eigen::Vector3d VoxelMap::getGlobalOrigin() const{ return mp_.global_map_origin_; }
 
-inline Eigen::Vector3d VoxelMap::getLocalOrigin() const{ return mp_.local_map_origin_; }
+inline Eigen::Vector3d VoxelMap::getLocalMapOrigin() const{ return mp_.local_map_origin_; }
+
+inline Eigen::Vector3d VoxelMap::getLocalMapMax() const{ return mp_.local_map_max_; }
+
+inline Eigen::Vector3d VoxelMap::getLocalMapOrigin(const double& offset) const{ 
+  return mp_.local_map_origin_ + Eigen::Vector3d::Constant(offset); }
+
+inline Eigen::Vector3d VoxelMap::getLocalMapMax(const double& offset) const{ 
+  return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); }
 
 inline Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { return mp_.global_map_num_voxels_; }
 
@@ -345,6 +387,7 @@ inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
   if (!local_map_updated_){
     return false;
   }
+  
   {
     std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
     bool_map_3d = bool_map_3d_;
@@ -381,6 +424,18 @@ inline bool VoxelMap::isInLocalMap(const Eigen::Vector3d &pos)
   }
 
   return false;
+}
+
+inline bool VoxelMap::isOccupied(const Eigen::Vector3d &pos)
+{
+    // If not in map or not in octree bounding box. return -1 
+    if (!isInGlobalMap(pos)){
+      return true;
+    }
+
+    Bonxai::CoordT coord = bonxai_map_->grid().posToCoord(pos(0), pos(1), pos(2));
+
+    return bonxai_map_->isOccupied(coord);
 }
 
 inline bool VoxelMap::isPoseValid() {

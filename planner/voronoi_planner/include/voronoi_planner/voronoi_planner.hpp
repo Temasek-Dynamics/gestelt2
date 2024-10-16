@@ -1,3 +1,28 @@
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
+
 #ifndef _VORONOI_PLANNER_HPP_
 #define _VORONOI_PLANNER_HPP_
 
@@ -174,13 +199,7 @@ public:
    */
   bool plan(const Eigen::Vector3d& goal);
 
-
 private:
-  // /* Generate minimum jerk trajectory*/
-  // std::shared_ptr<minco::Trajectory> genMinJerkTraj(std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
-  //                                   const std::vector<Eigen::Vector4d>& space_time_path,
-  //                                   const double& t_plan_start);
-
   /* Timer callbacks */
 
   /* Timer for front-end planner*/
@@ -245,7 +264,18 @@ private:
       pt(2));
   }
 
-
+  /**
+   * @brief Sample position, velocity and acceleration at 
+   *  a given time on the trajectory
+   * 
+   * @param traj 
+   * @param time_samp 
+   * @param pos 
+   * @param vel 
+   * @param acc 
+   * @return true 
+   * @return false 
+   */
   bool sampleTrajectory(
     const std::shared_ptr<minco::Trajectory>& traj,
     const double& time_samp, 
@@ -273,6 +303,22 @@ private:
     return true;
   }
 
+  /**
+   * @brief Get receding horizon planning (RHP) goal from desired goal
+   * The RHP goal is the intersection of the P1-P2 line segment with the local map bounds (Cuboid).
+   * P1 (current position) is the defined at the centroid of the local map bound 
+   * 
+   * @param P1 Current position
+   * @param P2 Desired goal point
+   * @param local_map_min local map minimum bound (corner)
+   * @param local_map_max local map maximum bound (corner)
+   * @param offset Keep goal within local map bounds by an offset along P1-P2
+   * @return Eigen::Vector3d RHP goal
+   */
+  Eigen::Vector3d getRHPGoal(
+    const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
+    const Eigen::Vector3d& local_map_min, const Eigen::Vector3d& local_map_max);
+
   // Convert from map to occupancy grid type
   void voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                             const double& origin_x, const double& origin_y, 
@@ -294,8 +340,8 @@ private:
   /**
    * @brief Check if current position is within goal tolerance
    * 
-   * @return true 
-   * @return false 
+   * @return true Goal is within tolerance. Goal execution is complete
+   * @return false GOal is not within tolerance
    */
   bool isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal);
 
@@ -580,6 +626,102 @@ inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Traj
     MINCO_msg.duration[i] = durs[i];
   }
 
+}
+
+inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
+  const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
+  const Eigen::Vector3d& local_map_min, const Eigen::Vector3d& local_map_max)
+{
+  // The subroutine below has been adapted from the RHP function in FASTER by MIT-ACL
+  //    https://github.com/mit-acl/faster
+
+  if ((P2(0) > local_map_min(0) && P2(0) < local_map_max(0) ) 
+      && (P2(1) > local_map_min(1) && P2(1) < local_map_max(1) ) 
+      && (P2(2) > local_map_min(2) && P2(2) < local_map_max(2)))
+  {
+    // Goal is inside local map bounds
+
+    Eigen::Vector3d P3;
+
+    for (double t = 1.0; t > 0.05 ; t -= 0.05){
+      P3 = P1 + (t)*(P2 - P1);
+      if (!voxel_map_->isOccupied(P3)){
+        break;
+      }
+    }
+
+    return P3;
+  }
+
+  /**
+   * @brief Obtains intersection of line segment P1-P2 with given plane 
+   * 
+   * @param P1 Start point of line segment 
+   * @param P2 End point of line segment
+   * @param coeff Coefficients of the plane
+   * @param intsc_pt Intersection point of line segment with the plane
+   * @param offset Keep goal within local map bounds by an offset along P1-P2
+   * @return true 
+   * @return false 
+   */
+  auto getIntersectionWithPlane = [&](
+    const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
+    const Eigen::Vector4d& c, Eigen::Vector3d& intsc_pt) -> bool
+  {
+    // t: parameterization of distance along vector P1-P2
+    double t = -(c[3] + c[0] * P1[0] + c[1] * P1[1] + c[2]* P1[2] ) / 
+                (c[0] * (P2[0] - P1[0]) + c[1] * (P2[1] - P1[1]) + c[2] * (P2[2] - P1[2]));
+
+    intsc_pt = P1 + (t)*(P2 - P1);
+
+    bool intsc_w_line_seg = (t < 0 || t > 1) ? false : true;
+
+    if (intsc_w_line_seg){
+      for (double t_ = t; t_ > 0.0 ; t_ -= 0.05){
+        intsc_pt = P1 + (t_)*(P2 - P1);
+        if (!voxel_map_->isOccupied(intsc_pt)){
+          break;
+        }
+      }
+    }
+
+    // if t < 0 || t > 1: The plane does not intersect with the line segment P1-P2, 
+    //  but rather it intersects with the vector defined by it.  
+    return intsc_w_line_seg;
+  };
+
+  std::vector<Eigen::Vector4d> all_planes = {
+    Eigen::Vector4d(1, 0, 0, -local_map_max(0)),  // Plane X right
+    Eigen::Vector4d(-1, 0, 0, local_map_min(0)),  // Plane X left
+    Eigen::Vector4d(0, 1, 0, -local_map_max(1)),  // Plane Y right
+    Eigen::Vector4d(0, -1, 0, local_map_min(1)),  // Plane Y left
+    Eigen::Vector4d(0, 0, 1, -local_map_max(2)),  // Plane Z up
+    Eigen::Vector4d(0, 0, -1, local_map_min(2))   // Plane Z down
+  };
+
+  std::vector<Eigen::Vector3d> intsc_pts;
+  std::vector<double> distances;
+
+  for (int i = 0; i < 6; i++) // for each plane of the local map bound
+  {
+    Eigen::Vector3d intsc_pt;
+    if (getIntersectionWithPlane(P1, P2, all_planes[i], intsc_pt))
+    {
+      intsc_pts.push_back(intsc_pt);
+      distances.push_back((intsc_pt - P1).norm());
+    }
+  }
+
+  if (intsc_pts.size() == 0) // There is no intersection
+  {  
+    logger_->logError("BUG: Unable to getRHPGoal(), no intersection of current_pose->goal line with local map bounds");
+    rclcpp::shutdown();
+  }
+  
+  // Return nearest intersection point 
+  int minElementIndex = std::min_element(distances.begin(), distances.end()) - distances.begin();
+
+  return intsc_pts[minElementIndex];
 }
 
 } // namespace navigator

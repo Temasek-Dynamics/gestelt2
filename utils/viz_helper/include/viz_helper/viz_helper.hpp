@@ -1,3 +1,28 @@
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
+
 #ifndef _VIZ_HELPER_HPP_
 #define _VIZ_HELPER_HPP_
 
@@ -10,13 +35,17 @@
 namespace viz_helper{
 
   /* Colors */
+  static const Eigen::Vector4d plan_req_start_color{243/256.0, 156/256.0, 18/256.0, 0.5}; // Plan request start
+  static const Eigen::Vector4d plan_req_rhp_goal_color{46.0/256.0, 134/256.0, 193/256.0, 0.5}; // Plan request RHP goal
+  static const Eigen::Vector4d plan_req_goal_color{46.0/256.0, 204.0/256.0, 113.0/256.0, 0.5}; // Plan request goal
+
   static const Eigen::Vector4d fe_plan_start_color{1.0, 1.0, 0.0, 0.5}; // Front-end start
   static const Eigen::Vector4d fe_plan_goal_color{0.0, 1.0, 0.0, 0.5}; // Front-end goal
   static const Eigen::Vector4d fe_plan_path_color{1.0, 0.5, 0.0, 0.5}; // Front-end path
   static const  Eigen::Vector4d exec_traj_color{1, 51.0/221.0, 51.0/221.0, 0.5}; // #FF3333
 
-  static const double EXEC_TRAJ_ALPHA{0.2};
-  static const double EXEC_TRAJ_RADIUS{0.1};
+  static const double EXEC_TRAJ_ALPHA{0.6};
+  static const double EXEC_TRAJ_RADIUS{0.25};
 
   static const double FRONT_END_ALPHA{0.2};
   static const double FRONT_END_RADIUS{0.1};
@@ -34,51 +63,64 @@ namespace viz_helper{
 
     /*Helper methods for publishing to RVIZ for visualization */
 
-    void pubStartGoalPts(
+    void pubPlanRequestViz(
       const Eigen::Vector3d& map_start, 
+      const Eigen::Vector3d& rhp_goal, 
       const Eigen::Vector3d& map_goal, 
       Publisher<Marker>& publisher,
       const std::string& frame_id)
     {
-      visualization_msgs::msg::Marker start_sphere, goal_sphere;
+      visualization_msgs::msg::Marker s_sph, rhp_sph, g_sph;
       double radius = 0.75;
-      double alpha = 0.5; 
 
       /* Start/goal sphere*/
-      start_sphere.header.frame_id = goal_sphere.header.frame_id = frame_id;
-      // start_sphere.header.stamp = goal_sphere.header.stamp = clock_->now();
-      start_sphere.ns = goal_sphere.ns = "plan_req_viz";
-      start_sphere.type = goal_sphere.type = visualization_msgs::msg::Marker::CUBE;
-      start_sphere.action = goal_sphere.action = visualization_msgs::msg::Marker::ADD;
-      start_sphere.id = 0;
-      goal_sphere.id = 1; 
-      start_sphere.pose.orientation.w = goal_sphere.pose.orientation.w = 1.0;
+      // s_sph.header.stamp = g_sph.header.stamp = clock_->now();
+      s_sph.header.frame_id = g_sph.header.frame_id = rhp_sph.header.frame_id = frame_id;
+      s_sph.ns = rhp_sph.ns = g_sph.ns = "plan_req_viz";
+      s_sph.type = rhp_sph.type = g_sph.type = visualization_msgs::msg::Marker::CUBE;
+      s_sph.action = rhp_sph.action = g_sph.action = visualization_msgs::msg::Marker::ADD;
+      s_sph.id = 0;
+      g_sph.id = 1; 
+      rhp_sph.id = 2; 
+      s_sph.pose.orientation.w = rhp_sph.pose.orientation.w = g_sph.pose.orientation.w = 1.0;
 
-      start_sphere.color.r = 1.0; 
-      start_sphere.color.g = 1.0; 
-      start_sphere.color.b = 0.0; 
-      start_sphere.color.a = goal_sphere.color.a = alpha;
+      s_sph.color.r = plan_req_start_color(0);
+      s_sph.color.g = plan_req_start_color(1);
+      s_sph.color.b = plan_req_start_color(2);
+      s_sph.color.a  = plan_req_start_color(3);
 
-      goal_sphere.color.r = 0.0;
-      goal_sphere.color.g = 1.0;
-      goal_sphere.color.b = 0.0;
+      rhp_sph.color.r = plan_req_rhp_goal_color(0);
+      rhp_sph.color.g = plan_req_rhp_goal_color(1);
+      rhp_sph.color.b = plan_req_rhp_goal_color(2);
+      rhp_sph.color.a = plan_req_rhp_goal_color(3);
 
-      start_sphere.scale.x = goal_sphere.scale.x = radius;
-      start_sphere.scale.y = goal_sphere.scale.y = radius;
-      start_sphere.scale.z = goal_sphere.scale.z = radius;
+      g_sph.color.r = plan_req_goal_color(0);
+      g_sph.color.g = plan_req_goal_color(1);
+      g_sph.color.b = plan_req_goal_color(2);
+      g_sph.color.a = plan_req_goal_color(3);
+
+      s_sph.scale.x = g_sph.scale.x = rhp_sph.scale.x =radius;
+      s_sph.scale.y = g_sph.scale.y = rhp_sph.scale.y =radius;
+      s_sph.scale.z = g_sph.scale.z = rhp_sph.scale.z =radius;
 
       /* Set Start */
-      start_sphere.pose.position.x = map_start(0);
-      start_sphere.pose.position.y = map_start(1);
-      start_sphere.pose.position.z = map_start(2);
+      s_sph.pose.position.x = map_start(0);
+      s_sph.pose.position.y = map_start(1);
+      s_sph.pose.position.z = map_start(2);
+
+      /* Set RHP Goal */
+      rhp_sph.pose.position.x = rhp_goal(0);
+      rhp_sph.pose.position.y = rhp_goal(1);
+      rhp_sph.pose.position.z = rhp_goal(2);
 
       /* Set Goal */
-      goal_sphere.pose.position.x = map_goal(0);
-      goal_sphere.pose.position.y = map_goal(1);
-      goal_sphere.pose.position.z = map_goal(2);
+      g_sph.pose.position.x = map_goal(0);
+      g_sph.pose.position.y = map_goal(1);
+      g_sph.pose.position.z = map_goal(2);
 
-      publisher->publish(start_sphere);
-      publisher->publish(goal_sphere);
+      publisher->publish(s_sph);
+      publisher->publish(rhp_sph);
+      publisher->publish(g_sph);
     }
 
     void pubSpaceTimePath(const std::vector<Eigen::Vector4d>& path,
@@ -131,34 +173,34 @@ namespace viz_helper{
                           const std::string& frame_id) 
     {
       visualization_msgs::msg::Marker wps, lines;
-      visualization_msgs::msg::Marker start_sphere, goal_sphere;
+      visualization_msgs::msg::Marker s_sph, g_sph;
       double radius = FRONT_END_RADIUS;
       double alpha = FRONT_END_ALPHA; 
 
       geometry_msgs::msg::Point pt;
 
       /* Start/goal sphere*/
-      start_sphere.header.frame_id = goal_sphere.header.frame_id = frame_id;
-      // start_sphere.header.stamp = goal_sphere.header.stamp = clock_->now();
-      start_sphere.ns = goal_sphere.ns = "fe_path_start_goal";
-      start_sphere.type = goal_sphere.type = visualization_msgs::msg::Marker::SPHERE;
-      start_sphere.action = goal_sphere.action = visualization_msgs::msg::Marker::ADD;
-      start_sphere.id = 0;
-      goal_sphere.id = 1; 
-      start_sphere.pose.orientation.w = goal_sphere.pose.orientation.w = 1.0;
+      s_sph.header.frame_id = g_sph.header.frame_id = frame_id;
+      // s_sph.header.stamp = g_sph.header.stamp = clock_->now();
+      s_sph.ns = g_sph.ns = "fe_path_start_goal";
+      s_sph.type = g_sph.type = visualization_msgs::msg::Marker::SPHERE;
+      s_sph.action = g_sph.action = visualization_msgs::msg::Marker::ADD;
+      s_sph.id = 0;
+      g_sph.id = 1; 
+      s_sph.pose.orientation.w = g_sph.pose.orientation.w = 1.0;
 
-      start_sphere.color.r = fe_plan_start_color(0); 
-      start_sphere.color.g = fe_plan_start_color(1); 
-      start_sphere.color.b = fe_plan_start_color(2); 
-      start_sphere.color.a = goal_sphere.color.a = alpha;
+      s_sph.color.r = fe_plan_start_color(0); 
+      s_sph.color.g = fe_plan_start_color(1); 
+      s_sph.color.b = fe_plan_start_color(2); 
+      s_sph.color.a = g_sph.color.a = alpha;
 
-      goal_sphere.color.r = fe_plan_goal_color(0); 
-      goal_sphere.color.g = fe_plan_goal_color(1); 
-      goal_sphere.color.b = fe_plan_goal_color(2); 
+      g_sph.color.r = fe_plan_goal_color(0); 
+      g_sph.color.g = fe_plan_goal_color(1); 
+      g_sph.color.b = fe_plan_goal_color(2); 
 
-      start_sphere.scale.x = goal_sphere.scale.x = radius;
-      start_sphere.scale.y = goal_sphere.scale.y = radius;
-      start_sphere.scale.z = goal_sphere.scale.z = radius;
+      s_sph.scale.x = g_sph.scale.x = radius;
+      s_sph.scale.y = g_sph.scale.y = radius;
+      s_sph.scale.z = g_sph.scale.z = radius;
 
       /* wps: Sphere list (Waypoints) */
       wps.header.frame_id = frame_id;
@@ -193,9 +235,9 @@ namespace viz_helper{
 
       lines.scale.x = radius * 0.5;
 
-      start_sphere.pose.position.x = pt.x = path[0](0);
-      start_sphere.pose.position.y = pt.y = path[0](1);
-      start_sphere.pose.position.z = pt.z = path[0](2);
+      s_sph.pose.position.x = pt.x = path[0](0);
+      s_sph.pose.position.y = pt.y = path[0](1);
+      s_sph.pose.position.z = pt.z = path[0](2);
 
       lines.points.push_back(pt);
 
@@ -208,14 +250,14 @@ namespace viz_helper{
         lines.points.push_back(pt);
       }
 
-      goal_sphere.pose.position.x = pt.x = path.back()(0);
-      goal_sphere.pose.position.y = pt.y = path.back()(1);
-      goal_sphere.pose.position.z = pt.z = path.back()(2);
+      g_sph.pose.position.x = pt.x = path.back()(0);
+      g_sph.pose.position.y = pt.y = path.back()(1);
+      g_sph.pose.position.z = pt.z = path.back()(2);
 
       lines.points.push_back(pt);
 
-      publisher->publish(start_sphere);
-      publisher->publish(goal_sphere);
+      publisher->publish(s_sph);
+      publisher->publish(g_sph);
       publisher->publish(wps);
       publisher->publish(lines);
     }
@@ -313,7 +355,7 @@ namespace viz_helper{
       geometry_msgs::msg::Point pt;
 
       /* wps: Sphere list (Waypoints) */
-      wps.header.frame_id = frame_id;
+      wps.header.frame_id = lines.header.frame_id =  frame_id;
       // wps.header.stamp = clock_->now();
       wps.ns = "exec_traj_waypoints"; 
       wps.type = visualization_msgs::msg::Marker::SPHERE_LIST;
@@ -330,7 +372,6 @@ namespace viz_helper{
       wps.scale.x = wps.scale.y = wps.scale.z = radius;
 
       /* lines: Line strips (Connecting waypoints) */
-      lines.header.frame_id = frame_id;
       // lines.header.stamp = clock_->now();
       lines.ns = "exec_traj_lines"; 
       lines.type = visualization_msgs::msg::Marker::LINE_STRIP;

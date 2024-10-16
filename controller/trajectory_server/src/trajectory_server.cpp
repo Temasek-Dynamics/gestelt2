@@ -324,9 +324,6 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 	std::vector<double> velocity_d = std::vector<double>(msg->velocity.begin(), msg->velocity.end());
 	std::vector<double> angular_velocity_d = std::vector<double>(msg->angular_velocity.begin(), msg->angular_velocity.end());
 
-	// std::cout << "Current pose (before): " << Eigen::Vector3f(msg->position.data()).transpose() << std::endl;
-	// std::cout << "Yaw (before): " << frame_transforms::utils::quaternion::quaternion_get_yaw(Eigen::Quaterniond(q_d.data())) << std::endl;
-
 	auto pos_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
 	auto vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
 
@@ -347,8 +344,8 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 	cur_pos_ = transform_static_frame(
 		Eigen::Vector3d(position_d.data()), pos_frame_tf);
 	
-	cur_pos_corr_ = cur_pos_;
-	cur_pos_corr_(2) -=  ground_height_; // Adjust for ground height
+	// Correct for ground height
+	cur_pos_corr_ = Eigen::Vector3d(cur_pos_(0), cur_pos_(1), cur_pos_(2) - ground_height_) ;
 
 	cur_ori_ = transform_orientation(
 		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q), pos_frame_tf);
@@ -358,8 +355,6 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 	cur_ang_vel_ = transform_static_frame(
 		Eigen::Vector3d(angular_velocity_d.data()), vel_frame_tf);
 
-	// std::cout << "Current pose (after): " << cur_pos_.transpose() << std::endl;
-	// std::cout << "Yaw (After): " << frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_) << std::endl;
 }
 
 /****************** */
@@ -418,7 +413,7 @@ void TrajectoryServer::setOffboardTimerCB()
 		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
 		
 		// PERIODICALLY: Publish offboard control mode message
-		// publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
+		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
 		uav_state.state = gestelt_interfaces::msg::UAVState::EMERGENCYSTOP;
@@ -447,10 +442,16 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<TakingOff>()){
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
-			publishTrajectorySetpoint(
-				Eigen::Vector3d(0.0, 0.0, 
-					fsm_list::fsmtype::current_state_ptr->getTakeoffHeight() + ground_height_), 
-				yaw_yawrate_);
+			yaw_yawrate_(1) = NAN; 
+
+			pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
+			// Adjust for ground height
+			Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+				pos_enu_(0), 
+				pos_enu_(1), 
+				pos_enu_(2) + ground_height_); 
+
+			publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
@@ -458,10 +459,15 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<Hovering>()){
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
-			publishTrajectorySetpoint(
-				Eigen::Vector3d(0.0, 0.0, 
-					fsm_list::fsmtype::current_state_ptr->getTakeoffHeight() + ground_height_), 
-				yaw_yawrate_);
+			yaw_yawrate_(1) = NAN; 
+
+			// Adjust for ground height
+			Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+				pos_enu_(0), 
+				pos_enu_(1), 
+				pos_enu_(2) + ground_height_); 
+
+			publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
@@ -471,12 +477,18 @@ void TrajectoryServer::pubCtrlTimerCB()
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
 				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
-				{
-					pos_enu_(2) +=  ground_height_; // Adjust for ground height
+				{	
+					// Correct commanded position with ground_height_
+					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
+					yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
+
+					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, vel_enu_, acc_enu_);
+				}
+				else { 
+					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
 					yaw_yawrate_(1) = NAN; 
-					// publishTrajectorySetpoint(pos_enu_, yaw_yawrate_);
-					publishTrajectorySetpoint(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_);
-					// publishTrajectorySetpoint(Eigen::Vector3d(NAN, NAN, NAN), yaw_yawrate_, vel_enu_, acc_enu_);
+					Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, nan_3d, nan_3d);
 				}
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 
@@ -518,7 +530,7 @@ void TrajectoryServer::SMTickTimerCB()
 {
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
-		logger_->logInfoThrottle("[Unconnected]", 1.0);
+		logger_->logWarnThrottle("[Unconnected]", 1.0);
 		if (connected_to_fcu_){
 			sendEvent(Idle_E());
 		}
@@ -531,8 +543,9 @@ void TrajectoryServer::SMTickTimerCB()
 			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
 									VehicleCommand::ARMING_ACTION_DISARM);
 		}
-
 		ground_height_ = cur_pos_(2); // Set ground height to last z value
+
+		pos_enu_ = cur_pos_corr_; // Set last commanded position as current position 
 		yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_); 
 	}
 	else if (UAV::is_in_state<Landing>()){
@@ -661,17 +674,6 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	const Eigen::Vector3d& acc)
 {
 	TrajectorySetpoint msg{};
-
-	OffboardControlMode offb_msg{};
-
-	offb_msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-	offb_msg.position = true;
-	offb_msg.velocity = true;
-	offb_msg.acceleration = true;
-	offb_msg.attitude = false;
-	offb_msg.body_rate = false;
-	offb_msg.thrust_and_torque = false;
-	offb_msg.direct_actuator = false;
 	
 	// # NED local world frame
 	// float32[3] position # in meters
@@ -692,10 +694,16 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	msg.velocity = {(float) vel_ned(0), (float) vel_ned(1), (float) vel_ned(2)};
 	msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
 
-	msg.yaw = (float) yaw_yawrate(0); // [-PI:PI]
-	msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
+	// Correct YAW to transfrom from ENU to NED frame
+	float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
 
-	offboard_control_mode_pub_->publish(offb_msg);
+	// yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
+	// yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
+
+	msg.yaw = yaw_corr; // [-PI:PI]
+	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
+	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
+
 	trajectory_setpoint_pub_->publish(msg);
 }
 

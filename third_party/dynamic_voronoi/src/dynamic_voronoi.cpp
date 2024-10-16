@@ -734,7 +734,7 @@ bool DynamicVoronoi::posToIdx(const DblPoint& map_pos, IntPoint& grid_pos) {
   }
 
   if (!isInMap(grid_pos.x, grid_pos.y)){
-    std::cout << "[DynamicVoronoi::posToIdx] (" << grid_pos.x << "," << grid_pos.y << ") not in map" << std::endl;
+    // std::cout << "[DynamicVoronoi::posToIdx] (" << grid_pos.x << "," << grid_pos.y << ") not in map" << std::endl;
     return false;
   }
   return true;

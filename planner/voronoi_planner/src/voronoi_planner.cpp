@@ -1,3 +1,28 @@
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
+
 #include <voronoi_planner/voronoi_planner.hpp>
 
 namespace navigator
@@ -233,6 +258,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
 
+  // Eigen::Vector3d rhp_goal_pos = goal_pos;
+
   auto plan_start_clock = this->get_clock()->now();
 
   if (!sampleTrajectory(poly_traj_, plan_start_clock.seconds(), start_pos, start_vel, start_acc))
@@ -242,15 +269,27 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
     start_acc.setZero();
   }
 
-  viz_helper_->pubStartGoalPts(start_pos, goal_pos, plan_req_pub_, map_frame_);
+  // Get RHP goal
+  Eigen::Vector3d rhp_goal_pos = getRHPGoal(
+    start_pos, goal_pos, 
+    voxel_map_->getLocalMapOrigin(0.2), voxel_map_->getLocalMapMax(0.2));
+
+  // logger_->logError(strFmt("Drone %d: start_pos(%f, %f, %f): des_goal(%f, %f, %f) to rhp_goal(%f, %f, %f)", 
+  //                           drone_id_, 
+  //                           start_pos(0), start_pos(1), start_pos(2), 
+  //                           goal_pos(0), goal_pos(1), goal_pos(2), 
+  //                           rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2)));
+
+  viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
 
   tm_front_end_plan_.start();
 
   // Generate plan 
-  if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(goal_pos)))
+  if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
   {
     logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f)", 
-                              drone_id_, start_pos(0), start_pos(1), start_pos(2), goal_pos(0), goal_pos(1), goal_pos(2)));
+                              drone_id_, start_pos(0), start_pos(1), start_pos(2), 
+                              rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2)));
 
     tm_front_end_plan_.stop(verbose_print_);
 
@@ -396,21 +435,6 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   //   printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
   // }
 
-  // double min_clr = DBL_MAX; // minimum path clearance 
-  // double max_clr = 0.0;     // maximum path clearance 
-
-  // for (const Eigen::Vector4d& pos_4d : fe_path_with_t_)
-  // {
-  //   Eigen::Vector3d pos{pos_4d(0), pos_4d(1), pos_4d(2)}; 
-  //   Eigen::Vector3d occ_nearest; 
-  //   double dist_to_nearest_nb;
-  //   if (voxel_map_->getNearestOccupiedCellLocal(pos, occ_nearest, dist_to_nearest_nb)){
-  //     min_clr = (min_clr > dist_to_nearest_nb) ? dist_to_nearest_nb : min_clr;
-  //     max_clr = (max_clr < dist_to_nearest_nb) ? dist_to_nearest_nb : max_clr;
-  //   }
-  // }
-  // std::cout << "Maximum clearance: " << max_clr << ", Minimum clearance: " << min_clr << std::endl;
-
   if (verbose_print_)
   {
     logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
@@ -423,37 +447,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   return true;
 }
 
-// std::shared_ptr<minco::Trajectory> VoronoiPlanner::genMinJerkTraj(
-//   std::unique_ptr<minco::MinJerkOpt>& min_jerk_opt,
-//   const std::vector<Eigen::Vector4d>& space_time_path,
-//   const double& t_plan_start)
-// {
-// 	Eigen::Matrix3d start_PVA, goal_PVA;
 
-// 	start_PVA.block<3,1>(0, 0) = space_time_path[0].head<3>();
-// 	// start_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-// 	start_PVA.block<3,1>(0, 1) = cur_vel_;
-// 	start_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
-
-// 	goal_PVA.block<3,1>(0, 0) =  space_time_path.back().head<3>();
-// 	goal_PVA.block<3,1>(0, 1) = Eigen::Vector3d{0.0, 0.0, 0.0};
-// 	goal_PVA.block<3,1>(0, 2) = Eigen::Vector3d{0.0, 0.0, 0.0};
-
-// 	Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
-// 	Eigen::VectorXd seg_durations(space_time_path.size()-1);
-
-// 	for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
-// 		inner_pts.col(j) = space_time_path[i].head<3>();
-// 	}
-
-// 	for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
-// 		seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
-// 	}
-
-// 	min_jerk_opt->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
-
-// 	return min_jerk_opt->getTraj(t_plan_start);
-// }
 
 /* Timer callbacks*/
 void VoronoiPlanner::planFETimerCB()
@@ -533,19 +527,6 @@ void VoronoiPlanner::genVoroMapTimerCB()
     // voro_verts_cur_layer: voronoi vertices at current layer
     // std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
     // voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
-
-    nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
-
-    occmapToOccGrid(*dyn_voro_arr_[z_cm], 
-                    bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
-                    occ_grid); // Occupancy map
-
-    voronoimapToOccGrid(*dyn_voro_arr_[z_cm], 
-                        bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
-                        voro_occ_grid); // Voronoi map
-
-    voro_occ_grid_pub_->publish(voro_occ_grid);
-    occ_map_pub_->publish(occ_grid);
   }
 
   // Link to the layer on top for bottommost layer
@@ -564,6 +545,21 @@ void VoronoiPlanner::genVoroMapTimerCB()
   }
 
   tm_voro_map_init_.stop(false);
+
+
+  nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
+
+  occmapToOccGrid(*dyn_voro_arr_[bool_map_3d_.min_height_cm], 
+                  bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
+                  occ_grid); // Occupancy map
+
+  voronoimapToOccGrid(*dyn_voro_arr_[bool_map_3d_.min_height_cm], 
+                      bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
+                      voro_occ_grid); // Voronoi map
+
+  voro_occ_grid_pub_->publish(voro_occ_grid);
+  occ_map_pub_->publish(occ_grid);
+
 
   // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
 
@@ -584,16 +580,16 @@ void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 
 void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg)
 {
-  if (!init_voro_maps_){
-    return;
-  }
-
   // PRIORITY-BASED PLANNING: Only consider trajectories of drones with lower id
   if (msg->agent_id >= drone_id_ ){
     return;
   }
 
-  logger_->logInfo(strFmt("Received plan from agent %d", msg->agent_id));
+  if (!init_voro_maps_){
+    return;
+  }
+
+  // logger_->logInfo(strFmt("Received plan from agent %d", msg->agent_id));
 
   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
 
@@ -617,7 +613,10 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
                                   bool_map_3d_.max_height_cm);
     {
       std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
-      dyn_voro_arr_[map_z_cm]->posToIdx(map_2d_pos, grid_pos);
+      if (!dyn_voro_arr_[map_z_cm]->posToIdx(map_2d_pos, grid_pos)){
+        // skip current point if not in map
+        continue;
+      }
     }
 
     // Inflate the cells by the given inflation radius

@@ -1,3 +1,28 @@
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
+
 #include "voxel_map/voxel_map.hpp"
 
 namespace voxel_map
@@ -123,7 +148,6 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".occ_map.inflation", -1.0);
   node_->declare_parameter(param_ns+".occ_map.max_range", -1.0);
   node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
-  mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
 
   /* Camera extrinsic parameters  */
   node_->declare_parameter(param_ns+".camera_to_body.roll",  0.0);
@@ -268,14 +292,15 @@ void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
   }
 
   if (msg.data.empty()){
-    logger_->logWarnThrottle("Empty point cloud received!", 1.0);
+    // logger_->logWarnThrottle("Empty point cloud received!", 1.0);
     return;
   }
 
+  // Get point cloud from ROS message
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-
   pcl::fromROSMsg(msg, *pcd);
 
+  // Add point cloud to bonxai_maps_
   pcdToVoxelMap(pcd);
 }
 
@@ -361,9 +386,13 @@ void VoxelMap::updateLocalMap(){
 
 }
 
-std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness) 
+void VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map) 
 {
-  std::vector<bool> bool_map(mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
+  if (local_occ_map_pts_->points.empty()){
+    logger_->logWarnThrottle("Local map is empty!", 1.0);
+    return;
+  }
+
 
   double slice_z = ((double) slice_z_cm)/100.0;
 
@@ -418,8 +447,6 @@ std::vector<bool> VoxelMap::sliceMap(const double& slice_z_cm, const double& thi
   }
 
   // publishSliceMap(pcd_layer);
-
-  return bool_map;
 }
 
 /** Timer callbacks */
@@ -447,16 +474,16 @@ void VoxelMap::updateLocalMapTimerCB()
     bool_map_3d_.resolution = mp_.resolution_;
 
     for (int z_cm = bool_map_3d_.min_height_cm; 
-                z_cm <= bool_map_3d_.max_height_cm; 
-                z_cm += bool_map_3d_.z_separation_cm)
+          z_cm <= bool_map_3d_.max_height_cm; 
+          z_cm += bool_map_3d_.z_separation_cm)
     {
-      bool_map_3d_.bool_maps[z_cm] = sliceMap(z_cm, getRes());
+      bool_map_3d_.bool_maps[z_cm] = std::vector<bool>(mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
+
+      sliceMap(z_cm, getRes(), bool_map_3d_.bool_maps[z_cm]);
     }
   }
   
   tm_slice_map_.stop(verbose_print_);
-
-
 
   local_map_updated_ = true;
 }

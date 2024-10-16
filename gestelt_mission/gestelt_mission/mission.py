@@ -30,6 +30,7 @@ class Scenario:
         self.spawns_pos = scenario_dict.get("spawns_pos", None )
         self.goals_pos = scenario_dict.get("goals_pos", None )
         self.num_agents = scenario_dict.get("num_agents", None )
+        self.take_off_height = scenario_dict.get("take_off_height", None )
 
         self.checks()
 
@@ -250,10 +251,16 @@ def main(args=None):
     mission = Mission()
 
     # Take off 
-    mission.cmdAllDrones(UAVState.IDLE ,UAVCommand.Request.COMMAND_TAKEOFF, value=2.5)
+    mission.cmdAllDrones(
+        UAVState.IDLE,
+        UAVCommand.Request.COMMAND_TAKEOFF, 
+        value=mission.scenario.take_off_height)
     print("All drones switched to HOVER state")
     # Mission mode
-    mission.cmdAllDrones(UAVState.HOVERING ,UAVCommand.Request.COMMAND_START_MISSION, mode=0)
+    mission.cmdAllDrones(
+        UAVState.HOVERING,
+        UAVCommand.Request.COMMAND_START_MISSION, 
+        mode=0)
     print("All drones switched to MISSION state")
 
     mission.pubGoals()

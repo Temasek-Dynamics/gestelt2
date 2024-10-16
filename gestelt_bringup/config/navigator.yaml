@@ -1,20 +1,20 @@
 /**: 
   ros__parameters:
     navigator:
-      planner_frequency: 30.0            # [Hz] Frequency at which plan is generated
-      generate_voronoi_frequency: 30.0  # [Hz] Frequency at which voronoi is generated
+      planner_frequency: 15.0            # [Hz] Frequency at which plan is generated
+      generate_voronoi_frequency: 50.0  # [Hz] Frequency at which voronoi is generated
 
       planner: 
-        verbose_print: true  # If enabled, print debug information such as timing information
+        verbose_print: false  # If enabled, print debug information such as timing information
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         plan_once: false       # Only plan once
         t_unit: 0.1           # [s] Duration of each time unit           
         line_of_sight_smooth: false # Enables line of sight smoothing of raw A* path 
 
       min_jerk_trajectory:
-        front_end_stride: 5 # Stride to sample front-end path for trajectory generation
+        front_end_stride: 10 # Stride to sample front-end path for trajectory generation
 
       reservation_table:
-        inflation: 0.5    # [m] buffer for reservation table in spatial domain
-        time_buffer: 0.8  # [s] buffer for reservation table in time domain
-        window_size: 20  # [voxels] Reserve only up to a given number of points on plan. Negative numbers reserve the whole plan.
+        inflation: 0.8    # [m] buffer for reservation table in spatial domain
+        time_buffer: 1.5  # [s] buffer for reservation table in time domain
+        window_size: 15  # [voxels] Reserve only up to a given number of points on plan. Negative numbers reserve the whole plan.

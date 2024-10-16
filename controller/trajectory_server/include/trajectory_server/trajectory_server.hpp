@@ -244,7 +244,7 @@ private:
 	Eigen::Vector3d cur_ang_vel_{0.0, 0.0, 0.0};	// Current angular velocity
 	double ground_height_{0.0}; // Starting ground height
 
-	Eigen::Vector3d pos_enu_{0.0, 0.0, 0.0};;		// Commanded position [ENU frame]
+	Eigen::Vector3d pos_enu_{0.0, 0.0, 0.0};		// Last commanded position [ENU frame]
 	Eigen::Vector2d yaw_yawrate_{0.0, 0.0};
 	Eigen::Vector3d vel_enu_{0.0, 0.0, 0.0};		
 	Eigen::Vector3d acc_enu_{0.0, 0.0, 0.0};				

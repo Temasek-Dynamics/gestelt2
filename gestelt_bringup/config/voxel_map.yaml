@@ -19,20 +19,20 @@
       global_map: 
         size_x: 50.0  # [m]
         size_y: 50.0  # [m]
-        size_z: 20.0  # [m]
+        size_z: 10.0  # [m]
 
       local_map:  # Local map used by planner
-        size_x: 25.0  # [m]
-        size_y: 25.0  # [m]
+        size_x: 10.0  # [m]
+        size_y: 10.0  # [m]
         size_z: 5.0   # [m]
-        update_local_map_frequency: 30.0 # [Hz] Frequency to update the local map
+        update_local_map_frequency: 50.0 # [Hz] Frequency to update the local map
         viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel
-        inflation: 0.2    # [m] Inflation of voxel
+        inflation: 0.3    # [m] Inflation of voxel
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
-        max_range: 30.0   # [m] Maximum range of sensor
+        max_range: 7.5   # [m] Maximum range of sensor
 
       collision_check: # For visualizing collision with static obstacles
         enable: false    # Enable checking of collisions

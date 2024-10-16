@@ -62,7 +62,7 @@ public:
 		}
 
 		auto t_now = node_->get_clock()->now();
-		double e_t_start = t_now.seconds() - traj_->getGlobalStartTime();			 	// [s] Elapsed time since plan start
+		double e_t_start = t_now.seconds() - traj_->getGlobalStartTime(); // [s] Elapsed time since plan start
 
 		if (e_t_start < 0.0){
 			// std::cout << "Trajectory start time is in the future" << std::endl;
@@ -80,9 +80,7 @@ public:
 			vel = traj_->getVel(e_t_start);
 			acc = traj_->getAcc(e_t_start);
 			// jer = traj_->getJer(e_t_start);
-			yaw_yawrate = calculate_yaw(traj_, 
-										yaw_yawrate,
-										e_t_start, t_now.seconds() - t_last_traj_samp_);
+			yaw_yawrate = calculate_yaw(traj_, e_t_start, t_now.seconds() - t_last_traj_samp_);
 		}
 
 		t_last_traj_samp_ = t_now.seconds();
@@ -131,64 +129,60 @@ private:
 		}
 	}
 
-	Eigen::Vector2d calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj, 
-											 const Eigen::Vector2d prev_yaw_yawdot,
-											 const double& t_cur, const double& dt)
+	Eigen::Vector2d calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj,
+									const double& e_t_start, const double& dt)
 	{
-		Eigen::Vector2d yaw_yawrate(0, 0);
 
 		// get direction vector
-		Eigen::Vector3d dir = t_cur + t_step_ <= traj->getTotalDuration()
-									? traj->getPos(t_cur + t_step_) - traj->getPos(t_cur)
-									: traj->getPos(traj->getTotalDuration()) - traj->getPos(t_cur);
+		Eigen::Vector3d dir = e_t_start + t_step_ <= traj->getTotalDuration()
+									? traj->getPos(e_t_start + t_step_) - traj->getPos(e_t_start)
+									: traj->getPos(traj->getTotalDuration()) - traj->getPos(e_t_start);
 
 		double yaw_temp = dir.norm() > 0.1
 								? atan2(dir(1), dir(0))
-								: prev_yaw_yawdot(0);
+								: last_yaw_yawrate_(0);
 
-		double yawdot = 0;
-		double d_yaw = yaw_temp - prev_yaw_yawdot(0);
-		if (d_yaw >= M_PI)
-		{
-			d_yaw -= 2 * M_PI;
-		}
-		if (d_yaw <= -M_PI)
-		{
-			d_yaw += 2 * M_PI;
-		}
+		// d_yaw: change in yaw
+		double d_yaw = yaw_temp - last_yaw_yawrate_(0);
+
+		d_yaw = d_yaw >= M_PI ? d_yaw - 2*M_PI : d_yaw;
+		d_yaw = d_yaw <= -M_PI ? d_yaw + 2*M_PI : d_yaw;
 		
 		// Set maximum values for yawrate and yaw_ddot
 		const double YDM = d_yaw >= 0 ? YAWRATE_MAX_PER_SEC : -YAWRATE_MAX_PER_SEC;
 		const double YDDM = d_yaw >= 0 ? YAWRATE_DOT_MAX_PER_SEC : -YAWRATE_DOT_MAX_PER_SEC;
 		double d_yaw_max;
 
-		if (fabs(prev_yaw_yawdot(1) + dt * YDDM) <= fabs(YDM)) // Within yawrate limits
+		if (fabs(last_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yawrate limits
 		{
-			// yawdot = prev_yaw_yawdot(1) + dt * YDDM;
-			d_yaw_max = (prev_yaw_yawdot(1) * dt) + (0.5 * YDDM * dt * dt);
+			d_yaw_max = (last_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
 		}
 		else // exceed yawrate limits
 		{
-			// yawdot = YDM;
-			double t1 = (YDM - prev_yaw_yawdot(1)) / YDDM;
-			d_yaw_max = ((dt - t1) + dt) * (YDM - prev_yaw_yawdot(1)) / 2.0;
+			double t1 = (YDM - last_yaw_yawrate_(1)) / YDDM;
+			d_yaw_max = ((dt - t1) + dt) * (YDM - last_yaw_yawrate_(1)) / 2.0;
 		}
 
 		if (fabs(d_yaw) > fabs(d_yaw_max))
 		{
 			d_yaw = d_yaw_max;
 		}
-		yawdot = d_yaw / dt;
-		
-		double yaw = prev_yaw_yawdot(0) + d_yaw;
+
+		double yawdot = d_yaw / dt;
+		double yaw = last_yaw_yawrate_(0) + d_yaw;
 		/* Correct phase*/
 		if (yaw > M_PI)
 			yaw -= 2 * M_PI;
 		if (yaw < -M_PI)
 			yaw += 2 * M_PI;
 		
+		Eigen::Vector2d yaw_yawrate(0, 0);
 		yaw_yawrate(0) = yaw;
 		yaw_yawrate(1) = yawdot;
+
+		last_yaw_yawrate_ = yaw_yawrate;
+
+		yaw_yawrate(1) = yaw_temp;
 
 		return yaw_yawrate;
 	}
@@ -198,11 +192,14 @@ private:
 		rclcpp::Subscription<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr minco_traj_sub_;
 
 		std::shared_ptr<minco::Trajectory> traj_; 
+		/* data */
+		Eigen::Vector2d last_yaw_yawrate_{0.0, 0.0};
 
 		/* Params */
         const double YAWRATE_MAX_PER_SEC{2 * M_PI};
         const double YAWRATE_DOT_MAX_PER_SEC{5 * M_PI};
-		double t_step_{1.0}; // [s] Forward time step along trajectory used to obtain yaw and yawrate
+	
+		double t_step_{0.1}; // [s] Forward time step along trajectory used to obtain yaw and yawrate
 
         double t_last_traj_samp_{0.0};
 
