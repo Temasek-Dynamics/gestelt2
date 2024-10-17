@@ -9,7 +9,7 @@ from rclpy.node import Node
 from rclpy.wait_for_message import wait_for_message
 
 from geometry_msgs.msg import Pose
-from gestelt_interfaces.msg import PlanRequest, Goals, UAVState
+from gestelt_interfaces.msg import PlanRequest, Goals, UAVState, AllUAVCommand
 from gestelt_interfaces.srv import UAVCommand
 
 class Scenario:
@@ -81,6 +81,8 @@ class Mission(Node):
 
         """Publishers"""
         self.goals_pubs_ = []
+        self.all_uav_cmd_pub = self.create_publisher(
+            AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
         for id in range(self.scenario.num_agents):
             self.goals_pubs_.append(self.create_publisher(
                                         Goals, 
@@ -139,8 +141,43 @@ class Mission(Node):
 
         return in_req_state
 
-    def cmdAllDrones(self, req_state, command, value=0.0, mode=0):
-        """_summary_
+    def cmdAllDronesPub(self, req_state, command, value=0.0, mode=0):
+        """Command all drones using publisher
+
+        Args:
+            req_state (_type_): Required state before command can be sent
+            command (_type_): Command to be sent
+            value (float, optional): Value used for commands in takeoff mode
+            mode (int, optional): Control mode used for mission 
+
+        Returns:
+            _type_: _description_
+        """
+        retry_num = 0
+        
+        self.get_logger().info(f"Commanding all drones: (cmd:{command}, value:{value}, mode:{mode})")
+
+        # Publish to all drones
+        for id in range(self.scenario.num_agents):
+            while not self.isInReqState(id, req_state):
+                time.sleep(0.5)
+                retry_num += 1
+                if (retry_num > self.max_retries):
+                    return False
+                
+
+        msg = AllUAVCommand()
+        msg.command = command
+        msg.value = value
+        msg.mode = mode
+
+        self.all_uav_cmd_pub.publish(msg)
+
+        return True
+
+
+    def cmdAllDronesSrv(self, req_state, command, value=0.0, mode=0):
+        """Command all drones using publisher
 
         Args:
             req_state (_type_): Required state before command can be sent
@@ -251,13 +288,13 @@ def main(args=None):
     mission = Mission()
 
     # Take off 
-    mission.cmdAllDrones(
+    mission.cmdAllDronesPub(
         UAVState.IDLE,
         UAVCommand.Request.COMMAND_TAKEOFF, 
         value=mission.scenario.take_off_height)
     print("All drones switched to HOVER state")
     # Mission mode
-    mission.cmdAllDrones(
+    mission.cmdAllDronesPub(
         UAVState.HOVERING,
         UAVCommand.Request.COMMAND_START_MISSION, 
         mode=0)
@@ -266,7 +303,7 @@ def main(args=None):
     mission.pubGoals()
 
     # # Land mode
-    # mission.cmdAllDrones(UAVState.MISSION ,UAVCommand.Request.COMMAND_LAND)
+    # mission.cmdAllDronesPub(UAVState.MISSION ,UAVCommand.Request.COMMAND_LAND)
 
     rclpy.spin(mission)
 

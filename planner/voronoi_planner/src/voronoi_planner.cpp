@@ -118,7 +118,7 @@ void VoronoiPlanner::initPubSubTimer()
 
   // Planner publishers
   fe_plan_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan", 10);
-  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("/fe_plan/broadcast", rclcpp::SensorDataQoS());
+  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan/broadcast", rclcpp::SensorDataQoS());
 
   poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>("poly_traj", rclcpp::SensorDataQoS());
   minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>("minco_traj/broadcast", rclcpp::SensorDataQoS());
@@ -134,8 +134,15 @@ void VoronoiPlanner::initPubSubTimer()
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
 
-  fe_plan_broadcast_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
-    "/fe_plan/broadcast", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), swarm_plan_sub_opt);
+  for (size_t i = 0; i < drone_id_; i++){
+    fe_plan_broadcast_subs_.push_back(
+      this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
+        "/d"+std::to_string(i)+"/fe_plan/broadcast", 
+        rclcpp::SensorDataQoS(), 
+        std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), 
+        swarm_plan_sub_opt)
+    );
+  }
 
   plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
     "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
@@ -220,7 +227,8 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
 
   /* Lambda for checking if all higher priority plans are received*/
   auto isAllPrioPlansRcv = [&] () {
-    for (int i = 0; i < drone_id_; i++){
+    // Only check from 0 to current drone_id
+    for (int i = 0; i < drone_id_; i++){ 
       if (rsvn_tbl_.find(i) == rsvn_tbl_.end()){
         return false;
       }
@@ -228,11 +236,10 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
     return true;
   };
 
-  rclcpp::Rate loop_rate(200);
+  rclcpp::Rate loop_rate(10);
   while (!isAllPrioPlansRcv()){
     loop_rate.sleep();
   }
-
 
   // Assign voronoi map
   {
@@ -367,6 +374,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   if (mjo_fe_path.size() >= 2){
     /* Generate minimum jerk trajectory */
 
+
     auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
                               const std::vector<Eigen::Vector4d>& space_time_path,
                               const Eigen::Matrix3d& start_PVA,
@@ -393,7 +401,9 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
     start_PVA << start_pos, start_vel, start_acc;
     goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
 
+
     poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.seconds());
+
 
     Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
 
@@ -435,12 +445,12 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   //   printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
   // }
 
-  if (verbose_print_)
-  {
-    logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
-                              drone_id_, fe_path_[0](0), fe_path_[0](1), fe_path_[0](2), 
-                              fe_path_.back()(0), fe_path_.back()(1), fe_path_.back()(2)));
-  }
+  // if (verbose_print_)
+  // {
+  //   logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
+  //                             drone_id_, fe_path_[0](0), fe_path_[0](1), fe_path_[0](2), 
+  //                             fe_path_.back()(0), fe_path_.back()(1), fe_path_.back()(2)));
+  // }
 
   plan_complete_ = true;
 
@@ -581,9 +591,9 @@ void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg)
 {
   // PRIORITY-BASED PLANNING: Only consider trajectories of drones with lower id
-  if (msg->agent_id >= drone_id_ ){
-    return;
-  }
+  // if (msg->agent_id >= drone_id_ ){
+  //   return;
+  // }
 
   if (!init_voro_maps_){
     return;

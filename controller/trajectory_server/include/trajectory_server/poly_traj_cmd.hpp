@@ -199,7 +199,7 @@ private:
         const double YAWRATE_MAX_PER_SEC{2 * M_PI};
         const double YAWRATE_DOT_MAX_PER_SEC{5 * M_PI};
 	
-		double t_step_{0.1}; // [s] Forward time step along trajectory used to obtain yaw and yawrate
+		double t_step_{1.0}; // [s] Forward time step along trajectory used to obtain yaw and yawrate
 
         double t_last_traj_samp_{0.0};
 

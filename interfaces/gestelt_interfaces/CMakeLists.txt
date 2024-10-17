@@ -14,6 +14,7 @@ find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/UAVCommand.srv"
+  "msg/AllUAVCommand.msg"
   "msg/Goals.msg"
   "msg/PlanRequest.msg"
   "msg/SpaceTimePath.msg"

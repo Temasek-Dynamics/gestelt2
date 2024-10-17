@@ -416,8 +416,10 @@ private:
    */
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
 	rclcpp::Subscription<gestelt_interfaces::msg::Goals>::SharedPtr goals_sub_;              // Goal subscriber
-	rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_sub_;  // Subscription to broadcasted front end plan from other agents
-	rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
+	std::vector<rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr>
+    fe_plan_broadcast_subs_;  // Subscription to broadcasted front end plan from other agents
+  
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
 
 	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
 
@@ -456,9 +458,9 @@ private:
   std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_; // Initial minimum jerk trajectory
   std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
 
-  /* Debugging Use */
-  logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Timer to measure runtime
-  logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Timer to measure runtime
+  /* Timers to measure computation time */
+  logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Front end plan generation
+  logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Voronoi map discretization
 
   /* Visualization */
   std::shared_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
@@ -643,7 +645,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
 
     Eigen::Vector3d P3;
 
-    for (double t = 1.0; t > 0.05 ; t -= 0.05){
+    for (double t = 1.0; t >= 0.05 ; t -= 0.1){
       P3 = P1 + (t)*(P2 - P1);
       if (!voxel_map_->isOccupied(P3)){
         break;
@@ -677,7 +679,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
     bool intsc_w_line_seg = (t < 0 || t > 1) ? false : true;
 
     if (intsc_w_line_seg){
-      for (double t_ = t; t_ > 0.0 ; t_ -= 0.05){
+      for (double t_ = t; t_ >= 0.05 ; t_ -= 0.1){
         intsc_pt = P1 + (t_)*(P2 - P1);
         if (!voxel_map_->isOccupied(intsc_pt)){
           break;

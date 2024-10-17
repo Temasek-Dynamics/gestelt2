@@ -120,7 +120,6 @@ void TrajectoryServer::initParams()
 	traj_type_ = getTrajAdaptorType(this->get_parameter("trajectory_type").as_string());
 }
 
-
 void TrajectoryServer::initPubSubTimers()
 {
     auto fcu_sub_opt = rclcpp::SubscriptionOptions();
@@ -141,6 +140,10 @@ void TrajectoryServer::initPubSubTimers()
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>("uav_state", 10);
 
 	/* Subscribers */
+	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
+		"/all_uav_command", rclcpp::ServicesQoS(), 
+		std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
+
 	odometry_sub_ = this->create_subscription<VehicleOdometry>(
 		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
@@ -354,6 +357,40 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 		Eigen::Vector3d(velocity_d.data()), vel_frame_tf);
 	cur_ang_vel_ = transform_static_frame(
 		Eigen::Vector3d(angular_velocity_d.data()), vel_frame_tf);
+
+}
+
+void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg)
+{
+	logger_->logInfoThrottle(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
+					msg->command, msg->mode, msg->value),
+					1.0);
+
+	// Checkn if value and mode is within bounds for specific commands
+	switch (msg->command)
+	{
+		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_TAKEOFF:  
+			if (msg->value < 0.5 || msg->value > 3.0){
+				logger_->logError("Value for COMMAND_TAKEOFF should be between 0.5 and 3.0, inclusive");
+
+				return;
+			}
+
+			break;
+		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_START_MISSION: 
+
+			if (msg->mode > 4){
+				logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4 inclusive");
+
+				return;
+			}
+			break;
+		default:                    
+			break;
+	}
+
+	// Send event to state machine
+	sendUAVCommandEvent(msg->command, msg->value, msg->mode);
 
 }
 
@@ -621,6 +658,8 @@ void TrajectoryServer::pubStateTimerCB()
 	map_to_base_link_tf.transform.rotation.w = cur_ori_.w();
 	
 	tf_broadcaster_->sendTransform(map_to_base_link_tf);
+
+
 }
 
 /****************** */

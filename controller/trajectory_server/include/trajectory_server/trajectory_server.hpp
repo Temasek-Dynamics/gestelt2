@@ -54,6 +54,8 @@
 
 #include <gestelt_interfaces/srv/uav_command.hpp>
 
+#include <gestelt_interfaces/msg/all_uav_command.hpp>
+
 #include <gestelt_interfaces/msg/uav_state.hpp>
 
 #include <logger_wrapper/logger_wrapper.hpp>
@@ -168,6 +170,7 @@ private:
 						std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Response>  response);
 
 	/* Subscriber callbacks */
+	void allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
 	void odometrySubCB(const VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const VehicleStatus::UniquePtr msg);
 
@@ -209,6 +212,7 @@ private:
 	/* Subscribers */
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr odometry_sub_;
 	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
+	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
 
 	/* Services */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
