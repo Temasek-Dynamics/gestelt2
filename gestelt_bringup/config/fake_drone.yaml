@@ -1,13 +1,5 @@
 /**: 
   ros__parameters:
     fake_drone:
-      map_frame: "world"
-      local_map_frame: "local_map_origin"
-      uav_frame: "base_link"
 
       state_update_frequency: 50.0  # [Hz] Frequency at which state is published
-      tf_broadcast_frequency: 30.0  # [Hz] Frequency at which tf is broadcasteds
-
-      t_unit: 0.1 #[s] Duration of each space-time unit 
-
-      t_step: 0.5 # [s] Forward time step to obtain yaw 

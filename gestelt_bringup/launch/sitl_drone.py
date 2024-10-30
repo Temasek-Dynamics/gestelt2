@@ -127,7 +127,6 @@ def generate_launch_description():
         shell=True
     )
 
-
     ''' Navigator: Planner module '''
     navigator_node = Node(
         package='voronoi_planner',

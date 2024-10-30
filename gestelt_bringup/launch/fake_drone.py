@@ -26,6 +26,7 @@ def generate_launch_description():
     init_x = LaunchConfiguration('init_x')
     init_y = LaunchConfiguration('init_y')
     init_yaw = LaunchConfiguration('init_yaw')
+    fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
 
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
@@ -45,7 +46,31 @@ def generate_launch_description():
       default_value='0.0'
     )
 
+    fake_map_pcd_filepath_launch_arg = DeclareLaunchArgument(
+      'fake_map_pcd_filepath',
+      default_value=''
+    )
+
+    '''Frames'''
+    # map_frame = ["d", drone_id, "_origin"]
+    map_frame = "world"
+    local_map_frame = ["d", drone_id, "_lcl_map"]
+    base_link_frame = ["d", drone_id, "_base_link"]
+    camera_frame = ["d", drone_id, "_camera_link"]
+
     ''' Get parameter files '''
+    traj_server_config = os.path.join(
+      get_package_share_directory('trajectory_server'),
+      'config',
+      'trajectory_server.yaml'
+    )
+
+    fake_sensor_config = os.path.join(
+      get_package_share_directory('fake_sensor'),
+      'config',
+      'fake_sensor.yaml'
+    )
+
     navigator_cfg = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'config',
       'navigator.yaml'
@@ -61,20 +86,19 @@ def generate_launch_description():
       'fake_drone.yaml'
     )
 
-    ''' Navigator: Planner module '''
-    navigator_node = Node(
-        package='voronoi_planner',
-        executable='voronoi_planner_node',
-        output='screen',
-        shell=True,
-        name='voronoi_planner',
-        parameters=[
-            {'navigator.drone_id': drone_id},
-            {'navigator.planner.output_json_filepath': output_json_filepath},
-            navigator_cfg,
-            voxel_map_cfg,
-        ],
-    )
+    """Nodes"""
+    # Publish TF for map to fixed drone origin
+    # This is necessary because PX4 SITL is not able to change it's initial starting position
+    # drone_origin_tf = Node(package = "tf2_ros", 
+    #                    executable = "static_transform_publisher",
+    #                   arguments = [init_x, init_y, "0", "0", "0", "0", 
+    #                           "world", map_frame])
+
+    # drone base_link to sensor fixed TF
+    camera_link_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                      arguments = ["0", "0", "0", "0", "0", "0", 
+                              base_link_frame, camera_frame])
 
     ''' Fake drone without dynamics '''
     fake_drone_node = Node(
@@ -86,10 +110,58 @@ def generate_launch_description():
         parameters = [
             fake_drone_cfg,
             {'fake_drone.drone_id': drone_id},
-            {'fake_drone.init.x': init_x},
-            {'fake_drone.init.y': init_y},
-            {'fake_drone.init.yaw': init_yaw},
+            {'fake_drone.init_x': init_x},
+            {'fake_drone.init_y': init_y},
+            {'fake_drone.init_yaw': init_yaw},
         ]
+    )
+
+    ''' Navigator: Planner module '''
+    navigator_node = Node(
+        package='voronoi_planner',
+        executable='voronoi_planner_node',
+        output='screen',
+        shell=True,
+        name='voronoi_planner',
+        parameters=[
+            {'drone_id': drone_id},
+            {'map_frame': map_frame},
+            {'local_map_frame': local_map_frame},
+            navigator_cfg,
+            voxel_map_cfg,
+        ],
+    )
+
+    ''' Trajectory server for executing trajectories '''
+    trajectory_server = Node(
+        package='trajectory_server',
+        executable='trajectory_server_node',
+        output='screen',
+        shell=True,
+        name=['traj_server_', drone_id],
+        parameters=[
+          {'drone_id': drone_id},
+          {'map_frame': map_frame},
+          {'base_link_frame': base_link_frame},
+          traj_server_config
+        ],
+    )
+
+    ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
+    fake_sensor = Node(
+        package='fake_sensor',
+        executable='fake_sensor_node',
+        output='screen',
+        shell=True,
+        name=['fake_sensor_', drone_id],
+        parameters=[
+          {'drone_id': drone_id},
+          {'map_frame': map_frame},
+          {'local_map_frame': local_map_frame},
+          {'sensor_frame': camera_frame},
+          {'pcd_map.filepath': fake_map_pcd_filepath},
+          fake_sensor_config,
+        ],
     )
 
     return LaunchDescription([
@@ -98,10 +170,13 @@ def generate_launch_description():
         init_x_launch_arg,
         init_y_launch_arg,
         init_yaw_launch_arg,
-
-        # Planner
+        fake_map_pcd_filepath_launch_arg,
+        # Static transforms
+        # drone_origin_tf,
+        camera_link_tf,
+        # Nodes
         navigator_node,
-        # Fake drone 
+        fake_sensor,
         fake_drone_node,
-
+        trajectory_server,
     ])

@@ -118,14 +118,18 @@ void VoronoiPlanner::initPubSubTimer()
 
   // Planner publishers
   fe_plan_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan", 10);
-  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>("fe_plan/broadcast", rclcpp::SensorDataQoS());
+  fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>(
+    "fe_plan/broadcast", rclcpp::SensorDataQoS());
 
-  poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>("poly_traj", rclcpp::SensorDataQoS());
-  minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>("minco_traj/broadcast", rclcpp::SensorDataQoS());
+  poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>(
+    "poly_traj", rclcpp::SensorDataQoS());
+  minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>(
+    "minco_traj/broadcast", rclcpp::SensorDataQoS());
 
   // Visualization
   plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan_req", 10);
-  fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/closed_list", 10);
+  fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+    "fe_plan/closed_list", 10);
   fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz", 10);
 
 	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("minco_traj_viz", 10);
@@ -134,7 +138,7 @@ void VoronoiPlanner::initPubSubTimer()
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
 
-  for (size_t i = 0; i < drone_id_; i++){
+  for (int i = 0; i < drone_id_; i++){
     fe_plan_broadcast_subs_.push_back(
       this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
         "/d"+std::to_string(i)+"/fe_plan/broadcast", 

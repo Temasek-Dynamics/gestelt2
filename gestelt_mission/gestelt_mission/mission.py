@@ -71,13 +71,13 @@ class Mission(Node):
             self.uav_states.append(UAVState.UNDEFINED)
 
         """Services"""
-        self.uav_cmd_srv_clients_ = []
-        for id in range(self.scenario.num_agents):
-            self.uav_cmd_srv_clients_.append(self.create_client(
-                                                UAVCommand, 
-                                                'd' + str(id) + '/uav_command'))
-            while not self.uav_cmd_srv_clients_[id].wait_for_service(timeout_sec=1.0):
-                self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
+        # self.uav_cmd_srv_clients_ = []
+        # for id in range(self.scenario.num_agents):
+        #     self.uav_cmd_srv_clients_.append(self.create_client(
+        #                                         UAVCommand, 
+        #                                         'd' + str(id) + '/uav_command'))
+        #     while not self.uav_cmd_srv_clients_[id].wait_for_service(timeout_sec=1.0):
+        #         self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
 
         """Publishers"""
         self.goals_pubs_ = []

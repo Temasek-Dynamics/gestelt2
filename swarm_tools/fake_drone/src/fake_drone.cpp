@@ -28,73 +28,76 @@
 FakeDrone::FakeDrone()
 : Node("fake_drone")
 {
-	bl_broadcaster_tf_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
-
 	sim_update_cb_group_ = this->create_callback_group(
 		rclcpp::CallbackGroupType::Reentrant);
 
+    fcu_cb_group_ = this->create_callback_group(
+      rclcpp::CallbackGroupType::Reentrant);
+
+    traj_sp_cb_group_ = this->create_callback_group(
+      rclcpp::CallbackGroupType::MutuallyExclusive);
+
 	std::string param_ns = "fake_drone";
+
+	vehicle_status_msg_ = std::make_unique<VehicleStatus>();
+	vehicle_odom_msg_ = std::make_unique<VehicleOdometry>();
 	
 	this->declare_parameter(param_ns+".drone_id", -1);
 
 	this->declare_parameter(param_ns+".state_update_frequency", -1.0);
-	this->declare_parameter(param_ns+".tf_broadcast_frequency", -1.0);
 
-	this->declare_parameter(param_ns+".map_frame", "world");
-	this->declare_parameter(param_ns+".local_map_frame",  "local_map_origin");
-	this->declare_parameter(param_ns+".uav_frame","base_link");
-
-	this->declare_parameter(param_ns+".t_unit", 0.1);
-
-	this->declare_parameter(param_ns+".init.x", 0.0);
-	this->declare_parameter(param_ns+".init.y", 0.0);
-	this->declare_parameter(param_ns+".init.z", 0.0);
-
-	this->declare_parameter(param_ns+".t_step", -1.0);
+	this->declare_parameter(param_ns+".init_x", 0.0);
+	this->declare_parameter(param_ns+".init_y", 0.0);
+	this->declare_parameter(param_ns+".init_yaw", 0.0);
 
 	drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
 
 	double state_update_freq = this->get_parameter(param_ns+".state_update_frequency").as_double();
-	double tf_broadcast_freq = this->get_parameter(param_ns+".tf_broadcast_frequency").as_double();
-
-	map_frame_ = this->get_parameter(param_ns+".map_frame").as_string();
-	local_map_frame_ = this->get_parameter(param_ns+".local_map_frame").as_string();
-	uav_frame_ = this->get_parameter(param_ns+".uav_frame").as_string();
-
-	t_unit_ = this->get_parameter(param_ns+".t_unit").as_double();
 
 	Eigen::Vector3d init_pos;
-	init_pos(0) = this->get_parameter(param_ns+".init.x").as_double();
-	init_pos(1) = this->get_parameter(param_ns+".init.y").as_double();
-	init_pos(2) = this->get_parameter(param_ns+".init.z").as_double();
+	init_pos(0) = this->get_parameter(param_ns+".init_x").as_double();
+	init_pos(1) = this->get_parameter(param_ns+".init_y").as_double();
+	init_pos(2) = 0.0;
+	double init_yaw = this->get_parameter(param_ns+".init_yaw").as_double();
 
-	t_step_ = this->get_parameter(param_ns+".t_step").as_double();
+	Eigen::Vector3d init_pos_ned = vecENUToNED(init_pos);
+	vehicle_odom_msg_->position = {(float)init_pos_ned(0), (float)init_pos_ned(1), (float)init_pos_ned(2)}; 
 
-	// Set initial position
-	odom_msg_.pose.pose.position.x = init_pos(0);
-	odom_msg_.pose.pose.position.y = init_pos(1);
-	odom_msg_.pose.pose.position.z = init_pos(2);
-	odom_msg_.pose.pose.orientation.x = odom_msg_.pose.pose.orientation.y = odom_msg_.pose.pose.orientation.z = 0.0;
-	odom_msg_.pose.pose.orientation.w = 1.0;
+	Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, init_yaw);
+	vehicle_odom_msg_->q = {(float)quat.w(),(float)quat.x(),(float)quat.y(),(float)quat.z() }; 
 
-	pose_msg_.pose = odom_msg_.pose.pose;
-	odom_msg_.header.frame_id = pose_msg_.header.frame_id = map_frame_;
-		
-	/* Subscribers and publishers*/
-	fe_plan_sub_ = this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
-		"fe_plan", rclcpp::SystemDefaultsQoS(), std::bind(&FakeDrone::frontEndPlanCB, this, _1));
+	vehicle_status_msg_->arming_state = false;
+	vehicle_status_msg_->nav_state = VehicleStatus::NAVIGATION_STATE_POSCTL;
 
-	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
-	pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("pose", 10);
+	/* Subscribers */
+    auto fcu_topics_opt = rclcpp::SubscriptionOptions();
+	fcu_topics_opt.callback_group = fcu_cb_group_;
+
+	auto traj_sp_opt = rclcpp::SubscriptionOptions();
+	traj_sp_opt.callback_group = traj_sp_cb_group_;
+
+	trajectory_setpoint_sub_ = this->create_subscription<TrajectorySetpoint>(
+		"fmu/in/trajectory_setpoint", rclcpp::SystemDefaultsQoS(), 
+		std::bind(&FakeDrone::trajectorySetpointSubCB, this, _1), traj_sp_opt);
+
+	offboard_control_mode_sub_ = this->create_subscription<OffboardControlMode>(
+		"fmu/in/offboard_control_mode", rclcpp::SystemDefaultsQoS(), 
+		std::bind(&FakeDrone::offboardCtrlModeSubCB, this, _1), fcu_topics_opt);
+
+	vehicle_command_sub_ = this->create_subscription<VehicleCommand>(
+		"fmu/in/vehicle_command", rclcpp::SystemDefaultsQoS(), 
+		std::bind(&FakeDrone::VehicleCommandSubCB, this, _1), fcu_topics_opt);
+
+	/* Publishers */
+	fcu_odom_pub_ = this->create_publisher<VehicleOdometry>(
+		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS());
+
+	vehicle_status_pub_ = this->create_publisher<VehicleStatus>(
+		"fmu/out/vehicle_status", rclcpp::SensorDataQoS());
 
 	/**
 	 * Timer for drone state update  
 	*/
-
-	tf_update_timer_ = this->create_wall_timer((1.0/tf_broadcast_freq) *1000ms, 
-                                            std::bind(&FakeDrone::tfUpdateTimerCB, this), 
-                                            sim_update_cb_group_);
-
 	state_update_timer_ = this->create_wall_timer((1.0/state_update_freq) *1000ms, 
                                             std::bind(&FakeDrone::stateUpdateTimerCB, this), 
                                             sim_update_cb_group_);
@@ -110,82 +113,84 @@ FakeDrone::~FakeDrone()
 
 /* Subscriber Callbacks*/
 
-void FakeDrone::frontEndPlanCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr &msg)
-{	
-	// Generate spline from plan 
-	// std::vector<tinyspline::real> points;
-
-	fe_space_time_path_.clear();
-
-	// for (size_t i = 0; i < msg->plan.size(); i += 1)
-	// {	
-	// 	// // Add control point
-	// 	// points.push_back(fe_plan_msg_.plan[i].position.x);
-	// 	// points.push_back(fe_plan_msg_.plan[i].position.y);
-	// 	// points.push_back(fe_plan_msg_.plan[i].position.z);
-
-	// 	fe_space_time_path_.push_back(Eigen::Vector4d{
-	// 		msg->plan[i].position.x,
-	// 		msg->plan[i].position.y, 
-	// 		msg->plan[i].position.z,
-	// 		(double) msg->plan_time[i],
-	// 	});
-	// }
-
-	// spline_ = std::make_shared<tinyspline::BSpline>(tinyspline::BSpline::interpolateCubicNatural(points, 3));
-}
-
-/* Timer Callbacks*/
-
-void FakeDrone::tfUpdateTimerCB()
+void FakeDrone::trajectorySetpointSubCB(const TrajectorySetpoint::UniquePtr &msg)
 {
-  geometry_msgs::msg::TransformStamped bl_to_map_tf;
-
-  bl_to_map_tf.header.stamp = this->get_clock()->now();
-  bl_to_map_tf.header.frame_id = local_map_frame_; 
-  bl_to_map_tf.child_frame_id = uav_frame_; 
-
-  bl_to_map_tf.transform.translation.x = pose_msg_.pose.position.x;
-  bl_to_map_tf.transform.translation.y = pose_msg_.pose.position.y;
-  bl_to_map_tf.transform.translation.z = pose_msg_.pose.position.z;
-
-  bl_to_map_tf.transform.rotation = pose_msg_.pose.orientation;
-  
-  bl_broadcaster_tf_->sendTransform(bl_to_map_tf);
-}
-
-void FakeDrone::stateUpdateTimerCB()
-{
-  odom_msg_.header.stamp = pose_msg_.header.stamp = this->get_clock()->now();
-
-	
+	if (vehicle_status_msg_->nav_state == VehicleStatus::NAVIGATION_STATE_AUTO_LAND){
+		// TODO: land vehicle
+	}
+	else if (vehicle_status_msg_->nav_state == VehicleStatus::NAVIGATION_STATE_OFFBOARD)
 	{
-		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
-		odom_pub_->publish(odom_msg_);
-		pose_pub_->publish(pose_msg_);
+		{
+			std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
+			if (!std::isnan(msg->position[0]) && !std::isnan(msg->position[1]) && !std::isnan(msg->position[2]))
+			{
+				vehicle_odom_msg_->position = {msg->position[0], msg->position[1], msg->position[2]};
+			}
+			if (!std::isnan(msg->velocity[0]) && !std::isnan(msg->velocity[1]) && !std::isnan(msg->velocity[2]))
+			{
+				vehicle_odom_msg_->velocity = {msg->velocity[0], msg->velocity[1], msg->velocity[2]};
+			}
+			Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, (double) msg->yaw);
+			// quaternion in order of (w,x,y,z)
+			vehicle_odom_msg_->q = {(float)quat.w(),(float)quat.x(),(float)quat.y(),(float)quat.z() }; 
+		}
 	}
 
 }
 
-// void FakeDrone::setStateFromTraj(	const std::vector<Eigen::Vector4d>& space_time_path, 
-// 									const double& plan_start_t)
-// {
+void FakeDrone::offboardCtrlModeSubCB(const OffboardControlMode::UniquePtr &msg)
+{
+	// TODO: add timeout if frequency < 2 Hz
+}
 
-// 	odom_msg_.header.stamp = pose_msg_.header.stamp = t_now;
+void FakeDrone::VehicleCommandSubCB(const VehicleCommand::UniquePtr &msg)
+{
+	switch (msg->command){
+		case VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM:
+			if (msg->param1 == VehicleCommand::ARMING_ACTION_DISARM){
+				vehicle_status_msg_->arming_state = false;
+			}	
+			else if (msg->param1 == VehicleCommand::ARMING_ACTION_ARM){
+					vehicle_status_msg_->arming_state = true;
+			}
+			else {
+				printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
+			}
+			break;
+		case VehicleCommand::VEHICLE_CMD_DO_SET_MODE:
+			if (msg->param1 != 1){
+				printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
+				return;
+			}
+			else{
+				if (msg->param2 == PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD){
+					vehicle_status_msg_->nav_state = VehicleStatus::NAVIGATION_STATE_OFFBOARD;
+				}
+				else if (msg->param2 == PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO){
+					if (msg->param3 == PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND)
+					{
+						vehicle_status_msg_->nav_state = VehicleStatus::NAVIGATION_STATE_AUTO_LAND;
+					}
+				}
+				else {
+					printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
+					return;
+				}
+			}
+			break;
+		default:
+			printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
+			break;
+	} 
+}
 
-// 	// odom_msg_.pose.pose = fe_plan_msg.plan[cur_plan_idx];
-// 	odom_msg_.pose.pose.position.x = x;
-// 	odom_msg_.pose.pose.position.y = y;
-// 	odom_msg_.pose.pose.position.z = z;
+/* Timer Callbacks*/
 
-// 	odom_msg_.pose.pose.orientation.x = 0.0;
-// 	odom_msg_.pose.pose.orientation.y = 0.0;
-// 	odom_msg_.pose.pose.orientation.z = 0.0;
-// 	odom_msg_.pose.pose.orientation.w = 1.0;
-
-// 	// pose_msg_.header.stamp = t_now;
-
-// 	// pose_msg_.pose = fe_plan_msg.plan[cur_plan_idx];
-// 	pose_msg_.pose = odom_msg_.pose.pose;
-// }
-
+void FakeDrone::stateUpdateTimerCB()
+{
+	{
+		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
+		fcu_odom_pub_->publish(*vehicle_odom_msg_);
+	}
+	vehicle_status_pub_->publish(*vehicle_status_msg_);
+}

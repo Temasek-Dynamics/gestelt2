@@ -51,13 +51,15 @@ public:
 	~PolyTrajCmd(){}
 
 	/* Get position, yaw_yawrate, velocity, acceleration*/
-	/* getCmd(pos_cmd_, yaw_yawrate_cmd_, vel_cmd_, acc_cmd_)*/
 	bool getCmd(Eigen::Vector3d& pos, 
 				Eigen::Vector2d& yaw_yawrate,
 				Eigen::Vector3d& vel,
 				Eigen::Vector3d& acc)
 	{
 		if (traj_ == nullptr){
+			return false;
+		}
+		if (traj_->getGlobalStartTime() < 0){
 			return false;
 		}
 
@@ -124,12 +126,12 @@ private:
 		{
 			std::lock_guard<std::mutex> traj_mtx_guard(traj_mtx_);
 				
-			traj_ = std::make_shared<minco::Trajectory>(ts, cMats);
+			traj_ = std::make_unique<minco::Trajectory>(ts, cMats);
 			traj_->setGlobalStartTime(msg->start_time);
 		}
 	}
 
-	Eigen::Vector2d calculate_yaw(const std::shared_ptr<minco::Trajectory>& traj,
+	Eigen::Vector2d calculate_yaw(const std::unique_ptr<minco::Trajectory>& traj,
 									const double& e_t_start, const double& dt)
 	{
 
@@ -191,7 +193,7 @@ private:
   		rclcpp::Node::SharedPtr node_;
 		rclcpp::Subscription<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr minco_traj_sub_;
 
-		std::shared_ptr<minco::Trajectory> traj_; 
+		std::unique_ptr<minco::Trajectory> traj_; 
 		/* data */
 		Eigen::Vector2d last_yaw_yawrate_{0.0, 0.0};
 

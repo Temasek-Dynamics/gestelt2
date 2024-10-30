@@ -45,7 +45,6 @@
 
 #include <px4_msgs/msg/offboard_control_mode.hpp>
 #include <px4_msgs/msg/vehicle_command.hpp>
-// #include <px4_msgs/msg/vehicle_control_mode.hpp>
 
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <px4_msgs/msg/vehicle_status.hpp>
@@ -210,7 +209,7 @@ private:
 	rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
 
 	/* Subscribers */
-	rclcpp::Subscription<VehicleOdometry>::SharedPtr odometry_sub_;
+	rclcpp::Subscription<VehicleOdometry>::SharedPtr fcu_odom_sub_;
 	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
 	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
 

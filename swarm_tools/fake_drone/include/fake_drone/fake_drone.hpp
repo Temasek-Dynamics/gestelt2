@@ -30,24 +30,51 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <nav_msgs/msg/odometry.hpp>
-
-// #include <geometry_msgs/msg/quaternion.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-
-#include <tf2_ros/transform_broadcaster.h>
-
-#include <gestelt_interfaces/msg/space_time_path.hpp>
-
-
-#include <viz_helper/viz_helper.hpp>
-
-// #include "tinysplinecxx.h"  // For spline interpolation
+#include <px4_msgs/msg/trajectory_setpoint.hpp>
+#include <px4_msgs/msg/offboard_control_mode.hpp>
+#include <px4_msgs/msg/vehicle_command.hpp>
+#include <px4_msgs/msg/vehicle_odometry.hpp>
+#include <px4_msgs/msg/vehicle_status.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace std::placeholders;
 
+using namespace px4_msgs::msg;
+
+enum PX4_CUSTOM_MAIN_MODE {
+	PX4_CUSTOM_MAIN_MODE_MANUAL = 1,
+	PX4_CUSTOM_MAIN_MODE_ALTCTL, // 2
+	PX4_CUSTOM_MAIN_MODE_POSCTL,  // 3
+	PX4_CUSTOM_MAIN_MODE_AUTO, // 4
+	PX4_CUSTOM_MAIN_MODE_ACRO, // 5
+	PX4_CUSTOM_MAIN_MODE_OFFBOARD,  // 6
+	PX4_CUSTOM_MAIN_MODE_STABILIZED,
+	PX4_CUSTOM_MAIN_MODE_RATTITUDE_LEGACY,
+	PX4_CUSTOM_MAIN_MODE_SIMPLE, /* unused, but reserved for future use */
+	PX4_CUSTOM_MAIN_MODE_TERMINATION
+};
+
+enum PX4_CUSTOM_SUB_MODE_AUTO {
+	PX4_CUSTOM_SUB_MODE_AUTO_READY = 1,
+	PX4_CUSTOM_SUB_MODE_AUTO_TAKEOFF,
+	PX4_CUSTOM_SUB_MODE_AUTO_LOITER,
+	PX4_CUSTOM_SUB_MODE_AUTO_MISSION,
+	PX4_CUSTOM_SUB_MODE_AUTO_RTL,
+	PX4_CUSTOM_SUB_MODE_AUTO_LAND,
+	PX4_CUSTOM_SUB_MODE_AUTO_RESERVED_DO_NOT_USE, // was PX4_CUSTOM_SUB_MODE_AUTO_RTGS, deleted 2020-03-05
+	PX4_CUSTOM_SUB_MODE_AUTO_FOLLOW_TARGET,
+	PX4_CUSTOM_SUB_MODE_AUTO_PRECLAND,
+	PX4_CUSTOM_SUB_MODE_AUTO_VTOL_TAKEOFF,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL1,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL2,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL3,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL4,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL5,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL6,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL7,
+	PX4_CUSTOM_SUB_MODE_EXTERNAL8
+};
 
 class FakeDrone : public rclcpp::Node
 {
@@ -61,70 +88,57 @@ class FakeDrone : public rclcpp::Node
 
         // Main timer for updating UAV simulation 
         void stateUpdateTimerCB();
-
         void tfUpdateTimerCB();
 
         /* Subscription callbacks */
 
-        void frontEndPlanCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr &msg);
+        void trajectorySetpointSubCB(const TrajectorySetpoint::UniquePtr &msg);
+        void offboardCtrlModeSubCB(const OffboardControlMode::UniquePtr &msg);
+        void VehicleCommandSubCB(const VehicleCommand::UniquePtr &msg);
 
         /* Checks */
 
         /** Helper methods */
 
-        // Set the current state of the drone from the spatial-temporal trajectory
-        // void setStateFromTraj(	const std::shared_ptr<minco::Trajectory>& traj);
-
-        /* Convert from time [s] to space-time units */
-        long tToSpaceTimeUnits(const double& t){
-            return std::lround(t / t_unit_);
+        /* Convert from RPY to quaternion */
+        Eigen::Quaterniond RPYToQuaternion(const double& roll, const double& pitch, const double& yaw){
+            return Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) 
+                    * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
+                    * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
         }
 
-        /* Convert from RPY to quaternion */
-        // Eigen::Quaterniond RPYToQuaternion(const double& roll, const double& pitch, const double& yaw){
-        //     return Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) 
-        //             * Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY())
-        //             * Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
-        // }
+        Eigen::Vector3d vecENUToNED(const Eigen::Vector3d &vec)
+        {
+            return Eigen::PermutationMatrix<3>(Eigen::Vector3i(1, 0, 2)) 
+                * (Eigen::DiagonalMatrix<double, 3>(1, 1, -1) * vec);
+        }
 
     private:
         /* Publishers, subscribers, timers and services */
-	    rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_sub_;  // Front end plan subscription
+        rclcpp::Publisher<VehicleOdometry>::SharedPtr fcu_odom_pub_; 
+        rclcpp::Publisher<VehicleStatus>::SharedPtr vehicle_status_pub_; 
 
-        rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_; // Publish odometry
-        rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_; // Publish pose
-
+        rclcpp::Subscription<OffboardControlMode>::SharedPtr offboard_control_mode_sub_;
+        rclcpp::Subscription<TrajectorySetpoint>::SharedPtr trajectory_setpoint_sub_;
+        rclcpp::Subscription<VehicleCommand>::SharedPtr vehicle_command_sub_;
         
         rclcpp::TimerBase::SharedPtr tf_update_timer_; // Timer for tf broadcast
         rclcpp::TimerBase::SharedPtr state_update_timer_; // Timer for state update and publishing 
             
         rclcpp::CallbackGroup::SharedPtr sim_update_cb_group_;
+        rclcpp::CallbackGroup::SharedPtr fcu_cb_group_;
+        rclcpp::CallbackGroup::SharedPtr traj_sp_cb_group_;
 
         /* Params */
         int drone_id_{-1};
-        double t_unit_{0.1};     // [s] Time duration of each space-time A* unit
-
-        double t_step_;    // time step used for getting yaw
-
-        const double YAW_DOT_MAX_PER_SEC{2 * M_PI};
-        const double YAW_DOT_DOT_MAX_PER_SEC{5 * M_PI};
-
-        std::string map_frame_, local_map_frame_, uav_frame_;
 
         /* Data */
-        nav_msgs::msg::Odometry odom_msg_;
-        geometry_msgs::msg::PoseStamped pose_msg_;
-
-        // std::shared_ptr<tinyspline::BSpline> spline_; // Spline formed from interpolating control points of front end path
-        std::vector<Eigen::Vector4d> fe_space_time_path_; // Front end space time path
-
-        double plan_start_t_; // [s] Time that plan started
+        std::unique_ptr<VehicleStatus> vehicle_status_msg_;
+        std::unique_ptr<VehicleOdometry> vehicle_odom_msg_;
 
         /* Mutexes  */
         std::mutex state_mutex_;
 
-        // TF transformation 
-        std::unique_ptr<tf2_ros::TransformBroadcaster> bl_broadcaster_tf_; // map to base_link tf broadcaster
 };
 
 #endif // FAKE_DRONE_HPP_

@@ -126,25 +126,32 @@ void TrajectoryServer::initPubSubTimers()
 		fcu_sub_opt.callback_group = fcu_cb_group_;
 
 	/* Publishers */
-	vehicle_command_pub_ = this->create_publisher<VehicleCommand>("fmu/in/vehicle_command", 10);
+	vehicle_command_pub_ = this->create_publisher<VehicleCommand>(
+		"fmu/in/vehicle_command", 10);
 
-	offboard_control_mode_pub_ = this->create_publisher<OffboardControlMode>("fmu/in/offboard_control_mode", 10);
+	offboard_control_mode_pub_ = this->create_publisher<OffboardControlMode>(
+		"fmu/in/offboard_control_mode", 10);
 	
-	trajectory_setpoint_pub_ = this->create_publisher<TrajectorySetpoint>("fmu/in/trajectory_setpoint", 10);
-	actuator_cmd_pub_ = this->create_publisher<ActuatorMotors>("fmu/in/actuator_motors", 10);
-	torque_setpoint_pub_ = this->create_publisher<VehicleTorqueSetpoint>("fmu/in/vehicle_torque_setpoint", 10);
-	thrust_setpoint_pub_ = this->create_publisher<VehicleThrustSetpoint>("fmu/in/vehicle_thrust_setpoint", 10);
+	trajectory_setpoint_pub_ = this->create_publisher<TrajectorySetpoint>(
+		"fmu/in/trajectory_setpoint", 10);
+	actuator_cmd_pub_ = this->create_publisher<ActuatorMotors>(
+		"fmu/in/actuator_motors", 10);
+	torque_setpoint_pub_ = this->create_publisher<VehicleTorqueSetpoint>(
+		"fmu/in/vehicle_torque_setpoint", 10);
+	thrust_setpoint_pub_ = this->create_publisher<VehicleThrustSetpoint>(
+		"fmu/in/vehicle_thrust_setpoint", 10);
 
 	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 
-	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>("uav_state", 10);
+	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
+		"uav_state", 10);
 
 	/* Subscribers */
 	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
 		"/all_uav_command", rclcpp::ServicesQoS(), 
 		std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
 
-	odometry_sub_ = this->create_subscription<VehicleOdometry>(
+	fcu_odom_sub_ = this->create_subscription<VehicleOdometry>(
 		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
 
@@ -161,7 +168,6 @@ void TrajectoryServer::initPubSubTimers()
 												std::bind(&TrajectoryServer::setOffboardTimerCB, this), others_cb_group_);
 	pub_state_timer_ = this->create_wall_timer((1.0/pub_state_freq_) *1000ms, 
 												std::bind(&TrajectoryServer::pubStateTimerCB, this), others_cb_group_);
-
 }
 
 void TrajectoryServer::initSrv()
@@ -391,7 +397,6 @@ void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVComma
 
 	// Send event to state machine
 	sendUAVCommandEvent(msg->command, msg->value, msg->mode);
-
 }
 
 /****************** */
@@ -511,10 +516,21 @@ void TrajectoryServer::pubCtrlTimerCB()
 
 	}
 	else if (UAV::is_in_state<Mission>()){
+
+		Eigen::Vector3d cmd_pos_enu;		// Last commanded position [ENU frame]
+		Eigen::Vector2d cmd_yaw_yawrate;
+		Eigen::Vector3d cmd_vel_enu;		
+		Eigen::Vector3d cmd_acc_enu;		
+
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
-				if (poly_traj_cmd_->getCmd(pos_enu_, yaw_yawrate_, vel_enu_, acc_enu_))
+				if (poly_traj_cmd_->getCmd(cmd_pos_enu, cmd_yaw_yawrate, cmd_vel_enu, cmd_acc_enu))
 				{	
+					pos_enu_ = cmd_pos_enu;
+					yaw_yawrate_ = cmd_yaw_yawrate;
+					vel_enu_ = cmd_vel_enu;	
+					acc_enu_ = cmd_acc_enu;	
+
 					// Correct commanded position with ground_height_
 					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
 					yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
@@ -525,6 +541,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
 					yaw_yawrate_(1) = NAN; 
 					Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+
 					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, nan_3d, nan_3d);
 				}
 				break;
@@ -573,7 +590,7 @@ void TrajectoryServer::SMTickTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<Idle>()){
-		// logger_->logInfoThrottle("[Idle]", 1.0);
+		logger_->logInfoThrottle("[Idle]", 1.0);
 		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
 		{ 
 			// Disarm vehicle
@@ -658,8 +675,6 @@ void TrajectoryServer::pubStateTimerCB()
 	map_to_base_link_tf.transform.rotation.w = cur_ori_.w();
 	
 	tf_broadcaster_->sendTransform(map_to_base_link_tf);
-
-
 }
 
 /****************** */

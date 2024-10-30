@@ -18,7 +18,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
-SCENARIO_NAME = "map_test"
+SCENARIO_NAME = "antipodal_swap_8"
+# SCENARIO_NAME = "map_test"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -51,14 +52,14 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-def generateFakeDrone(id, spawn_pos):
+def generateFakeDrone(id, spawn_pos, pcd_filepath):
 
     fake_drone_complete_launchfile = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
                 FindPackageShare('gestelt_bringup'),
                 'launch',
-                'fake_drone_complete.py'
+                'fake_drone.py'
             ])
         ]),
         launch_arguments={
@@ -66,6 +67,7 @@ def generateFakeDrone(id, spawn_pos):
             'init_x': str(spawn_pos[0]),
             'init_y': str(spawn_pos[1]),
             'init_yaw': str(spawn_pos[2]),
+            'fake_map_pcd_filepath': str(pcd_filepath),
         }.items()
     )
 
@@ -136,7 +138,7 @@ def generate_launch_description():
     # Generate nodes of fake drone simulation instances according to scenario
     fake_drone_nodes = []
     for id in range(scenario.num_agents):
-        fake_drone_nodes.append(generateFakeDrone(id, scenario.spawns_pos[id]))
+        fake_drone_nodes.append(generateFakeDrone(id, scenario.spawns_pos[id], fake_map_pcd_filepath))
 
     return LaunchDescription([
         # Central nodes

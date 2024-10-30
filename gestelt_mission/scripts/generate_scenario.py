@@ -99,10 +99,10 @@ def main():
     scene_gen = ScenarioGenerator(visualize=True)
 
     scene_gen.antipodalSwap(
-        radius = 7.5, 
-        num_agents = 4,
+        radius = 8.0, 
+        num_agents = 8,
         goal_z = 2.0,
-        name = "antipodal_swap_4", 
+        name = "antipodal_swap_8", 
         map_name = "map_test", 
     )
 

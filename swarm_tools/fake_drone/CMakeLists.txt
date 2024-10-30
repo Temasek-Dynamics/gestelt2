@@ -20,13 +20,7 @@ set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
-  nav_msgs
-  geometry_msgs
-  visualization_msgs
-  gestelt_interfaces
-  tf2_ros
-  minco_traj_gen
-  viz_helper
+  px4_msgs
 )
 # find dependencies
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
@@ -40,13 +34,7 @@ add_executable(fake_drone_node
 ament_target_dependencies(fake_drone_node 
   Eigen3
   rclcpp
-  nav_msgs
-  geometry_msgs
-  visualization_msgs
-  gestelt_interfaces
-  tf2_ros
-  minco_traj_gen
-  viz_helper
+  px4_msgs
 )
 target_include_directories(fake_drone_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

@@ -180,20 +180,20 @@ Eigen::Vector3d transform_static_frame(const Eigen::Vector3d &vec, const StaticT
 {
 	Eigen::Vector3d out;
 	switch (transform) {
-	case StaticTF::NED_TO_ENU:
-		out = NED_ENU_REFLECTION_XY * (NED_ENU_REFLECTION_Z * vec);
-		break;
-	case StaticTF::ENU_TO_NED:
-		out = NED_ENU_REFLECTION_XY * (NED_ENU_REFLECTION_Z * vec);
-		break;
+		case StaticTF::NED_TO_ENU:
+			out = NED_ENU_REFLECTION_XY * (NED_ENU_REFLECTION_Z * vec);
+			break;
+		case StaticTF::ENU_TO_NED:
+			out = NED_ENU_REFLECTION_XY * (NED_ENU_REFLECTION_Z * vec);
+			break;
 
-	case StaticTF::AIRCRAFT_TO_BASELINK:
-	case StaticTF::BASELINK_TO_AIRCRAFT:
-		out = AIRCRAFT_BASELINK_AFFINE * vec;
-		break;
+		case StaticTF::AIRCRAFT_TO_BASELINK:
+		case StaticTF::BASELINK_TO_AIRCRAFT:
+			out = AIRCRAFT_BASELINK_AFFINE * vec;
+			break;
 
-	default:
-		break;
+		default:
+			break;
 	}
 
 	return out;
