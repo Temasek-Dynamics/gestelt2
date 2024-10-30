@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include <nanoflann.hpp>
+#include "nanoflann.hpp"
 #include <vector>
 
 // ===== This example shows how to use nanoflann with these types of containers:

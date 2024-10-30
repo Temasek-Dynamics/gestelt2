@@ -13,12 +13,30 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
 
-add_executable(swarm_collision_checker src/swarm_collision_checker.cpp)
+set(ROS_LIBRABRIES
+	ament_cmake
+	ament_cmake_ros
+  rclcpp
+  nav_msgs
+  visualization_msgs
+)
+# find dependencies
+foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
+
+
+add_executable(swarm_collision_checker 
+  src/swarm_collision_checker.cpp)
+ament_target_dependencies(swarm_collision_checker 
+  Eigen3
+  rclcpp
+  nav_msgs
+  visualization_msgs
+)
 target_include_directories(swarm_collision_checker PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)

@@ -23,13 +23,19 @@
  *
  ****************************************************************************/
 
-#include <cstdio>
+#include <swarm_collision_checker/swarm_collision_checker.hpp>
 
 int main(int argc, char ** argv)
 {
-  (void) argc;
-  (void) argv;
+	setvbuf(stdout, NULL, _IONBF, BUFSIZ);
 
-  printf("hello world swarm_collision_checker package\n");
-  return 0;
+	rclcpp::init(argc, argv);
+	rclcpp::executors::MultiThreadedExecutor executor;
+
+	auto node = std::make_shared<SwarmCollisionChecker>();
+	executor.add_node(node);
+	executor.spin();
+
+	rclcpp::shutdown();
+	return 0;
 }

@@ -1,76 +1,92 @@
 #ifndef _SWARM_COLLISION_CHECKER_H_
 #define _SWARM_COLLISION_CHECKER_H_
 
-#include <ros/ros.h>
-#include <eigen3/Eigen/Eigen>
+#include <rclcpp/rclcpp.hpp>
+#include <Eigen/Eigen>
 
 #include <visualization_msgs/msg/marker.hpp>
-#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/msg/odometry.hpp>
 
 #include "nanoflann.hpp" // For nearest neighbors queries
 #include "KDTreeVectorOfVectorsAdaptor.h" // For nearest neighbors queries
 
-class SwarmCollisionChecker
+using namespace std::chrono;
+using namespace std::chrono_literals;
+using namespace std::placeholders;
+
+class SwarmCollisionChecker : public rclcpp::Node
 {
 public:
-  SwarmCollisionChecker() {}
+  SwarmCollisionChecker(): Node("swarm_collision_checker")
+  {
+    reentrant_cb_group_ = this->create_callback_group(
+      rclcpp::CallbackGroupType::Reentrant);
 
-  /**
-   * @brief Initialize ROS publishers, subscribers
-   * 
-   * @param nh 
-   * @param pnh 
-   */
-  void init(ros::NodeHandle &nh, ros::NodeHandle &pnh){
-    pnh.param("num_drones", num_drones_, 0);
-    std::string pose_topic;
-    pnh.param("pose_topic", pose_topic, std::string("mavros/local_position/pose"));
-    pnh.param("check_collision_freq", check_collision_freq_, 10.0);
-    pnh.param("collision_check/warn_radius", col_warn_radius_, 0.225);
-    pnh.param("collision_check/fatal_radius", col_fatal_radius_, 0.14);
+	  this->declare_parameter("num_drones", 0);
+	  this->declare_parameter("odom_topic", "odom");
+	  this->declare_parameter("collision_check.frequency", 10.0);
+	  this->declare_parameter("collision_check.warn_radius", 0.225);
+	  this->declare_parameter("collision_check.fatal_radius", 0.14);
 
-    // Publisher for collision visualizations
-    collision_viz_pub_ = nh.advertise<visualization_msgs::Marker>("swarm_collision_checker/collision", 10);
+    num_drones_ = this->get_parameter("num_drones").as_int();
+    std::string odom_topic = this->get_parameter("odom_topic").as_string();
+    double col_check_freq = this->get_parameter("collision_check.frequency").as_double();
+    col_warn_radius_ = this->get_parameter("collision_check.warn_radius").as_double();
+    col_fatal_radius_ = this->get_parameter("collision_check.fatal_radius").as_double();
 
-    drone_poses_ = std::make_shared<std::vector<Eigen::Vector3d>>();
+    collision_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+      "/swarm_collision_checker/collisions",10);
+
+    drone_poses_ = std::make_unique<std::vector<Eigen::Vector3d>>();
+
     // Subscribers
-    for (int i = 0; i < num_drones_; i++) {
-      std::string pose_topic_indiv = std::string("/drone" + std::to_string(i) + "/" + pose_topic);
+    auto reentrant_cb_opt = rclcpp::SubscriptionOptions();
+    reentrant_cb_opt.callback_group = reentrant_cb_group_;
 
-      ros::Subscriber pose_sub = nh.subscribe<geometry_msgs::PoseStamped>(
-        pose_topic_indiv, 5, boost::bind(&SwarmCollisionChecker::poseCB, this, _1, i));
+    for (int i = 0; i < num_drones_; i++){
+      std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
+        std::bind(&SwarmCollisionChecker::odomCB, this, _1, i);
 
-      drones_pose_sub_.push_back(pose_sub);
+      drones_pose_subs_.push_back(
+        this->create_subscription<nav_msgs::msg::Odometry>(
+          "/d"+std::to_string(i)+ "/" + odom_topic, 
+          rclcpp::SensorDataQoS(), 
+          bound_callback_func, 
+          reentrant_cb_opt)
+      );
 
       (*drone_poses_).push_back(Eigen::Vector3d::Constant(999.9));
     }
 
-    node_start_time_ = ros::Time::now().toSec(); // buffer time used to prevent checking for collision until all drone states are received
+    // TODO: sleep
+    rclcpp::Rate loop_rate(1000);
+    loop_rate.sleep();
 
     // Timers
-    check_collision_timer_ = nh.createTimer(ros::Duration(1/check_collision_freq_), &SwarmCollisionChecker::checkCollisionTimerCb, this);
+    check_collision_timer_ = this->create_wall_timer((1.0/col_check_freq) *1000ms, 
+      std::bind(&SwarmCollisionChecker::checkCollisionTimerCb, this), reentrant_cb_group_);
+
   }
+
 
 private: 
   // Subscribe to robot pose
-  void poseCB(const geometry_msgs::PoseStamped::ConstPtr &msg, int drone_id)
+  void odomCB(const nav_msgs::msg::Odometry::UniquePtr &msg, int drone_id)
   {
     // ROS_INFO("[SwarmCollisionChecker]: Pose callback for drone %d", drone_id);
-    (*drone_poses_)[drone_id] = Eigen::Vector3d{msg->pose.position.x,  msg->pose.position.y,  msg->pose.position.z};
+    (*drone_poses_)[drone_id] = Eigen::Vector3d{msg->pose.pose.position.x,  msg->pose.pose.position.y,  msg->pose.pose.position.z};
   }
 
+
   // Timer callback for checking collision between swarm agentss
-  void checkCollisionTimerCb(const ros::TimerEvent &e)
+  void checkCollisionTimerCb()
   {
-    if (ros::Time::now().toSec() - node_start_time_ < 3.0){
-      return;
-    }
 
     const size_t        num_closest = 1;
     std::vector<size_t> out_indices(num_closest);
     std::vector<double> out_distances_sq(num_closest);
     
-    for (size_t i = 0; i < num_drones_; i++){ 
+    for (int i = 0; i < num_drones_; i++){ 
       // For every drone, get the nearest neighbor and see if distance is within tolerance
       // If not, publish a collision sphere.
 
@@ -104,11 +120,11 @@ private:
   {
     static int col_viz_id = 0;
 
-    visualization_msgs::Marker sphere;
+    visualization_msgs::msg::Marker sphere;
     sphere.header.frame_id = "world";
-    sphere.header.stamp = ros::Time::now();
-    sphere.type = visualization_msgs::Marker::SPHERE;
-    sphere.action = visualization_msgs::Marker::ADD;
+    sphere.header.stamp = this->get_clock()->now();
+    sphere.type = visualization_msgs::msg::Marker::SPHERE;
+    sphere.action = visualization_msgs::msg::Marker::ADD;
     sphere.ns = "swarm_collision";
     sphere.pose.orientation.w = 1.0;
     sphere.id = col_viz_id++;
@@ -140,15 +156,18 @@ private:
     sphere.pose.position.y = pos(1);
     sphere.pose.position.z = pos(2);
 
-    collision_viz_pub_.publish(sphere);
+    collision_viz_pub_->publish(sphere);
   }
 
 private:
-  /* ROS objects */
-  ros::Timer check_collision_timer_; // Timer for querying KDTree to check collision
-  std::vector<ros::Subscriber> drones_pose_sub_; // Vector of subscribers to drone pose
+	rclcpp::CallbackGroup::SharedPtr reentrant_cb_group_;
 
-  ros::Publisher collision_viz_pub_;
+  /* ROS objects */
+  rclcpp::TimerBase::SharedPtr check_collision_timer_; // Timer for querying KDTree to check collision
+	std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr>
+    drones_pose_subs_;  // Vector of subscribers to drone pose
+  
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr collision_viz_pub_; // start and goal visualization publisher
 
   /* Data structs */
   std::unique_ptr<KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector3d>, double>>   
@@ -156,17 +175,12 @@ private:
 
   std::shared_ptr<std::vector<Eigen::Vector3d>> drone_poses_;
 
-  double node_start_time_{-1.0}; // Time that node was started 
-
   /* Params */
 
   int num_drones_{-1};
 
-  double check_collision_freq_; // Frequency to check for collisions
-
   double col_warn_radius_{-1.0};
   double col_fatal_radius_{-1.0};
-
 
 }; // class SwarmCollisionChecker
 
