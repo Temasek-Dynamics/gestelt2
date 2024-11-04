@@ -58,7 +58,7 @@ public:
   bool isVoronoiAlternative( const int& x, const int& y ) const;
 
   //! check if cell is a voronoi vertex (has at least 3 voronoi neighbours)
-  bool isVoronoiVertex(int x, int y);
+  bool isVoronoiVertex(int x, int y) const;
   //! returns whether the specified cell is part of the (pruned) Voronoi graph
   bool isVoronoi(const int& x, const int& y ) const;
   //! checks whether the specficied location is occupied
@@ -69,7 +69,7 @@ public:
   /* Getter methods */
 
   //! retrieve the number of neighbors that are Voronoi cells (4-connected)
-  int getNumVoronoiNeighbors(int x, int y);
+  int getNumVoronoiNeighbors(int x, int y) const;
 
   //! retrieve the number of neighbors that are Voronoi cells (4-connected)
   int getNumVoronoiNeighborsAlternative(int x, int y);
@@ -141,7 +141,7 @@ public:
 
   /* Checking methods */
   // If cell is in map
-  bool isInMap(int x, int y);
+  bool isInMap(int x, int y) const;
   //! checks whether the specficied location is occupied
   bool isOccupied(const IntPoint& grid_pos) const;
   //! checks whether the location is occupied

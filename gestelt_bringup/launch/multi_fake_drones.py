@@ -5,6 +5,7 @@ Complete launch file to simulate a multi-agent navigation scenario
 """
 
 import os
+from datetime import datetime
 import json
 
 from ament_index_python.packages import get_package_share_directory
@@ -13,7 +14,7 @@ from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction
+from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
@@ -97,14 +98,15 @@ def generate_launch_description():
     # World to map transformation
     world_to_map_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
+                       output = "log",
                        arguments = ["0", "0", "0", "0", "0", "0", "world", "map"])
 
     # Fake map
     fake_map = Node(
         package='fake_map',
         executable='fake_map_publisher_node',
-        output='screen',
-        shell=True,
+        output='log',
+        shell=False,
         name='fake_map_publisher_node',
         parameters=[
             {'fake_map.pcd_filepath': fake_map_pcd_filepath},
@@ -113,12 +115,29 @@ def generate_launch_description():
         ],
     )
 
+
+    # Mission node: Sends goals to agents
+    swarm_collision_checker = Node(
+        package='swarm_collision_checker',
+        executable='swarm_collision_checker_node',
+        output='screen',
+        shell=False,
+        name='swarm_collision_checker_node',
+        parameters = [
+            {'num_drones': scenario.num_agents},
+            {'odom_topic': "odom"},
+            {'collision_check.frequency': 20.0},
+            {'collision_check.warn_radius': 0.225},
+            {'collision_check.fatal_radius': 0.14},
+        ]
+    )
+
     # RVIZ Visualization
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         output='log',
-        shell=True,
+        shell=False,
         arguments=['-d' + rviz_cfg]
     )
 
@@ -127,7 +146,7 @@ def generate_launch_description():
         package='gestelt_mission',
         executable='mission',
         output='screen',
-        shell=True,
+        shell=False,
         name='mission_node',
         parameters = [
             {'scenario': scenario.name},
@@ -140,11 +159,47 @@ def generate_launch_description():
     for id in range(scenario.num_agents):
         fake_drone_nodes.append(generateFakeDrone(id, scenario.spawns_pos[id], fake_map_pcd_filepath))
 
+    # ROSBag 
+    bag_topics = []
+    for id in range(scenario.num_agents):
+        prefix = "/d" + str(id) + "/"
+        bag_topics.append(prefix + "odom")
+        bag_topics.append(prefix + "minco_traj_viz")
+    bag_topics.append("/swarm_collision_checker/collisions")
+    bag_topics.append("/rosout")
+    bag_topics.append("/tf")
+    bag_topics.append("/tf_static")
+    bag_topics.append("/fake_map")
+
+    bag_file = os.path.join(
+        os.path.expanduser("~"), 'bag_files',
+        'bag_' + datetime.now().strftime("%d%m%Y_%H_%M_%S"),
+    )
+
+    rosbag_record = ExecuteProcess(
+        cmd=['ros2', 'bag', 'record', '-o',
+             bag_file,
+             *bag_topics],
+        output='screen'
+    )
+
+    # rosbag_record = Node(
+    #     package='rosbag2_transport',
+    #     executable='recorder',
+    #     name='recorder',
+    #     output="screen",
+    #     parameters=["/path/to/params.yaml"],
+    # )
+
     return LaunchDescription([
         # Central nodes
         world_to_map_tf,
         fake_map,
+        swarm_collision_checker,
+        # rosbag_record,
+        # Visualization
         rviz_node,
+        # mission
         mission_node,
         # Simulation instances
         *fake_drone_nodes

@@ -393,7 +393,6 @@ void VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness, std::
     return;
   }
 
-
   double slice_z = ((double) slice_z_cm)/100.0;
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_layer(new pcl::PointCloud<pcl::PointXYZ>);

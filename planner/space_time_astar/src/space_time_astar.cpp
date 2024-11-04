@@ -140,7 +140,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                                 std::function<double(const VCell_T&, const VCell_T&)> cost_function)
 {
     reset();
-    
+
     int start_z_cm = roundToMultInt((int) (start_pos_3d(2) * 100), 
                                         voro_params_.z_separation_cm, 
                                         voro_params_.min_height_cm, 
@@ -158,16 +158,19 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     if (!dyn_voro_arr_[start_z_cm]->posToIdx(DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d) 
         || !dyn_voro_arr_[goal_z_cm]->posToIdx(DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
     {   
-        std::cerr << "[a_star] Start or goal position is not within map bounds!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+            "[HCA*] Start or goal position is not within map bounds!" << std::endl;
         return false;
     }
 
     if (dyn_voro_arr_[start_z_cm]->isOccupied(start_node_2d)){
-        std::cerr << "[space-time A*] Start position in obstacle!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+            "[HCA*] Start position in obstacle!" << std::endl;
         return false;
     }
     if (dyn_voro_arr_[goal_z_cm]->isOccupied(goal_node_2d)){
-        std::cerr << "[space-time A*] Goal position in obstacle!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+            "[HCA*] Goal position in obstacle!" << std::endl;
         return false;
     }
 
@@ -218,7 +221,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
 
         if (cur_node.isSamePositionAs(goal_node))
         {
-            // std::cout << astar_params_.drone_id << ":  Found goal after " << num_iter << " iterations" << std::endl;
             // Goal reached, terminate search and obtain path
             tracePath(cur_node);
 
@@ -251,7 +253,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 
                 if (!(dyn_voro->isVoronoi(nx, ny) 
-                        || marked_bubble_cells.find(IntPoint(nx, ny)) != marked_bubble_cells.end())){
+                      || marked_bubble_cells.find(IntPoint(nx, ny)) != marked_bubble_cells.end())){
                     // if not (voronoi or marked as bubble cell)
                     continue;
                 }
@@ -322,7 +324,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 continue;
             }
 
-
             double tent_g_cost = g_cost_v_[cur_node_3d] + cost_function(cur_node, nb_node);
 
             // If g_cost is not found or tentative cost is better than previously computed cost, then update costs
@@ -345,9 +346,14 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
         num_iter++;
     }
 
-    std::cerr   << "Drone " << astar_params_.drone_id << " :Unable to find goal node ("
+    std::cerr   << "D" << astar_params_.drone_id << ": " <<
+                    "Unable to find goal node ("
                 << goal_node.x << ", " << goal_node.y 
                 << ") with maximum iteration " << num_iter << std::endl;
+    if (open_list_vt_.empty()){
+        std::cerr << "      D" << astar_params_.drone_id << ": " <<
+            "Open list is empty!" << std::endl; 
+    }
 
     return false;
 }

@@ -361,7 +361,6 @@ private:
   double sqr_goal_tol_{0.1}; // [m] Distance to goal before it is considered fulfilled.
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time
-  bool planner_los_smooth_; // Enable line of sight smoothing for planner
   std::string output_json_filepath_;  // Output filepath for JSON file
 
   bool json_output_{false};  // output path to json file
@@ -397,7 +396,6 @@ private:
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
 
   // Planning publishers
-  rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_pub_; // Publish front-end plans
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
 
   rclcpp::Publisher<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr poly_traj_pub_; // Publish polynomial trajectories for execution
@@ -630,6 +628,8 @@ inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Traj
 
 }
 
+// P1: Start
+// P2: global goal
 inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
   const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
   const Eigen::Vector3d& local_map_min, const Eigen::Vector3d& local_map_max)
@@ -643,16 +643,30 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
   {
     // Goal is inside local map bounds
 
-    Eigen::Vector3d P3;
+    Eigen::Vector3d P3_gbl;
 
+    // Iterate backwards along the P1-P2 line until an unoccupied point is found
     for (double t = 1.0; t >= 0.05 ; t -= 0.1){
-      P3 = P1 + (t)*(P2 - P1);
-      if (!voxel_map_->isOccupied(P3)){
+      P3_gbl = P1 + (t)*(P2 - P1);
+      Eigen::Vector3d P3 = mapToLclMap(P3_gbl);
+
+      int P3_z = roundToMultInt((int) (P3(2) * 100), 
+                                  voro_params_.z_separation_cm, 
+                                  voro_params_.min_height_cm, 
+                                  voro_params_.max_height_cm);
+      // Get node index position
+      IntPoint P3_2d; 
+      dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+      if (!dyn_voro_arr_[P3_z]->isOccupied(P3_2d)){
         break;
       }
+
+      // if (!voxel_map_->isOccupied(P3)){
+      //   break;
+      // }
     }
 
-    return P3;
+    return P3_gbl;
   }
 
   /**
@@ -714,7 +728,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
     }
   }
 
-  if (intsc_pts.size() == 0) // There is no intersection
+  if (intsc_pts.size() == 0) // There is no intersection between P1-P2 line and bounding box
   {  
     logger_->logError("BUG: Unable to getRHPGoal(), no intersection of current_pose->goal line with local map bounds");
     rclcpp::shutdown();
@@ -722,8 +736,28 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
   
   // Return nearest intersection point 
   int minElementIndex = std::min_element(distances.begin(), distances.end()) - distances.begin();
+  Eigen::Vector3d P4 = intsc_pts[minElementIndex];
 
-  return intsc_pts[minElementIndex];
+  // Iterate backwards along the P1-P2 line until an unoccupied point is found
+  Eigen::Vector3d P3_gbl;
+
+  for (double t = 1.0; t >= 0.05 ; t -= 0.1){
+    P3_gbl = P1 + (t)*(P4 - P1);
+    Eigen::Vector3d P3 = mapToLclMap(P3_gbl);
+
+    int P3_z = roundToMultInt((int) (P3(2) * 100), 
+                                voro_params_.z_separation_cm, 
+                                voro_params_.min_height_cm, 
+                                voro_params_.max_height_cm);
+    // Get node index position
+    IntPoint P3_2d; 
+    dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+    if (!dyn_voro_arr_[P3_z]->isOccupied(P3_2d)){
+      break;
+    }
+  }
+
+  return P3_gbl;
 }
 
 } // namespace navigator

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class ScenarioGenerator:
-    def __init__(self, take_off_height=1.5, visualize=False):
+    def __init__(self, take_off_height=2.0, visualize=False):
         self.scenes_dict = {}
         self.visualize = visualize
         self.take_off_height = take_off_height
@@ -34,7 +34,7 @@ class ScenarioGenerator:
         for i in range(num_agents):
             spawn_x = radius * np.cos(i * angle)
             spawn_y = radius * np.sin(i * angle)
-            spawn_yaw = self.normalizeYaw(i * angle + np.pi)
+            spawn_yaw = self.normalizeYaw(-np.pi/2 - i * angle ) 
 
             goal_x = - spawn_x
             goal_y = - spawn_y
@@ -96,12 +96,12 @@ class ScenarioGenerator:
             print(f"Saved to {filepath}")
 
 def main():
-    scene_gen = ScenarioGenerator(visualize=True)
+    scene_gen = ScenarioGenerator(take_off_height=1.5, visualize=True)
 
     scene_gen.antipodalSwap(
         radius = 8.0, 
         num_agents = 8,
-        goal_z = 2.0,
+        goal_z = 1.5,
         name = "antipodal_swap_8", 
         map_name = "map_test", 
     )

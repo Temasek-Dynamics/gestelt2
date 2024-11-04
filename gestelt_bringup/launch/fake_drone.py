@@ -96,16 +96,16 @@ def generate_launch_description():
 
     # drone base_link to sensor fixed TF
     camera_link_tf = Node(package = "tf2_ros", 
-                       executable = "static_transform_publisher",
-                      arguments = ["0", "0", "0", "0", "0", "0", 
-                              base_link_frame, camera_frame])
+                          executable = "static_transform_publisher",
+                          output = "log",
+                          arguments = ["0", "0", "0", "0", "0", "0", base_link_frame, camera_frame])
 
     ''' Fake drone without dynamics '''
     fake_drone_node = Node(
         package='fake_drone',
         executable='fake_drone_node',
-        output='screen',
-        shell=True,
+        output='log',
+        shell=False,
         name='fake_drone_node',
         parameters = [
             fake_drone_cfg,
@@ -121,7 +121,7 @@ def generate_launch_description():
         package='voronoi_planner',
         executable='voronoi_planner_node',
         output='screen',
-        shell=True,
+        shell=False,
         name='voronoi_planner',
         parameters=[
             {'drone_id': drone_id},
@@ -136,8 +136,8 @@ def generate_launch_description():
     trajectory_server = Node(
         package='trajectory_server',
         executable='trajectory_server_node',
-        output='screen',
-        shell=True,
+        output='log',
+        shell=False,
         name=['traj_server_', drone_id],
         parameters=[
           {'drone_id': drone_id},
@@ -152,7 +152,7 @@ def generate_launch_description():
         package='fake_sensor',
         executable='fake_sensor_node',
         output='screen',
-        shell=True,
+        shell=False,
         name=['fake_sensor_', drone_id],
         parameters=[
           {'drone_id': drone_id},

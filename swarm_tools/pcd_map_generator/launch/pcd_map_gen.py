@@ -25,7 +25,7 @@ def generate_launch_description():
         package='pcd_map_generator',
         executable='pcd_map_generator',
         output='screen',
-        shell=True,
+        shell=False,
         name='pcd_map_generator',
         parameters=[
             {'map.filename': map_filename},

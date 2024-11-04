@@ -93,12 +93,14 @@ def generate_launch_description():
     # This is necessary because PX4 SITL is not able to change it's initial starting position
     drone_origin_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
+                       output="log",
                       arguments = [init_x, init_y, "0", "0", "0", "0", 
                               "world", map_frame])
 
     # drone base_link to sensor fixed TF
     camera_link_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
+                       output="log",
                       arguments = ["0", "0", "0", "0", "0", "0", 
                               base_link_frame, camera_frame])
 
@@ -124,7 +126,7 @@ def generate_launch_description():
             '-d' # Run as daemon (not interactive terminal)
         ],
         name=['px4_sitl_', drone_id],
-        shell=True
+        shell=False
     )
 
     ''' Navigator: Planner module '''
@@ -132,7 +134,7 @@ def generate_launch_description():
         package='voronoi_planner',
         executable='voronoi_planner_node',
         output='screen',
-        shell=True,
+        shell=False,
         name='voronoi_planner',
         parameters=[
             {'drone_id': drone_id},
@@ -148,7 +150,7 @@ def generate_launch_description():
         package='trajectory_server',
         executable='trajectory_server_node',
         output='screen',
-        shell=True,
+        shell=False,
         name=['traj_server_', drone_id],
         parameters=[
           {'drone_id': drone_id},
@@ -163,7 +165,7 @@ def generate_launch_description():
         package='fake_sensor',
         executable='fake_sensor_node',
         output='screen',
-        shell=True,
+        shell=False,
         name=['fake_sensor_', drone_id],
         parameters=[
           {'drone_id': drone_id},
