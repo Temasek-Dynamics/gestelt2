@@ -241,7 +241,7 @@ float DynamicVoronoi::getDistance( int x, int y ) {
   else return -1;
 }
 
-bool DynamicVoronoi::isVoronoiVertex(int x, int y) {
+bool DynamicVoronoi::isVoronoiVertex(int x, int y) const {
   if (isVoronoi(x,y)){
     if (getNumVoronoiNeighbors(x, y) >= 3){
       return true;
@@ -628,7 +628,7 @@ bool DynamicVoronoi::markerMatchAlternative(int x, int y) {
 }
 
 
-int DynamicVoronoi::getNumVoronoiNeighbors(int x, int y) {
+int DynamicVoronoi::getNumVoronoiNeighbors(int x, int y) const {
   int count = 0;
   for (int dx = -1; dx <= 1; dx++) {
     for (int dy = -1; dy <= 1; dy++) {
@@ -753,7 +753,7 @@ void DynamicVoronoi::idxToPos(const IntPoint& grid_pos, DblPoint& map_pos) {
 
 /* Checking methods */
 
-bool DynamicVoronoi::isInMap(int x, int y) {
+bool DynamicVoronoi::isInMap(int x, int y) const{
   return !(x < 0 || x >= sizeX || y < 0 || y >= sizeY);
 }
 

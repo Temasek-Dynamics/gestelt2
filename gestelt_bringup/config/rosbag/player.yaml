@@ -1,0 +1,18 @@
+player:
+  ros__parameters:
+    play:
+      read_ahead_queue_size: 1000
+      node_prefix: ""
+      rate: 1.0
+      loop: false
+      # Negative timestamps will make the playback to not stop.  
+      playback_duration:
+        sec: -1
+        nsec: 00000000
+      start_paused: false
+      disable_keyboard_controls: false
+
+    storage:
+      uri: "/home/john/bag_files/bag_04112024_12_31_49/bag_04112024_12_31_49_0.mcap"
+      storage_id: "mcap"
+      storage_config_uri: ""

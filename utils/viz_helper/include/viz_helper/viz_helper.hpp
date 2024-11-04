@@ -44,8 +44,8 @@ namespace viz_helper{
   static const Eigen::Vector4d fe_plan_path_color{1.0, 0.5, 0.0, 0.5}; // Front-end path
   static const  Eigen::Vector4d exec_traj_color{1, 51.0/221.0, 51.0/221.0, 0.5}; // #FF3333
 
-  static const double EXEC_TRAJ_ALPHA{0.6};
-  static const double EXEC_TRAJ_RADIUS{0.25};
+  static const double EXEC_TRAJ_ALPHA{0.3};
+  static const double EXEC_TRAJ_RADIUS{0.175};
 
   static const double FRONT_END_ALPHA{0.2};
   static const double FRONT_END_RADIUS{0.1};
@@ -383,7 +383,7 @@ namespace viz_helper{
       lines.color.r = exec_traj_color(0);
       lines.color.g = exec_traj_color(1);
       lines.color.b = exec_traj_color(2);
-      lines.color.a = alpha * 0.75;
+      lines.color.a = alpha * 0.5;
 
       lines.scale.x = radius * 0.5;
 

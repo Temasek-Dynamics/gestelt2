@@ -4,22 +4,18 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /fake_map1/Topic1
+        - /fake_map1
         - /d01/state1
         - /d01/front_end1
         - /d01/maps1
         - /d11/maps1
-        - /d31
         - /d31/state1
-        - /d41
         - /d41/state1
-        - /d51
+        - /d41/maps1
         - /d51/state1
         - /d51/maps1
-        - /d61
-        - /d61/state1
-        - /d71
-        - /d71/state1
+        - /d61/front_end1
+        - /d61/maps1
       Splitter Ratio: 0.5573770403862
     Tree Height: 707
   - Class: rviz_common/Selection
@@ -119,6 +115,23 @@ Visualization Manager:
       Value: false
     - Class: rviz_common/Group
       Displays:
+        - Class: rviz_default_plugins/Marker
+          Enabled: true
+          Name: swarm_collisions
+          Namespaces:
+            swarm_collision: true
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            Filter size: 10
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /swarm_collision_checker/collisions
+          Value: true
+      Enabled: true
+      Name: central
+    - Class: rviz_common/Group
+      Displays:
         - Alpha: 1
           Class: rviz_default_plugins/Polygon
           Color: 25; 255; 0
@@ -201,7 +214,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -214,9 +227,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -233,8 +244,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -259,7 +269,7 @@ Visualization Manager:
               Color: 165; 29; 45
               Color Transformer: FlatColor
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Max Intensity: 4096
@@ -279,7 +289,7 @@ Visualization Manager:
                 Value: /d0/occ_map
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
             - Alpha: 0.20000000298023224
               Binary representation: false
               Binary threshold: 100
@@ -1057,7 +1067,7 @@ Visualization Manager:
               Class: rviz_default_plugins/Map
               Color Scheme: map
               Draw Behind: false
-              Enabled: false
+              Enabled: true
               Name: voro_map
               Topic:
                 Depth: 5
@@ -1073,7 +1083,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d3/voro/voro_map_updates
               Use Timestamp: false
-              Value: false
+              Value: true
             - Alpha: 0.699999988079071
               Binary representation: false
               Binary threshold: 100
@@ -1354,7 +1364,7 @@ Visualization Manager:
                 Value: /d4/voro/occ_map_updates
               Use Timestamp: false
               Value: false
-          Enabled: false
+          Enabled: true
           Name: maps
       Enabled: true
       Name: d4
@@ -1485,8 +1495,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1701,7 +1710,20 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d6/fe_plan/viz
               Value: true
-          Enabled: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: fe_plan_req
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d6/fe_plan_req
+              Value: true
+          Enabled: true
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -1709,8 +1731,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1762,7 +1783,7 @@ Visualization Manager:
               Class: rviz_default_plugins/Map
               Color Scheme: map
               Draw Behind: false
-              Enabled: false
+              Enabled: true
               Name: voro_map
               Topic:
                 Depth: 5
@@ -1778,7 +1799,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d6/voro/voro_map_updates
               Use Timestamp: false
-              Value: false
+              Value: true
             - Alpha: 0.699999988079071
               Binary representation: false
               Binary threshold: 100
@@ -1802,7 +1823,7 @@ Visualization Manager:
                 Value: /d6/voro/occ_map_updates
               Use Timestamp: false
               Value: false
-          Enabled: false
+          Enabled: true
           Name: maps
       Enabled: true
       Name: d6
@@ -1933,8 +1954,7 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                exec_traj_lines: true
-                exec_traj_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -6123,26 +6143,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 27.751869201660156
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: -6.1747660636901855
-        Y: -3.1837282180786133
-        Z: 1.2874603271484375e-05
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Scale: 48.827049255371094
       Target Frame: <Fixed Frame>
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.172395944595337
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 2.5031120777130127
+      Y: -1.3425246477127075
     Saved: ~
 Window Geometry:
   Displays:

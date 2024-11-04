@@ -109,7 +109,7 @@ def generate_launch_description():
             # '--headless',
         ],
         name='gazebo',
-        shell=True
+        shell=False
     )
 
     # XRCE Agent that will connect to ALL clients
@@ -118,7 +118,7 @@ def generate_launch_description():
             'MicroXRCEAgent udp4 -p 8888 -v'
         ]],
         name='microxrceagent',
-        shell=True
+        shell=False
     )
 
     # Fake map
@@ -126,7 +126,7 @@ def generate_launch_description():
         package='fake_map',
         executable='fake_map_publisher_node',
         output='screen',
-        shell=True,
+        shell=False,
         name='fake_map_publisher_node',
         parameters=[
             {'fake_map.pcd_filepath': fake_map_pcd_filepath},
@@ -140,7 +140,7 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         output='log',
-        shell=True,
+        shell=False,
         arguments=['-d' + rviz_cfg]
     )
 
@@ -149,7 +149,7 @@ def generate_launch_description():
         package='gestelt_mission',
         executable='mission',
         output='screen',
-        shell=True,
+        shell=False,
         name='mission_node',
         parameters = [
             {'scenario': scenario.name},

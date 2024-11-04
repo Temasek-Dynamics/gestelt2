@@ -29,20 +29,20 @@ foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
 endforeach()
 
 
-add_executable(swarm_collision_checker 
-  src/swarm_collision_checker.cpp)
-ament_target_dependencies(swarm_collision_checker 
+add_executable(swarm_collision_checker_node 
+  src/swarm_collision_checker_node.cpp)
+ament_target_dependencies(swarm_collision_checker_node 
   Eigen3
   rclcpp
   nav_msgs
   visualization_msgs
 )
-target_include_directories(swarm_collision_checker PUBLIC
+target_include_directories(swarm_collision_checker_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(swarm_collision_checker PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(swarm_collision_checker_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-install(TARGETS swarm_collision_checker
+install(TARGETS swarm_collision_checker_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

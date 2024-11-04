@@ -35,7 +35,7 @@ public:
     col_fatal_radius_ = this->get_parameter("collision_check.fatal_radius").as_double();
 
     collision_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-      "/swarm_collision_checker/collisions",10);
+      "/swarm_collision_checker/collisions", 10);
 
     drone_poses_ = std::make_unique<std::vector<Eigen::Vector3d>>();
 
@@ -66,6 +66,7 @@ public:
     check_collision_timer_ = this->create_wall_timer((1.0/col_check_freq) *1000ms, 
       std::bind(&SwarmCollisionChecker::checkCollisionTimerCb, this), reentrant_cb_group_);
 
+    std::cout << "[swarm_collision_checker]: Initialized" << std::endl;
   }
 
 
@@ -73,8 +74,11 @@ private:
   // Subscribe to robot pose
   void odomCB(const nav_msgs::msg::Odometry::UniquePtr &msg, int drone_id)
   {
+    std::lock_guard<std::mutex> poses_mtx_grd(poses_mtx_);
     // ROS_INFO("[SwarmCollisionChecker]: Pose callback for drone %d", drone_id);
-    (*drone_poses_)[drone_id] = Eigen::Vector3d{msg->pose.pose.position.x,  msg->pose.pose.position.y,  msg->pose.pose.position.z};
+    (*drone_poses_)[drone_id] = Eigen::Vector3d{msg->pose.pose.position.x,  
+                                                msg->pose.pose.position.y,  
+                                                msg->pose.pose.position.z};
   }
 
 
@@ -85,8 +89,10 @@ private:
     const size_t        num_closest = 1;
     std::vector<size_t> out_indices(num_closest);
     std::vector<double> out_distances_sq(num_closest);
-    
+
     for (int i = 0; i < num_drones_; i++){ 
+      std::lock_guard<std::mutex> poses_mtx_grd(poses_mtx_);
+
       // For every drone, get the nearest neighbor and see if distance is within tolerance
       // If not, publish a collision sphere.
 
@@ -99,14 +105,15 @@ private:
       drone_poses_wo_self.erase(drone_poses_wo_self.begin() + i);
       drone_poses_kdtree_ = 
           std::make_unique<KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector3d>, double>>(
-              3, drone_poses_wo_self, 10);
+              3, drone_poses_wo_self);
 
       drone_poses_kdtree_->query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
 
       double dist_to_nearest_drone = sqrt(out_distances_sq[0]);
 
       if (dist_to_nearest_drone <= col_warn_radius_){
-        Eigen::Vector3d drone_nearest_pos = (*drone_poses_)[out_indices[0]];
+        // Take average of the 2 drones' positions
+        Eigen::Vector3d drone_nearest_pos = 0.5 * (drone_poses_wo_self[out_indices[0]] + (*drone_poses_)[i]);
 
         publishCollisionSphere(drone_nearest_pos, dist_to_nearest_drone, col_fatal_radius_, col_warn_radius_);
       }
@@ -173,7 +180,7 @@ private:
   std::unique_ptr<KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector3d>, double>>   
     drone_poses_kdtree_; // KD Tree for drone poses
 
-  std::shared_ptr<std::vector<Eigen::Vector3d>> drone_poses_;
+  std::unique_ptr<std::vector<Eigen::Vector3d>> drone_poses_;
 
   /* Params */
 
@@ -181,6 +188,9 @@ private:
 
   double col_warn_radius_{-1.0};
   double col_fatal_radius_{-1.0};
+
+  /* Params */
+  std::mutex poses_mtx_;
 
 }; // class SwarmCollisionChecker
 

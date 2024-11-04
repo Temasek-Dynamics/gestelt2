@@ -102,7 +102,8 @@ FakeSensor::FakeSensor()
 		world_to_map_tf_mat_(2, 3) = tf_world_to_map.transform.translation.z;
 		world_to_map_tf_mat_(3, 3) = 1.0;
 
-	} catch (const tf2::TransformException & ex) {
+	} 
+	catch (const tf2::TransformException & ex) {
 			RCLCPP_ERROR(
 				this->get_logger(), "Could not get transform from world_frame('world') to map_frame_(%s): %s",
 				map_frame_.c_str(), ex.what());
@@ -270,6 +271,8 @@ void FakeSensor::sensorUpdateTimerCB()
 
 	// Publish cloud 
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;
+	// printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
+	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
 	pcl::toROSMsg(*sensor_cloud_, sensor_cloud_msg);
 
 	sensor_cloud_msg.header.frame_id = sensor_frame_;

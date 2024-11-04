@@ -30,15 +30,15 @@
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel
-        inflation: 0.4    # [m] Inflation of voxel
+        inflation: 0.3    # [m] Inflation of voxel
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
         max_range: 7.5   # [m] Maximum range of sensor
 
       collision_check: # For visualizing collision with static obstacles
-        enable: false    # Enable checking of collisions
+        enable: true    # Enable checking of collisions
         warn_radius: 0.25  # [m]  Distance to collision to display warning sphere
         fatal_radius: 0.14  # [m] Distance to collision to display fatal sphere
-        check_collision_frequency: 10.0 # [Hz]  Frequency to check for collision
+        check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
 
       camera_to_body: # camera extrinsic parameters 
         # roll: 90.0
