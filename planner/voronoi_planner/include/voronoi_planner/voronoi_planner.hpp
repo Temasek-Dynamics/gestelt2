@@ -192,12 +192,29 @@ public:
   /**
    * @brief Plan a path from start to goal
    * 
-   * @param start 
    * @param goal 
-   * @return true 
-   * @return false 
+   * @return true planning succeeded
+   * @return false planning failed
    */
   bool plan(const Eigen::Vector3d& goal);
+
+  /**
+   * @brief Plan a path from start to goal
+   * 
+   * @param goal 
+   * @return true planning succeeded
+   * @return false planning failed
+   */
+  bool planWithoutComms(const Eigen::Vector3d& goal);
+
+  /**
+   * @brief Plan a path from start to goal
+   * 
+   * @param goal 
+   * @return true planning succeeded
+   * @return false planning failed
+   */
+  bool planWithComms(const Eigen::Vector3d& goal);
 
 private:
   /* Timer callbacks */
@@ -223,7 +240,10 @@ private:
   void planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg);
 
   /* Subscription callback to odometry */
-  void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
+  void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg);
+
+  /* Subscription callback to swarm odometry */
+  void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int drone_id);
 
 /* Helper methods */
 private:
@@ -351,6 +371,9 @@ private:
   /* Params */
   int drone_id_{-1};
 
+  int num_drones_{0};  // If true, enable communicationless planning
+  bool commless_{false};  // If true, enable communicationless planning
+
   std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
 
@@ -417,6 +440,9 @@ private:
 	std::vector<rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr>
     fe_plan_broadcast_subs_;  // Subscription to broadcasted front end plan from other agents
   
+	std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> 
+    swarm_odom_subs_;  // Subscription to odometry from other agents
+
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
 
 	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
@@ -447,6 +473,8 @@ private:
   /* Planner  */
   std::unique_ptr<global_planner::SpaceTimeAStar> fe_planner_; // Front end planner
   std::map<int, RsvnTbl> rsvn_tbl_; // map{drone_id : unordered_set{(x,y,z,t)}}. Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
+  std::unique_ptr<std::vector<Eigen::Vector3d>> drone_poses_; // [Comm-less plannig] Pose of other agents 
+  std::unique_ptr<std::vector<Eigen::Vector3d>> drone_vels_; // [Comm-less plannig] Pose of other agents 
 
   Waypoint waypoints_; // Goal waypoint handler object
 

@@ -41,7 +41,7 @@ VoronoiPlanner::VoronoiPlanner()
   mapping_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive);
   swarm_plan_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
+    rclcpp::CallbackGroupType::Reentrant);
   others_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::Reentrant);
 
@@ -137,15 +137,40 @@ void VoronoiPlanner::initPubSubTimer()
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
 
-  for (int i = 0; i < drone_id_; i++){
-    fe_plan_broadcast_subs_.push_back(
-      this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
-        "/d"+std::to_string(i)+"/fe_plan/broadcast", 
-        rclcpp::SensorDataQoS(), 
-        std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), 
-        swarm_plan_sub_opt)
-    );
+  // Subscribe to front end plan individually from each agent
+  if (commless_){
+    swarm_poses_ = std::make_unique<std::vector<Eigen::Vector3d>>();
+    swarm_vels_ = std::make_unique<std::vector<Eigen::Vector3d>>();
+
+    for (int i = 0; i < num_drones_; i++){
+
+      std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
+        std::bind(&VoronoiPlanner::swarmOdomCB, this, _1, i);
+
+      swarm_odom_subs_.push_back(
+        this->create_subscription<nav_msgs::msg::Odometry>(
+          "/d"+std::to_string(i)+ "/" + "odom", 
+          rclcpp::SensorDataQoS(), 
+          bound_callback_func, 
+          swarm_plan_sub_opt)
+      );
+
+      (*swarm_poses_).push_back(Eigen::Vector3d::Constant(999.9));
+      (*swarm_vels_).push_back(Eigen::Vector3d::Constant(0.0));
+    }
   }
+  else {
+    for (int i = 0; i < drone_id_; i++){
+      fe_plan_broadcast_subs_.push_back(
+        this->create_subscription<gestelt_interfaces::msg::SpaceTimePath>(
+          "/d"+std::to_string(i)+"/fe_plan/broadcast", 
+          rclcpp::SensorDataQoS(), 
+          std::bind(&VoronoiPlanner::FEPlanSubCB, this, _1), 
+          swarm_plan_sub_opt)
+      );
+    }
+  }
+
 
   plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
     "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
@@ -169,6 +194,9 @@ void VoronoiPlanner::initParams()
   std::string param_ns = "navigator";
   
   this->declare_parameter("drone_id", -1);
+
+  this->declare_parameter(param_ns+".num_drones", 4);
+  this->declare_parameter(param_ns+".communication_less", false);
 
   this->declare_parameter(param_ns+".planner_frequency", 10.0);
   this->declare_parameter(param_ns+".generate_voronoi_frequency", 10.0);
@@ -194,6 +222,9 @@ void VoronoiPlanner::initParams()
 
   drone_id_ = this->get_parameter("drone_id").as_int();
 
+  num_drones_ = this->get_parameter(param_ns+".num_drones").as_int();
+  commless_ = this->get_parameter(param_ns+".communication_less").as_bool();
+
   fe_planner_freq_ = this->get_parameter(param_ns+".planner_frequency").as_double();
   gen_voro_map_freq_ = this->get_parameter(param_ns+".generate_voronoi_frequency").as_double();
 
@@ -217,6 +248,191 @@ void VoronoiPlanner::initParams()
 
 /* Core methods */
 bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
+  if (commless_){
+    return planWithoutComms(goal_pos);
+  }
+  else {
+    return planWithComms(goal_pos);
+  }
+}
+
+bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
+  if (!init_voro_maps_){
+    logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
+    return false;
+  }
+
+  {
+    std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
+    fe_planner_->setReservationTable(rsvn_tbl_);
+    // rsvn_tbl_.clear();
+  }
+
+  std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+
+  // Assign voronoi map
+  voro_params_.z_separation_cm = bool_map_3d_.z_separation_cm;
+  voro_params_.local_origin_x = bool_map_3d_.origin(0);
+  voro_params_.local_origin_y = bool_map_3d_.origin(1);
+  voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
+  voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
+  voro_params_.res = bool_map_3d_.resolution;
+
+  fe_planner_->setVoroMap(dyn_voro_arr_, 
+                          voro_params_);
+
+  Eigen::Vector3d start_pos, start_vel, start_acc;
+
+  // Eigen::Vector3d rhp_goal_pos = goal_pos;
+
+  auto plan_start_clock = this->get_clock()->now();
+
+  if (!sampleTrajectory(poly_traj_, plan_start_clock.seconds(), start_pos, start_vel, start_acc))
+  {
+    start_pos = cur_pos_;
+    start_vel = cur_vel_;
+    start_acc.setZero();
+  }
+
+  // Get RHP goal
+  Eigen::Vector3d rhp_goal_pos = getRHPGoal(
+    start_pos, goal_pos, 
+    voxel_map_->getLocalMapOrigin(0.2), voxel_map_->getLocalMapMax(0.2));
+
+  viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
+
+  tm_front_end_plan_.start();
+
+  // Generate plan 
+  logger_->logInfo("Generate plan");
+  if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
+  {
+    logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
+                              drone_id_, start_pos(0), start_pos(1), start_pos(2), 
+                              rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
+                              fe_planner_->getClosedList().size()));
+
+    // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
+    //                   fe_closed_list_viz_pub_, map_frame_);
+
+    tm_front_end_plan_.stop(verbose_print_);
+    return false;
+  }
+
+  tm_front_end_plan_.stop(verbose_print_);
+
+  // Retrieve space time path 
+  std::vector<Eigen::Vector4d> lcl_map_path;
+  // Current pose must converted from fixed map frame to local map frame before passing to planner
+  // lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
+  lcl_map_path = fe_planner_->getPathWithTime();
+
+  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
+                             std::vector<Eigen::Vector4d>& map_path_w_t,
+                             std::vector<Eigen::Vector3d>& map_path) {
+    map_path.clear();
+    map_path_w_t.clear();
+    
+    for (size_t i = 0; i < lcl_map_path.size(); i++){
+      Eigen::Vector4d map_pt;
+      map_pt.head<3>() = lclMapToMap(lcl_map_path[i].head<3>());
+      map_pt(3) = lcl_map_path[i](3);
+
+      map_path.push_back(map_pt.head<3>());
+      map_path_w_t.push_back(map_pt);
+    }
+  };
+
+  // Convert front-end path from local map frame to fixed map frame
+  lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
+  // Visualize front-end path
+  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
+
+  // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
+  gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
+
+  fe_plan_msg.agent_id = drone_id_;
+  fe_plan_msg.header.stamp = this->get_clock()->now();
+  fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+
+  for (size_t i = 0; i < fe_path_with_t_.size(); i++){
+    geometry_msgs::msg::Pose pose;
+    pose.position.x = fe_path_with_t_[i](0); 
+    pose.position.y = fe_path_with_t_[i](1);
+    pose.position.z = fe_path_with_t_[i](2);
+    pose.orientation.w = 1.0; 
+
+    fe_plan_msg.plan.push_back(pose);
+    fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
+  }
+
+  fe_plan_broadcast_pub_->publish(fe_plan_msg);
+
+  std::vector<Eigen::Vector4d> mjo_fe_path;
+  // Sample at regular intervals from front-end path
+  for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
+	{	
+		mjo_fe_path.push_back(Eigen::Vector4d{
+			fe_path_with_t_[i](0),
+			fe_path_with_t_[i](1),
+			fe_path_with_t_[i](2),
+			fe_path_with_t_[i](3)
+		});
+	}
+
+  if (mjo_fe_path.size() >= 2){
+    /* Generate minimum jerk trajectory */
+
+    auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
+                              const std::vector<Eigen::Vector4d>& space_time_path,
+                              const Eigen::Matrix3d& start_PVA,
+                              const Eigen::Matrix3d& goal_PVA,
+                              const double& t_plan_start){
+      
+      Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+      Eigen::VectorXd seg_durations(space_time_path.size()-1);
+
+      for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+        inner_pts.col(j) = space_time_path[i].head<3>();
+      }
+
+      for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+        seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+      }
+
+      mjo->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+
+      return mjo->getTraj(t_plan_start);
+    };
+
+    Eigen::Matrix3d start_PVA, goal_PVA;
+    start_PVA << start_pos, start_vel, start_acc;
+    goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+
+    poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.seconds());
+
+    Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
+
+    minco_interfaces::msg::PolynomialTrajectory poly_msg; 
+    minco_interfaces::msg::MincoTrajectory MINCO_msg; 
+
+    polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
+
+    poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
+    // TODO: convert MINCO_msg to world frame
+    // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
+	  
+    // Publish visualization
+    viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
+  }
+
+  plan_complete_ = true;
+
+  return true;
+
+}
+
+bool VoronoiPlanner::planWithComms(const Eigen::Vector3d& goal_pos){
   if (!init_voro_maps_){
     logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
     return false;
@@ -242,7 +458,6 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   //   loop_rate.sleep();
   // }
 
-
   // Update reservation table on planner
   {
     std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
@@ -253,17 +468,15 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
 
   // Assign voronoi map
-  {
-    voro_params_.z_separation_cm = bool_map_3d_.z_separation_cm;
-    voro_params_.local_origin_x = bool_map_3d_.origin(0);
-    voro_params_.local_origin_y = bool_map_3d_.origin(1);
-    voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
-    voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
-    voro_params_.res = bool_map_3d_.resolution;
+  voro_params_.z_separation_cm = bool_map_3d_.z_separation_cm;
+  voro_params_.local_origin_x = bool_map_3d_.origin(0);
+  voro_params_.local_origin_y = bool_map_3d_.origin(1);
+  voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
+  voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
+  voro_params_.res = bool_map_3d_.resolution;
 
-    fe_planner_->setVoroMap(dyn_voro_arr_, 
-                            voro_params_);
-  }
+  fe_planner_->setVoroMap(dyn_voro_arr_, 
+                          voro_params_);
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
 
@@ -336,6 +549,10 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
 
   // Convert front-end path from local map frame to fixed map frame
   lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
+
+  // Visualize front-end path
+  // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, map_frame_) ;
+  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
   // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
   gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
@@ -415,9 +632,7 @@ bool VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
     viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
   }
 
-  // Visualization
-  // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, map_frame_) ;
-  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
+
 
   // if (json_output_)
   // {
@@ -634,7 +849,26 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
 /* Subscriber callbacks*/
 
-void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
+
+void VoronoiPlanner::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id)
+{
+  // std::lock_guard<std::mutex> swarm_odom_mtx_grd(swarm_odom_mtx_grd);
+
+  // TODO: Remove previous position of swarm agent pose from voronio map
+
+  // ROS_INFO("[SwarmCollisionChecker]: Odom callback for drone %d", id);
+  (*swarm_poses_)[id] = Eigen::Vector3d{msg->pose.pose.position.x,  
+                                        msg->pose.pose.position.y,  
+                                        msg->pose.pose.position.z};
+
+  (*swarm_vels_)[id] = Eigen::Vector3d{msg->twist.twist.linear.x, 
+                                        msg->twist.twist.linear.y, 
+                                        msg->twist.twist.linear.z};
+
+  // TODO: Update reservation table and add swarm agent pose to voronoi map 
+}
+
+void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
 {
   cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x, 
                             msg->pose.pose.position.y, 

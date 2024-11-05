@@ -69,7 +69,6 @@ public:
     std::cout << "[swarm_collision_checker]: Initialized" << std::endl;
   }
 
-
 private: 
   // Subscribe to robot pose
   void odomCB(const nav_msgs::msg::Odometry::UniquePtr &msg, int drone_id)
