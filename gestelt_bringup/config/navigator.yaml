@@ -4,18 +4,18 @@
       communication_less: true # [bool] If True, enable communication-less planning. Otherwise, priority based planning is used
 
       planner_frequency: 30.0            # [Hz] Frequency at which plan is generated
-      generate_voronoi_frequency: 50.0  # [Hz] Frequency at which voronoi is generated
+      generate_voronoi_frequency: 30.0  # [Hz] Frequency at which voronoi is generated
       
       planner: 
         verbose_print: false  # If enabled, print debug information such as timing information
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
-        t_unit: 0.1           # [s] Duration of each time unit           
+        t_unit: 0.05           # [s] Duration of each time unit           
 
       min_jerk_trajectory:
         front_end_stride: 10 # Stride to sample front-end path for trajectory generation
 
       reservation_table:
         inflation: 1.0    # [m] buffer for reservation table in spatial domain
-        time_buffer: 1.5  # [s] buffer for reservation table in time domain
+        time_buffer: 1.0  # [s] buffer for reservation table in time domain
         window_size: 30  # [voxels] Reserve only up to a given number of points on plan. Negative numbers reserve the whole plan.

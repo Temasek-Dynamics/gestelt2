@@ -35,6 +35,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <ikd_tree/ikd_tree.hpp>
+
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/wait_for_message.hpp>
 
@@ -150,7 +152,9 @@ public:
 public:
 
   /** Initialization methods */
-  VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_origin);
+  VoxelMap(rclcpp::Node::SharedPtr node, 
+            const Eigen::Vector3d& map_origin,
+            const int& num_drones);
 
   virtual ~VoxelMap();
 
@@ -185,7 +189,7 @@ public:
    * @param bool_map 1D boolean map
    * @return boolean map array
    */
-  void sliceMap(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map);
+  void getMapSlice(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map);
 
   /** Publisher methods */
 
@@ -243,6 +247,12 @@ public:
 
 public:
 
+  /* Setter methods */
+  void updateSwarmState(
+    const int& id,
+    Eigen::Vector3d& swarm_pose, 
+    Eigen::Vector3d& swarm_vel);
+
   /* Getter methods */
 
   // Get occupancy grid resolution
@@ -287,6 +297,19 @@ private:
 
   // Takes in position [map_frame] and check if within local map
   bool isInLocalMap(const Eigen::Vector3d &pos);
+
+
+  /**
+   * @brief Get the Nearest Occupied Cell  
+   * 
+   * @param pos 
+   * @param occ_nearest position of nearest occupied cell
+   * @param radius 
+   * @return true 
+   * @return false 
+   */
+  bool getNearestOccupiedCell(const Eigen::Vector3d &pos, 
+                              Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb);
 
 private: 
   rclcpp::Node::SharedPtr node_;
@@ -341,8 +364,12 @@ private:
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_map_frame_;  // Point cloud global map in UAV Origin frame
 
   std::unique_ptr<BonxaiT> bonxai_map_; // Bonxai data structure 
+  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
 
   BoolMap3D bool_map_3d_; // Bool map slices 
+
+  std::vector<Eigen::Vector3d> swarm_poses_; // [Comm-less plannig] Pose of other agents 
+  std::vector<Eigen::Vector3d> swarm_vels_; // [Comm-less plannig] Velocities of other agents 
 
   /* Flags */
   bool local_map_updated_{false}; // Indicates if first local map update is done 
@@ -354,12 +381,22 @@ private:
   /* Stopwatch for profiling performance */
   logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
   logger_wrapper::Timer tm_bonxai_insert_{"bonxai::insertPointCloud"};  // Time required for map construction
-  logger_wrapper::Timer tm_slice_map_{"VoxelMap::sliceMap"};   // Time required to slice map
+  logger_wrapper::Timer tm_slice_map_{"VoxelMap::getMapSlice"};   // Time required to slice map
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
 };
+
+/* Setters */
+inline void VoxelMap::updateSwarmState(
+  const int& id,
+  Eigen::Vector3d& swarm_pose, 
+  Eigen::Vector3d& swarm_vel)
+{
+  swarm_poses_[id] = swarm_pose;
+  swarm_vels_[id] = swarm_vel;
+}
 
 /* Getters */
 
@@ -392,6 +429,26 @@ inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
     std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
     bool_map_3d = bool_map_3d_;
   }
+
+  return true;
+}
+
+inline bool VoxelMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
+                            Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb){
+  int nearest_num_nb = 1;
+  pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
+  std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
+  std::vector<float> nb_radius_vec;
+
+  kdtree_->Nearest_Search(search_point, nearest_num_nb, nb_points, nb_radius_vec);
+
+  if (nb_points.empty()){
+    return false;
+  }
+
+  dist_to_nearest_nb = sqrt(nb_radius_vec[0]);
+
+  occ_nearest = Eigen::Vector3d{nb_points[0].x, nb_points[0].y, nb_points[0].z};
 
   return true;
 }

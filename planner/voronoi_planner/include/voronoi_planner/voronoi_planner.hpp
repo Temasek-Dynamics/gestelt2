@@ -415,8 +415,11 @@ private:
   /**
    * ROS Publishers
    */
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
+  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
+  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
+
+  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> occ_map_pubs_;        // Publishes original occupancy grid
+  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
 
   // Planning publishers
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
@@ -466,15 +469,13 @@ private:
   bool plan_complete_{false}; // flag to indicate a plan has been completed
 
   /* Mapping */
-  std::shared_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
+  std::unique_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
   voxel_map::BoolMap3D bool_map_3d_; // Bool map slices 
   std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
 
   /* Planner  */
   std::unique_ptr<global_planner::SpaceTimeAStar> fe_planner_; // Front end planner
   std::map<int, RsvnTbl> rsvn_tbl_; // map{drone_id : unordered_set{(x,y,z,t)}}. Reservation table of (x,y,z_cm, t) where x,y are grid positions, z_cm is height in centimeters and t is space time units
-  std::unique_ptr<std::vector<Eigen::Vector3d>> drone_poses_; // [Comm-less plannig] Pose of other agents 
-  std::unique_ptr<std::vector<Eigen::Vector3d>> drone_vels_; // [Comm-less plannig] Pose of other agents 
 
   Waypoint waypoints_; // Goal waypoint handler object
 
@@ -489,7 +490,7 @@ private:
   logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Voronoi map discretization
 
   /* Visualization */
-  std::shared_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
+  std::unique_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_; // Class for logging

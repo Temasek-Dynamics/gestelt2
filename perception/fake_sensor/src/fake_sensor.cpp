@@ -173,7 +173,7 @@ void FakeSensor::TFListenCB()
     catch (const tf2::TransformException &ex)
     {
 		RCLCPP_ERROR(
-			this->get_logger(), "Could not get transform from map_frame(%s) to map_frame_(%s): %s",
+			this->get_logger(), "Could not get transform from sensor_frame(%s) to map_frame_(%s): %s",
 			sensor_frame_.c_str(), map_frame_.c_str(), ex.what());
 
 		cam_tf_valid_ = false;

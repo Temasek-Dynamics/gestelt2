@@ -40,10 +40,11 @@ def generate_launch_description():
     #   parameters=dump_params(rosbag_player_params, 'player'),
     # )
 
+    name = "bag_05112024_16_56_54"
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
-        'bag_04112024_12_59_30/bag_04112024_12_59_30_0.mcap',
+        name + '/' + name + '_0.mcap',
     )
 
     rosbag_player = ExecuteProcess(

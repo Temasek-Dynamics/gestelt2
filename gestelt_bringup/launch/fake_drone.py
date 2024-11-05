@@ -27,6 +27,7 @@ def generate_launch_description():
     init_y = LaunchConfiguration('init_y')
     init_yaw = LaunchConfiguration('init_yaw')
     fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
+    num_drones = LaunchConfiguration('num_drones')
 
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
@@ -49,6 +50,11 @@ def generate_launch_description():
     fake_map_pcd_filepath_launch_arg = DeclareLaunchArgument(
       'fake_map_pcd_filepath',
       default_value=''
+    )
+
+    num_drones_arg = DeclareLaunchArgument(
+      'num_drones',
+      default_value='4'
     )
 
     '''Frames'''
@@ -127,6 +133,7 @@ def generate_launch_description():
             {'drone_id': drone_id},
             {'map_frame': map_frame},
             {'local_map_frame': local_map_frame},
+            {'navigator.num_drones': num_drones},
             navigator_cfg,
             voxel_map_cfg,
         ],
@@ -171,6 +178,7 @@ def generate_launch_description():
         init_y_launch_arg,
         init_yaw_launch_arg,
         fake_map_pcd_filepath_launch_arg,
+        num_drones_arg,
         # Static transforms
         # drone_origin_tf,
         camera_link_tf,

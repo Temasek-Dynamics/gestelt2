@@ -30,7 +30,9 @@ namespace voxel_map
 
 /** Initialization methods */
 
-VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_origin) 
+VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, 
+                    const Eigen::Vector3d& map_origin, 
+                    const int& num_drones) 
 : node_(node)
 {
   md_.world_to_map.block<3,1>(0,3) = map_origin;
@@ -52,6 +54,11 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, const Eigen::Vector3d& map_orig
   tm_update_local_map_.updateID(drone_id_);
   tm_bonxai_insert_.updateID(drone_id_);
   tm_slice_map_.updateID(drone_id_);
+
+  for (int i = 0; i < num_drones; i++){
+    swarm_poses_.push_back(Eigen::Vector3d::Constant(999.9));
+    swarm_vels_.push_back(Eigen::Vector3d::Constant(0.0));
+  }
 
   if (dbg_input_entire_map_){
     md_.cam_to_map = md_.world_to_map;
@@ -114,7 +121,7 @@ void VoxelMap::initPubSubTimer()
 
   if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
     // Publisher for collision visualizations
-	  // collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("collision_viz");
+	  collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("static_collisions", 10);
 	  check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
   }
 
@@ -228,6 +235,10 @@ void VoxelMap::reset(const double& resolution){
 
   // Set up Bonxai data structure
   bonxai_map_ = std::make_unique<BonxaiT>(resolution);
+
+  // Set up KDTree for collision checks
+  // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
+  kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
 
   local_occ_map_pts_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   local_global_occ_map_pts_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
@@ -384,9 +395,11 @@ void VoxelMap::updateLocalMap(){
   local_global_occ_map_pts_->height = 1;
   local_global_occ_map_pts_->is_dense = true; 
 
+  // Add to KDTree
+  kdtree_->Build(local_global_occ_map_pts_->points);
 }
 
-void VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map) 
+void VoxelMap::getMapSlice(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map) 
 {
   if (local_occ_map_pts_->points.empty()){
     logger_->logWarnThrottle("Local map is empty!", 1.0);
@@ -395,28 +408,29 @@ void VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness, std::
 
   double slice_z = ((double) slice_z_cm)/100.0;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_layer(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   // Apply passthrough filter
   pcl::PassThrough<pcl::PointXYZ> z_filter;
   z_filter.setInputCloud(local_occ_map_pts_);
   z_filter.setFilterFieldName("z");
   z_filter.setFilterLimits(slice_z - (thickness/2) , slice_z + (thickness/2));
-  z_filter.filter(*pcd_layer);
+  z_filter.filter(*cloud);
+  
+  for (const auto& pt : *cloud){ // Iterate through each occupied point
+    // Position in local map frame 
+    double lcl_grid_x = (pt.x)/getRes();
+    double lcl_grid_y = (pt.y)/getRes();
 
-  // Iterate through each occupied point
-  for (const auto& pt : *pcd_layer){
-    double map_x = (pt.x)/getRes();
-    double map_y = (pt.y)/getRes();
-
-    // inflate map
-    for(int x = map_x - mp_.inf_num_voxels_; x <= map_x + mp_.inf_num_voxels_; x++)
+    // inflate map 
+    for(int x = lcl_grid_x - mp_.inf_num_voxels_; x <= lcl_grid_x + mp_.inf_num_voxels_; x++)
     {
-      for(int y = map_y - mp_.inf_num_voxels_; y <= map_y + mp_.inf_num_voxels_; y++)
+      for(int y = lcl_grid_y - mp_.inf_num_voxels_; y <= lcl_grid_y + mp_.inf_num_voxels_; y++)
       {
-        // Convert from local map coordinates to 1-D index
+        // Convert from 2D coordinates to 1D index
         int idx = x + y * mp_.local_map_num_voxels_(0);
 
-        if (idx < 0 || idx >= (int) bool_map.size()){
+        if (idx < 0 || idx >= (int) bool_map.size()){ 
+          // if out of map, skip
           continue;
         }
 
@@ -445,7 +459,7 @@ void VoxelMap::sliceMap(const double& slice_z_cm, const double& thickness, std::
     }
   }
 
-  // publishSliceMap(pcd_layer);
+  // publishSliceMap(cloud);
 }
 
 /** Timer callbacks */
@@ -463,25 +477,108 @@ void VoxelMap::updateLocalMapTimerCB()
   // Create horizontal map slices
   tm_slice_map_.start();
 
-  {
-    std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
+  std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
 
+  // Add static obstacles to boolean map
+  {
     bool_map_3d_.origin = mp_.local_map_origin_;
 
     bool_map_3d_.width = mp_.local_map_num_voxels_(0);
     bool_map_3d_.height = mp_.local_map_num_voxels_(1);
     bool_map_3d_.resolution = mp_.resolution_;
 
+    // Iterate through all heights of the map
     for (int z_cm = bool_map_3d_.min_height_cm; 
           z_cm <= bool_map_3d_.max_height_cm; 
           z_cm += bool_map_3d_.z_separation_cm)
     {
-      bool_map_3d_.bool_maps[z_cm] = std::vector<bool>(mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
-
-      sliceMap(z_cm, getRes(), bool_map_3d_.bool_maps[z_cm]);
+      bool_map_3d_.bool_maps[z_cm] = std::vector<bool>(
+        mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
+      // Get a slice of the map occupancy grid as a boolean array
+      getMapSlice(z_cm, getRes(), bool_map_3d_.bool_maps[z_cm]);
     }
   }
-  
+
+  // [Communication-less] Add obstacles to boolean map based on position of other drones
+  for (int id = 0; id < (int)swarm_poses_.size(); id++){
+    if (id == drone_id_){
+      continue;
+    }
+
+    if (!isInLocalMap(swarm_poses_[id])){ 
+      // Point is outside the local map
+      continue;
+    }
+
+    // Convert from fixed map origin to local map origin
+    Eigen::Vector3d lcl_map_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
+    Eigen::Vector3d lcl_map_grid = lcl_map_pos/getRes(); // In grid coordinares
+
+    auto roundToMultInt = [&](const int& num, const int& mult, 
+                              const int& min, const int& max)
+    {
+      if (mult == 0){
+        return num;
+      }
+
+      if (num > max){
+        return max;
+      }
+
+      if (num < min){
+        return min;
+      }
+
+      int rem = (int)num % mult;
+      if (rem == 0){
+        return num;
+      }
+
+      return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
+    };
+
+    int z_cm = roundToMultInt((int) (lcl_map_pos(2) * 100.0), 
+                                  bool_map_3d_.z_separation_cm,
+                                  bool_map_3d_.min_height_cm,
+                                  bool_map_3d_.max_height_cm);
+
+    int top_height = z_cm + bool_map_3d_.z_separation_cm;
+    int btm_height = z_cm - bool_map_3d_.z_separation_cm;
+
+    // Add the other layer sandwiching the current drone position as occupied too
+    int z2_cm = z_cm;  
+    if (top_height <= bool_map_3d_.max_height_cm 
+        && (double)z_cm <= lcl_map_pos(2) * 100.0 
+        && lcl_map_pos(2) * 100.0 < (double)top_height)
+    {
+      z2_cm = top_height;
+    }
+    else if (btm_height >= bool_map_3d_.min_height_cm
+      && (double)btm_height < lcl_map_pos(2) * 100.0
+      && lcl_map_pos(2) * 100.0 < (double)z_cm ) 
+    {
+      z2_cm = btm_height;
+    }
+
+    // inflate map 
+    for(int x = lcl_map_grid(0) - mp_.inf_num_voxels_; x <= lcl_map_grid(0) + mp_.inf_num_voxels_; x++)
+    {
+      for(int y = lcl_map_grid(1) - mp_.inf_num_voxels_; y <= lcl_map_grid(1) + mp_.inf_num_voxels_; y++)
+      {
+        // Convert from 2D coordinates to 1D index
+        int idx = x + y * mp_.local_map_num_voxels_(0);
+
+        if (idx < 0 || idx >= (int) bool_map_3d_.bool_maps[z_cm].size()){ 
+          // if out of map, skip
+          continue;
+        }
+
+        bool_map_3d_.bool_maps[z_cm][idx] = true;
+        bool_map_3d_.bool_maps[z2_cm][idx] = true;
+      }
+    }
+  }
+
   tm_slice_map_.stop(verbose_print_);
 
   local_map_updated_ = true;
@@ -513,22 +610,20 @@ void VoxelMap::checkCollisionsTimerCB()
   if (!isPoseValid()){
     return;
   }
+  Eigen::Vector3d query_pos = md_.body_to_map.block<3,1>(0,3);
 
-  // Eigen::Vector3d query_pos( 	body_to_map.block<3,1>(0,3)(0),
-  //                             body_to_map.block<3,1>(0,3)(1),
-  //                             body_to_map.block<3,1>(0,3)(2);
+  // Get nearest obstacle position
+  Eigen::Vector3d occ_nearest;
+  double dist_to_obs;
+  if (!getNearestOccupiedCell(query_pos, occ_nearest, dist_to_obs)){
+    return;
+  }
 
-  // // Get nearest obstacle position
-  // Eigen::Vector3d occ_nearest;
-  // double dist_to_obs;
-  // if (!getNearestOccupiedCell(query_pos, occ_nearest, dist_to_obs)){
-  //   return;
-  // }
-
-  // // Publish collision sphere visualizations.
-  // if (dist_to_obs <= col_warn_radius_){
-  //   publishCollisionSphere(occ_nearest, dist_to_obs, col_fatal_radius_, col_warn_radius_);
-  // }
+  // Publish collision sphere visualizations.
+  if (dist_to_obs <= col_warn_radius_){
+    publishCollisionSphere(occ_nearest, dist_to_obs, col_fatal_radius_, col_warn_radius_);
+  }
+  
 }
 
 /** Subscriber callbacks */
@@ -557,6 +652,52 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
   occ_map_pub_->publish(cloud_msg);
 }
 
+void VoxelMap::publishCollisionSphere(
+  const Eigen::Vector3d &pos, const double& dist_to_obs, 
+  const double& fatal_radius, const double& warn_radius)
+{
+  static int col_viz_id = 0;
+
+  visualization_msgs::msg::Marker sphere;
+  sphere.header.frame_id = mp_.map_frame;
+  sphere.header.stamp = node_->get_clock()->now();
+  sphere.type = visualization_msgs::msg::Marker::SPHERE;
+  sphere.action = visualization_msgs::msg::Marker::ADD;
+  sphere.ns = "static_collision";
+  sphere.pose.orientation.w = 1.0;
+  sphere.id = col_viz_id++;
+
+  // Make the alpha and red color value scale from 0.0 to 1.0 depending on the distance to the obstacle. 
+  // With the upper limit being the warn_radius, and the lower limit being the fatal_radius
+  double fatal_ratio = std::clamp((warn_radius - dist_to_obs)/(warn_radius - fatal_radius), 0.0, 1.001);
+  
+  if (fatal_ratio >= 1.0){
+    sphere.color.r = 1.0;
+    sphere.color.g = 0.0;
+    sphere.color.b = 0.0; 
+    sphere.color.a = 0.8;
+  }
+  else {
+    // Goes from blue to purple
+    sphere.color.r = fatal_ratio*(1.0);
+    sphere.color.g = 0.0;
+    sphere.color.b = 1.0; // If fatal, make blue value 0.0, so sphere is entire red.
+    sphere.color.a = 0.3 + (fatal_ratio*(0.8-0.3));
+  }
+
+  double scale = fatal_ratio < 1.0 ? 0.35 : 0.6;
+
+  sphere.scale.x = scale;
+  sphere.scale.y = scale;
+  sphere.scale.z = scale;
+  sphere.pose.position.x = pos(0);
+  sphere.pose.position.y = pos(1);
+  sphere.pose.position.z = pos(2);
+
+  collision_viz_pub_->publish(sphere);
+}
+
+
 // void VoxelMap::publishSliceMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& slice_map)
 // {
 //   if (slice_map_pub_.get_subscription_count() > 0){
@@ -569,51 +710,6 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
 //     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", local_occ_map_pts_.points.size()));
 //   }
   
-// }
-
-// void VoxelMap::publishCollisionSphere(
-//   const Eigen::Vector3d &pos, const double& dist_to_obs, 
-//   const double& fatal_radius, const double& warn_radius)
-// {
-//   static int col_viz_id = 0;
-
-//   visualization_msgs::Marker sphere;
-//   sphere.header.frame_id = mp_.local_map_frame_;
-//   sphere.header.stamp = node_->get_clock()->now();
-//   sphere.type = visualization_msgs::Marker::SPHERE;
-//   sphere.action = visualization_msgs::Marker::ADD;
-//   sphere.ns = "collision_viz";
-//   sphere.pose.orientation.w = 1.0;
-//   sphere.id = col_viz_id++;
-
-//   // Make the alpha and red color value scale from 0.0 to 1.0 depending on the distance to the obstacle. 
-//   // With the upper limit being the warn_radius, and the lower limit being the fatal_radius
-//   double fatal_ratio = std::clamp((warn_radius - dist_to_obs)/(warn_radius - fatal_radius), 0.0, 1.001);
-  
-//   if (fatal_ratio >= 1.0){
-//     sphere.color.r = 1.0;
-//     sphere.color.g = 0.0;
-//     sphere.color.b = 0.0; 
-//     sphere.color.a = 0.8;
-//   }
-//   else {
-//     // Goes from blue to purple
-//     sphere.color.r = fatal_ratio*(1.0);
-//     sphere.color.g = 0.0;
-//     sphere.color.b = 1.0; // If fatal, make blue value 0.0, so sphere is entire red.
-//     sphere.color.a = 0.3 + (fatal_ratio*(0.8-0.3));
-//   }
-
-//   double scale = fatal_ratio < 1.0 ? 0.35 : 0.6;
-
-//   sphere.scale.x = scale;
-//   sphere.scale.y = scale;
-//   sphere.scale.z = scale;
-//   sphere.pose.position.x = pos(0);
-//   sphere.pose.position.y = pos(1);
-//   sphere.pose.position.z = pos(2);
-
-//   collision_viz_pub_->publish(sphere);
 // }
 
 // void VoxelMap::publishLocalMapBounds()

@@ -30,7 +30,7 @@
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel
-        inflation: 0.3    # [m] Inflation of voxel
+        inflation: 0.4    # [m] Inflation of voxel
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
         max_range: 7.5   # [m] Maximum range of sensor
 

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class ScenarioGenerator:
-    def __init__(self, take_off_height=2.0, visualize=False):
+    def __init__(self, take_off_height=1.5, visualize=False):
         self.scenes_dict = {}
         self.visualize = visualize
         self.take_off_height = take_off_height
@@ -100,7 +100,7 @@ def main():
 
     scene_gen.antipodalSwap(
         radius = 8.0, 
-        num_agents = 8,
+        num_agents = 4,
         goal_z = 1.5,
         name = "antipodal_swap_8", 
         map_name = "map_test", 
