@@ -155,11 +155,16 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     IntPoint start_node_2d, goal_node_2d;
 
     // Search takes place in index space. So we first convert 3d real world positions into indices
-    if (!dyn_voro_arr_[start_z_cm]->posToIdx(DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d) 
-        || !dyn_voro_arr_[goal_z_cm]->posToIdx(DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
+    if (!dyn_voro_arr_[start_z_cm]->posToIdx(DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d))
     {   
         std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] Start or goal position is not within map bounds!" << std::endl;
+            "[HCA*] Start position is not within map bounds!" << std::endl;
+        return false;
+    }
+    if (!dyn_voro_arr_[goal_z_cm]->posToIdx(DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
+    {   
+        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+            "[HCA*] Goal position is not within map bounds!" << std::endl;
         return false;
     }
 

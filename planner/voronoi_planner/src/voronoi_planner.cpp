@@ -303,7 +303,7 @@ bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
   // Eigen::Vector3d rhp_goal_pos = goal_pos;
   Eigen::Vector3d rhp_goal_pos = getRHPGoal(
     start_pos, goal_pos, 
-    voxel_map_->getLocalMapOrigin(0.2), voxel_map_->getLocalMapMax(0.2));
+    voxel_map_->getLocalMapOrigin(0.15), voxel_map_->getLocalMapMax(0.15));
 
   viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
 

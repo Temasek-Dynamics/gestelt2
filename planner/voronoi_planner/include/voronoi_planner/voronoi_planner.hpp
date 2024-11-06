@@ -685,7 +685,10 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
                                   voro_params_.max_height_cm);
       // Get node index position
       IntPoint P3_2d; 
-      dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+      bool in_lcl_map =  dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+      if (!in_lcl_map){
+        continue;
+      }
       if (!dyn_voro_arr_[P3_z]->isOccupied(P3_2d)){
         break;
       }
@@ -780,7 +783,10 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
                                 voro_params_.max_height_cm);
     // Get node index position
     IntPoint P3_2d; 
-    dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+    bool in_lcl_map = dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+    if (!in_lcl_map){
+      continue;
+    }
     if (!dyn_voro_arr_[P3_z]->isOccupied(P3_2d)){
       break;
     }

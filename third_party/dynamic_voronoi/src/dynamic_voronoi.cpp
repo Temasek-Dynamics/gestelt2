@@ -726,12 +726,12 @@ bool DynamicVoronoi::posToIdx(const DblPoint& map_pos, IntPoint& grid_pos) {
   
   grid_pos.x = (map_pos.x - params_.origin_x) / params_.res;
 
-  if (flip_y_){
-    grid_pos.y = sizeY - (map_pos.y - params_.origin_y) / params_.res;
-  }
-  else {
+  // if (flip_y_){
+  //   grid_pos.y = sizeY - (map_pos.y - params_.origin_y) / params_.res;
+  // }
+  // else {
     grid_pos.y = (map_pos.y - params_.origin_y) / params_.res;
-  }
+  // }
 
   if (!isInMap(grid_pos.x, grid_pos.y)){
     // std::cout << "[DynamicVoronoi::posToIdx] (" << grid_pos.x << "," << grid_pos.y << ") not in map" << std::endl;
@@ -743,12 +743,12 @@ bool DynamicVoronoi::posToIdx(const DblPoint& map_pos, IntPoint& grid_pos) {
 // Convert from position to index
 void DynamicVoronoi::idxToPos(const IntPoint& grid_pos, DblPoint& map_pos) {
   map_pos.x = grid_pos.x * params_.res + params_.origin_x;
-  if (flip_y_){
-    map_pos.y = (- grid_pos.y + sizeY) * params_.res + params_.origin_y;
-  }
-  else {
+  // if (flip_y_){
+  //   map_pos.y = (- grid_pos.y + sizeY) * params_.res + params_.origin_y;
+  // }
+  // else {
     map_pos.y = grid_pos.y * params_.res + params_.origin_y;
-  }
+  // }
 }
 
 /* Checking methods */

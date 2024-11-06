@@ -19,8 +19,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
-# SCENARIO_NAME = "antipodal_swap_4"
-SCENARIO_NAME = "antipodal_swap_8"
+SCENARIO_NAME = "antipodal_swap_4"
+# SCENARIO_NAME = "antipodal_swap_8"
 # SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
@@ -206,7 +206,7 @@ def generate_launch_description():
         world_to_map_tf,
         fake_map,
         swarm_collision_checker,
-        # rosbag_record,
+        rosbag_record,
         # Visualization
         rviz_node,
         # mission
