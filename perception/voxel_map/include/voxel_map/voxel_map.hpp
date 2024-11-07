@@ -81,8 +81,10 @@ namespace voxel_map
     Eigen::Vector3i local_map_num_voxels_; //  Size of local occupancy grid (no. of voxels)
 
     double resolution_;   // Also defined as the size of each individual voxel                 
-    double inflation_;    // Inflation in units of meters
-    int inf_num_voxels_;  // Inflation in units of number of voxels, = inflation_/resolution_ 
+    double agent_inflation_;    // [Comm-less] Dynamic obstacle Inflation in units of meters
+    double static_inflation_;    // Static obstacle inflation in units of meters
+    int inf_static_vox_;  // Inflation in number of voxels, = inflation_/resolution_ 
+    int inf_dyn_vox_; // Inflation in number of voxels
 
     double pose_timeout_; // Timeout for pose update before emergency stop is activated
 
@@ -122,11 +124,11 @@ namespace voxel_map
 
   /* Boolean map structure used by planner*/
   struct BoolMap3D {  
-    int z_separation_cm{-1};   // [cm] Separation between slice layers
+    int z_sep_cm{-1};   // [cm] Separation between slice layers
     int min_height_cm{-1};     // [cm] Lowest slice height
     int max_height_cm{-1};     // [cm] Highest slice height
 
-    double z_separation_m{-1.0}; // [m] separation between slice layers
+    double z_sep_m{-1.0}; // [m] separation between slice layers
     double min_height_m{-1.0};   // [m] Lowest slice height
     double max_height_m{-1.0};   // [m] Highest slice height
 
@@ -418,7 +420,7 @@ inline Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { return mp_.glob
 
 inline Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { return mp_.local_map_num_voxels_; }
 
-inline double VoxelMap::getInflation() const{ return mp_.inflation_; }
+inline double VoxelMap::getInflation() const{ return mp_.static_inflation_; }
 
 inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
   if (!local_map_updated_){

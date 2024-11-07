@@ -41,8 +41,12 @@ namespace viz_helper{
 
   static const Eigen::Vector4d fe_plan_start_color{1.0, 1.0, 0.0, 0.5}; // Front-end start
   static const Eigen::Vector4d fe_plan_goal_color{0.0, 1.0, 0.0, 0.5}; // Front-end goal
-  static const Eigen::Vector4d fe_plan_path_color{1.0, 0.5, 0.0, 0.5}; // Front-end path
+  static const Eigen::Vector4d fe_plan_path_color{1.0, 0.5, 0.0, 0.7}; // Front-end path
   static const  Eigen::Vector4d exec_traj_color{1, 51.0/221.0, 51.0/221.0, 0.5}; // #FF3333
+
+  static const Eigen::Vector4d agent_id_text_color{1.0, 1.0, 0.0, 0.5}; // Agent ID text color
+
+  static const double AGENT_ID_TEXT_SIZE{0.3};
 
   static const double EXEC_TRAJ_ALPHA{0.3};
   static const double EXEC_TRAJ_RADIUS{0.175};
@@ -62,6 +66,32 @@ namespace viz_helper{
     {}
 
     /*Helper methods for publishing to RVIZ for visualization */
+
+    void pubText(const Eigen::Vector3d& pos, Publisher<Marker>& publisher, const int& agent_id, const std::string& frame_id)
+    {
+      visualization_msgs::msg::Marker text;
+
+      text.header.frame_id = frame_id;
+      text.ns = "agent_id";
+      text.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+      text.action = visualization_msgs::msg::Marker::ADD;
+      text.id = 0;
+
+      text.color.r = agent_id_text_color(0);
+      text.color.g = agent_id_text_color(1);
+      text.color.b = agent_id_text_color(2);
+      text.color.a  = agent_id_text_color(3);
+
+      text.text = "D"+std::to_string(agent_id);
+
+      text.scale.z = AGENT_ID_TEXT_SIZE;
+
+      text.pose.position.x = pos(0) + AGENT_ID_TEXT_SIZE;
+      text.pose.position.y = pos(1) + AGENT_ID_TEXT_SIZE;
+      text.pose.position.z = pos(2) + AGENT_ID_TEXT_SIZE;
+
+      publisher->publish(text);
+    }
 
     void pubPlanRequestViz(
       const Eigen::Vector3d& map_start, 

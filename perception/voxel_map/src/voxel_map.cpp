@@ -84,7 +84,7 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
   // // logger_->logInfo(strFmt("Local map size (%f, %f, %f)",  
   // //   mp_.local_map_size_(0), mp_.local_map_size_(1), mp_.local_map_size_(2)));
   // logger_->logInfo(strFmt("Resolution %f m, Inflation %f m",  
-    // mp_.resolution_, mp_.inflation_));
+    // mp_.resolution_, mp_.static_inflation_));
 	logger_->logInfo("Initialized voxel_map");
 }
 
@@ -139,7 +139,7 @@ void VoxelMap::initParams()
 
   node_->declare_parameter(param_ns+".map_slicing.min_height_cm", -1);
   node_->declare_parameter(param_ns+".map_slicing.max_height_cm",  -1);
-  node_->declare_parameter(param_ns+".map_slicing.z_separation_cm",  -1);
+  node_->declare_parameter(param_ns+".map_slicing.z_sep_cm",  -1);
 
   node_->declare_parameter(param_ns+".global_map.size_x", -1.0);
   node_->declare_parameter(param_ns+".global_map.size_y", -1.0);
@@ -152,7 +152,8 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".local_map.viz_map_frequency",  -1.0);
 
   node_->declare_parameter(param_ns+".occ_map.resolution", -1.0);
-  node_->declare_parameter(param_ns+".occ_map.inflation", -1.0);
+  node_->declare_parameter(param_ns+".occ_map.dynamic_inflation", -1.0);
+  node_->declare_parameter(param_ns+".occ_map.static_inflation", -1.0);
   node_->declare_parameter(param_ns+".occ_map.max_range", -1.0);
   node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
 
@@ -184,14 +185,14 @@ void VoxelMap::initParams()
 
   bool_map_3d_.min_height_cm = node_->get_parameter(param_ns+".map_slicing.min_height_cm").as_int();
   bool_map_3d_.max_height_cm = node_->get_parameter(param_ns+".map_slicing.max_height_cm").as_int();
-  bool_map_3d_.z_separation_cm = node_->get_parameter(param_ns+".map_slicing.z_separation_cm").as_int();
+  bool_map_3d_.z_sep_cm = node_->get_parameter(param_ns+".map_slicing.z_sep_cm").as_int();
 
   auto cmToM = [&](const int& val_cm){ 
     /* Convert from units of centimeters to meters*/
     return ((double) val_cm)/100.0;  
   };
 
-  bool_map_3d_.z_separation_m = cmToM(bool_map_3d_.z_separation_cm); 
+  bool_map_3d_.z_sep_m = cmToM(bool_map_3d_.z_sep_cm); 
   bool_map_3d_.min_height_m = cmToM(bool_map_3d_.min_height_cm);  
   bool_map_3d_.max_height_m = cmToM(bool_map_3d_.max_height_cm);   
 
@@ -206,10 +207,12 @@ void VoxelMap::initParams()
   viz_occ_map_freq_ = node_->get_parameter(param_ns+".local_map.viz_map_frequency").as_double();
 
   mp_.resolution_ = node_->get_parameter(param_ns+".occ_map.resolution").as_double();
-  mp_.inflation_ = node_->get_parameter(param_ns+".occ_map.inflation").as_double();
+  mp_.agent_inflation_ = node_->get_parameter(param_ns+".occ_map.dynamic_inflation").as_double();
+  mp_.static_inflation_ = node_->get_parameter(param_ns+".occ_map.static_inflation").as_double();
   mp_.max_range = node_->get_parameter(param_ns+".occ_map.max_range").as_double();
   mp_.ground_height_ = node_->get_parameter(param_ns+".occ_map.ground_height").as_double();
-  mp_.inf_num_voxels_ = std::ceil(mp_.inflation_/mp_.resolution_);
+  mp_.inf_static_vox_ = std::ceil(mp_.static_inflation_/mp_.resolution_);
+  mp_.inf_dyn_vox_ = std::ceil(mp_.agent_inflation_/mp_.resolution_);
 
   /* Frame IDs */
   mp_.map_frame = node_->get_parameter("map_frame").as_string();
@@ -399,12 +402,13 @@ void VoxelMap::updateLocalMap(){
   kdtree_->Build(local_global_occ_map_pts_->points);
 }
 
-void VoxelMap::getMapSlice(const double& slice_z_cm, const double& thickness, std::vector<bool>& bool_map) 
+void VoxelMap::getMapSlice(const double& slice_z_cm, 
+  const double& thickness, std::vector<bool>& bool_map) 
 {
-  if (local_occ_map_pts_->points.empty()){
-    logger_->logWarnThrottle("Local map is empty!", 1.0);
-    return;
-  }
+  // if (local_occ_map_pts_->points.empty()){
+  //   logger_->logWarnThrottle("Local map is empty!", 1.0);
+  //   return;
+  // }
 
   double slice_z = ((double) slice_z_cm)/100.0;
 
@@ -422,9 +426,9 @@ void VoxelMap::getMapSlice(const double& slice_z_cm, const double& thickness, st
     double lcl_grid_y = (pt.y)/getRes();
 
     // inflate map 
-    for(int x = lcl_grid_x - mp_.inf_num_voxels_; x <= lcl_grid_x + mp_.inf_num_voxels_; x++)
+    for(int x = lcl_grid_x - mp_.inf_static_vox_; x <= lcl_grid_x + mp_.inf_static_vox_; x++)
     {
-      for(int y = lcl_grid_y - mp_.inf_num_voxels_; y <= lcl_grid_y + mp_.inf_num_voxels_; y++)
+      for(int y = lcl_grid_y - mp_.inf_static_vox_; y <= lcl_grid_y + mp_.inf_static_vox_; y++)
       {
         // Convert from 2D coordinates to 1D index
         int idx = x + y * mp_.local_map_num_voxels_(0);
@@ -490,7 +494,7 @@ void VoxelMap::updateLocalMapTimerCB()
     // Iterate through all heights of the map
     for (int z_cm = bool_map_3d_.min_height_cm; 
           z_cm <= bool_map_3d_.max_height_cm; 
-          z_cm += bool_map_3d_.z_separation_cm)
+          z_cm += bool_map_3d_.z_sep_cm)
     {
       bool_map_3d_.bool_maps[z_cm] = std::vector<bool>(
         mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
@@ -510,9 +514,8 @@ void VoxelMap::updateLocalMapTimerCB()
       continue;
     }
 
-    // Convert from fixed map origin to local map origin
-    Eigen::Vector3d lcl_map_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
-    Eigen::Vector3d lcl_map_grid = lcl_map_pos/getRes(); // In grid coordinares
+    Eigen::Vector3d lcl_map_start_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
+    double z_m = swarm_poses_[id](2);
 
     auto roundToMultInt = [&](const int& num, const int& mult, 
                               const int& min, const int& max)
@@ -537,46 +540,58 @@ void VoxelMap::updateLocalMapTimerCB()
       return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
     };
 
-    int z_cm = roundToMultInt((int) (lcl_map_pos(2) * 100.0), 
-                                  bool_map_3d_.z_separation_cm,
+    int z_cm = roundToMultInt((int) (z_m * 100.0), 
+                                  bool_map_3d_.z_sep_cm,
                                   bool_map_3d_.min_height_cm,
                                   bool_map_3d_.max_height_cm);
 
-    int top_height = z_cm + bool_map_3d_.z_separation_cm;
-    int btm_height = z_cm - bool_map_3d_.z_separation_cm;
+    int top_height = z_cm + bool_map_3d_.z_sep_cm;
+    int btm_height = z_cm - bool_map_3d_.z_sep_cm;
 
     // Add the other layer sandwiching the current drone position as occupied too
     int z2_cm = z_cm;  
     if (top_height <= bool_map_3d_.max_height_cm 
-        && (double)z_cm <= lcl_map_pos(2) * 100.0 
-        && lcl_map_pos(2) * 100.0 < (double)top_height)
+        && (double)z_cm <= z_m * 100.0 
+        && z_m * 100.0 < (double)top_height)
     {
       z2_cm = top_height;
     }
     else if (btm_height >= bool_map_3d_.min_height_cm
-      && (double)btm_height < lcl_map_pos(2) * 100.0
-      && lcl_map_pos(2) * 100.0 < (double)z_cm ) 
+      && (double)btm_height < z_m * 100.0
+      && z_m * 100.0 < (double)z_cm ) 
     {
       z2_cm = btm_height;
     }
 
-    // inflate map 
-    for(int x = lcl_map_grid(0) - mp_.inf_num_voxels_; x <= lcl_map_grid(0) + mp_.inf_num_voxels_; x++)
+    // Iterate for a short duration along velocity vector
+    for (double t = 0; t <= 0.5; t += 0.05 )
     {
-      for(int y = lcl_map_grid(1) - mp_.inf_num_voxels_; y <= lcl_map_grid(1) + mp_.inf_num_voxels_; y++)
+      Eigen::Vector3d lcl_map_pos = lcl_map_start_pos + t * swarm_vels_[id];
+
+      // Convert from fixed map origin to local map origin
+      Eigen::Vector3d lcl_map_grid = lcl_map_pos/getRes(); // In grid coordinares
+
+      // inflate map 
+      for(int x = lcl_map_grid(0) - mp_.inf_dyn_vox_; x <= lcl_map_grid(0) + mp_.inf_dyn_vox_; x++)
       {
-        // Convert from 2D coordinates to 1D index
-        int idx = x + y * mp_.local_map_num_voxels_(0);
+        for(int y = lcl_map_grid(1) - mp_.inf_dyn_vox_; y <= lcl_map_grid(1) + mp_.inf_dyn_vox_; y++)
+        {
+          // Convert from 2D coordinates to 1D index
+          int idx = x + y * mp_.local_map_num_voxels_(0);
 
-        if (idx < 0 || idx >= (int) bool_map_3d_.bool_maps[z_cm].size()){ 
-          // if out of map, skip
-          continue;
+          if (idx < 0 || idx >= (int) bool_map_3d_.bool_maps[z_cm].size()){ 
+            // if out of map, skip
+            continue;
+          }
+
+          bool_map_3d_.bool_maps[z_cm][idx] = true;
+          bool_map_3d_.bool_maps[z2_cm][idx] = true;
         }
-
-        bool_map_3d_.bool_maps[z_cm][idx] = true;
-        bool_map_3d_.bool_maps[z2_cm][idx] = true;
       }
+
     }
+
+
   }
 
   tm_slice_map_.stop(verbose_print_);

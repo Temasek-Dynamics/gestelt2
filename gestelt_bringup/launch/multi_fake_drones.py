@@ -19,8 +19,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
-SCENARIO_NAME = "antipodal_swap_4"
-# SCENARIO_NAME = "antipodal_swap_8"
+# SCENARIO_NAME = "antipodal_swap_4"
+SCENARIO_NAME = "antipodal_swap_8"
 # SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
@@ -168,8 +168,20 @@ def generate_launch_description():
     for id in range(scenario.num_agents):
         prefix = "/d" + str(id) + "/"
         bag_topics.append(prefix + "odom")
-        bag_topics.append(prefix + "minco_traj_viz")
         bag_topics.append(prefix + "static_collisions")
+        # Subscription to paths
+        bag_topics.append(prefix + "fe_plan/viz")
+        bag_topics.append(prefix + "minco_traj_viz")
+        # Subscription to 3d occupancy voxel map
+        bag_topics.append(prefix + "occ_map")
+        # Subscription to maps
+        bag_topics.append(prefix + "voro_planning")
+        bag_topics.append(prefix + "occ_map_100")
+        bag_topics.append(prefix + "occ_map_150")
+        bag_topics.append(prefix + "occ_map_200")
+        bag_topics.append(prefix + "voro_map_100")
+        bag_topics.append(prefix + "voro_map_150")
+        bag_topics.append(prefix + "voro_map_200")
     bag_topics.append("/swarm_collision_checker/collisions")
     bag_topics.append("/rosout")
     bag_topics.append("/tf")
@@ -180,11 +192,6 @@ def generate_launch_description():
         os.path.expanduser("~"), 'bag_files',
         'bag_' + datetime.now().strftime("%d%m%Y_%H_%M_%S"),
     )
-
-    # bag_file = os.path.join(
-    #     os.path.expanduser("~"), 'bag_files',
-    #     'bag_newest',
-    # )
 
     rosbag_record = ExecuteProcess(
         cmd=['ros2', 'bag', 'record', '-o',

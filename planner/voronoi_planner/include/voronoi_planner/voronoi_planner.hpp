@@ -421,6 +421,8 @@ private:
   std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> occ_map_pubs_;        // Publishes original occupancy grid
   std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
 
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
+
   // Planning publishers
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
 
@@ -429,6 +431,7 @@ private:
 
   // Visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr agent_id_text_pub_; // Agent ID text publisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
@@ -503,8 +506,8 @@ inline bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eige
 }
 
 inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
-                          const double& origin_x, const double& origin_y, 
-                          nav_msgs::msg::OccupancyGrid& occ_grid)
+                                                const double& origin_x, const double& origin_y, 
+                                                nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
   occ_grid.header.frame_id = map_frame_;
@@ -543,8 +546,8 @@ inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicV
 }
 
 inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
-                    const double& origin_x, const double& origin_y,
-                    nav_msgs::msg::OccupancyGrid& occ_grid)
+                                            const double& origin_x, const double& origin_y,
+                                            nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
   occ_grid.header.frame_id = map_frame_;
@@ -680,7 +683,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
       Eigen::Vector3d P3 = mapToLclMap(P3_gbl);
 
       int P3_z = roundToMultInt((int) (P3(2) * 100), 
-                                  voro_params_.z_separation_cm, 
+                                  voro_params_.z_sep_cm, 
                                   voro_params_.min_height_cm, 
                                   voro_params_.max_height_cm);
       // Get node index position
@@ -778,7 +781,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
     Eigen::Vector3d P3 = mapToLclMap(P3_gbl);
 
     int P3_z = roundToMultInt((int) (P3(2) * 100), 
-                                voro_params_.z_separation_cm, 
+                                voro_params_.z_sep_cm, 
                                 voro_params_.min_height_cm, 
                                 voro_params_.max_height_cm);
     // Get node index position

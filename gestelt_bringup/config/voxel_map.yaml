@@ -10,11 +10,10 @@
       map_slicing: # 2D boolean map slices used for voronoi generation
         # min_height_cm:    40    # [cm] Minimum slice height
         # max_height_cm:    320   # [cm] Maximum slice height
-        # z_separation_cm:  40    # [cm] Separation between slices
-        
+        # z_sep_cm:  40    # [cm] Separation between slices
         min_height_cm:    50    # [cm] Minimum slice height
         max_height_cm:    400   # [cm] Maximum slice height
-        z_separation_cm:  50    # [cm] Separation between slices
+        z_sep_cm:  50    # [cm] Separation between slices
 
       global_map: 
         size_x: 50.0  # [m]
@@ -25,12 +24,13 @@
         size_x: 10.0  # [m]
         size_y: 10.0  # [m]
         size_z: 5.0   # [m]
-        update_local_map_frequency: 50.0 # [Hz] Frequency to update the local map
+        update_local_map_frequency: 40.0 # [Hz] Frequency to update the local map
         viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel
-        inflation: 0.2    # [m] Inflation of voxel
+        dynamic_inflation: 0.3    # [m] Dynamic obstacle inflation
+        static_inflation: 0.2    # [m] Static obstacle inflation
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
         max_range: 7.5   # [m] Maximum range of sensor
 

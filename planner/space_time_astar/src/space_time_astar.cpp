@@ -48,10 +48,10 @@ void SpaceTimeAStar::reset()
 }
 
 void SpaceTimeAStar::setVoroMap(const std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
-                                const VoronoiParams& voro_params)
+                            const VoronoiParams& voro_params)
 {
-    dyn_voro_arr_ = dyn_voro_arr;
     voro_params_ = voro_params;
+    dyn_voro_arr_ = dyn_voro_arr;
 }
 
 void SpaceTimeAStar::expandVoroBubble(const VCell_T& origin_cell)
@@ -142,11 +142,11 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     reset();
 
     int start_z_cm = roundToMultInt((int) (start_pos_3d(2) * 100), 
-                                        voro_params_.z_separation_cm, 
+                                        voro_params_.z_sep_cm, 
                                         voro_params_.min_height_cm, 
                                         voro_params_.max_height_cm);
     int goal_z_cm = roundToMultInt((int) (goal_pos_3d(2) * 100), 
-                                        voro_params_.z_separation_cm, 
+                                        voro_params_.z_sep_cm, 
                                         voro_params_.min_height_cm, 
                                         voro_params_.max_height_cm);
     // std::cout << astar_params_.drone_id << ": start_z: " <<  start_pos_3d(2) << " m rounded to " << start_z_cm << " cm" << std::endl;
@@ -186,20 +186,83 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     // Method A: use voronoi bubble expansion
     ////////
 
-    // set start and goal cell as obstacle
+    // // set start and goal cell as obstacle
+    // dyn_voro_arr_[start_node.z_cm]->setObstacle(start_node.x, start_node.y);
+    // dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
 
-    dyn_voro_arr_[start_node.z_cm]->setObstacle(start_node.x, start_node.y);
-    dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
+    // // update distance map and Voronoi diagram
+    // dyn_voro_arr_[start_node.z_cm]->update(); 
+    // dyn_voro_arr_[goal_node.z_cm]->update(); 
 
-    dyn_voro_arr_[start_node.z_cm]->update(); // update distance map and Voronoi diagram
-    dyn_voro_arr_[goal_node.z_cm]->update(); // update distance map and Voronoi diagram
+    // // Add cells around start and goal node to the marked bubble cells array
+    // expandVoroBubble(start_node);
+    // expandVoroBubble(goal_node);
 
-    // Create voronoi bubble around start and goal
-    expandVoroBubble(start_node);
-    expandVoroBubble(goal_node);
+    // dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
+    // dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
 
-    dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
-    dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
+    ////////
+    // Method A: use nearest voronoi cell
+    ////////
+    
+    // Get voronoi vertices and put them into KDTree
+    std::vector<Eigen::Vector2i> start_voro_vtx, goal_voro_vtx;
+
+    for (int x=0; x < dyn_voro_arr_[start_node.z_cm]->sizeX; x++) {
+      for (int y=0; y < dyn_voro_arr_[start_node.z_cm]->sizeY; y++) {
+        if (dyn_voro_arr_[start_node.z_cm]->isVoronoiVertex(x, y)){
+          start_voro_vtx.push_back(Eigen::Vector2i{x, y});
+        }
+      }
+    }
+
+    for (int x=0; x < dyn_voro_arr_[goal_node.z_cm]->sizeX; x++) {
+      for (int y=0; y < dyn_voro_arr_[goal_node.z_cm]->sizeY; y++) {
+        if (dyn_voro_arr_[goal_node.z_cm]->isVoronoiVertex(x, y)){
+          goal_voro_vtx.push_back(Eigen::Vector2i{x, y});
+        }
+      }
+    }
+
+    // Get nearest voronoi cell for start and ghoal
+    auto start_kdtree = KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, start_voro_vtx);
+    auto goal_kdtree = KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, goal_voro_vtx);
+
+    const size_t        num_closest = 1;
+    std::vector<size_t> out_indices(num_closest);
+    std::vector<double> out_distances_sq(num_closest);
+    std::vector<int> query_pt(2);
+
+    query_pt[0] = start_node_2d.x;
+    query_pt[1] = start_node_2d.y;
+    start_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
+
+    Eigen::Vector2i nearest_s_v_eig = start_voro_vtx[out_indices[0]];
+    IntPoint nearest_s_v(nearest_s_v_eig(0), nearest_s_v_eig(1)); 
+
+    query_pt[0] = goal_node_2d.x;
+    query_pt[1] = goal_node_2d.y;
+    goal_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
+
+    Eigen::Vector2i nearest_g_v_eig = start_voro_vtx[out_indices[0]];
+    IntPoint nearest_g_v(nearest_g_v_eig(0), nearest_g_v_eig(1)); 
+
+    // Construct path from start/goal to nearest voronoi cell and mark as bubble cell
+    if (!lineOfSight(start_node_2d, nearest_s_v, start_node.z_cm, marked_bubble_cells_)){
+        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+            "[HCA*] No clear line of sight from start to nearest voronoi cell" << std::endl;
+    }
+
+    if (!lineOfSight(nearest_g_v, goal_node_2d, goal_node.z_cm, marked_bubble_cells_)){
+        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+            "[HCA*] No clear line of sight from goal to nearest voronoi cell" << std::endl;
+    }
+
+
+
+
+    // Set dynamic voronoi used for planning
+    dyn_voro_pln_ = dyn_voro_arr_[start_node.z_cm];
 
     came_from_vt_[start_node] = start_node;
     VCell start_node_3d(start_node_2d.x, start_node_2d.y, start_z_cm);
@@ -232,10 +295,10 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             return true;
         }
         
-        auto getVoroNeighbors = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro,
+        auto getVoroNeighbors = [&](std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
                                     const Eigen::Vector4i& grid_pos, 
                                     std::vector<Eigen::Vector4i>& neighbours,
-                                    const std::unordered_set<IntPoint>& marked_bubble_cells)
+                                    const std::map<int, std::unordered_set<IntPoint>>& marked_bubble_cells)
         {
             // Input
             //  grid_pos: (cur_node.x, cur_node.y, cur_node.z_cm, cur_node.t)
@@ -245,62 +308,85 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             neighbours.clear();
 
             int cur_t = grid_pos(3);
+            int z_cm = grid_pos(2);
 
             for (int dx = -1; dx <= 1; dx++) {
                 for (int dy = -1; dy <= 1; dy++) {
 
-                int nx = grid_pos(0) + dx;
-                int ny = grid_pos(1) + dy;
+                    int nx = grid_pos(0) + dx;
+                    int ny = grid_pos(1) + dy;
 
-                if (!dyn_voro->isInMap(nx, ny) 
-                    || dyn_voro->isOccupied(nx, ny)){
-                    continue;
-                }
-                
-                if (!(dyn_voro->isVoronoi(nx, ny) 
-                      || marked_bubble_cells.find(IntPoint(nx, ny)) != marked_bubble_cells.end())){
-                    // if not (voronoi or marked as bubble cell)
-                    continue;
-                }
+                    if (!dyn_voro_arr[z_cm]->isInMap(nx, ny) 
+                        || dyn_voro_arr[z_cm]->isOccupied(nx, ny)){
+                        continue;
+                    }
+                    
+                    if (!(dyn_voro_arr[z_cm]->isVoronoi(nx, ny) 
+                        || (marked_bubble_cells.find(z_cm) != marked_bubble_cells.end()
+                            && marked_bubble_cells[z_cm].find(IntPoint(nx, ny)) != marked_bubble_cells.end())))
+                    {
+                        // if not (voronoi or marked as bubble cell)
+                        continue;
+                    }
 
-                neighbours.push_back(Eigen::Vector4i{   nx, 
-                                                        ny, 
-                                                        dyn_voro->params_.origin_z_cm, 
-                                                        cur_t + 1 });
-                }
+                    neighbours.push_back(Eigen::Vector4i{   nx, 
+                                                            ny, 
+                                                            z_cm, 
+                                                            cur_t + 1 });
+                    }
             }
 
-            // Check if current cell is voronoi vertex. IF so, then add neighbors that go up and down
-            if (dyn_voro->isVoronoiVertex(grid_pos(0), grid_pos(1))){
-                // If point at top layer is free:
-                if (!dyn_voro->top_voro_ .expired()){
-                    auto top_voro = dyn_voro->top_voro_.lock();
-                    if (!top_voro->isOccupied(grid_pos(0), grid_pos(1))){
+            // Check if current cell is voronoi vertex. 
+            // IF so, then add neighbors that go up and down
+            if (dyn_voro_arr[z_cm]->isVoronoiVertex(grid_pos(0), grid_pos(1))){
+                if (z_cm == voro_params_.min_height_cm){
+                    // Check Top layer only
+                    int z_cm_top = z_cm + voro_params_.z_sep_cm;
+                    if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
-                                                                top_voro->params_.origin_z_cm, 
+                                                                z_cm_top, 
                                                                 cur_t + 1 });
                     }
                 }
-                // If point at bottom layer is free:
-                if (!dyn_voro->bottom_voro_ .expired()){
-                    auto bottom_voro = dyn_voro->bottom_voro_.lock();
-                    if (!bottom_voro->isOccupied(grid_pos(0), grid_pos(1))){
+                else if (z_cm == voro_params_.max_height_cm){
+                    // Check Bottom layer only
+                    int z_cm_btm = z_cm - voro_params_.z_sep_cm;
+                    if (!dyn_voro_arr[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
-                                                                bottom_voro->params_.origin_z_cm, 
+                                                                z_cm_btm, 
+                                                                cur_t + 1 });
+                    }
+                }
+                else {
+                    // Check both Top and Bottom layer 
+                    int z_cm_top = z_cm + voro_params_.z_sep_cm;
+                    int z_cm_btm = z_cm - voro_params_.z_sep_cm;
+                    if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
+                        neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
+                                                                grid_pos(1), 
+                                                                z_cm_top, 
+                                                                cur_t + 1 });
+                    }
+                    if (!dyn_voro_arr[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
+                        neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
+                                                                grid_pos(1), 
+                                                                z_cm_btm, 
                                                                 cur_t + 1 });
                     }
                 }
             }
         };
 
+        
+
         // Get neighbours that are within the map
         getVoroNeighbors(
-            dyn_voro_arr_[cur_node.z_cm],
+            dyn_voro_arr_,
             Eigen::Vector4i(cur_node.x, cur_node.y, cur_node.z_cm, cur_node.t), 
             neighbours, 
-            marked_bubble_cells_[cur_node.z_cm]);
+            marked_bubble_cells_);
 
         // Explore neighbors of current node. Each neighbor is (grid_x, grid_y, map_z_cm)
         for (const Eigen::Vector4i& nb_grid_4d : neighbours) 
@@ -395,14 +481,16 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
     for (int i = path_idx_vt_.size()-1; i >= 0; i--)
     {
         DblPoint map_2d_pos;
+        int z_cm = path_idx_vt_[i].z_cm;
+        double z_m = path_idx_vt_[i].z_m;
 
         // Convert to map position
-        dyn_voro_arr_[path_idx_vt_[i].z_cm]->idxToPos(IntPoint(path_idx_vt_[i].x, path_idx_vt_[i].y), map_2d_pos);
+        dyn_voro_arr_[z_cm]->idxToPos(IntPoint(path_idx_vt_[i].x, path_idx_vt_[i].y), map_2d_pos);
         // Add space time map position to path 
         path_pos_.push_back(
-            Eigen::Vector3d{map_2d_pos.x, map_2d_pos.y, path_idx_vt_[i].z_m});
+            Eigen::Vector3d{map_2d_pos.x, map_2d_pos.y, z_m});
         path_pos_t_.push_back(
-            Eigen::Vector4d{map_2d_pos.x, map_2d_pos.y, path_idx_vt_[i].z_m, (double) path_idx_vt_[i].t});
+            Eigen::Vector4d{map_2d_pos.x, map_2d_pos.y, z_m, (double) path_idx_vt_[i].t});
 
     }
 

@@ -126,6 +126,9 @@ void VoronoiPlanner::initPubSubTimer()
       "voro_map_" + std::to_string(z_cm), 10);
   }
 
+  voro_planning_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+    "voro_planning", 10);
+
   // voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph", 10);
 
   // Planner publishers
@@ -138,6 +141,7 @@ void VoronoiPlanner::initPubSubTimer()
     "minco_traj/broadcast", rclcpp::SensorDataQoS());
 
   // Visualization
+  agent_id_text_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("agent_id_text", 10);
   plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan_req", 10);
   fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
     "fe_plan/closed_list", 10);
@@ -277,18 +281,16 @@ bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
   std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
 
   // Assign voronoi map
-  voro_params_.z_separation_cm = bool_map_3d_.z_separation_cm;
+  voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
   voro_params_.local_origin_x = bool_map_3d_.origin(0);
   voro_params_.local_origin_y = bool_map_3d_.origin(1);
   voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
   voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
   voro_params_.res = bool_map_3d_.resolution;
 
-  fe_planner_->setVoroMap(dyn_voro_arr_, 
-                          voro_params_);
+  fe_planner_->setVoroMap(dyn_voro_arr_, voro_params_);
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
-
 
   auto plan_start_clock = this->get_clock()->now();
 
@@ -324,6 +326,17 @@ bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
   }
 
   tm_front_end_plan_.stop(verbose_print_);
+
+  // Visualize modified voronoi diagram
+
+  nav_msgs::msg::OccupancyGrid voro_pln_map;
+
+  voronoimapToOccGrid(*fe_planner_->getDynVoro(), 
+                  bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
+                  voro_pln_map); // Occupancy map
+
+  voro_planning_pub_->publish(voro_pln_map);
+
 
   // Retrieve space time path 
   std::vector<Eigen::Vector4d> lcl_map_path;
@@ -472,7 +485,7 @@ bool VoronoiPlanner::planWithComms(const Eigen::Vector3d& goal_pos){
   // std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
 
   // // Assign voronoi map
-  // voro_params_.z_separation_cm = bool_map_3d_.z_separation_cm;
+  // voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
   // voro_params_.local_origin_x = bool_map_3d_.origin(0);
   // voro_params_.local_origin_y = bool_map_3d_.origin(1);
   // voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
@@ -714,43 +727,43 @@ void VoronoiPlanner::planFETimerCB()
   // Plan from current position to next waypoint
   if (!plan(waypoints_.nextWP())){
 
-    auto plan_start_clock = this->get_clock()->now();
+    // auto plan_start_clock = this->get_clock()->now();
 
-    // If previous trajectory is still valid, follow previous path
-    if (poly_traj_ != nullptr && poly_traj_->getGlobalStartTime() > 0.0){
+    // // If previous trajectory is still valid, follow previous path
+    // if (poly_traj_ != nullptr && poly_traj_->getGlobalStartTime() > 0.0){
 
-      double e_t_start = plan_start_clock.seconds() - poly_traj_->getGlobalStartTime(); // Get time t relative to start of trajectory
+    //   double e_t_start = plan_start_clock.seconds() - poly_traj_->getGlobalStartTime(); // Get time t relative to start of trajectory
 
-      if (e_t_start > 0.0 && e_t_start < poly_traj_->getTotalDuration())
-      {
-        // Trajectory is still executing
-        logger_->logWarn("Following previous trajectory!");
-        return;
-      }
-    }
+    //   if (e_t_start > 0.0 && e_t_start < poly_traj_->getTotalDuration())
+    //   {
+    //     // Trajectory is still executing
+    //     logger_->logWarn("Following previous trajectory!");
+    //     return;
+    //   }
+    // }
 
-    // Else, generate a trajectory representing the drone staying in
-    //  it's current position
+    // // Else, generate a trajectory representing the drone staying in
+    // //  it's current position
 
-    gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
+    // gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
 
-    fe_plan_msg.agent_id = drone_id_;
-    fe_plan_msg.header.stamp = plan_start_clock;
-    fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+    // fe_plan_msg.agent_id = drone_id_;
+    // fe_plan_msg.header.stamp = plan_start_clock;
+    // fe_plan_msg.t_plan_start = plan_start_clock.seconds();
 
-    for (size_t i = 0; i < (size_t) rsvn_tbl_window_size_; i++){
-      geometry_msgs::msg::Pose pose;
-      pose.position.x = cur_pos_(0); 
-      pose.position.y = cur_pos_(1);
-      pose.position.z = cur_pos_(2);
-      pose.orientation.w = 1.0; 
+    // for (size_t i = 0; i < (size_t) rsvn_tbl_window_size_; i++){
+    //   geometry_msgs::msg::Pose pose;
+    //   pose.position.x = cur_pos_(0); 
+    //   pose.position.y = cur_pos_(1);
+    //   pose.position.z = cur_pos_(2);
+    //   pose.orientation.w = 1.0; 
 
-      fe_plan_msg.plan.push_back(pose);
-      fe_plan_msg.plan_time.push_back(i);
-    }
+    //   fe_plan_msg.plan.push_back(pose);
+    //   fe_plan_msg.plan_time.push_back(i);
+    // }
 
-    logger_->logWarn("Staying at current position!");
-    fe_plan_broadcast_pub_->publish(fe_plan_msg);
+    // logger_->logWarn("Staying at current position!");
+    // fe_plan_broadcast_pub_->publish(fe_plan_msg);
   }
 }
 
@@ -772,7 +785,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     double z_m = cmToM(bool_map.first);
 
     // Create DynamicVoronoi object if it does not exist
-    dynamic_voronoi::DynamicVoronoi::DynamicVoronoiParams dyn_voro_params;
+    dynamic_voronoi::DynamicVoronoiParams dyn_voro_params;
     dyn_voro_params.res = bool_map_3d_.resolution;
     // dyn_voro_params.origin_x = 0.0;
     // dyn_voro_params.origin_y = 0.0;
@@ -780,12 +793,14 @@ void VoronoiPlanner::genVoroMapTimerCB()
     dyn_voro_params.origin_z_cm = z_cm;
 
     // Initialize dynamic voronoi 
-    dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>(dyn_voro_params);
+    dyn_voro_arr_[z_cm].reset();
+    dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>();
+    dyn_voro_arr_[z_cm]->setParams(dyn_voro_params), 
     // Map is received in local_map_frame_
     dyn_voro_arr_[z_cm]->initializeMap(bool_map_3d_.width, 
                                       bool_map_3d_.height, 
                                       bool_map.second);
-    
+
     dyn_voro_arr_[z_cm]->update(); // update distance map and Voronoi diagram
     dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
 
@@ -822,20 +837,6 @@ void VoronoiPlanner::genVoroMapTimerCB()
     // voro_verts_cur_layer: voronoi vertices at current layer
     // std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
     // voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
-  }
-
-  // Link to the layer on top for bottommost layer
-  dyn_voro_arr_[bool_map_3d_.min_height_cm]->top_voro_ = dyn_voro_arr_[bool_map_3d_.min_height_cm + bool_map_3d_.z_separation_cm];
-  // Link to layer below for topmost layer
-  dyn_voro_arr_[bool_map_3d_.max_height_cm]->bottom_voro_ = dyn_voro_arr_[bool_map_3d_.max_height_cm - bool_map_3d_.z_separation_cm];
-
-  // Link all voronoi layers together
-  for (int z_cm = bool_map_3d_.min_height_cm + bool_map_3d_.z_separation_cm ; 
-          z_cm < bool_map_3d_.max_height_cm - bool_map_3d_.z_separation_cm; 
-          z_cm += bool_map_3d_.z_separation_cm){
-    // link to both layers on top and below
-    dyn_voro_arr_[z_cm]->bottom_voro_ = dyn_voro_arr_[z_cm - bool_map_3d_.z_separation_cm];
-    dyn_voro_arr_[z_cm]->top_voro_ = dyn_voro_arr_[z_cm + bool_map_3d_.z_separation_cm];
   }
 
   tm_voro_map_init_.stop(false);
@@ -887,7 +888,7 @@ void VoronoiPlanner::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, 
 
   Eigen::Vector3d lcl_map_start_pos = mapToLclMap(pose);
   int z_cm =roundToMultInt(mToCm(lcl_map_start_pos(2)), 
-                                bool_map_3d_.z_separation_cm,
+                                bool_map_3d_.z_sep_cm,
                                 bool_map_3d_.min_height_cm,
                                 bool_map_3d_.max_height_cm);
 
@@ -898,10 +899,14 @@ void VoronoiPlanner::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, 
 
     IntPoint grid_pos;
     // get map position relative to local origin and set the obstacle 
-    bool within_lcl_map = dyn_voro_arr_[z_cm]->posToIdx(
-      DblPoint(lcl_map_pos(0), lcl_map_pos(1)), grid_pos);
-    if (!within_lcl_map){ // skip current point if not in map
-      continue;
+    {
+      std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+
+      bool within_lcl_map = dyn_voro_arr_[z_cm]->posToIdx(
+        DblPoint(lcl_map_pos(0), lcl_map_pos(1)), grid_pos);
+      if (!within_lcl_map){ // skip current point if not in map
+        continue;
+      }
     }
 
     // Inflate the cells by the given inflation radius
@@ -927,6 +932,8 @@ void VoronoiPlanner::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
   cur_vel_= Eigen::Vector3d{msg->twist.twist.linear.x, 
                             msg->twist.twist.linear.y, 
                             msg->twist.twist.linear.z};
+
+  viz_helper_->pubText(cur_pos_, agent_id_text_pub_, drone_id_, map_frame_);
 }
 
 void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg)
@@ -959,7 +966,7 @@ void VoronoiPlanner::FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::U
   //   DblPoint map_2d_pos(msg->plan[i].position.x - bool_map_3d_.origin(0), 
   //                       msg->plan[i].position.y - bool_map_3d_.origin(1));
   //   int map_z_cm =roundToMultInt(mToCm(msg->plan[i].position.z), 
-  //                                 bool_map_3d_.z_separation_cm,
+  //                                 bool_map_3d_.z_sep_cm,
   //                                 bool_map_3d_.min_height_cm,
   //                                 bool_map_3d_.max_height_cm);
   //   {
