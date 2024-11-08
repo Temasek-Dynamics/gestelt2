@@ -19,8 +19,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
-# SCENARIO_NAME = "antipodal_swap_4"
-SCENARIO_NAME = "antipodal_swap_8"
+
+# SCENARIO_NAME = "antipodal_swap_4_normal"
+# SCENARIO_NAME = "antipodal_swap_4_sparse"
+# SCENARIO_NAME = "antipodal_swap_4_dense"
+# SCENARIO_NAME = "antipodal_swap_4_empty"
+
+SCENARIO_NAME = "antipodal_swap_8_normal"
 # SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
@@ -197,7 +202,7 @@ def generate_launch_description():
         cmd=['ros2', 'bag', 'record', '-o',
              bag_file,
              *bag_topics],
-        output='screen'
+        output='log'
     )
 
     # rosbag_record = Node(

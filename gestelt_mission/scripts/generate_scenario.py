@@ -103,7 +103,7 @@ def main():
         num_agents = 4,
         goal_z = 1.5,
         name = "antipodal_swap_8", 
-        map_name = "map_test", 
+        map_name = "forest_dense", 
     )
 
     scene_gen.saveJSON(

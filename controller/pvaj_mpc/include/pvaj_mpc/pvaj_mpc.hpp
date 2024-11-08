@@ -45,6 +45,7 @@ namespace pvaj_mpc
 
 		/**
 		 * Matrix M
+		 *
 		 * 		A
 		 * 		A^2
 		 * 		A^3
@@ -62,13 +63,42 @@ namespace pvaj_mpc
 		 * 		...				...
 		 * 		A^(N-1) ...			 B
 		 */
-		Eigen::MatrixXd C;				  // State transition matrix across all iterations
+		Eigen::MatrixXd C;				  // Maps from control u to state x, i.e. x_t+1 = M * x_t + C * u_t
+
+		/**
+		 * Matrix Q_bar
+		 *
+		 * 		Q
+		 * 			Q
+		 * 			   ...
+		 * 					 Q
+		 */
 		Eigen::MatrixXd Q_bar;			  // Weight matrix across all iterations
-		Eigen::MatrixXd R_bar, R_con_bar; // Weight matrix across all iterations
+
+		/**
+		 * Matrix R_bar
+		 *
+		 * 		R
+		 * 			R
+		 * 			   ...
+		 * 					 R
+		 */
+		Eigen::MatrixXd R_bar; // Weight for control magnitude 
+		
+		/**
+		 * Matrix R_bar
+		 *
+		 * 		R_c
+		 * 		-2R_c  2R_c 
+		 * 			   -2R_c  2R_c
+		 * 							...
+		 * 								 -2R_c  R_c
+		 */
+		Eigen::MatrixXd R_con_bar; // Weight for change in controls
 
 		Eigen::VectorXd u_low, u_upp, a_low, a_upp, v_low, v_upp;
 		Eigen::VectorXd B_a, B_v, B_p;
-		Eigen::MatrixXd A_a, A_v, A_p;
+		Eigen::MatrixXd A_a, A_v, A_p; // System state p, v, a transform to input u
 		Eigen::MatrixXd M_a, M_v, M_p;
 
 		Eigen::MatrixXd T;
@@ -79,14 +109,14 @@ namespace pvaj_mpc
 		Eigen::MatrixXd A_sfc;
 		Eigen::VectorXd A_sfc_low, A_sfc_upp;
 
-		Eigen::MatrixXd H;
-		Eigen::VectorXd f;
+		Eigen::MatrixXd H;// Hessian for control inputs as in 1/2* u^T H u + f^T u 
+		Eigen::VectorXd f; // Gradient for inputs as in 1/2* u^T H u + f^T u 
 		Eigen::MatrixXd A;
 		Eigen::VectorXd Alow, Aupp;
 		Eigen::SparseMatrix<double> H_sparse;
 		Eigen::SparseMatrix<double> A_sparse;
 
-		Eigen::VectorXd u_optimal;
+		Eigen::VectorXd u_optimal; // Optimal controls
 	};
 
 	struct MPCControllerParams
@@ -125,10 +155,11 @@ namespace pvaj_mpc
 		{
 			initParams(params);
 
-			ProblemFormation();
 			X_0_.resize(mpc_.M.cols(), 1);
 			X_r_.resize(mpc_.M.rows(), 1);
 			planes_.resize(MPC_HORIZON);
+
+			ProblemFormation();
 		}
 
 		void initParams(const MPCControllerParams &params)
@@ -148,7 +179,7 @@ namespace pvaj_mpc
 			R_aN_ = params.R_aN;
 
 			// Dynamical Parameters
-			Drag_ = params.Drag_;
+			Drag_ = params.Drag;
 
 			// State bounds
 			v_min_ = params.v_min;
@@ -160,8 +191,138 @@ namespace pvaj_mpc
 			u_max_ = params.u_max;
 		}
 
+		bool run(void)
+		{
+			// update reference
+			LinearTerm(mpc_, X_0_, X_r_);
+
+			// update system status and their constraints
+			UpdateBound(mpc_, X_0_);
+
+			// update safe flight corridor constraints	
+			bool add_sfc_flag = true;
+			if (mpc_.T.rows() == 0){
+				add_sfc_flag = false;
+			}
+			if (add_sfc_flag) {
+				mpc_.A_sfc.resize(mpc_.T.rows(), mpc_.A_p.cols());
+				mpc_.A_sfc_upp.resize(mpc_.D_T.rows(), 1);
+				mpc_.A_sfc = mpc_.T * mpc_.A_p;
+				mpc_.A_sfc_upp = -mpc_.D_T - mpc_.T * mpc_.B_p;
+			}
+
+			// generate all inequality constraints
+			if (add_sfc_flag) {
+				mpc_.A.resize(mpc_.A_sys.rows() + mpc_.A_sfc.rows(), mpc_.A_sys.cols());
+				mpc_.A.block(0, 0, mpc_.A_sys.rows(), mpc_.A_sys.cols()) = mpc_.A_sys;
+				mpc_.A.block(mpc_.A_sys.rows(), 0, mpc_.A_sfc.rows(), mpc_.A_sfc.cols()) = mpc_.A_sfc;
+				mpc_.Alow.resize(mpc_.A_sys_low.rows() + mpc_.A_sfc_low.rows(), 1);
+				mpc_.Alow.block(0, 0, mpc_.A_sys_low.rows(), 1) = mpc_.A_sys_low;
+				mpc_.Alow.block(mpc_.A_sys_low.rows(), 0, mpc_.A_sfc_low.rows(), 1) = mpc_.A_sfc_low;
+				mpc_.Aupp.resize(mpc_.A_sys_upp.rows() + mpc_.A_sfc_upp.rows(), 1);
+				mpc_.Aupp.block(0, 0, mpc_.A_sys_upp.rows(), 1) = mpc_.A_sys_upp;
+				mpc_.Aupp.block(mpc_.A_sys_upp.rows(), 0, mpc_.A_sfc_upp.rows(), 1) = mpc_.A_sfc_upp;
+			} 
+			else {
+				mpc_.A.resize(mpc_.A_sys.rows(), mpc_.A_sys.cols());
+				mpc_.A.block(0, 0, mpc_.A_sys.rows(), mpc_.A_sys.cols()) = mpc_.A_sys;
+				mpc_.Alow.resize(mpc_.A_sys_low.rows(), 1);
+				mpc_.Alow.block(0, 0, mpc_.A_sys_low.rows(), 1) = mpc_.A_sys_low;
+				mpc_.Aupp.resize(mpc_.A_sys_upp.rows(), 1);
+				mpc_.Aupp.block(0, 0, mpc_.A_sys_upp.rows(), 1) = mpc_.A_sys_upp;
+			}
+
+			mpc_.H_sparse = mpc_.H.sparseView();
+			mpc_.A_sparse = mpc_.A.sparseView();
+
+			// data reset
+			mpc_.T.resize(0, 0);
+			mpc_.A_sfc.resize(0, 0);
+			mpc_.A_sfc_low.resize(0, 1);
+			mpc_.A_sfc_upp.resize(0, 1);
+			mpc_.D_T.resize(0, 1);
+
+			// use osqp-eigen to solve MPC problem
+			OsqpEigen::Solver solver;
+			// solver.settings()->setTimeLimit(0.008);
+			solver.settings()->setVerbosity(0); // osqp stop print
+			solver.settings()->setWarmStart(true);
+			// solver.setWarmStart()
+			solver.data()->setNumberOfConstraints(mpc_.A_sparse.rows());
+			solver.data()->setNumberOfVariables(mpc_.f.rows());
+			solver.data()->setHessianMatrix(mpc_.H_sparse);
+			solver.data()->setGradient(mpc_.f);
+			solver.data()->setLinearConstraintsMatrix(mpc_.A_sparse);
+			solver.data()->setLowerBound(mpc_.Alow);
+			solver.data()->setUpperBound(mpc_.Aupp);
+
+
+			bool init_flag = solver.initSolver();
+			bool solve_flag = true;
+			if (init_flag) {
+				solve_flag = solver.solve();
+			} else {
+				std::cerr << "[MPC]: Can't set mpc problem!" << std::endl;
+				solve_flag = false;
+			}
+			fps_++;
+			if (solve_flag == true && init_flag == true) {
+				mpc_.u_optimal = solver.getSolution();
+				static double vel_max = 0.0;
+				if (vel_max < X_0_.block(3,0,3,1).norm()) vel_max = X_0_.block(3,0,3,1).norm();
+				if ((ros::Time::now()-print_time_).toSec() > 2.0) {
+					print_time_ = ros::Time::now();
+					std::cout << "mpc fps: " << fps_/2 << ", this time is: " << (ros::Time::now()-time_0).toSec()*1000 << " ms. " 
+						"Velocity now is: " << vel_max << "m/s. " << std::endl;
+					fps_ = 0;
+				}
+				return true;
+			} else {
+				bool flag = IsInFSC(X_0_.block(0,0,3,1), planes_[0]);
+				// std::cout << "planes: " << std::endl << planes_ << std::endl;
+				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  fsc: " << std::boolalpha << flag << std::endl;
+				if (init_flag) {
+					OsqpEigen::Status status = solver.getStatus();
+					if (status == OsqpEigen::Status::DualInfeasibleInaccurate) {
+						ROS_ERROR("[MPC]: Error status: Dual Infeasible Inaccurate");
+					}
+					if (status == OsqpEigen::Status::PrimalInfeasibleInaccurate) {
+						ROS_ERROR("[MPC]: Error status: Primal Infeasible Inaccurate");
+					}
+					if (status == OsqpEigen::Status::SolvedInaccurate) {
+						ROS_ERROR("[MPC]: Error status: Solved Inaccurate");
+					}
+					if (status == OsqpEigen::Status::Sigint) {
+						ROS_ERROR("[MPC]: Error status: Sigint");
+					}
+					if (status == OsqpEigen::Status::MaxIterReached) {
+						ROS_ERROR("[MPC]: Error status: Max Iter Reached");
+					}
+					if (status == OsqpEigen::Status::PrimalInfeasible) {
+						ROS_ERROR("[MPC]: Error status: Primal Infeasible");
+						// std::cout << "init state: " << X_0_.transpose() << std::endl;
+					}
+					if (status == OsqpEigen::Status::DualInfeasible) {
+						ROS_ERROR("[MPC]: Error status: Dual Infeasible");
+					}
+					if (status == OsqpEigen::Status::NonCvx) {
+						ROS_ERROR("[MPC]: Error status: NonCvx");
+					}
+				}
+				return false;
+			}
+		}
+
 		void ProblemFormation(void)
 		{
+			// Set Initial state
+			Eigen::VectorXd x_0, x_r;
+			x_0.resize(9, 1);
+			x_0.setZero();
+
+			x_r.resize(9 * MPC_HORIZON, 1);
+			x_r.setZero();
+
 			/* 	states: {p1, v1, a1, p2, v2, a2, ... , pN, vN, aN}
 				input: {u0, u1, u2, ... , u(N-1)}
 			*/
@@ -197,12 +358,13 @@ namespace pvaj_mpc
 			// Cost: 1/2* x^T H x + f^T x   
 			// QuadraticTerm: Constructs H matrix
 			QuadraticTerm(mpc_, Q, R, R_con, F);
-			// QuadraticTerm: Constructs f matrix
-			LinearTerm(mpc_, Eigen::VectorXd(9, 1).setZero(), 
-						Eigen::VectorXd(9 * MPC_HORIZON, 1).setZero());
+			// LinearTerm: Constructs f matrix
+			LinearTerm(mpc_, x_0, x_r);
 
 			// system status and input constrains
 			ALLConstraint(mpc_);
+
+			UpdateBound(mpc_, x_0);
 
 			// Inequality constrains (none)
 
@@ -247,23 +409,25 @@ namespace pvaj_mpc
 				{
 					mpc.R_con_bar.block(0, 0, R_con.rows(), R_con.cols()) = R_con;
 				}
-				else if (i == MPC_HORIZON - 1)
-				{ // Second last iteration
+				else if (i == MPC_HORIZON - 1) // last iteration
+				{ 
+					mpc.R_con_bar.block(i * R_con.rows(), (i - 1) * R_con.cols(), R_con.rows(), R_con.cols()) = -2 * R_con;
 					mpc.R_con_bar.block(i * R_con.rows(), i * R_con.cols(), R_con.rows(), R_con.cols()) = R_con;
-					mpc.R_con_bar.block(i * R_con.rows(), (i - 1) * R_con.cols(), R_con.rows(), R_con.cols()) = -2 * R_con;
 				}
-				else
-				{ // Intermediate iteration
-					mpc.R_con_bar.block(i * R_con.rows(), i * R_con.cols(), R_con.rows(), R_con.cols()) = 2 * R_con;
+				else // Intermediate iteration
+				{ 
 					mpc.R_con_bar.block(i * R_con.rows(), (i - 1) * R_con.cols(), R_con.rows(), R_con.cols()) = -2 * R_con;
+					mpc.R_con_bar.block(i * R_con.rows(), i * R_con.cols(), R_con.rows(), R_con.cols()) = 2 * R_con;
 				}
 			}
-			// Terminal state
+			// Set Terminal state weights
 			mpc.Q_bar.block((MPC_HORIZON - 1) * Q.rows(), (MPC_HORIZON - 1) * Q.cols(), F.rows(), F.cols()) = F;
 
 			/* QP formulation:
 				min 1/2* x^T H x + f^T x   
 			*/
+
+			// What is H? Weight for controls?
 
 			mpc.H.resize(mpc.C.rows(), mpc.C.cols());
 			// H = C.T * Q_bar * C + R + R_con
@@ -274,15 +438,12 @@ namespace pvaj_mpc
 		 * @brief 
 		 * 
 		 * x_0: 
-		 * x_r: 
+		 * x_r: reference state
 		 */
-		void LinearTerm(mpc_osqp_t &mpc, const Eigen::VectorXd &x_0,
-						const Eigen::VectorXd &x_r)
+		void LinearTerm(mpc_osqp_t &mpc, const Eigen::VectorXd &x_0, const Eigen::VectorXd &x_r)
 		{
 			if (x_r.rows() != mpc.M.rows())
 			{
-				std::cerr << "[MPC]: MPC linear term set goal error!" << std::endl;
-				std::cerr << "[MPC]: MPC linear term set goal error!" << std::endl;
 				std::cerr << "[MPC]: MPC linear term set goal error!" << std::endl;
 				return;
 			}
@@ -422,17 +583,13 @@ namespace pvaj_mpc
 			// std::cout << "mpc.A_a: " << std::endl << mpc.A_a << std::endl;
 			// std::cout << "mpc.A_v: " << std::endl << mpc.A_v << std::endl;
 			// std::cout << "mpc.A_p: " << std::endl << mpc.A_p << std::endl;
-
-			// Set Initial state
-			Eigen::VectorXd x_0;
-			x_0.resize(9, 1);
-			x_0.setZero();
-
-			UpdateBound(mpc, x_0);
 		}
 
 		/**
-		 * @brief: Update bounds on state d <= Ax <= f
+		 * @brief Update bounds on state d <= Ax <= f
+		 * 
+		 * @param mpc 
+		 * @param x_0 
 		 */
 		void UpdateBound(mpc_osqp_t& mpc, const Eigen::VectorXd& x_0)
 		{
@@ -464,12 +621,6 @@ namespace pvaj_mpc
 			// std::cout << "mpc.B_p: " << mpc.B_p.transpose() << std::endl;
 		}
 
-
-		bool run(void)
-		{
-			
-		}
-
 	private:
 		mpc_osqp_t mpc_; // MPC data
 
@@ -477,6 +628,11 @@ namespace pvaj_mpc
 		// Controller params
 		int MPC_HORIZON{5};
 		double MPC_STEP{0.1}; // [s] time step for dynamics
+
+    	std::vector<Eigen::Vector3d> u_last_;
+		Eigen::VectorXd X_0_, X_r_; // Current position and reference position
+	    std::vector<Eigen::Matrix<double, Eigen::Dynamic, 4>> planes_; // Hyper planes, (n, 4) sized matrix with each row containing hyperplane coefficients
+
 
 		// Dynamical parameters
 		Eigen::Matrix3d Drag_;

@@ -4,15 +4,21 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /fake_map1
         - /d01
+        - /d01/state1
         - /d01/state1/odom_ax1
-        - /d01/maps1/occ1
+        - /d01/maps1
         - /d11
+        - /d11/state1
         - /d11/maps1
+        - /d21
+        - /d21/state1
+        - /d21/state1/odom_ax1
         - /d21/maps1/occ1
-        - /d31/maps1
-      Splitter Ratio: 0.4318554997444153
+        - /d71
+        - /d71/state1
+        - /d71/state1/odom_ax1
+      Splitter Ratio: 0.6705882549285889
     Tree Height: 707
   - Class: rviz_common/Selection
     Name: Selection
@@ -148,7 +154,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 3
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -227,7 +233,8 @@ Visualization Manager:
               Enabled: true
               Name: minco_traj_viz
               Namespaces:
-                {}
+                exec_traj_lines: true
+                exec_traj_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -515,7 +522,7 @@ Visualization Manager:
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: true
+                  Enabled: false
                   Name: occ_map_200
                   Topic:
                     Depth: 5
@@ -531,7 +538,7 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/occ_map_200_updates
                   Use Timestamp: false
-                  Value: true
+                  Value: false
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
@@ -601,7 +608,7 @@ Visualization Manager:
                     Value: /d0/occ_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: false
+              Enabled: true
               Name: occ
             - Alpha: 0.699999988079071
               Binary representation: false
@@ -662,10 +669,10 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: false
+          Enabled: true
           Name: static_collisions
           Namespaces:
-            {}
+            static_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -673,12 +680,12 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d0/static_collisions
-          Value: false
+          Value: true
         - Class: rviz_default_plugins/Marker
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -711,7 +718,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 3
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -814,7 +821,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1041,7 +1048,7 @@ Visualization Manager:
                     Value: /d1/voro_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: true
+              Enabled: false
               Name: voro
             - Class: rviz_common/Group
               Displays:
@@ -1231,7 +1238,7 @@ Visualization Manager:
                 Value: /d1/voro_planning_updates
               Use Timestamp: false
               Value: false
-          Enabled: false
+          Enabled: true
           Name: maps
         - Alpha: 1
           Autocompute Intensity Bounds: true
@@ -1267,7 +1274,7 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: false
+          Enabled: true
           Name: static_collisions
           Namespaces:
             {}
@@ -1278,12 +1285,12 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d1/static_collisions
-          Value: false
+          Value: true
         - Class: rviz_default_plugins/Marker
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -1355,7 +1362,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 3
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -1857,10 +1864,10 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: false
+          Enabled: true
           Name: static_collisions
           Namespaces:
-            {}
+            static_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -1868,12 +1875,12 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d2/static_collisions
-          Value: false
+          Value: true
         - Class: rviz_default_plugins/Marker
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -1965,7 +1972,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 3
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -2447,10 +2454,10 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: false
+          Enabled: true
           Name: static_collisions
           Namespaces:
-            {}
+            static_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -2458,12 +2465,12 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d3/static_collisions
-          Value: false
+          Value: true
         - Class: rviz_default_plugins/Marker
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -2555,7 +2562,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 10
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -2700,7 +2707,7 @@ Visualization Manager:
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -2772,7 +2779,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 10
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -2937,7 +2944,7 @@ Visualization Manager:
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -2970,7 +2977,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 10
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -3073,7 +3080,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3189,7 +3196,7 @@ Visualization Manager:
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -3261,7 +3268,7 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 10
+              Keep: 1
               Name: odom_ax
               Position Tolerance: 0.10000000149011612
               Shape:
@@ -3426,7 +3433,7 @@ Visualization Manager:
           Enabled: true
           Name: agent_id_text
           Namespaces:
-            agent_id: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -4402,26 +4409,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 20.512704849243164
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 1.1143510341644287
-        Y: -3.591555595397949
-        Z: 8.106231689453125e-06
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0047968626022339
+      Scale: 44.577144622802734
       Target Frame: <Fixed Frame>
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.672384738922119
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0.5998409390449524
+      Y: -0.5038935542106628
     Saved: ~
 Window Geometry:
   Displays:

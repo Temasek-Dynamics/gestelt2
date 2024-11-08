@@ -591,7 +591,6 @@ void VoxelMap::updateLocalMapTimerCB()
 
     }
 
-
   }
 
   tm_slice_map_.stop(verbose_print_);

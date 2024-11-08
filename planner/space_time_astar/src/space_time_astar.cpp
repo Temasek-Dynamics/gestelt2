@@ -155,13 +155,15 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     IntPoint start_node_2d, goal_node_2d;
 
     // Search takes place in index space. So we first convert 3d real world positions into indices
-    if (!dyn_voro_arr_[start_z_cm]->posToIdx(DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d))
+    if (!dyn_voro_arr_[start_z_cm]->posToIdx(
+        DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d))
     {   
         std::cerr << "D" << astar_params_.drone_id <<  ": " <<
             "[HCA*] Start position is not within map bounds!" << std::endl;
         return false;
     }
-    if (!dyn_voro_arr_[goal_z_cm]->posToIdx(DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
+    if (!dyn_voro_arr_[goal_z_cm]->posToIdx(
+        DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
     {   
         std::cerr << "D" << astar_params_.drone_id <<  ": " <<
             "[HCA*] Goal position is not within map bounds!" << std::endl;
@@ -186,80 +188,81 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     // Method A: use voronoi bubble expansion
     ////////
 
-    // // set start and goal cell as obstacle
-    // dyn_voro_arr_[start_node.z_cm]->setObstacle(start_node.x, start_node.y);
-    // dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
+    // set start and goal cell as obstacle
+    dyn_voro_arr_[start_node.z_cm]->setObstacle(start_node.x, start_node.y);
+    dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
 
-    // // update distance map and Voronoi diagram
-    // dyn_voro_arr_[start_node.z_cm]->update(); 
-    // dyn_voro_arr_[goal_node.z_cm]->update(); 
+    // update distance map and Voronoi diagram
+    dyn_voro_arr_[start_node.z_cm]->update(); 
+    dyn_voro_arr_[goal_node.z_cm]->update(); 
 
-    // // Add cells around start and goal node to the marked bubble cells array
-    // expandVoroBubble(start_node);
-    // expandVoroBubble(goal_node);
+    // Add cells around start and goal node to the marked bubble cells array
+    expandVoroBubble(start_node);
+    expandVoroBubble(goal_node);
 
-    // dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
-    // dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
+    dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
+    dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
 
     ////////
     // Method A: use nearest voronoi cell
     ////////
     
-    // Get voronoi vertices and put them into KDTree
-    std::vector<Eigen::Vector2i> start_voro_vtx, goal_voro_vtx;
+    // // Get voronoi vertices and put them into KDTree
+    // std::vector<Eigen::Vector2i> start_voro_vtx, goal_voro_vtx;
 
-    for (int x=0; x < dyn_voro_arr_[start_node.z_cm]->sizeX; x++) {
-      for (int y=0; y < dyn_voro_arr_[start_node.z_cm]->sizeY; y++) {
-        if (dyn_voro_arr_[start_node.z_cm]->isVoronoiVertex(x, y)){
-          start_voro_vtx.push_back(Eigen::Vector2i{x, y});
-        }
-      }
-    }
+    // for (int x=0; x < dyn_voro_arr_[start_node.z_cm]->getSizeX(); x++) {
+    //   for (int y=0; y < dyn_voro_arr_[start_node.z_cm]->getSizeY(); y++) {
+    //     if (dyn_voro_arr_[start_node.z_cm]->isVoronoiVertex(x, y)){
+    //       start_voro_vtx.push_back(Eigen::Vector2i{x, y});
+    //     }
+    //   }
+    // }
 
-    for (int x=0; x < dyn_voro_arr_[goal_node.z_cm]->sizeX; x++) {
-      for (int y=0; y < dyn_voro_arr_[goal_node.z_cm]->sizeY; y++) {
-        if (dyn_voro_arr_[goal_node.z_cm]->isVoronoiVertex(x, y)){
-          goal_voro_vtx.push_back(Eigen::Vector2i{x, y});
-        }
-      }
-    }
+    // for (int x=0; x < dyn_voro_arr_[goal_node.z_cm]->getSizeX(); x++) {
+    //   for (int y=0; y < dyn_voro_arr_[goal_node.z_cm]->getSizeY(); y++) {
+    //     if (dyn_voro_arr_[goal_node.z_cm]->isVoronoiVertex(x, y)){
+    //       goal_voro_vtx.push_back(Eigen::Vector2i{x, y});
+    //     }
+    //   }
+    // }
+    
+    // // Get nearest voronoi cell for start and ghoal
+    // auto start_kdtree = 
+    //     KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, start_voro_vtx);
+    // auto goal_kdtree = 
+    //     KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, goal_voro_vtx);
 
-    // Get nearest voronoi cell for start and ghoal
-    auto start_kdtree = KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, start_voro_vtx);
-    auto goal_kdtree = KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, goal_voro_vtx);
+    // const size_t        num_closest = 1;
+    // std::vector<size_t> out_indices(num_closest);
+    // std::vector<double> out_distances_sq(num_closest);
+    // std::vector<double> query_pt(2);
 
-    const size_t        num_closest = 1;
-    std::vector<size_t> out_indices(num_closest);
-    std::vector<double> out_distances_sq(num_closest);
-    std::vector<int> query_pt(2);
+    // query_pt[0] = (double)start_node_2d.x;
+    // query_pt[1] = (double)start_node_2d.y;
+    // start_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
 
-    query_pt[0] = start_node_2d.x;
-    query_pt[1] = start_node_2d.y;
-    start_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
+    // Eigen::Vector2i nearest_s_v_eig = start_voro_vtx[out_indices[0]];
+    // IntPoint nearest_s_v(nearest_s_v_eig(0), nearest_s_v_eig(1)); 
 
-    Eigen::Vector2i nearest_s_v_eig = start_voro_vtx[out_indices[0]];
-    IntPoint nearest_s_v(nearest_s_v_eig(0), nearest_s_v_eig(1)); 
+    // query_pt[0] = (double)goal_node_2d.x;
+    // query_pt[1] = (double)goal_node_2d.y;
+    // goal_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
 
-    query_pt[0] = goal_node_2d.x;
-    query_pt[1] = goal_node_2d.y;
-    goal_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
-
-    Eigen::Vector2i nearest_g_v_eig = start_voro_vtx[out_indices[0]];
-    IntPoint nearest_g_v(nearest_g_v_eig(0), nearest_g_v_eig(1)); 
+    // Eigen::Vector2i nearest_g_v_eig = start_voro_vtx[out_indices[0]];
+    // IntPoint nearest_g_v(nearest_g_v_eig(0), nearest_g_v_eig(1)); 
 
     // Construct path from start/goal to nearest voronoi cell and mark as bubble cell
-    if (!lineOfSight(start_node_2d, nearest_s_v, start_node.z_cm, marked_bubble_cells_)){
-        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] No clear line of sight from start to nearest voronoi cell" << std::endl;
-    }
+    // if (!markLineOfSight(start_node_2d, nearest_s_v, start_node.z_cm, marked_bubble_cells_)){
+    //     std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+    //         "[HCA*] No clear line of sight from start to nearest voronoi cell" << std::endl;
+    //     return false;
+    // }
 
-    if (!lineOfSight(nearest_g_v, goal_node_2d, goal_node.z_cm, marked_bubble_cells_)){
-        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] No clear line of sight from goal to nearest voronoi cell" << std::endl;
-    }
-
-
-
+    // if (!markLineOfSight(nearest_g_v, goal_node_2d, goal_node.z_cm, marked_bubble_cells_)){
+    //     std::cerr << "D" << astar_params_.drone_id <<  ": " <<
+    //         "[HCA*] No clear line of sight from goal to nearest voronoi cell" << std::endl;
+    //     return false;
+    // }
 
     // Set dynamic voronoi used for planning
     dyn_voro_pln_ = dyn_voro_arr_[start_node.z_cm];
@@ -298,7 +301,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
         auto getVoroNeighbors = [&](std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
                                     const Eigen::Vector4i& grid_pos, 
                                     std::vector<Eigen::Vector4i>& neighbours,
-                                    const std::map<int, std::unordered_set<IntPoint>>& marked_bubble_cells)
+                                    std::map<int, std::unordered_set<IntPoint>>& marked_bubble_cells)
         {
             // Input
             //  grid_pos: (cur_node.x, cur_node.y, cur_node.z_cm, cur_node.t)
@@ -323,7 +326,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                     
                     if (!(dyn_voro_arr[z_cm]->isVoronoi(nx, ny) 
                         || (marked_bubble_cells.find(z_cm) != marked_bubble_cells.end()
-                            && marked_bubble_cells[z_cm].find(IntPoint(nx, ny)) != marked_bubble_cells.end())))
+                            && marked_bubble_cells[z_cm].find(IntPoint(nx, ny)) != marked_bubble_cells[z_cm].end())))
                     {
                         // if not (voronoi or marked as bubble cell)
                         continue;
@@ -441,10 +444,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                     "Unable to find goal node ("
                 << goal_node.x << ", " << goal_node.y 
                 << ") with maximum iteration " << num_iter << std::endl;
-    if (open_list_vt_.empty()){
-        std::cerr << "      D" << astar_params_.drone_id << ": " <<
-            "Open list is empty!" << std::endl; 
-    }
 
     return false;
 }
