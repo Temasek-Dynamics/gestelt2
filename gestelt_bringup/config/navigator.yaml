@@ -2,6 +2,7 @@
   ros__parameters:
     navigator:
       communication_less: true # [bool] If True, enable communication-less planning. Otherwise, priority based planning is used
+      use_linear_mpc: true # [bool] If True, use linear MPC instead of MINCO Trajectory generation
 
       planner_frequency: 10.0            # [Hz] Frequency at which plan is generated
       generate_voronoi_frequency: 20.0  # [Hz] Frequency at which voronoi is generated

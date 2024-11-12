@@ -29,7 +29,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <minco_interfaces/msg/polynomial_trajectory.hpp>
 #include <minco_traj_gen/minco_traj_gen.hpp>
-// #include <minco_interfaces/msg/minco_trajectory.hpp>
 
 // using namespace std::chrono;
 // using namespace std::chrono_literals;

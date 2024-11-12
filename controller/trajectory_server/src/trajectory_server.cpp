@@ -159,6 +159,10 @@ void TrajectoryServer::initPubSubTimers()
 		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
+	vehicle_status_sub_ = this->create_subscription<TrajectorySetpoint>(
+		"lin_mpc_cmd", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::linMPCCmdSubCB, this, _1), fcu_sub_opt);
+
 	/* Timers */
 	pub_ctrl_timer_ = this->create_wall_timer((1.0/pub_ctrl_freq_)*1000ms, 
 												std::bind(&TrajectoryServer::pubCtrlTimerCB, this), control_cb_group_);
@@ -182,6 +186,18 @@ void TrajectoryServer::initSrv()
 /****************** */
 /* SUBSCRIBER CALLBACKS */
 /****************** */
+void TrajectoryServer::linMPCCmdSubCB(const VehicleStatus::UniquePtr msg)
+{
+	// Receive in ENU frame
+
+	std::vector<double> pos_enu_ = std::vector<double>(msg->position.begin(), msg->position.end());
+	std::vector<double> vel_enu_ = std::vector<double>(msg->velocity.begin(), msg->velocity.end());
+	std::vector<double> acc_enu_ = std::vector<double>(msg->acceleration.begin(), msg->acceleration.end());
+	std::vector<double> jerk_enu_ = std::vector<double>(msg->jerk.begin(), msg->jerk.end());
+
+	yaw_yawrate_(0) = msg.yaw;
+	yaw_yawrate_(1) = msg.yawspeed;
+}
 
 void TrajectoryServer::vehicleStatusSubCB(const VehicleStatus::UniquePtr msg)
 {
@@ -524,25 +540,34 @@ void TrajectoryServer::pubCtrlTimerCB()
 
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
-				if (poly_traj_cmd_->getCmd(cmd_pos_enu, cmd_yaw_yawrate, cmd_vel_enu, cmd_acc_enu))
-				{	
-					pos_enu_ = cmd_pos_enu;
-					yaw_yawrate_ = cmd_yaw_yawrate;
-					vel_enu_ = cmd_vel_enu;	
-					acc_enu_ = cmd_acc_enu;	
-
+				if (use_linear_mpc_){
 					// Correct commanded position with ground_height_
 					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
 					yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
 
 					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, vel_enu_, acc_enu_);
 				}
-				else { 
-					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
-					yaw_yawrate_(1) = NAN; 
-					Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+				else {
+					if (poly_traj_cmd_->getCmd(cmd_pos_enu, cmd_yaw_yawrate, cmd_vel_enu, cmd_acc_enu))
+					{	
+						pos_enu_ = cmd_pos_enu;
+						yaw_yawrate_ = cmd_yaw_yawrate;
+						vel_enu_ = cmd_vel_enu;	
+						acc_enu_ = cmd_acc_enu;	
 
-					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, nan_3d, nan_3d);
+						// Correct commanded position with ground_height_
+						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
+						yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
+
+						publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, vel_enu_, acc_enu_);
+					}
+					else { 
+						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
+						yaw_yawrate_(1) = NAN; 
+						Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+
+						publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, nan_3d, nan_3d);
+					}
 				}
 				break;
 			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 

@@ -53,6 +53,8 @@
 #include <minco_interfaces/msg/polynomial_trajectory.hpp>
 #include <minco_interfaces/msg/minco_trajectory.hpp>
 
+#include <px4_msgs/msg/trajectory_setpoint.hpp>
+
 #include <voxel_map/voxel_map.hpp> 
 
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
@@ -248,6 +250,12 @@ private:
 /* Helper methods */
 private:
 
+  pubPVAJCmd(	const Eigen::Vector3d& pos, 
+              const Eigen::Vector2d& yaw_yawrate,
+              const Eigen::Vector3d& vel,
+              const Eigen::Vector3d& acc,
+              const Eigen::Vector3d& jerk);
+
   /* Convert point from world to fixed map origin*/
   Eigen::Vector3d worldToMap(const Eigen::Vector3d& pt)
   {
@@ -339,6 +347,7 @@ private:
     const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
     const Eigen::Vector3d& local_map_min, const Eigen::Vector3d& local_map_max);
 
+
   // Convert from map to occupancy grid type
   void voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                             const double& origin_x, const double& origin_y, 
@@ -368,11 +377,16 @@ private:
   /* Helper methods */
 
 private:
+  /* MPC Params */
+  int ref_samp_intv_{6}; // FE reference path sampling interval
+  double path_dis_{0.05};
+
   /* Params */
   int drone_id_{-1};
 
   int num_drones_{0};  // If true, enable communicationless planning
   bool commless_{false};  // If true, enable communicationless planning
+  bool use_lin_mpc_{false};  // If true, use linear MPC instead of MINCO trajectory generation
 
   std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
@@ -427,6 +441,8 @@ private:
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
 
   rclcpp::Publisher<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr poly_traj_pub_; // Publish polynomial trajectories for execution
+
+  rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr lin_mpc_cmd_pub_; // Publish MPC commands
   rclcpp::Publisher<minco_interfaces::msg::MincoTrajectory>::SharedPtr minco_traj_broadcast_pub_; // Publish MINCO trajectories broadcasted to other agents
 
   // Visualization
@@ -458,8 +474,8 @@ private:
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
 
 private:
-  /* Stored sensor data */
-  Eigen::Vector3d cur_pos_, cur_vel_;   // [LOCAL FRAME] current state
+  /* Stored Odometry data */
+  Eigen::Vector3d cur_pos_{0.0, 0.0, 0.0}, cur_vel_{0.0, 0.0, 0.0}, cur_acc_{0.0, 0.0, 0.0};   // [MAP FRAME] current state
   Eigen::Vector3d map_origin_{0.0, 0.0, 0.0}; // Fixed Map origin relative to world
 
   /* Mutexes*/
@@ -798,22 +814,28 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
   return P3_gbl;
 }
 
+inline VoronoiPlanner::pubPVAJCmd(	const Eigen::Vector3d& pos, 
+                                    const Eigen::Vector2d& yaw_yawrate,
+                                    const Eigen::Vector3d& vel,
+                                    const Eigen::Vector3d& acc,
+                                    const Eigen::Vector3d& jerk)
+{
+  // Send msg in ENU frame
+
+	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+	msg.position = {(float) pos(0), (float) pos(1), (float) pos(2)};
+	msg.velocity = {(float) vel(0), (float) vel(1), (float) vel(2)};
+	msg.acceleration = {(float) acc(0), (float) acc(1), (float) acc(2)};
+	msg.jerk = {(float) jerk(0), (float) jerk(1), (float) jerk(2)};
+
+	msg.yaw = yaw_yawrate(0); // [-PI:PI]
+	msg.yawspeed = yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
+
+	lin_mpc_cmd_pub_->publish(msg);
+}
+
 } // namespace navigator
 
-// void realignBoolMap(bool ***map, bool ***map_og, int& size_x, int& size_y)
-// {
-//   for (int x=0; x<size_x; x++) {
-//     (*map)[x] = new bool[size_y];
-//   }
-
-//   for(int j = 0; j < size_y; j++)
-//   {
-//     for (int i = 0; i < size_x; i++)
-//     {
-//       (*map)[i][j] = (*map_og)[i][size_y-j-1];
-//     }
-//   }
-// }
 
 #endif // _VORONOI_PLANNER_HPP_
 

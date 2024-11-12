@@ -27,6 +27,7 @@ set(ROS_LIBRABRIES
   tf2_geometry_msgs
   geometry_msgs
   visualization_msgs
+  px4_msgs
   gestelt_interfaces
   minco_interfaces
   voxel_map
@@ -55,6 +56,7 @@ ament_target_dependencies(voronoi_planner_node
   tf2_geometry_msgs
   geometry_msgs
   visualization_msgs
+  px4_msgs
   gestelt_interfaces
   minco_interfaces
   voxel_map

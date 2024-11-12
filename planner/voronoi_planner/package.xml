@@ -23,6 +23,7 @@
   <depend>gestelt_interfaces</depend>
   <depend>minco_interfaces</depend>
   <depend>geometry_msgs</depend>
+  <depend>px4_msgs</depend>
   
   <depend>voxel_map</depend>
   <depend>dynamic_voronoi</depend>

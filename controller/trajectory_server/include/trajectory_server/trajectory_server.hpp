@@ -172,6 +172,7 @@ private:
 	void allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
 	void odometrySubCB(const VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const VehicleStatus::UniquePtr msg);
+	void linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg);
 
 	/* PX4-related methods */
 
@@ -248,9 +249,10 @@ private:
 	double ground_height_{0.0}; // Starting ground height
 
 	Eigen::Vector3d pos_enu_{0.0, 0.0, 0.0};		// Last commanded position [ENU frame]
-	Eigen::Vector2d yaw_yawrate_{0.0, 0.0};
 	Eigen::Vector3d vel_enu_{0.0, 0.0, 0.0};		
 	Eigen::Vector3d acc_enu_{0.0, 0.0, 0.0};				
+	Eigen::Vector3d jerk_enu_{0.0, 0.0, 0.0};	    // For logging purposes, not used in command
+	Eigen::Vector2d yaw_yawrate_{0.0, 0.0};
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
