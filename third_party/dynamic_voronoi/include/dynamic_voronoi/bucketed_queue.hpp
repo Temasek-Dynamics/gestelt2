@@ -30,7 +30,6 @@ public:
    */
   BucketPrioQueue(); 
 
-
   void clear() { 
     buckets.clear();
     count = 0;
@@ -39,12 +38,15 @@ public:
 
   //! Checks whether the Queue is empty
   bool empty();
+
   //! push an element
   void push(int prio, T t);
+
   //! return and pop the element with the lowest squared distance */
   T pop();
   
   int size() { return count; }
+
   int getNumBuckets() { return buckets.size(); }
 
   int getTopPriority(){
@@ -56,8 +58,9 @@ private:
   int count;
   
   using BucketType = std::map< int, std::queue<T> >;
-  BucketType buckets;
-  typename BucketType::iterator nextPop;
+  BucketType buckets; // map of <key: prio, value: queue<IntPoint>>
+
+  typename BucketType::iterator nextPop;  // Iterator to next element to be popped i.e. lowest priority
 };
 
 template <class T>
@@ -72,16 +75,26 @@ bool BucketPrioQueue<T>::empty() {
 
 template <class T>
 void BucketPrioQueue<T>::push(int prio, T t) {
+  
   buckets[prio].push(t);
-  if (nextPop == buckets.end() || prio < nextPop->first) nextPop = buckets.find(prio);
+
+  if (nextPop == buckets.end() || prio < nextPop->first){ 
+    // if no elements left in bucket OR priority of given element is lower
+    // then set next popped element to be given element
+    nextPop = buckets.find(prio);
+  }
   count++;
 }
 
 template <class T>
 T BucketPrioQueue<T>::pop() {
-  while (nextPop!=buckets.end() && nextPop->second.empty()) ++nextPop;
+  while (nextPop!=buckets.end() && nextPop->second.empty()) 
+  {
+    // Keep iterating until non-empty element is found
+    ++nextPop;
+  }
 
-  T p = nextPop->second.front();
+  T p = nextPop->second.front(); // get front of current queue
   nextPop->second.pop();
   if (nextPop->second.empty()) {
     typename BucketType::iterator it = nextPop;
@@ -89,6 +102,7 @@ T BucketPrioQueue<T>::pop() {
     buckets.erase(it);
   }
   count--;
+
   return p;
 }
 

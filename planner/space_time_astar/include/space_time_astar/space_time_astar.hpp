@@ -39,6 +39,9 @@
 
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
 
+#include "nanoflann.hpp" // For nearest neighbors queries
+#include "KDTreeVectorOfVectorsAdaptor.h" // For nearest neighbors queries
+
 namespace global_planner{
 
   struct AStarParams{
@@ -66,7 +69,7 @@ namespace global_planner{
   }; // struct AStarParams
 
   struct VoronoiParams{
-    int z_separation_cm; // separation between the voronoi planes in units of centimeters
+    int z_sep_cm; // separation between the voronoi planes in units of centimeters
 
     double local_origin_x; // [m] local map x origin
     double local_origin_y; // [m] local map y origin
@@ -91,7 +94,7 @@ public:
 
   /* Assign voronoi map. To be executed when map is updated*/
   void setVoroMap(const std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
-                     const VoronoiParams& voro_params);
+                  const VoronoiParams& voro_params);
 
   /* Update the assignement of the reservation table. TO be executed when the reservation table is updated*/
   void setReservationTable(const std::map<int, RsvnTbl>& rsvn_tbl);
@@ -131,6 +134,12 @@ private:
 
 /* Getter methods */
 public:
+
+  std::shared_ptr<dynamic_voronoi::DynamicVoronoi> getDynVoro()
+  {
+    return dyn_voro_pln_;
+  }
+
   /**
    * @brief Get successful plan in terms of space i,e. (x,y,z)
    *
@@ -181,6 +190,9 @@ private:
   /* Check line of sight between 2 points*/
   bool lineOfSight(IntPoint s, IntPoint s_, int z_cm);
 
+  bool markLineOfSight(IntPoint s, IntPoint s_, int z_cm, 
+    std::map<int, std::unordered_set<IntPoint>>& marked_bubble_cells);
+
 private: 
 
   /* Params */
@@ -191,7 +203,8 @@ private:
   rclcpp::Clock::SharedPtr clock_;
 
   /* Path planner data structures */
-  std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
+  std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // map of {key: height, value: dynamic voronoi object}
+  std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro_pln_{nullptr}; 
 
   // General voronoi params
   std::map<int, std::unordered_set<IntPoint>> marked_bubble_cells_; // Cells that are marked as part of the voronoi bubble with key of height(cm)
@@ -300,6 +313,128 @@ inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
 inline long SpaceTimeAStar::tToSpaceTimeUnits(const double& t){
   return std::lround(t / astar_params_.t_unit);
 }
+
+
+inline bool SpaceTimeAStar::markLineOfSight(IntPoint s, IntPoint s_, int z_cm, 
+  std::map<int, std::unordered_set<IntPoint>>& marked_bubble_cells)
+{
+    int x0 = s.x;
+    int y0 = s.y;
+    int x1 = s_.x;
+    int y1 = s_.y;
+
+    // dx and dy are differences start and end point
+    int dy = y1 - y0;
+    int dx = x1 - x0;
+
+    int f = 0;
+
+    int sx = 1; // Direction taken by x
+    int sy = 1; // Direction taken by y
+
+    // Correct for y direction
+    if (dy < 0) {
+        sy = -1;
+    }
+    else {
+        sy = 1;
+    }
+    
+    // Correct for x direction
+    if (dx < 0) {
+        sx = -1;
+    }
+    else {
+        sx = 1;
+    }
+
+    // make dx and dy positive
+    dy = abs(dy); 
+    dx = abs(dx);
+
+    // Insert start
+    marked_bubble_cells[z_cm].insert(IntPoint(x0, y0));
+
+    if (dx >= dy) { 
+        while (x0 != x1){ // iterate until x is equal
+            f += dy;
+            if (f >= dx){
+              // if (dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
+              // {
+              //     return false;
+              // }
+              y0 = y0 + sy;
+              f -= dx;
+            }
+            // if (f != 0 
+            //     && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
+            // {
+            //   return false;
+            // }
+            // if (dy == 0 
+            //     && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0)
+            //     && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 -1))
+            // {
+            //   return false;
+            // }
+            x0 = x0 + sx;
+
+            marked_bubble_cells[z_cm].insert(IntPoint(x0, y0));
+            // Insert neighbours as well
+            for (int i = x0-1; i <= x0+1; i++){
+              for (int j = y0-1; j <= y0+1; j++){
+                if (i >= dyn_voro_arr_[z_cm]->getSizeX() || i < 0
+                    || j >= dyn_voro_arr_[z_cm]->getSizeY() || j < 0)
+                {
+                  continue;
+                }
+                marked_bubble_cells[z_cm].insert(IntPoint(i, j));
+              }
+            }
+        }
+    }
+    else {
+        while (y0 != y1){
+            f += dx;
+            if (f >= dy){
+                // if (dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
+                // {
+                //   return false;
+                // }
+                x0 += sx;
+                f -= dy;
+            }
+            // if (f != 0 
+            //     && dyn_voro_arr_[z_cm]->isOccupied(x0 + ((sx-1)/2), y0 + ((sy - 1)/2)))
+            // {
+            //     return false;
+            // }
+            // if (dy == 0 
+            //     && dyn_voro_arr_[z_cm]->isOccupied(x0, y0 + ((sy-1)/2))
+            //     && dyn_voro_arr_[z_cm]->isOccupied(x0-1, y0+ ((sy-1)/2)))
+            // {
+            //     return false;
+            // }
+            y0 += sy;
+            
+            marked_bubble_cells[z_cm].insert(IntPoint(x0, y0));
+            // Insert neighbours as well
+            for (int i = x0-1; i <= x0+1; i++){
+              for (int j = y0-1; j <= y0+1; j++){
+                if (i >= dyn_voro_arr_[z_cm]->getSizeX() || i < 0
+                    || j >= dyn_voro_arr_[z_cm]->getSizeY() || j < 0)
+                {
+                  continue;
+                }
+                marked_bubble_cells[z_cm].insert(IntPoint(i, j));
+              }
+            }
+        }
+    }
+
+    return true;
+}
+
 
 inline bool SpaceTimeAStar::lineOfSight(IntPoint s, IntPoint s_, int z_cm)
 {

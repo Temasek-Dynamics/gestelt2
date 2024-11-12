@@ -40,11 +40,16 @@ def generate_launch_description():
     #   parameters=dump_params(rosbag_player_params, 'player'),
     # )
 
+    name = "d4_commsless_normal"
+    name = "d8_commsless_normal"
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
-        'bag_04112024_12_59_30/bag_04112024_12_59_30_0.mcap',
+        name + '/' + name + '_0.mcap',
     )
+
+    print("Run: ")
+    print(f"ros2 bag play {bag_file}")
 
     rosbag_player = ExecuteProcess(
         cmd=['ros2', 'bag', 'play',
@@ -62,6 +67,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        rosbag_player,
+        # rosbag_player,
         rviz_node,
     ])

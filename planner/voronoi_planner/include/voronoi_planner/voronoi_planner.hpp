@@ -192,12 +192,29 @@ public:
   /**
    * @brief Plan a path from start to goal
    * 
-   * @param start 
    * @param goal 
-   * @return true 
-   * @return false 
+   * @return true planning succeeded
+   * @return false planning failed
    */
   bool plan(const Eigen::Vector3d& goal);
+
+  /**
+   * @brief Plan a path from start to goal
+   * 
+   * @param goal 
+   * @return true planning succeeded
+   * @return false planning failed
+   */
+  bool planWithoutComms(const Eigen::Vector3d& goal);
+
+  /**
+   * @brief Plan a path from start to goal
+   * 
+   * @param goal 
+   * @return true planning succeeded
+   * @return false planning failed
+   */
+  bool planWithComms(const Eigen::Vector3d& goal);
 
 private:
   /* Timer callbacks */
@@ -223,7 +240,10 @@ private:
   void planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg);
 
   /* Subscription callback to odometry */
-  void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
+  void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg);
+
+  /* Subscription callback to swarm odometry */
+  void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int drone_id);
 
 /* Helper methods */
 private:
@@ -351,6 +371,9 @@ private:
   /* Params */
   int drone_id_{-1};
 
+  int num_drones_{0};  // If true, enable communicationless planning
+  bool commless_{false};  // If true, enable communicationless planning
+
   std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
 
@@ -392,8 +415,13 @@ private:
   /**
    * ROS Publishers
    */
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
+  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
+  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
+
+  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> occ_map_pubs_;        // Publishes original occupancy grid
+  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
+
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
 
   // Planning publishers
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
@@ -403,6 +431,7 @@ private:
 
   // Visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr agent_id_text_pub_; // Agent ID text publisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
@@ -417,6 +446,9 @@ private:
 	std::vector<rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr>
     fe_plan_broadcast_subs_;  // Subscription to broadcasted front end plan from other agents
   
+	std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> 
+    swarm_odom_subs_;  // Subscription to odometry from other agents
+
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
 
 	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
@@ -440,7 +472,7 @@ private:
   bool plan_complete_{false}; // flag to indicate a plan has been completed
 
   /* Mapping */
-  std::shared_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
+  std::unique_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
   voxel_map::BoolMap3D bool_map_3d_; // Bool map slices 
   std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
 
@@ -461,7 +493,7 @@ private:
   logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Voronoi map discretization
 
   /* Visualization */
-  std::shared_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
+  std::unique_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_; // Class for logging
@@ -474,8 +506,8 @@ inline bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eige
 }
 
 inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
-                          const double& origin_x, const double& origin_y, 
-                          nav_msgs::msg::OccupancyGrid& occ_grid)
+                                                const double& origin_x, const double& origin_y, 
+                                                nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
   occ_grid.header.frame_id = map_frame_;
@@ -514,8 +546,8 @@ inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicV
 }
 
 inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
-                    const double& origin_x, const double& origin_y,
-                    nav_msgs::msg::OccupancyGrid& occ_grid)
+                                            const double& origin_x, const double& origin_y,
+                                            nav_msgs::msg::OccupancyGrid& occ_grid)
 {
   occ_grid.header.stamp = this->get_clock()->now();
   occ_grid.header.frame_id = map_frame_;
@@ -651,12 +683,15 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
       Eigen::Vector3d P3 = mapToLclMap(P3_gbl);
 
       int P3_z = roundToMultInt((int) (P3(2) * 100), 
-                                  voro_params_.z_separation_cm, 
+                                  voro_params_.z_sep_cm, 
                                   voro_params_.min_height_cm, 
                                   voro_params_.max_height_cm);
       // Get node index position
       IntPoint P3_2d; 
-      dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+      bool in_lcl_map =  dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+      if (!in_lcl_map){
+        continue;
+      }
       if (!dyn_voro_arr_[P3_z]->isOccupied(P3_2d)){
         break;
       }
@@ -746,12 +781,15 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
     Eigen::Vector3d P3 = mapToLclMap(P3_gbl);
 
     int P3_z = roundToMultInt((int) (P3(2) * 100), 
-                                voro_params_.z_separation_cm, 
+                                voro_params_.z_sep_cm, 
                                 voro_params_.min_height_cm, 
                                 voro_params_.max_height_cm);
     // Get node index position
     IntPoint P3_2d; 
-    dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+    bool in_lcl_map = dyn_voro_arr_[P3_z]->posToIdx(DblPoint(P3(0), P3(1)), P3_2d); 
+    if (!in_lcl_map){
+      continue;
+    }
     if (!dyn_voro_arr_[P3_z]->isOccupied(P3_2d)){
       break;
     }

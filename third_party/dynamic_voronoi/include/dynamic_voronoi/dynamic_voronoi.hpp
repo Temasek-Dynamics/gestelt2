@@ -15,28 +15,30 @@
 
 namespace dynamic_voronoi{
 
+struct DynamicVoronoiParams{
+  double res{0.1};
+
+  double origin_x{0.0};
+  double origin_y{0.0};
+  double origin_z{0.0};
+
+  int origin_z_cm{0};
+
+  double z_sep_cm{0.0};
+}; // struct DynamicVoronoiParams
+
+
 //! A DynamicVoronoi object computes and updates a distance map and Voronoi diagram.
 class DynamicVoronoi {
 
 public:
-  struct DynamicVoronoiParams{
-    double res{0.1};
-
-    double origin_x{0.0};
-    double origin_y{0.0};
-    double origin_z{0.0};
-
-    int origin_z_cm{0};
-
-    double z_separation_cm{0.0};
-  }; // struct DynamicVoronoiParams
-
-public:
   
   DynamicVoronoi();
-  DynamicVoronoi(const DynamicVoronoiParams& params);
 
   ~DynamicVoronoi();
+
+  // Set parameters
+  void setParams(const DynamicVoronoiParams& params);
 
   //! Initialization with an empty map
   void initializeEmpty(int _sizeX, int _sizeY);
@@ -74,28 +76,30 @@ public:
   //! retrieve the number of neighbors that are Voronoi cells (4-connected)
   int getNumVoronoiNeighborsAlternative(int x, int y);
 
+  //! returns the obstacle distance at the specified location
+  float getDistance( int x, int y );
+
   //! returns the squared obstacle distance at the specified location
   int getSqrDistToObs( int x, int y ) {
     if( (x>0) && (x<sizeX) && (y>0) && (y<sizeY)){
-      return data[x][y].sqdist; 
+      return data_[x][y].sqdist; 
 
     } 
      else return -1;
   }
-  //! returns the obstacle distance at the specified location
-  float getDistance( int x, int y );
-
 
 private:  
   struct dataCell {
-    float dist;
-    int sqdist;
+    float dist; // Position to nearest obstacle
+    int sqdist; // Position to nearest obstacle
     char voronoi;   // voronoi status
     char queueing;  
-    int obstX;  // Position to nearest obstacle
-    int obstY;  // Position to nearest obstacle
+    int obstX;  // Position of nearest obstacle
+    int obstY;  // Position of nearest obstacle
     bool needsRaise;
   };
+
+  typedef std::shared_ptr<dataCell[]> dataCellArr;
 
   typedef enum {
     voronoiKeep=-4, 
@@ -182,13 +186,9 @@ public:
     return sizeY;
   }
 
-  dataCell** getData() const {
-    return data;
-  }
-
-  // Top and bottom voronoi planes
-  std::weak_ptr<dynamic_voronoi::DynamicVoronoi> top_voro_;
-  std::weak_ptr<dynamic_voronoi::DynamicVoronoi> bottom_voro_;
+  // std::unique_ptr<dataCellArr[]> getData() const {
+  //   return data_;
+  // }
 
 public:
   DynamicVoronoiParams params_;
@@ -197,7 +197,7 @@ private:
   int** alternativeDiagram;
 
   // queues
-  BucketPrioQueue<IntPoint> open;
+  BucketPrioQueue<IntPoint> open_;
   std::queue<IntPoint> pruneQueue;
   BucketPrioQueue<IntPoint> sortedPruneQueue;
 
@@ -206,10 +206,10 @@ private:
   std::vector<IntPoint> lastObstacles;
 
   // maps
-  bool flip_y_{false}; // Whether to flip the input map about y-axis
+  // bool flip_y_{false}; // Whether to flip the input map about y-axis
   int sizeY;  // Size of map along y
   int sizeX;  // Size of map along x
-  dataCell** data;  // map data
+  std::shared_ptr<dataCellArr[]> data_{nullptr};
 
 }; // end class DynamicVoronoi
 
