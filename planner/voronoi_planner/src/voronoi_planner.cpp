@@ -50,12 +50,41 @@ VoronoiPlanner::VoronoiPlanner()
   tm_front_end_plan_.updateID(drone_id_);
   tm_voro_map_init_.updateID(drone_id_);
 
+  /* A* parameters */
   astar_params_.drone_id = drone_id_;
   astar_params_.max_iterations = 99999;
   astar_params_.debug_viz = true;
   astar_params_.tie_breaker = 1.001;
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
   astar_params_.t_unit = t_unit_;
+
+  /* MPC parameters */
+  mpc_params_.drone_id = drone_id_;
+  mpc_params_.MPC_HORIZON = 30;
+  mpc_params_.MPC_STEP = 0.1; 
+  // Objective Weights
+  mpc_params_.R_p = 5000.0;
+  mpc_params_.R_v = 0.0;
+  mpc_params_.R_a = 0.0;
+  mpc_params_.R_u = 0.0 ;
+  mpc_params_.R_u_con = 0.2;
+  mpc_params_.R_pN = 2000.0;
+  mpc_params_.R_vN = 1000.0;
+  mpc_params_.R_aN = 1000.0;
+  // Dynamical Parameters
+  mpc_params_.Drag.setZero();
+  mpc_params_.Drag(0,0) = 0.0;
+  mpc_params_.Drag(1,1) = 0.0;
+  mpc_params_.Drag(2,2) = 0.0;
+  // State bounds
+  mpc_params_.v_min = Eigen::Vector3d(-10.0, -10.0, -10.0);
+  mpc_params_.v_max = Eigen::Vector3d(10.0, 10.0, 10.0);
+  mpc_params_.a_min = Eigen::Vector3d(-20.0, -20.0, -20.0);
+  mpc_params_.a_max = Eigen::Vector3d(20.0, 20.0, 20.0);
+  // Control bounds
+  mpc_params_.u_min = Eigen::Vector3d(-50.0, -50.0, -50.0);
+  mpc_params_.u_max = Eigen::Vector3d(50.0, 50.0, 50.0);
+
 }
 
 void VoronoiPlanner::init()
@@ -86,10 +115,12 @@ void VoronoiPlanner::init()
   // Initialize planner
   fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_, this->get_clock());
 
+  // Initialize MPC controller
+  mpc_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params_);
+
   // Initialize map
   voxel_map_ = std::make_unique<voxel_map::VoxelMap>(
     this->shared_from_this(), map_origin_, num_drones_);
-
 
   // Initialize minimum jerk optimizer
 	min_jerk_opt_ = std::make_unique<minco::MinJerkOpt>();
@@ -126,24 +157,23 @@ void VoronoiPlanner::initPubSubTimer()
       "voro_map_" + std::to_string(z_cm), 10);
   }
 
-  voro_planning_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-    "voro_planning", 10);
-
-  // voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph", 10);
-
-  // Planner publishers
+  /* Planner publishers */
   fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>(
     "fe_plan/broadcast", rclcpp::SensorDataQoS());
+
+  lin_mpc_cmd_pub_ = this->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
+    "lin_mpc_cmd", rclcpp::SensorDataQoS());
 
   poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>(
     "poly_traj", rclcpp::SensorDataQoS());
   minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>(
     "minco_traj/broadcast", rclcpp::SensorDataQoS());
 
-  lin_mpc_cmd_pub_ = this->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
-    "lin_mpc_cmd", rclcpp::SensorDataQoS());
+  /* Visualization Publishers */
+  voro_planning_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+    "voro_planning", 10);
+  // voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph", 10);
 
-  // Visualization
   agent_id_text_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("agent_id_text", 10);
   plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan_req", 10);
   fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
@@ -152,9 +182,18 @@ void VoronoiPlanner::initPubSubTimer()
 
 	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("minco_traj_viz", 10);
 
+  mpc_pred_pos_pub_ = this->create_publisher<nav_msgs::msg::Path>("mpc/traj", 10);
+
   /* Subscribers */
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoronoiPlanner::odomSubCB, this, _1), others_sub_opt);
+
+  plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
+    "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
+  goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>(
+    "goals", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
+  point_goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+    "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::pointGoalSubCB, this, _1));
 
   // Subscribe to front end plan individually from each agent
   if (commless_){
@@ -184,14 +223,6 @@ void VoronoiPlanner::initPubSubTimer()
       );
     }
   }
-
-
-  plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
-    "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::planReqDbgSubCB, this, _1));
-  goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>(
-    "goals", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::goalsSubCB, this, _1));
-  point_goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&VoronoiPlanner::pointGoalSubCB, this, _1));
 
   /* Timers */
 	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
@@ -303,16 +334,18 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
 
   /* 2) Get current position, velocity and acceleration */
 
-  // Eigen::Vector3d start_pos, start_vel, start_acc;
+  auto plan_start_clock = this->get_clock()->now();
 
-  // auto plan_start_clock = this->get_clock()->now();
+  Eigen::Vector3d start_pos, start_vel, start_acc;
 
-  // if (!sampleTrajectory(poly_traj_, plan_start_clock.seconds(), start_pos, start_vel, start_acc))
-  // {
-  //   start_pos = cur_pos_;
-  //   start_vel = cur_vel_;
-  //   start_acc.setZero();
-  // }
+  if (!sampleMPCTrajectory(mpc_, plan_start_clock.nanoseconds()/1e9, 
+                          start_pos, start_vel, start_acc))
+  {
+    start_pos = cur_pos_;
+    start_vel = cur_vel_;
+    start_acc.setZero();
+  }
+
 
   /* 3) Get Receding Horizon Planning goal */
 
@@ -323,6 +356,7 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
 
   // Publish start and goal visualization
   viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
+
 
   /* 4) Plan HCA* path */
 
@@ -343,6 +377,7 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
   }
 
   tm_front_end_plan_.stop(verbose_print_);
+
 
   /* 4) Retrieve and transform HCA* path to map frame, publish visualization of path */
 
@@ -377,8 +412,8 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
   gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
 
   fe_plan_msg.agent_id = drone_id_;
-  fe_plan_msg.header.stamp = this->get_clock()->now();
-  fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+  fe_plan_msg.header.stamp = plan_start_clock;
+  fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
 
   for (size_t i = 0; i < fe_path_with_t_.size(); i++){
     geometry_msgs::msg::Pose pose;
@@ -395,10 +430,10 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
 
   /* 5) Generate commands for executing trajectory */
 
-
   // Find the nearest AStar path point to initial condition
   int fe_start_idx = 0;
-  
+  double min_dis = std::numeric_limits<double>::max();
+
   // TODO: improve this routine using KDTree
   for (int i = 0; i < fe_path_.size(); i++) { // find the nearest point
     double dis = (cur_pos_ - fe_path_[i]).norm();
@@ -409,14 +444,14 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
   }
 
   // 5a) Set reference path for MPC 
-  Eigen::Vector3d last_p_ref;
+  Eigen::Vector3d last_p_ref; // last position reference
   for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
     int idx = fe_start_idx + i * ref_samp_intv_;
     idx = (idx >= fe_path_.size()) ? fe_path_.size() - 1 : idx; 
 
-    Eigen::Vector3d p_ref = fe_path_[idx];
-    Eigen::Vector3d v_ref(0, 0, 0); // velocity reference
-    Eigen::Vector3d a_ref(0, 0, 0); // velocity reference
+    Eigen::Vector3d p_ref = fe_path_[idx]; // position reference
+    Eigen::Vector3d v_ref(0, 0, 0); // vel reference
+    Eigen::Vector3d a_ref(0, 0, 0); // acc reference
 
     if (i == 0) // First iteration
       v_ref = (p_ref - cur_pos_) / mpc_->MPC_STEP;
@@ -424,28 +459,27 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
       v_ref = (p_ref - last_p_ref) / mpc_->MPC_STEP;
 
     // Set PVA reference at given step i
-    mpc_->SetGoal(p_ref, v_ref, a_ref, i);
+    mpc_->setReference(p_ref, v_ref, a_ref, i);
 
-    last_p_r = p_ref;
+    last_p_ref = p_ref;
   }
 
+  // 5b) Solve MPC and visualize path
 
-
-
-  // 5b) Solve MPC
+  // Set initial condition
+  mpc_->setInitialCondition(cur_pos_, cur_vel_, cur_acc_);
 
   Eigen::Vector3d u_optimal, p_optimal, v_optimal, a_optimal, u_predict;
   Eigen::Vector2d yaw_yawrate{0.0, NAN};
-  Eigen::MatrixXd A1, B1;
+  Eigen::MatrixXd A1, B1; // system transition matrix
   Eigen::VectorXd x_optimal = mpc_->X_0_;
 
-  // Set initial condition
-  mpc_->SetStatus(cur_pos_, cur_vel_, cur_acc_);
+  if (mpc_->run()){ // Successful MPC solve
 
-  if (mpc_->Run()){ // Successful MPC solve
+    last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
 
-    mpc_->GetOptimCmd(u_optimal, 0);
-    mpc_->SystemModel(A1, B1, mpc_->MPC_STEP);
+    mpc_->getOptimalControl(u_optimal, 0);
+    mpc_->getSystemModel(A1, B1, mpc_->MPC_STEP);
 
     x_optimal = A1 * x_optimal + B1 * u_optimal;
 
@@ -455,25 +489,32 @@ bool VoronoiPlanner::planMPC(const Eigen::Vector3d& goal_pos){
 
     // Set yaw
     // TODO: figure out a better way
-    if (fe_start_idx < fe_path_.size() - 0.3 / path_dis_) {
-        yaw_yawrate(0) = std::atan2(fe_path_.back().y() - cur_pos_.y(), 
-                                    fe_path_.back().x() - cur_pos_.x());
-    }
+    // int lk_ahd = 5; // Look ahead distance
+    // int lk_ahd_idx = (fe_start_idx + lk_ahd) < fe_path_.size() ? fe_start_idx + lk_ahd : fe_start_idx;
+    // yaw_yawrate(0) = std::atan2(fe_path_[lk_ahd_idx](1) - cur_pos_(1), 
+    //                             fe_path_[lk_ahd_idx](0) - cur_pos_(0));
+
+    // yaw_yawrate = calculateYaw(fe_path_, plan_start_clock.nanoseconds()/1e9, ...);
 
     // Publish PVA command
     pubPVAJCmd(p_optimal, yaw_yawrate, v_optimal, a_optimal, u_optimal);
 
-    // Get path visualization
-    std::vector<Eigen::Vector3d> mpc_pred_path;
+    // Visualize path
+    mpc_pred_pos_.clear();
+    mpc_pred_vel_.clear();
+    mpc_pred_acc_.clear();
+
     x_optimal = mpc_->X_0_;
     for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
-        mpc_->GetOptimCmd(u_predict, i);
-        mpc_->SystemModel(A1, B1, mpc_->MPC_STEP);
+        mpc_->getOptimalControl(u_predict, i);
+        mpc_->getSystemModel(A1, B1, mpc_->MPC_STEP);
         x_optimal = A1 * x_optimal + B1 * u_predict;
-        mpc_pred_path.push_back(Eigen::Vector3d(x_optimal(0,0), x_optimal(1,0), x_optimal(2,0)));
+        mpc_pred_pos_.push_back(x_optimal.segment<3>(0));
+        mpc_pred_vel_.push_back(x_optimal.segment<3>(3));
+        mpc_pred_acc_.push_back(x_optimal.segment<3>(6));
     }
-    // TODO: publish path
-    MPCPathPublish(mpc_pred_path);
+    
+    pubMPCPath(mpc_pred_pos_);
 
   }
   else {
@@ -518,7 +559,7 @@ bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
 
   // auto plan_start_clock = this->get_clock()->now();
 
-  // if (!sampleTrajectory(poly_traj_, plan_start_clock.seconds(), start_pos, start_vel, start_acc))
+  // if (!sampleMINCOTrajectory(poly_traj_, plan_start_clock.nanoseconds()/1e9, start_pos, start_vel, start_acc))
   // {
   //   start_pos = cur_pos_;
   //   start_vel = cur_vel_;
@@ -589,8 +630,8 @@ bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
   // gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
 
   // fe_plan_msg.agent_id = drone_id_;
-  // fe_plan_msg.header.stamp = this->get_clock()->now();
-  // fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+  // fe_plan_msg.header.stamp = plan_start_clock;
+  // fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
 
   // for (size_t i = 0; i < fe_path_with_t_.size(); i++){
   //   geometry_msgs::msg::Pose pose;
@@ -648,14 +689,14 @@ bool VoronoiPlanner::planWithoutComms(const Eigen::Vector3d& goal_pos){
   //   start_PVA << start_pos, start_vel, start_acc;
   //   goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
 
-  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.seconds());
+  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.nanoseconds()/1e9;);
 
   //   Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
 
   //   minco_interfaces::msg::PolynomialTrajectory poly_msg; 
   //   minco_interfaces::msg::MincoTrajectory MINCO_msg; 
 
-  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
+  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.nanoseconds()/1e9;, poly_msg, MINCO_msg);
 
   //   poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
   //   // TODO: convert MINCO_msg to world frame
@@ -723,7 +764,7 @@ bool VoronoiPlanner::planWithComms(const Eigen::Vector3d& goal_pos){
 
   // auto plan_start_clock = this->get_clock()->now();
 
-  // if (!sampleTrajectory(poly_traj_, plan_start_clock.seconds(), start_pos, start_vel, start_acc))
+  // if (!sampleMINCOTrajectory(poly_traj_, plan_start_clock.nanoseconds()/1e9;, start_pos, start_vel, start_acc))
   // {
   //   start_pos = cur_pos_;
   //   start_vel = cur_vel_;
@@ -796,7 +837,7 @@ bool VoronoiPlanner::planWithComms(const Eigen::Vector3d& goal_pos){
 
   // fe_plan_msg.agent_id = drone_id_;
   // fe_plan_msg.header.stamp = this->get_clock()->now();
-  // fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+  // fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;;
 
   // for (size_t i = 0; i < fe_path_with_t_.size(); i++){
   //   geometry_msgs::msg::Pose pose;
@@ -853,14 +894,14 @@ bool VoronoiPlanner::planWithComms(const Eigen::Vector3d& goal_pos){
   //   start_PVA << start_pos, start_vel, start_acc;
   //   goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
 
-  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.seconds());
+  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.nanoseconds()/1e9;);
 
   //   Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
 
   //   minco_interfaces::msg::PolynomialTrajectory poly_msg; 
   //   minco_interfaces::msg::MincoTrajectory MINCO_msg; 
 
-  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.seconds(), poly_msg, MINCO_msg);
+  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.nanoseconds()/1e9;, poly_msg, MINCO_msg);
 
   //   poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
   //   // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
@@ -919,7 +960,7 @@ void VoronoiPlanner::planFETimerCB()
 
     fe_plan_msg.agent_id = drone_id_;
     fe_plan_msg.header.stamp = plan_start_clock;
-    fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+    fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
 
     for (size_t i = 0; i < (size_t) rsvn_tbl_window_size_; i++){
       geometry_msgs::msg::Pose pose;
@@ -954,7 +995,7 @@ void VoronoiPlanner::planFETimerCB()
     // // If previous trajectory is still valid, follow previous path
     // if (poly_traj_ != nullptr && poly_traj_->getGlobalStartTime() > 0.0){
 
-    //   double e_t_start = plan_start_clock.seconds() - poly_traj_->getGlobalStartTime(); // Get time t relative to start of trajectory
+    //   double e_t_start = plan_start_clock.nanoseconds()/1e9 - poly_traj_->getGlobalStartTime(); // Get time t relative to start of trajectory
 
     //   if (e_t_start > 0.0 && e_t_start < poly_traj_->getTotalDuration())
     //   {
@@ -971,7 +1012,7 @@ void VoronoiPlanner::planFETimerCB()
 
     // fe_plan_msg.agent_id = drone_id_;
     // fe_plan_msg.header.stamp = plan_start_clock;
-    // fe_plan_msg.t_plan_start = plan_start_clock.seconds();
+    // fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
 
     // for (size_t i = 0; i < (size_t) rsvn_tbl_window_size_; i++){
     //   geometry_msgs::msg::Pose pose;
@@ -1024,7 +1065,8 @@ void VoronoiPlanner::genVoroMapTimerCB()
                                       bool_map.second);
 
     dyn_voro_arr_[z_cm]->update(); // update distance map and Voronoi diagram
-    dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
+    dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();
+    // dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
 
     nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
 

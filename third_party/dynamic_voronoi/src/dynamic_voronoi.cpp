@@ -2,7 +2,6 @@
 namespace dynamic_voronoi{
 
 DynamicVoronoi::DynamicVoronoi() {
-  // alternativeDiagram = NULL;
 }
 
 void DynamicVoronoi::setParams(const DynamicVoronoiParams& params) {
@@ -14,30 +13,33 @@ DynamicVoronoi::~DynamicVoronoi() {
     data_.reset();
     data_ = nullptr;
   }
-  // if(alternativeDiagram){
-  //   for (int x=0; x<sizeX; x++) {
-  //     delete[] alternativeDiagram[x];
-  //   }
-  //   delete[] alternativeDiagram;    
-  //   alternativeDiagram = NULL;
-  // }
+
+  if(alternativeDiagram){
+    for (int x=0; x<sizeX; x++) {
+      delete[] alternativeDiagram[x];
+    }
+    delete[] alternativeDiagram;    
+    alternativeDiagram = NULL;
+  }
 }
 
 void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY) {
+  sizeX = _sizeX;
+  sizeY = _sizeY;
+
   if (data_ != nullptr) {
     data_.reset();
     data_ = nullptr;
   }
 
-  // if(alternativeDiagram){
-  //   for (int x=0; x<sizeX; x++) delete[] alternativeDiagram[x];
-  //   delete[] alternativeDiagram;    
-  //   alternativeDiagram = NULL;
-  // }
+  if(alternativeDiagram){
+    for (int x=0; x<sizeX; x++){
+      delete[] alternativeDiagram[x];
+    }
+    delete[] alternativeDiagram;    
+    alternativeDiagram = NULL;
+  }
 
-  sizeX = _sizeX;
-  sizeY = _sizeY;
-  
   data_ = std::shared_ptr<dataCellArr[]>(new dataCellArr[sizeX]);
   for (int x = 0; x < sizeX; x++){
     data_[x] = dataCellArr(new dataCell[sizeY]);
@@ -126,7 +128,9 @@ void DynamicVoronoi::setObstacle(int x, int y) {
 
 void DynamicVoronoi::removeObstacle(int x, int y) {
   dataCell c = data_[x][y];
-  if(isOccupied(x,y,c) == false) return;
+  
+  if(isOccupied(x,y,c) == false) 
+    return;
 
   removeList.push_back(IntPoint(x,y));
   c.obstX = invalidObstData;
@@ -238,7 +242,7 @@ float DynamicVoronoi::getDistance( int x, int y ) {
 }
 
 bool DynamicVoronoi::isVoronoiVertex(int x, int y) const {
-  if (isVoronoi(x,y)){
+  if (isVoronoiAlternative(x,y)){
     if (getNumVoronoiNeighbors(x, y) >= 3){
       return true;
     }
@@ -305,14 +309,16 @@ void DynamicVoronoi::checkVoro(int x, int y, int nx, int ny, dataCell& c, dataCe
       int dxy_y = y-nc.obstY;
       int sqdxy = dxy_x*dxy_x + dxy_y*dxy_y;
       int stability_xy = sqdxy - c.sqdist;
-      if (sqdxy - c.sqdist<0) return;
+      if (sqdxy - c.sqdist<0) 
+        return;
 
       //compute dist from nx,ny to obstacle of x,y
       int dnxy_x = nx - c.obstX;
       int dnxy_y = ny - c.obstY;
       int sqdnxy = dnxy_x*dnxy_x + dnxy_y*dnxy_y;
       int stability_nxy = sqdnxy - nc.sqdist;
-      if (sqdnxy - nc.sqdist <0) return;
+      if (sqdnxy - nc.sqdist <0) 
+        return;
 
       //which cell is added to the Voronoi diagram?
       if(stability_xy <= stability_nxy && c.sqdist>2) {
@@ -498,85 +504,85 @@ void DynamicVoronoi::prune() {
 
 void DynamicVoronoi::updateAlternativePrunedDiagram() {
 
-  // if(alternativeDiagram==NULL){
-  //   alternativeDiagram = new int*[sizeX];
-  //   for(int x=0; x<sizeX; x++){
-  //     alternativeDiagram[x] = new int[sizeY];
-  //   }
-  // }
+  if(alternativeDiagram==NULL){
+    alternativeDiagram = new int*[sizeX];
+    for(int x=0; x<sizeX; x++){
+      alternativeDiagram[x] = new int[sizeY];
+    }
+  }
 
 
-  // std::queue<IntPoint> end_cells;
-  // BucketPrioQueue<IntPoint> sortedPruneQueue;
-  // for(int x=1; x<sizeX-1; x++){
-  //   for(int y=1; y<sizeY-1; y++){
-  //     dataCell c = data_[x][y];
-  //     alternativeDiagram[x][y] = c.voronoi;
-  //     if(c.voronoi <=free){
-  //       sortedPruneQueue.push(c.sqdist, IntPoint(x,y));
-  //       end_cells.push(IntPoint(x, y));
-  //     }
-  //   }
-  // }
+  std::queue<IntPoint> end_cells;
+  BucketPrioQueue<IntPoint> sortedPruneQueue;
+  for(int x=1; x<sizeX-1; x++){
+    for(int y=1; y<sizeY-1; y++){
+      dataCell c = data_[x][y];
+      alternativeDiagram[x][y] = c.voronoi;
+      if(c.voronoi <=free){
+        sortedPruneQueue.push(c.sqdist, IntPoint(x,y));
+        end_cells.push(IntPoint(x, y));
+      }
+    }
+  }
 
-  // for(int x=1; x<sizeX-1; x++){
-  //   for(int y=1; y<sizeY-1; y++){
-  //     if( getNumVoronoiNeighborsAlternative(x, y) >= 3){
-  //       alternativeDiagram[x][y] = voronoiKeep;
-  //       sortedPruneQueue.push(data_[x][y].sqdist, IntPoint(x,y));
-  //       end_cells.push(IntPoint(x, y));
-  //     }
-  //   }
-  // }
+  for(int x=1; x<sizeX-1; x++){
+    for(int y=1; y<sizeY-1; y++){
+      if( getNumVoronoiNeighborsAlternative(x, y) >= 3){
+        alternativeDiagram[x][y] = voronoiKeep;
+        sortedPruneQueue.push(data_[x][y].sqdist, IntPoint(x,y));
+        end_cells.push(IntPoint(x, y));
+      }
+    }
+  }
 
-  // for(int x=1; x<sizeX-1; x++){
-  //   for(int y=1; y<sizeY-1; y++){
-  //     if( getNumVoronoiNeighborsAlternative(x, y) >= 3){
-  //       alternativeDiagram[x][y] = voronoiKeep;
-  //       sortedPruneQueue.push(data_[x][y].sqdist, IntPoint(x,y));
-  //       end_cells.push(IntPoint(x, y));
-  //     }
-  //   }
-  // }
+  for(int x=1; x<sizeX-1; x++){
+    for(int y=1; y<sizeY-1; y++){
+      if( getNumVoronoiNeighborsAlternative(x, y) >= 3){
+        alternativeDiagram[x][y] = voronoiKeep;
+        sortedPruneQueue.push(data_[x][y].sqdist, IntPoint(x,y));
+        end_cells.push(IntPoint(x, y));
+      }
+    }
+  }
 
 
-  // while (!sortedPruneQueue.empty()) {
-  //   IntPoint p = sortedPruneQueue.pop();
+  while (!sortedPruneQueue.empty()) {
+    IntPoint p = sortedPruneQueue.pop();
 
-  //   if (markerMatchAlternative(p.x, p.y)) {
-  //     alternativeDiagram[p.x][p.y]=voronoiPrune;
-  //   } else {
-  // alternativeDiagram[p.x][p.y]=voronoiKeep;
-  //   }
-  // }
+    if (markerMatchAlternative(p.x, p.y)) {
+      alternativeDiagram[p.x][p.y]=voronoiPrune;
+    } else {
+      alternativeDiagram[p.x][p.y]=voronoiKeep;
+    }
+  }
 
-  // // //delete worms
-  // while (!end_cells.empty()) {
-  //   IntPoint p = end_cells.front();
-  //   end_cells.pop();
+  // //delete worms
+  while (!end_cells.empty()) {
+    IntPoint p = end_cells.front();
+    end_cells.pop();
 
-  //   if (isVoronoiAlternative(p.x,p.y) && getNumVoronoiNeighborsAlternative(p.x, p.y) == 1) {
-  //     alternativeDiagram[p.x][p.y] = voronoiPrune;
+    if (isVoronoiAlternative(p.x,p.y) && getNumVoronoiNeighborsAlternative(p.x, p.y) == 1) {
+      alternativeDiagram[p.x][p.y] = voronoiPrune;
 
-  //     for (int dx = -1; dx <= 1; ++dx) {
-  //       for (int dy = -1; dy <= 1; ++dy) {
-  //         if (!(dx || dy) || (dx && dy)) {
-  //           continue;
-  //         }
-  //         int nx = p.x + dx;
-  //         int ny = p.y + dy;
-  //         if (nx < 0 || nx >= sizeX || ny < 0 || ny >= sizeY) {
-  //           continue;
-  //         }
-  //         if (isVoronoiAlternative(nx,ny)) {
-  //           if (getNumVoronoiNeighborsAlternative(nx, ny) == 1) {
-  //             end_cells.push(IntPoint(nx, ny));
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+      for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+          if (!(dx || dy) || (dx && dy)) {
+            continue;
+          }
+          int nx = p.x + dx;
+          int ny = p.y + dy;
+          if (nx < 0 || nx >= sizeX || ny < 0 || ny >= sizeY) {
+            continue;
+          }
+          if (isVoronoiAlternative(nx,ny)) {
+            if (getNumVoronoiNeighborsAlternative(nx, ny) == 1) {
+              end_cells.push(IntPoint(nx, ny));
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 bool DynamicVoronoi::markerMatchAlternative(int x, int y) {

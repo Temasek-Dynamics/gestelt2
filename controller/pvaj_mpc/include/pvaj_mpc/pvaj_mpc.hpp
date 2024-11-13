@@ -43,6 +43,7 @@ namespace pvaj_mpc
 	struct mpc_osqp_t
 	{
 		Eigen::MatrixXd Ax; // State transition matrix
+
 		Eigen::MatrixXd Bx; // Control matrix
 
 		/**
@@ -125,9 +126,11 @@ namespace pvaj_mpc
 
 	struct MPCControllerParams
 	{
+		int drone_id{-1};
+
 		// Controller params
-		int MPC_HORIZON{5};
-		double MPC_STEP{0.1};
+		int MPC_HORIZON{15};	// Planning horizon
+		double MPC_STEP{0.1}; // [s] MPC time step
 
 		// Dynamical parameters
 		Eigen::Matrix3d Drag;
@@ -150,7 +153,7 @@ namespace pvaj_mpc
 		// Control bounds
 		Eigen::Vector3d u_min{-50.0, -50.0, -50.0};
 		Eigen::Vector3d u_max{50.0, 50.0, 50.0};
-	}
+	};
 
 	class MPCController
 	{
@@ -159,11 +162,11 @@ namespace pvaj_mpc
 		{
 			initParams(params);
 
+			setProblem();
+
 			X_0_.resize(mpc_.M.cols(), 1);
 			X_r_.resize(mpc_.M.rows(), 1);
 			planes_.resize(MPC_HORIZON);
-
-			ProblemFormation();
 		}
 
 		/**
@@ -173,6 +176,8 @@ namespace pvaj_mpc
 		 */
 		void initParams(const MPCControllerParams &params)
 		{
+			drone_id_ = params.drone_id;
+
 			// MPC parameters
 			MPC_HORIZON = params.MPC_HORIZON;
 			MPC_STEP = params.MPC_STEP;
@@ -208,29 +213,27 @@ namespace pvaj_mpc
 		 */
 		bool run(void)
 		{
+
 			// update reference
-			LinearTerm(mpc_, X_0_, X_r_);
+			setLinearTerm(mpc_, X_0_, X_r_);
 
 			// update system status and their constraints
 			UpdateBound(mpc_, X_0_);
 
 			// update safe flight corridor constraints	
-			bool add_sfc_flag = true;
-			if (mpc_.T.rows() == 0){
-				add_sfc_flag = false;
-			}
+			bool add_sfc_flag = mpc_.T.rows() == 0 ? false : true;
+
+			// generate all inequality constraints
 			if (add_sfc_flag) {
+				// Update SFC matrix
 				mpc_.A_sfc.resize(mpc_.T.rows(), mpc_.A_p.cols());
 				mpc_.A_sfc_upp.resize(mpc_.D_T.rows(), 1);
 				// Set SFC upper bound
 				// T * A_p <= -D_T -T * B_p
-				// 
 				mpc_.A_sfc = mpc_.T * mpc_.A_p;
 				mpc_.A_sfc_upp = -mpc_.D_T - mpc_.T * mpc_.B_p;
-			}
 
-			// generate all inequality constraints
-			if (add_sfc_flag) {
+				// Update entire matrix
 				mpc_.A.resize(mpc_.A_sys.rows() + mpc_.A_sfc.rows(), mpc_.A_sys.cols());
 				mpc_.A.block(0, 0, mpc_.A_sys.rows(), mpc_.A_sys.cols()) = mpc_.A_sys;
 				mpc_.A.block(mpc_.A_sys.rows(), 0, mpc_.A_sfc.rows(), mpc_.A_sfc.cols()) = mpc_.A_sfc;
@@ -280,38 +283,43 @@ namespace pvaj_mpc
 
 
 			bool init_flag = solver.initSolver();
-			bool solve_flag = true;
+			OsqpEigen::ErrorExitFlag solve_flag;
 
 			if (init_flag) { // Solver initialized successfully
-				solve_flag = solver.solve();
+				solve_flag = solver.solveProblem();
 			} 
 			else {
 				std::cerr << "[MPC]: Can't set mpc problem!" << std::endl;
-				solve_flag = false;
 			}
 
 			// fps_++;
 			
-			if (solve_flag == true && init_flag == true) {
+			if (solve_flag == OsqpEigen::ErrorExitFlag::NoError 
+				&& init_flag == true) 
+			{
 
 				mpc_.u_optimal = solver.getSolution();
 
-				static double cur_vel = 0.0;
-				if (cur_vel < X_0_.block(3,0,3,1).norm()) {
-					cur_vel = X_0_.block(3,0,3,1).norm();
-				}
+				// static double cur_vel = 0.0;
+				// if (cur_vel < X_0_.block<3,1>(3,0).norm()) {
+				// 	cur_vel = X_0_.block<3,1>(3,0).norm();
+				// }
 				// if ((ros::Time::now() - print_time_).toSec() > 2.0) {
 				// 	print_time_ = ros::Time::now();
 				// 	std::cout << "mpc fps: " << fps_/2 << ", this time is: " << (ros::Time::now()-time_0).toSec()*1000 << " ms. " 
 				// 		"Velocity now is: " << cur_vel << "m/s. " << std::endl;
 				// 	fps_ = 0;
 				// }
+
+				// std::cerr   << "[MPC] D" << drone_id_ << ": " <<
+				// 				"Successful run()" << std::endl;
+
 				return true;
 			} 
 			else { // FAILURE
-				bool flag = IsInFSC(X_0_.block(0,0,3,1), planes_[0]);
+				bool flag = isInFSC(X_0_.block<3,1>(0,0), planes_[0]);
 				// std::cout << "planes: " << std::endl << planes_ << std::endl;
-				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  IsInFSC: " << std::boolalpha << flag << std::endl;
+				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " << std::boolalpha << flag << std::endl;
 				if (init_flag) {
 					OsqpEigen::Status status = solver.getStatus();
 					if (status == OsqpEigen::Status::DualInfeasibleInaccurate) {
@@ -385,7 +393,7 @@ namespace pvaj_mpc
 		 * @brief Formulate problem
 		 * 
 		 */
-		void ProblemFormation(void)
+		void setProblem(void)
 		{
 			// Set Initial state
 			Eigen::VectorXd x_0, x_r;
@@ -399,10 +407,10 @@ namespace pvaj_mpc
 				input: {u0, u1, u2, ... , u(N-1)}
 			*/
 
-			// SystemModel: Set up the matrices Ax and Bc as part of linear dynamical model : x_k+1 = Ax * x_k + Bx * u_k
-			SystemModel(mpc_.Ax, mpc_.Bx, MPC_STEP);
-			// MPCModel: Set linear dynamical model across mpc horizon iterations
-			MPCModel(mpc_.Ax, mpc_.Bx, mpc_.M, mpc_.C);
+			// getSystemModel: Set up the matrices Ax and Bc as part of linear dynamical model : x_k+1 = Ax * x_k + Bx * u_k
+			getSystemModel(mpc_.Ax, mpc_.Bx, MPC_STEP);
+			// setModel: Set linear dynamical model across mpc horizon iterations
+			setModel(mpc_.Ax, mpc_.Bx, mpc_.M, mpc_.C);
 
 			/**
 			 * sum_{k=0}^{N-1} (x_k - x_r).T * Q * (x_k - x_r) 	// Intermediate states
@@ -428,22 +436,21 @@ namespace pvaj_mpc
 			F.block<3, 3>(6, 6) = Eigen::Matrix3d::Identity() * R_aN_;
 
 			// Cost: 1/2* x^T H x + f^T x   
-			// QuadraticTerm: Constructs H matrix
-			QuadraticTerm(mpc_, Q, R, R_con, F);
-			// LinearTerm: Constructs f matrix
-			LinearTerm(mpc_, x_0, x_r);
+			// setQuadraticTerm: Constructs H matrix
+			setQuadraticTerm(mpc_, Q, R, R_con, F);
+			// setLinearTerm: Constructs f matrix
+			setLinearTerm(mpc_, x_0, x_r);
 
 			// system status and input constrains
-			ALLConstraint(mpc_);
+			setConstraints(mpc_);
 
+			// Update bounds on state
 			UpdateBound(mpc_, x_0);
 
 			// Inequality constrains (none)
 
 			// Resize optimal controls
 			mpc_.u_optimal.resize(mpc_.f.rows(), 1);
-
-			std::cout << "[MPC] Problem formulated" << std::endl;
 		}
 
 		/**
@@ -454,7 +461,7 @@ namespace pvaj_mpc
 		 * R_con: weight on change in intermediate controls
 		 * F: weight on terminal state
 		 */
-		void QuadraticTerm(mpc_osqp_t &mpc,
+		void setQuadraticTerm(mpc_osqp_t &mpc,
 						   const Eigen::MatrixXd &Q, const Eigen::MatrixXd &R,
 						   const Eigen::MatrixXd &R_con, const Eigen::MatrixXd &F)
 		{
@@ -512,7 +519,7 @@ namespace pvaj_mpc
 		 * x_0: 
 		 * x_r: reference state
 		 */
-		void LinearTerm(mpc_osqp_t &mpc, const Eigen::VectorXd &x_0, const Eigen::VectorXd &x_r)
+		void setLinearTerm(mpc_osqp_t &mpc, const Eigen::VectorXd &x_0, const Eigen::VectorXd &x_r)
 		{
 			if (x_r.rows() != mpc.M.rows())
 			{
@@ -531,7 +538,7 @@ namespace pvaj_mpc
 		 * @param B Set control input matrix
 		 * @param t timestep
 		 */
-		void SystemModel(Eigen::MatrixXd &A, Eigen::MatrixXd &B, double t)
+		void getSystemModel(Eigen::MatrixXd &A, Eigen::MatrixXd &B, double t)
 		{
 			// Ax * {px, py, pz, vx, vy, vz, ax, ay, az}
 			// + Bx * {ux, uy, uz}
@@ -564,12 +571,12 @@ namespace pvaj_mpc
 		 * @param M
 		 * @param C
 		 */
-		void MPCModel(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B,
+		void setModel(const Eigen::MatrixXd &A, const Eigen::MatrixXd &B,
 					  Eigen::MatrixXd &M, Eigen::MatrixXd &C)
 		{
-			M.resize(MPC_HORIZON * A.rows(), A.cols());
+			M.resize(MPC_HORIZON * 9, 9);
 			M.setZero();
-			C.resize(MPC_HORIZON * B.rows(), MPC_HORIZON * B.cols());
+			C.resize(MPC_HORIZON * 9, MPC_HORIZON * 3);
 			C.setZero();
 
 			Eigen::MatrixXd temp = Eigen::MatrixXd(A.rows(), A.cols()).setIdentity();
@@ -600,7 +607,7 @@ namespace pvaj_mpc
 		 */
 
 		// TODO: Change name to setUpConstraints
-		void ALLConstraint(mpc_osqp_t& mpc)
+		void setConstraints(mpc_osqp_t& mpc)
 		{
 
 			/* --system constraint: input, acceleration, velocity limit-- */
@@ -707,13 +714,14 @@ namespace pvaj_mpc
 		 * @param u Control to be modified in place
 		 * @param segment control segment
 		 */
-		void GetOptimCmd(Eigen::Vector3d& u, int segment) {
+		void getOptimalControl(Eigen::Vector3d& u, int segment) {
 			if (segment >= MPC_HORIZON) {
 				segment = MPC_HORIZON - 1; // set as last segment
 			}
 			u(0) = mpc_.u_optimal(segment * 3 + 0, 0);
 			u(1) = mpc_.u_optimal(segment * 3 + 1, 0);
 			u(2) = mpc_.u_optimal(segment * 3 + 2, 0);
+
 		}
 
 		/* Setters */
@@ -726,18 +734,18 @@ namespace pvaj_mpc
 		 * @param ar acceleration
 		 * @param step 
 		 */
-		void SetGoal(Eigen::Vector3d pr, Eigen::Vector3d vr, Eigen::Vector3d ar, int step) {
+		void setReference(Eigen::Vector3d pr, Eigen::Vector3d vr, Eigen::Vector3d ar, int step) {
 			if (step > MPC_HORIZON || step < 0) {
 				std::cerr << "[MPC]: Check goal index! Error index: " <<  step << std::endl;
-				return ;
+				return;
 			}
 
-			Eigen::VectorXd x_0(X_0_.rows(), 1);
-			x_0.block(0, 0, pr.rows(), 1) = pr;
-			x_0.block(pr.rows(), 0, vr.rows(), 1) = vr;
-			x_0.block(pr.rows()+vr.rows(), 0, ar.rows(), 1) = ar;
+			Eigen::VectorXd x_0(9, 1);
+			x_0.block<3, 1>(0, 0) = pr;
+			x_0.block<3, 1>(3, 0) = vr;
+			x_0.block<3, 1>(6, 0) = ar;
 			// Set reference PVA at given step
-			X_r_.block(x_0.rows()*step, 0, x_0.rows(), 1) = x_0;
+			X_r_.block<9, 1>(9*step, 0) = x_0;
 		}
 
 		/**
@@ -747,8 +755,8 @@ namespace pvaj_mpc
 		 * @param v0 
 		 * @param a0 
 		 */
-		void SetStatus(Eigen::Vector3d p0, Eigen::Vector3d v0, Eigen::Vector3d a0) {
-			StatusSaturation(v0, a0);
+		void setInitialCondition(Eigen::Vector3d p0, Eigen::Vector3d v0, Eigen::Vector3d a0) {
+			saturateReference(v0, a0);
 			X_0_.block(0, 0, p0.rows(), 1) = p0;
 			X_0_.block(p0.rows(), 0, v0.rows(), 1) = v0;
 			X_0_.block(p0.rows()+v0.rows(), 0, a0.rows(), 1) = a0;
@@ -764,7 +772,7 @@ namespace pvaj_mpc
 		 * @return true In safe flight corridor 
 		 * @return false Outside safe flight corridor
 		 */
-		bool IsInFSC(Eigen::Vector3d pos, Eigen::Matrix<double, Eigen::Dynamic, 4>& planes)
+		bool isInFSC(Eigen::Vector3d pos, Eigen::Matrix<double, Eigen::Dynamic, 4>& planes)
 		{
 			if (planes.rows() == 0) {
 				return false;
@@ -784,15 +792,13 @@ namespace pvaj_mpc
 			return true;
 		}
 
-
-
 		/**
 		 * @brief Clamp velocity and acceleration values to be within min and max bounds
 		 * 
 		 * @param v0 
 		 * @param a0 
 		 */
-		void StatusSaturation(Eigen::Vector3d& v0, Eigen::Vector3d& a0) {
+		void saturateReference(Eigen::Vector3d& v0, Eigen::Vector3d& a0) {
 			for (int i = 0; i < 3; i++) {
 				v0(i, 0) = std::clamp(v0(i, 0), v_min_(i, 0), v_max_(i, 0));
 				a0(i, 0) = std::clamp(a0(i, 0), a_min_(i, 0), a_max_(i, 0));
@@ -800,23 +806,23 @@ namespace pvaj_mpc
 		}
 
 
-	private:
+	public:
 		mpc_osqp_t mpc_; // MPC data
 		// int fps_;
 
-	private:
 		// Controller params
 		int MPC_HORIZON{5};
 		double MPC_STEP{0.1}; // [s] time step for dynamics
-
-    	std::vector<Eigen::Vector3d> u_last_;
+		
 		Eigen::VectorXd X_0_, X_r_; // Current position and reference position
+
+	private:
+		int drone_id_{-1};
 
 		// Vector of set of hyper planes, (n, 4) sized matrix with each row 
 		// containing hyperplane coefficients. Each element is a different step 
 		// of the MPC problem
 	    std::vector<Eigen::MatrixX4d> planes_; 
-
 
 		// Dynamical parameters
 		Eigen::Matrix3d Drag_;

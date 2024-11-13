@@ -33,6 +33,7 @@ set(ROS_LIBRABRIES
   voxel_map
   dynamic_voronoi
   space_time_astar
+  pvaj_mpc
   minco_traj_gen
   logger_wrapper
   planner_utils
@@ -62,6 +63,7 @@ ament_target_dependencies(voronoi_planner_node
   voxel_map
   dynamic_voronoi
   space_time_astar
+  pvaj_mpc
   minco_traj_gen
   logger_wrapper
   viz_helper

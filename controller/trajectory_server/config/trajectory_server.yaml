@@ -1,6 +1,7 @@
 /**:
   ros__parameters:
-    trajectory_type: MINCO
+    # Available trajectory types: MINCO, MPC
+    trajectory_type: MPC
 
     # Frequency for timers
     set_offb_ctrl_freq: 5.0  #[ Hz] Offboard control mode publish frequency

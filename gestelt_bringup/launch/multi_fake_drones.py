@@ -18,14 +18,14 @@ from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
-# SCENARIO_NAME = "forest_dense_1"
+SCENARIO_NAME = "forest_dense_1"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
 # SCENARIO_NAME = "antipodal_swap_4_sparse"
 # SCENARIO_NAME = "antipodal_swap_4_dense"
 # SCENARIO_NAME = "antipodal_swap_4_empty"
 
-SCENARIO_NAME = "antipodal_swap_8_normal"
+# SCENARIO_NAME = "antipodal_swap_8_normal"
 # SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
@@ -125,7 +125,7 @@ def generate_launch_description():
 
 
     # Mission node: Sends goals to agents
-    swarm_collision_checker = Node(
+    swarm_collision_checker_node = Node(
         package='swarm_collision_checker',
         executable='swarm_collision_checker_node',
         output='screen',
@@ -217,7 +217,7 @@ def generate_launch_description():
         # Central nodes
         world_to_map_tf,
         fake_map,
-        swarm_collision_checker,
+        # swarm_collision_checker_node,
         rosbag_record,
         # Visualization
         rviz_node,

@@ -28,6 +28,7 @@
   <depend>voxel_map</depend>
   <depend>dynamic_voronoi</depend>
   <depend>space_time_astar</depend>
+  <depend>pvaj_mpc</depend>
   <depend>minco_traj_gen</depend>
 
   <depend>logger_wrapper</depend>

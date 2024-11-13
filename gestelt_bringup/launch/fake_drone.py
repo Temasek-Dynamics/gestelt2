@@ -110,7 +110,7 @@ def generate_launch_description():
     fake_drone_node = Node(
         package='fake_drone',
         executable='fake_drone_node',
-        output='log',
+        output='screen',
         shell=False,
         name='fake_drone_node',
         parameters = [
@@ -143,7 +143,7 @@ def generate_launch_description():
     trajectory_server = Node(
         package='trajectory_server',
         executable='trajectory_server_node',
-        output='log',
+        output='screen',
         shell=False,
         name=['traj_server_', drone_id],
         parameters=[

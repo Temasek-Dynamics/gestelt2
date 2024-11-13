@@ -57,7 +57,7 @@ FakeDrone::FakeDrone()
 	Eigen::Vector3d init_pos;
 	init_pos(0) = this->get_parameter(param_ns+".init_x").as_double();
 	init_pos(1) = this->get_parameter(param_ns+".init_y").as_double();
-	init_pos(2) = 0.0;
+	init_pos(2) = 0.0; 
 	double init_yaw = this->get_parameter(param_ns+".init_yaw").as_double();
 
 	Eigen::Vector3d init_pos_ned = vecENUToNED(init_pos);

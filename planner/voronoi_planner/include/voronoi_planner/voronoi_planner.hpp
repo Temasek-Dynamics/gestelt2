@@ -43,6 +43,7 @@
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
@@ -60,7 +61,9 @@
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
 #include <space_time_astar/space_time_astar.hpp>
 
-#include <minco_traj_gen/minco_traj_gen.hpp>
+#include <minco_traj_gen/minco_traj_gen.hpp> // MINCO trajectory generation
+
+#include <pvaj_mpc/pvaj_mpc.hpp> // MPC
 
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
@@ -198,25 +201,34 @@ public:
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool plan(const Eigen::Vector3d& goal);
+  bool plan(const Eigen::Vector3d& goal_pos);
 
   /**
-   * @brief Plan a path from start to goal
+   * @brief (Linear MPC) Plan a path from start to goal
    * 
    * @param goal 
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool planWithoutComms(const Eigen::Vector3d& goal);
+  bool planMPC(const Eigen::Vector3d& goal_pos);
 
   /**
-   * @brief Plan a path from start to goal
+   * @brief (COMMS-LESS) Plan a path from start to goal 
    * 
    * @param goal 
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool planWithComms(const Eigen::Vector3d& goal);
+  bool planWithoutComms(const Eigen::Vector3d& goal_pos);
+
+  /**
+   * @brief (COMMS-BASED) Plan a path from start to goal
+   * 
+   * @param goal 
+   * @return true planning succeeded
+   * @return false planning failed
+   */
+  bool planWithComms(const Eigen::Vector3d& goal_pos);
 
 private:
   /* Timer callbacks */
@@ -247,14 +259,78 @@ private:
   /* Subscription callback to swarm odometry */
   void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int drone_id);
 
+  void pubPVAJCmd(	const Eigen::Vector3d& pos, 
+                    const Eigen::Vector2d& yaw_yawrate,
+                    const Eigen::Vector3d& vel,
+                    const Eigen::Vector3d& acc,
+                    const Eigen::Vector3d& jerk);
+
+  void pubMPCPath(std::vector<Eigen::Vector3d> &path);
+
+private:
+	/* Callback groups */
+	rclcpp::CallbackGroup::SharedPtr planning_cb_group_;
+	rclcpp::CallbackGroup::SharedPtr swarm_plan_cb_group_;
+	rclcpp::CallbackGroup::SharedPtr mapping_cb_group_;
+	rclcpp::CallbackGroup::SharedPtr others_cb_group_;
+
+  /**
+   * Periodically running timers
+   */
+	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	    // Timer for planning front end path
+	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_; // Timer for generating discretized voronoi diagram
+
+  /**
+   * ROS Publishers
+   */
+  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
+  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
+
+  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> occ_map_pubs_;        // Publishes original occupancy grid
+  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
+
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
+
+  // Planning publishers
+  rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
+
+  rclcpp::Publisher<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr poly_traj_pub_; // Publish polynomial trajectories for execution
+
+  rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr lin_mpc_cmd_pub_; // Publish MPC commands
+  rclcpp::Publisher<minco_interfaces::msg::MincoTrajectory>::SharedPtr minco_traj_broadcast_pub_; // Publish MINCO trajectories broadcasted to other agents
+
+  // Visualization
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr agent_id_text_pub_; // Agent ID text publisher
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
+
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
+
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mpc_pred_pos_pub_; // Visualize MPC trajectory
+
+  /**
+   * ROS Subscribers
+   */
+	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
+	rclcpp::Subscription<gestelt_interfaces::msg::Goals>::SharedPtr goals_sub_;              // Goal subscriber
+	std::vector<rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr>
+    fe_plan_broadcast_subs_;  // Subscription to broadcasted front end plan from other agents
+  
+	std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> 
+    swarm_odom_subs_;  // Subscription to odometry from other agents
+
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
+
+	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
+
+  /* TF2 */
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+
 /* Helper methods */
 private:
-
-  pubPVAJCmd(	const Eigen::Vector3d& pos, 
-              const Eigen::Vector2d& yaw_yawrate,
-              const Eigen::Vector3d& vel,
-              const Eigen::Vector3d& acc,
-              const Eigen::Vector3d& jerk);
 
   /* Convert point from world to fixed map origin*/
   Eigen::Vector3d worldToMap(const Eigen::Vector3d& pt)
@@ -294,7 +370,7 @@ private:
 
   /**
    * @brief Sample position, velocity and acceleration at 
-   *  a given time on the trajectory
+   *  a given time on the MINCO trajectory
    * 
    * @param traj 
    * @param time_samp 
@@ -304,32 +380,14 @@ private:
    * @return true 
    * @return false 
    */
-  bool sampleTrajectory(
-    const std::shared_ptr<minco::Trajectory>& traj,
+  bool sampleMINCOTrajectory( const std::shared_ptr<minco::Trajectory>& traj,
     const double& time_samp, 
-    Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
-  {
-    if (traj == nullptr){
-      return false;
-    }
-    if (traj->getGlobalStartTime() < 0.0){ 
-      // Planning has not started
-      return false;
-    }
+    Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc);
 
-    double e_t_start = time_samp - traj->getGlobalStartTime(); // Get time t relative to start of trajectory
 
-    if (e_t_start < 0.0 || e_t_start > traj->getTotalDuration())
-    {
-      return false;
-    }
-
-    pos = traj->getPos(e_t_start);
-    vel = traj->getVel(e_t_start);
-    acc = traj->getAcc(e_t_start);
-
-    return true;
-  }
+  bool sampleMPCTrajectory(std::unique_ptr<pvaj_mpc::MPCController>& mpc, 
+                            const double& time_samp, 
+                            Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc);
 
   /**
    * @brief Get receding horizon planning (RHP) goal from desired goal
@@ -374,11 +432,9 @@ private:
    */
   bool isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal);
 
-  /* Helper methods */
-
 private:
   /* MPC Params */
-  int ref_samp_intv_{6}; // FE reference path sampling interval
+  int ref_samp_intv_{1}; // FE reference path sampling interval
   double path_dis_{0.05};
 
   /* Params */
@@ -413,65 +469,7 @@ private:
   global_planner::AStarParams astar_params_;  // a star planner parameters
   global_planner::VoronoiParams voro_params_; // voronoi map parameters
 
-private:
-	/* Callback groups */
-	rclcpp::CallbackGroup::SharedPtr planning_cb_group_;
-	rclcpp::CallbackGroup::SharedPtr swarm_plan_cb_group_;
-	rclcpp::CallbackGroup::SharedPtr mapping_cb_group_;
-	rclcpp::CallbackGroup::SharedPtr others_cb_group_;
-
-  /**
-   * Periodically running timers
-   */
-	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	    // Timer for planning front end path
-	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_; // Timer for generating discretized voronoi diagram
-
-  /**
-   * ROS Publishers
-   */
-  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occ_map_pub_;        // Publishes original occupancy grid
-  // rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_occ_grid_pub_;  // Publishes voronoi map occupancy grid
-
-  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> occ_map_pubs_;        // Publishes original occupancy grid
-  std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
-
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
-
-  // Planning publishers
-  rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
-
-  rclcpp::Publisher<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr poly_traj_pub_; // Publish polynomial trajectories for execution
-
-  rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr lin_mpc_cmd_pub_; // Publish MPC commands
-  rclcpp::Publisher<minco_interfaces::msg::MincoTrajectory>::SharedPtr minco_traj_broadcast_pub_; // Publish MINCO trajectories broadcasted to other agents
-
-  // Visualization
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr agent_id_text_pub_; // Agent ID text publisher
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
-
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
-
-  /**
-   * ROS Subscribers
-   */
-	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
-	rclcpp::Subscription<gestelt_interfaces::msg::Goals>::SharedPtr goals_sub_;              // Goal subscriber
-	std::vector<rclcpp::Subscription<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr>
-    fe_plan_broadcast_subs_;  // Subscription to broadcasted front end plan from other agents
-  
-	std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> 
-    swarm_odom_subs_;  // Subscription to odometry from other agents
-
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_;   // Point Goal subscriber
-
-	rclcpp::Subscription<gestelt_interfaces::msg::PlanRequest>::SharedPtr plan_req_dbg_sub_; // (DEBUG USE) plan request (start and goal) debug subscriber
-
-  /* TF2 */
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
-  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  pvaj_mpc::MPCControllerParams mpc_params_; // Linear MPC parameters
 
 private:
   /* Stored Odometry data */
@@ -501,8 +499,17 @@ private:
   std::vector<Eigen::Vector3d> fe_path_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
   std::vector<Eigen::Vector4d> fe_path_with_t_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
 
-  std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_; // Initial minimum jerk trajectory
+  /* MINCO */
+  std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_{nullptr}; // Initial minimum jerk trajectory
   std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
+  
+  /* MPC */
+  std::unique_ptr<pvaj_mpc::MPCController> mpc_; // MPC controller
+
+  std::vector<Eigen::Vector3d> mpc_pred_pos_; // Predicted MPC position trajectory
+  std::vector<Eigen::Vector3d> mpc_pred_vel_; // Predicted MPC velocity trajectory
+  std::vector<Eigen::Vector3d> mpc_pred_acc_; // Predicted MPC acceleration trajectory
+  double last_mpc_solve_{-1.0}; // Time that MPC was last solved
 
   /* Timers to measure computation time */
   logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Front end plan generation
@@ -529,7 +536,7 @@ inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicV
   occ_grid.header.frame_id = map_frame_;
   occ_grid.info.width = dyn_voro.getSizeX();
   occ_grid.info.height = dyn_voro.getSizeY();
-  occ_grid.info.resolution = bool_map_3d_.resolution;
+  occ_grid.info.resolution = dyn_voro.getRes();
   occ_grid.info.origin.position.x = origin_x;
   occ_grid.info.origin.position.y = origin_y;
   occ_grid.info.origin.position.z = dyn_voro.getOriginZ();
@@ -556,7 +563,7 @@ inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicV
     for (int i = 0; i < dyn_voro.getSizeX(); i++)
     {
       size_t idx = map2Dto1DIdx(occ_grid.info.width, i, j);
-      occ_grid.data[idx] = dyn_voro.isVoronoi(i, j) ? 255: 0;
+      occ_grid.data[idx] = dyn_voro.isVoronoiAlternative(i, j) ? 255: 0;
     }
   }
 }
@@ -569,7 +576,7 @@ inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVorono
   occ_grid.header.frame_id = map_frame_;
   occ_grid.info.width = dyn_voro.getSizeX();
   occ_grid.info.height = dyn_voro.getSizeY();
-  occ_grid.info.resolution = bool_map_3d_.resolution;
+  occ_grid.info.resolution = dyn_voro.getRes();
   occ_grid.info.origin.position.x = origin_x;
   occ_grid.info.origin.position.y = origin_y;
   occ_grid.info.origin.position.z = dyn_voro.getOriginZ();
@@ -675,6 +682,77 @@ inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Traj
   }
 
 }
+
+
+inline bool VoronoiPlanner::sampleMINCOTrajectory(
+  const std::shared_ptr<minco::Trajectory>& traj,
+  const double& time_samp, 
+  Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
+{
+  if (traj == nullptr){
+    return false;
+  }
+  if (traj->getGlobalStartTime() < 0.0){ 
+    // Planning has not started
+    return false;
+  }
+
+  double e_t_start = time_samp - traj->getGlobalStartTime(); // Get time t relative to start of trajectory
+
+  if (e_t_start < 0.0 || e_t_start > traj->getTotalDuration())
+  {
+    return false;
+  }
+
+  pos = traj->getPos(e_t_start);
+  vel = traj->getVel(e_t_start);
+  acc = traj->getAcc(e_t_start);
+
+  return true;
+}
+
+inline bool VoronoiPlanner::sampleMPCTrajectory(
+  std::unique_ptr<pvaj_mpc::MPCController>& mpc,
+  const double& time_samp, 
+  Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
+{
+  return false; 
+
+  // if (mpc_pred_pos_.empty() 
+  //     || mpc_pred_vel_.empty() 
+  //     || mpc_pred_acc_.empty())
+  // {
+  //   return false;
+  // }
+
+  // if (last_mpc_solve_ < 0.0){
+  //   return false;
+  // }
+
+  // // Get time t relative to start of MPC trajectory
+  // double e_t_start = time_samp - last_mpc_solve_; 
+  // double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
+
+  // if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
+  // {
+  //   // Exceeded duration of trajectory or trajectory timestamp invalid
+  //   return false;
+  // }
+
+  // int idx =  std::ceil(e_t_start / mpc_->MPC_STEP); 
+
+  // if (idx >= mpc_pred_acc_.size() ){
+  //   logger_->logError("ERROR!! sampleMPCTrajectory idx exceeded!");
+  // }
+
+  // pos = mpc_pred_pos_[idx];
+  // vel = mpc_pred_vel_[idx];
+  // acc = mpc_pred_acc_[idx];
+
+  // return true;
+}
+
+
 
 // P1: Start
 // P2: global goal
@@ -814,13 +892,73 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
   return P3_gbl;
 }
 
-inline VoronoiPlanner::pubPVAJCmd(	const Eigen::Vector3d& pos, 
+// inline Eigen::Vector2d VoronoiPlanner::calculateYaw(
+//     const std::vector<Eigen::Vector3d>& fe_path,
+//     const double& e_t_start, const double& dt);
+// 	{
+
+// 		// get direction vector
+// 		Eigen::Vector3d dir = e_t_start + t_step_ <= traj->getTotalDuration()
+// 									? traj->getPos(e_t_start + t_step_) - traj->getPos(e_t_start)
+// 									: traj->getPos(traj->getTotalDuration()) - traj->getPos(e_t_start);
+
+// 		double yaw_temp = dir.norm() > 0.1
+// 								? atan2(dir(1), dir(0))
+// 								: last_yaw_yawrate_(0);
+
+// 		// d_yaw: change in yaw
+// 		double d_yaw = yaw_temp - last_yaw_yawrate_(0);
+
+// 		d_yaw = d_yaw >= M_PI ? d_yaw - 2*M_PI : d_yaw;
+// 		d_yaw = d_yaw <= -M_PI ? d_yaw + 2*M_PI : d_yaw;
+		
+// 		// Set maximum values for yawrate and yaw_ddot
+// 		const double YDM = d_yaw >= 0 ? 2 * M_PI : -2 * M_PI;
+// 		const double YDDM = d_yaw >= 0 ? 5 * M_PI : -5 * M_PI;
+// 		double d_yaw_max;
+
+// 		if (fabs(last_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yawrate limits
+// 		{
+// 			d_yaw_max = (last_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
+// 		}
+// 		else // exceed yawrate limits
+// 		{
+// 			double t1 = (YDM - last_yaw_yawrate_(1)) / YDDM;
+// 			d_yaw_max = ((dt - t1) + dt) * (YDM - last_yaw_yawrate_(1)) / 2.0;
+// 		}
+
+// 		if (fabs(d_yaw) > fabs(d_yaw_max))
+// 		{
+// 			d_yaw = d_yaw_max;
+// 		}
+
+// 		double yawdot = d_yaw / dt;
+// 		double yaw = last_yaw_yawrate_(0) + d_yaw;
+// 		/* Correct phase*/
+// 		if (yaw > M_PI)
+// 			yaw -= 2 * M_PI;
+// 		if (yaw < -M_PI)
+// 			yaw += 2 * M_PI;
+		
+// 		Eigen::Vector2d yaw_yawrate(0, 0);
+// 		yaw_yawrate(0) = yaw;
+// 		yaw_yawrate(1) = yawdot;
+
+// 		last_yaw_yawrate_ = yaw_yawrate;
+
+// 		yaw_yawrate(1) = yaw_temp;
+
+// 		return yaw_yawrate;
+// 	}
+
+inline void VoronoiPlanner::pubPVAJCmd(	const Eigen::Vector3d& pos, 
                                     const Eigen::Vector2d& yaw_yawrate,
                                     const Eigen::Vector3d& vel,
                                     const Eigen::Vector3d& acc,
                                     const Eigen::Vector3d& jerk)
 {
   // Send msg in ENU frame
+  px4_msgs::msg::TrajectorySetpoint msg{};
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
 	msg.position = {(float) pos(0), (float) pos(1), (float) pos(2)};
@@ -832,6 +970,23 @@ inline VoronoiPlanner::pubPVAJCmd(	const Eigen::Vector3d& pos,
 	msg.yawspeed = yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 
 	lin_mpc_cmd_pub_->publish(msg);
+}
+
+inline void VoronoiPlanner::pubMPCPath(std::vector<Eigen::Vector3d> &path) {
+    nav_msgs::msg::Path msg;
+
+    msg.header.frame_id = map_frame_;
+    msg.header.stamp = this->get_clock()->now();
+    for (int i = 0; i < (int)path.size(); i++) {
+        geometry_msgs::msg::PoseStamped pose;
+        pose.pose.position.x = path[i](0);
+        pose.pose.position.y = path[i](1);
+        pose.pose.position.z = path[i](2);
+        msg.poses.push_back(pose);
+        // std::cout << "mpc path " << i << ": " << path[i].transpose() << std::endl;
+    }
+
+    mpc_pred_pos_pub_->publish(msg);
 }
 
 } // namespace navigator

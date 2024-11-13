@@ -85,7 +85,6 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
   // //   mp_.local_map_size_(0), mp_.local_map_size_(1), mp_.local_map_size_(2)));
   // logger_->logInfo(strFmt("Resolution %f m, Inflation %f m",  
     // mp_.resolution_, mp_.static_inflation_));
-	logger_->logInfo("Initialized voxel_map");
 }
 
 VoxelMap::~VoxelMap(){
@@ -483,7 +482,7 @@ void VoxelMap::updateLocalMapTimerCB()
 
   std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
 
-  // Add static obstacles to boolean map
+  // Generate boolean map from static obstacles
   {
     bool_map_3d_.origin = mp_.local_map_origin_;
 
@@ -504,94 +503,94 @@ void VoxelMap::updateLocalMapTimerCB()
   }
 
   // [Communication-less] Add obstacles to boolean map based on position of other drones
-  for (int id = 0; id < (int)swarm_poses_.size(); id++){
-    if (id == drone_id_){
-      continue;
-    }
+  // for (int id = 0; id < (int)swarm_poses_.size(); id++){
+  //   if (id == drone_id_){
+  //     continue;
+  //   }
 
-    if (!isInLocalMap(swarm_poses_[id])){ 
-      // Point is outside the local map
-      continue;
-    }
+  //   if (!isInLocalMap(swarm_poses_[id])){ 
+  //     // Point is outside the local map
+  //     continue;
+  //   }
 
-    Eigen::Vector3d lcl_map_start_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
-    double z_m = swarm_poses_[id](2);
+  //   Eigen::Vector3d lcl_map_start_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
+  //   double z_m = swarm_poses_[id](2);
 
-    auto roundToMultInt = [&](const int& num, const int& mult, 
-                              const int& min, const int& max)
-    {
-      if (mult == 0){
-        return num;
-      }
+  //   auto roundToMultInt = [&](const int& num, const int& mult, 
+  //                             const int& min, const int& max)
+  //   {
+  //     if (mult == 0){
+  //       return num;
+  //     }
 
-      if (num > max){
-        return max;
-      }
+  //     if (num > max){
+  //       return max;
+  //     }
 
-      if (num < min){
-        return min;
-      }
+  //     if (num < min){
+  //       return min;
+  //     }
 
-      int rem = (int)num % mult;
-      if (rem == 0){
-        return num;
-      }
+  //     int rem = (int)num % mult;
+  //     if (rem == 0){
+  //       return num;
+  //     }
 
-      return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
-    };
+  //     return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
+  //   };
 
-    int z_cm = roundToMultInt((int) (z_m * 100.0), 
-                                  bool_map_3d_.z_sep_cm,
-                                  bool_map_3d_.min_height_cm,
-                                  bool_map_3d_.max_height_cm);
+  //   int z_cm = roundToMultInt((int) (z_m * 100.0), 
+  //                                 bool_map_3d_.z_sep_cm,
+  //                                 bool_map_3d_.min_height_cm,
+  //                                 bool_map_3d_.max_height_cm);
 
-    int top_height = z_cm + bool_map_3d_.z_sep_cm;
-    int btm_height = z_cm - bool_map_3d_.z_sep_cm;
+  //   int top_height = z_cm + bool_map_3d_.z_sep_cm;
+  //   int btm_height = z_cm - bool_map_3d_.z_sep_cm;
 
-    // Add the other layer sandwiching the current drone position as occupied too
-    int z2_cm = z_cm;  
-    if (top_height <= bool_map_3d_.max_height_cm 
-        && (double)z_cm <= z_m * 100.0 
-        && z_m * 100.0 < (double)top_height)
-    {
-      z2_cm = top_height;
-    }
-    else if (btm_height >= bool_map_3d_.min_height_cm
-      && (double)btm_height < z_m * 100.0
-      && z_m * 100.0 < (double)z_cm ) 
-    {
-      z2_cm = btm_height;
-    }
+  //   // Add the other layer sandwiching the current drone position as occupied too
+  //   int z2_cm = z_cm;  
+  //   if (top_height <= bool_map_3d_.max_height_cm 
+  //       && (double)z_cm <= z_m * 100.0 
+  //       && z_m * 100.0 < (double)top_height)
+  //   {
+  //     z2_cm = top_height;
+  //   }
+  //   else if (btm_height >= bool_map_3d_.min_height_cm
+  //     && (double)btm_height < z_m * 100.0
+  //     && z_m * 100.0 < (double)z_cm ) 
+  //   {
+  //     z2_cm = btm_height;
+  //   }
 
-    // Iterate for a short duration along velocity vector
-    for (double t = 0; t <= 0.5; t += 0.05 )
-    {
-      Eigen::Vector3d lcl_map_pos = lcl_map_start_pos + t * swarm_vels_[id];
+  //   // Iterate for a short duration along velocity vector
+  //   for (double t = 0; t <= 0.5; t += 0.05 )
+  //   {
+  //     Eigen::Vector3d lcl_map_pos = lcl_map_start_pos + t * swarm_vels_[id];
 
-      // Convert from fixed map origin to local map origin
-      Eigen::Vector3d lcl_map_grid = lcl_map_pos/getRes(); // In grid coordinares
+  //     // Convert from fixed map origin to local map origin
+  //     Eigen::Vector3d lcl_map_grid = lcl_map_pos/getRes(); // In grid coordinares
 
-      // inflate map 
-      for(int x = lcl_map_grid(0) - mp_.inf_dyn_vox_; x <= lcl_map_grid(0) + mp_.inf_dyn_vox_; x++)
-      {
-        for(int y = lcl_map_grid(1) - mp_.inf_dyn_vox_; y <= lcl_map_grid(1) + mp_.inf_dyn_vox_; y++)
-        {
-          // Convert from 2D coordinates to 1D index
-          int idx = x + y * mp_.local_map_num_voxels_(0);
+  //     // inflate map 
+  //     for(int x = lcl_map_grid(0) - mp_.inf_dyn_vox_; x <= lcl_map_grid(0) + mp_.inf_dyn_vox_; x++)
+  //     {
+  //       for(int y = lcl_map_grid(1) - mp_.inf_dyn_vox_; y <= lcl_map_grid(1) + mp_.inf_dyn_vox_; y++)
+  //       {
+  //         // Convert from 2D coordinates to 1D index
+  //         int idx = x + y * mp_.local_map_num_voxels_(0);
 
-          if (idx < 0 || idx >= (int) bool_map_3d_.bool_maps[z_cm].size()){ 
-            // if out of map, skip
-            continue;
-          }
+  //         if (idx < 0 || idx >= (int) bool_map_3d_.bool_maps[z_cm].size()){ 
+  //           // if out of map, skip
+  //           continue;
+  //         }
 
-          bool_map_3d_.bool_maps[z_cm][idx] = true;
-          bool_map_3d_.bool_maps[z2_cm][idx] = true;
-        }
-      }
+  //         bool_map_3d_.bool_maps[z_cm][idx] = true;
+  //         bool_map_3d_.bool_maps[z2_cm][idx] = true;
+  //       }
+  //     }
 
-    }
+  //   }
 
-  }
+  // }
 
   tm_slice_map_.stop(verbose_print_);
 

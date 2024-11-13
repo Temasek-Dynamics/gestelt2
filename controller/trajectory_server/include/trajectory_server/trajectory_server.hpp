@@ -104,6 +104,8 @@ enum PX4_CUSTOM_SUB_MODE_AUTO {
 
 enum TrajectoryType {
 	MINCO,
+	MPC,
+	UNDEFINED_TRAJ_TYPE,
 };
 
 class TrajectoryServer : public rclcpp::Node
@@ -213,6 +215,7 @@ private:
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr fcu_odom_sub_;
 	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
 	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
+	rclcpp::Subscription<TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
 
 	/* Services */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;

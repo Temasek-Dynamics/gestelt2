@@ -11,6 +11,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/passthrough.h>
 #include <pcl/point_types.h>
 
 #include <rclcpp/rclcpp.hpp>
@@ -93,6 +94,9 @@ class FakeSensor : public rclcpp::Node
 
         /* Voxel filter for downsampling*/
         std::shared_ptr<pcl::VoxelGrid<pcl::PointXYZ>> vox_grid_{nullptr};
+        std::shared_ptr<pcl::PassThrough<pcl::PointXYZ>> pass_fil_x_{nullptr};
+        std::shared_ptr<pcl::PassThrough<pcl::PointXYZ>> pass_fil_y_{nullptr};
+        std::shared_ptr<pcl::PassThrough<pcl::PointXYZ>> pass_fil_z_{nullptr};
 
 private:
         SensorRenderer sensor_renderer_; // Laser object for rendering fake point clouds

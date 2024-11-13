@@ -13,17 +13,24 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(eigen3_cmake_module REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 set(DEPENDENCIES
-	Eigen3
-	OsqpEigen
+  ament_cmake
+  ament_cmake_ros
+  eigen3_cmake_module
+  Eigen3
+  OsqpEigen
 )
 
 foreach(dependency IN ITEMS ${DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
+
+set(EXPORTED_DEPENDENCIES
+  eigen3_cmake_module
+  Eigen3
+  OsqpEigen
+)
 
 #################
 # Setup targets #
@@ -41,6 +48,7 @@ target_include_directories(pvaj_mpc PUBLIC
 target_link_libraries(pvaj_mpc
   Eigen3::Eigen
   OsqpEigen::OsqpEigen
+  osqp::osqp
 )
 
 ############

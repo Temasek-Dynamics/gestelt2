@@ -49,12 +49,10 @@ public:
   void update(bool updateRealDist=true) ;
   //! prune the Voronoi diagram
   void prune() ;
-  //! prune the Voronoi diagram by globally revisiting all Voronoi nodes. Takes more time but gives a more sparsely pruned Voronoi graph. You need to call this after every call to udpate()
+  //! prune the Voronoi diagram by globally revisiting all Voronoi nodes. 
+  // Takes more time but gives a more sparsely pruned Voronoi graph. 
+  // You need to call this after every call to update()
   void updateAlternativePrunedDiagram();
-  //! retrieve the alternatively pruned diagram. see updateAlternativePrunedDiagram()
-  int** alternativePrunedDiagram() {
-    return alternativeDiagram;
-  };
 
   //! returns whether the specified cell is part of the alternatively pruned diagram. See updateAlternativePrunedDiagram.
   bool isVoronoiAlternative( const int& x, const int& y ) const;
@@ -83,9 +81,10 @@ public:
   int getSqrDistToObs( int x, int y ) {
     if( (x>0) && (x<sizeX) && (y>0) && (y<sizeY)){
       return data_[x][y].sqdist; 
-
     } 
-     else return -1;
+    else {
+      return -1;
+    }
   }
 
 private:  
@@ -190,11 +189,15 @@ public:
   //   return data_;
   // }
 
+  //! retrieve the alternatively pruned diagram. see updateAlternativePrunedDiagram()
+  int** alternativePrunedDiagram() {
+    return alternativeDiagram;
+  };
+
 public:
   DynamicVoronoiParams params_;
 
 private:
-  int** alternativeDiagram;
 
   // queues
   BucketPrioQueue<IntPoint> open_;
@@ -210,6 +213,8 @@ private:
   int sizeY;  // Size of map along y
   int sizeX;  // Size of map along x
   std::shared_ptr<dataCellArr[]> data_{nullptr};
+
+  int** alternativeDiagram{NULL};
 
 }; // end class DynamicVoronoi
 
