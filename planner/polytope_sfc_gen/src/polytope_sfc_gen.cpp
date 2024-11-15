@@ -1,0 +1,101 @@
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
+
+#include <polytope_sfc_gen/polytope_sfc_gen.hpp>
+
+namespace sfc
+{
+
+PolytopeSFC::PolytopeSFC(const PolytopeSFCParams& sfc_params):
+  params_(sfc_params)
+{}   
+
+void PolytopeSFC::reset()
+{
+    poly_vec_hyp_.clear();
+    poly_vec_vtx_.clear();
+    poly_vec_.clear();
+    poly_constr_vec_.clear();
+}
+
+bool PolytopeSFC::generateSFCInner(   std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>>& poly_vec,
+                                    std::vector<LinearConstraint3D>& poly_constr_vec, 
+                                    const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d)
+{
+    EllipsoidDecomp3D ellip_decomp_util_; // Decomposition util for Liu's method
+    //Using ellipsoid decomposition
+    // ellip_decomp_util_.set_obs();
+    ellip_decomp_util_.set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z)); 
+    ellip_decomp_util_.dilate(path_3d); // Set max iteration number of 10, do fix the path
+
+    //Publish visualization msgs
+    // decomp_ros_msgs::msg::EllipsoidArray es_msg = ellipsoid_array_to_ros(ellip_decomp_util_.get_ellipsoids());
+    // es_msg.header.frame_id = params_.map_frame;
+
+    poly_vec = ellip_decomp_util_.get_polyhedrons();
+
+    std::vector<LinearConstraint3D> poly_constr_vec_new;
+
+    // Construct poly_constr_vec
+    for (const auto& poly: poly_vec)
+    {
+        int num_planes = poly.vs_.size();
+        // Constraint: A_poly * x - b_poly <= 0
+        MatDNf<3> A_poly(num_planes, 3);        
+        VecDf b_poly(num_planes);               
+
+        for (int i = 0; i < num_planes; i++) { // For each plane
+            A_poly.row(i) = poly.vs_[i].n_;                     // normal
+            b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // point.dot(normal)
+        }
+        poly_constr_vec_new.push_back(LinearConstraint3D(A_poly, b_poly));
+    }
+
+    poly_constr_vec = poly_constr_vec_new;
+
+    return true;
+}
+
+bool PolytopeSFC::generateSFC(
+  const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d)
+{
+    if (!generateSFCInner(poly_vec_, poly_constr_vec_, path_3d)){
+        return false;
+    }
+
+    return true;
+}   
+
+decomp_ros_msgs::msg::PolyhedronArray PolytopeSFC::getSFCMsg()
+{
+  decomp_ros_msgs::msg::PolyhedronArray poly_msg = 
+    polyhedron_array_to_ros(poly_vec_);
+  poly_msg.header.frame_id = params_.map_frame;
+
+  return poly_msg;
+}
+
+} // namespace sfc
+

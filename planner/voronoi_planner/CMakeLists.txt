@@ -13,30 +13,38 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(eigen3_cmake_module REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(nlohmann_json REQUIRED)
+set(EXTERNAL_LIBRARIES
+	eigen3_cmake_module
+	Eigen3
+  # nlohmann_json
+)
 
 set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
-  nav_msgs
+  # transformations
   tf2
   tf2_ros
+  # Messages
+  nav_msgs
   tf2_geometry_msgs
   geometry_msgs
   visualization_msgs
   px4_msgs
   gestelt_interfaces
   minco_interfaces
+  # Mapping and planning
   voxel_map
   dynamic_voronoi
   space_time_astar
+  planner_utils
+  polytope_sfc_gen
+  # Controller
   pvaj_mpc
   minco_traj_gen
+  # utils
   logger_wrapper
-  planner_utils
   viz_helper
 )
 
@@ -45,35 +53,25 @@ foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
+foreach(dependency IN ITEMS ${EXTERNAL_LIBRARIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
+
+# Add executable
+
 add_executable(voronoi_planner_node 
   src/voronoi_planner_node.cpp 
   src/voronoi_planner.cpp)
 ament_target_dependencies(voronoi_planner_node 
-  Eigen3
-  rclcpp
-  tf2
-  tf2_ros
-  nav_msgs
-  tf2_geometry_msgs
-  geometry_msgs
-  visualization_msgs
-  px4_msgs
-  gestelt_interfaces
-  minco_interfaces
-  voxel_map
-  dynamic_voronoi
-  space_time_astar
-  pvaj_mpc
-  minco_traj_gen
-  logger_wrapper
-  viz_helper
+  ${ROS_LIBRABRIES}
 )
 target_include_directories(voronoi_planner_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 target_compile_features(voronoi_planner_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_link_libraries(voronoi_planner_node
-  nlohmann_json::nlohmann_json
+  Eigen3::Eigen
+  # nlohmann_json::nlohmann_json
 )
 
 install(TARGETS voronoi_planner_node

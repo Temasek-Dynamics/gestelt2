@@ -13,24 +13,33 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>rclcpp</depend>
+
+  <!-- transformations -->
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
 
+  <!-- Messages -->
   <depend>std_msgs</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>visualization_msgs</depend>
-  <depend>gestelt_interfaces</depend>
-  <depend>minco_interfaces</depend>
   <depend>geometry_msgs</depend>
   <depend>px4_msgs</depend>
+  <depend>gestelt_interfaces</depend>
+  <depend>minco_interfaces</depend>
   
+  <!-- Mapping and planning -->
   <depend>voxel_map</depend>
   <depend>dynamic_voronoi</depend>
   <depend>space_time_astar</depend>
-  <depend>pvaj_mpc</depend>
-  <depend>minco_traj_gen</depend>
+  <depend>planner_utils</depend>
+  <depend>polytope_sfc_gen</depend>
 
+  <!-- Controller -->
+  <depend>minco_traj_gen</depend>
+  <depend>pvaj_mpc</depend>
+
+  <!-- Utils -->
   <depend>logger_wrapper</depend>
   <depend>viz_helper</depend>
   

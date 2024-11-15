@@ -709,19 +709,16 @@ namespace pvaj_mpc
 		/* Getters */
 
 		/**
-		 * @brief Get the optimal control 
+		 * @brief Get the optimal control at a given segment
 		 * 
 		 * @param u Control to be modified in place
 		 * @param segment control segment
 		 */
 		void getOptimalControl(Eigen::Vector3d& u, int segment) {
-			if (segment >= MPC_HORIZON) {
-				segment = MPC_HORIZON - 1; // set as last segment
-			}
-			u(0) = mpc_.u_optimal(segment * 3 + 0, 0);
-			u(1) = mpc_.u_optimal(segment * 3 + 1, 0);
-			u(2) = mpc_.u_optimal(segment * 3 + 2, 0);
+			
+			segment = segment >= MPC_HORIZON ? MPC_HORIZON - 1 : segment;
 
+			u = mpc_.u_optimal.block<3,1>(segment * 3, 0);
 		}
 
 		/* Setters */

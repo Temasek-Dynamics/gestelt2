@@ -567,7 +567,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 						publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, vel_enu_, acc_enu_);
 					}
 					else { 
-						logger_->logWarnThrottle("No valid MINCO trajectory received...", 1.0);
+						// logger_->logWarnThrottle("No valid MINCO trajectory received...", 1.0);
 
 						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
 						yaw_yawrate_(1) = NAN; 

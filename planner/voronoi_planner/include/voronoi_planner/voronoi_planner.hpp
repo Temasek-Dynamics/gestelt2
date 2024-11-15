@@ -31,7 +31,7 @@
 #include <limits>
 #include <queue>
 
-#include <nlohmann/json.hpp>
+// #include <nlohmann/json.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -70,10 +70,21 @@
 
 #include <viz_helper/viz_helper.hpp>
 
-using json = nlohmann::json;
+// using json = nlohmann::json;
 
 namespace navigator
 {
+
+enum PlanMethod
+{
+  /* Communication-less method. Only requries pose and velocity of other agents */
+  COMMLESS_MINCO, 
+  COMMLESS_MPC,
+  /* Communication-based method. Requires trajectory sharing between agents */
+  COMM_MINCO,
+  /* Undefined method */
+  UNDEFINED,
+};
 
 class Waypoint
 {
@@ -201,7 +212,7 @@ public:
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool plan(const Eigen::Vector3d& goal_pos);
+  void plan(const Eigen::Vector3d& goal_pos);
 
   /**
    * @brief (Linear MPC) Plan a path from start to goal
@@ -210,7 +221,7 @@ public:
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool planMPC(const Eigen::Vector3d& goal_pos);
+  bool planCommlessMPC(const Eigen::Vector3d& goal_pos);
 
   /**
    * @brief (COMMS-LESS) Plan a path from start to goal 
@@ -219,7 +230,7 @@ public:
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool planWithoutComms(const Eigen::Vector3d& goal_pos);
+  bool planCommlessMINCO(const Eigen::Vector3d& goal_pos);
 
   /**
    * @brief (COMMS-BASED) Plan a path from start to goal
@@ -228,7 +239,7 @@ public:
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool planWithComms(const Eigen::Vector3d& goal_pos);
+  bool planCommMINCO(const Eigen::Vector3d& goal_pos);
 
 private:
   /* Timer callbacks */
@@ -238,6 +249,9 @@ private:
 
   /* Generate voronoi map timer callback*/
   void genVoroMapTimerCB();
+
+  /* Send MPC command timer callback*/
+  void sendMPCCmdTimerCB();
 
   /* Subscription callbacks */
 
@@ -279,6 +293,7 @@ private:
    */
 	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	    // Timer for planning front end path
 	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_; // Timer for generating discretized voronoi diagram
+	rclcpp::TimerBase::SharedPtr send_mpc_cmd_timer_; // Timer for sampling predicted MPC path
 
   /**
    * ROS Publishers
@@ -434,15 +449,15 @@ private:
 
 private:
   /* MPC Params */
+  double ctrl_samp_freq_{-1.0};
   int ref_samp_intv_{1}; // FE reference path sampling interval
-  double path_dis_{0.05};
 
   /* Params */
   int drone_id_{-1};
 
   int num_drones_{0};  // If true, enable communicationless planning
-  bool commless_{false};  // If true, enable communicationless planning
-  bool use_lin_mpc_{false};  // If true, use linear MPC instead of MINCO trajectory generation
+
+  PlanMethod plan_method_; // Enum indicating the planning method
 
   std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
@@ -454,8 +469,8 @@ private:
   double sqr_goal_tol_{0.1}; // [m] Distance to goal before it is considered fulfilled.
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time
+  
   std::string output_json_filepath_;  // Output filepath for JSON file
-
   bool json_output_{false};  // output path to json file
 
   int fe_stride_;     // stride to sample front-end path for minimum jerk trajectory generation
@@ -469,6 +484,8 @@ private:
   global_planner::AStarParams astar_params_;  // a star planner parameters
   global_planner::VoronoiParams voro_params_; // voronoi map parameters
 
+  sfc::PolytopeSFCParams sfc_params_; // Polytope SFC parameters
+
   pvaj_mpc::MPCControllerParams mpc_params_; // Linear MPC parameters
 
 private:
@@ -480,6 +497,8 @@ private:
   std::mutex rsvn_tbl_mtx_;
   std::mutex voro_map_mtx_;
   std::mutex cur_state_mtx_;
+
+  std::mutex mpc_pred_mtx_; // MUtex for MPC predicted trajectories
 
   /* Flags*/
   bool init_voro_maps_{false}; // flag to indicate if voronoi map is initialized
@@ -499,6 +518,9 @@ private:
   std::vector<Eigen::Vector3d> fe_path_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
   std::vector<Eigen::Vector4d> fe_path_with_t_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
 
+  /* SFC */
+  std::unique_ptr<sfc::PolytopeSFC> poly_sfc_gen_; // Polytope safe flight corridor generator
+
   /* MINCO */
   std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_{nullptr}; // Initial minimum jerk trajectory
   std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
@@ -506,6 +528,7 @@ private:
   /* MPC */
   std::unique_ptr<pvaj_mpc::MPCController> mpc_; // MPC controller
 
+  std::vector<Eigen::Vector3d> mpc_pred_u_; // Predicted MPC control trajectory
   std::vector<Eigen::Vector3d> mpc_pred_pos_; // Predicted MPC position trajectory
   std::vector<Eigen::Vector3d> mpc_pred_vel_; // Predicted MPC velocity trajectory
   std::vector<Eigen::Vector3d> mpc_pred_acc_; // Predicted MPC acceleration trajectory

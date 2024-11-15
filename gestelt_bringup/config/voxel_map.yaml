@@ -5,6 +5,10 @@
       debug_input_entire_map: false
       entire_pcd_map_topic: "/fake_map"
 
+      dyn_obs:
+        mark_in_occ_map: true
+        time_vel: 0.75
+
       verbose_print: false       # If enabled, print debug information such as timing information
 
       map_slicing: # 2D boolean map slices used for voronoi generation
@@ -29,10 +33,10 @@
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel
-        dynamic_inflation: 0.3    # [m] Dynamic obstacle inflation
+        dynamic_inflation: 0.6    # [m] Dynamic obstacle inflation
         static_inflation: 0.2    # [m] Static obstacle inflation
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
-        max_range: 7.5   # [m] Maximum range of sensor
+        max_range: 5.0   # [m] Maximum range of sensor
 
       collision_check: # For visualizing collision with static obstacles
         enable: true    # Enable checking of collisions

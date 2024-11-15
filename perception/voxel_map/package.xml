@@ -24,6 +24,7 @@
   <depend>tf2_ros</depend>
 
   <depend>bonxai</depend>
+  <depend>octomap</depend>
   <depend>ikd_tree</depend>
   <depend>logger_wrapper</depend>
 

@@ -18,7 +18,8 @@ from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
-SCENARIO_NAME = "forest_dense_1"
+# SCENARIO_NAME = "forest_dense_1"
+SCENARIO_NAME = "forest_sparse_1"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
 # SCENARIO_NAME = "antipodal_swap_4_sparse"
@@ -177,6 +178,7 @@ def generate_launch_description():
         # Subscription to paths
         bag_topics.append(prefix + "fe_plan/viz")
         bag_topics.append(prefix + "minco_traj_viz")
+        bag_topics.append(prefix + "mpc/traj")
         # Subscription to 3d occupancy voxel map
         bag_topics.append(prefix + "occ_map")
         # Subscription to maps
@@ -205,19 +207,11 @@ def generate_launch_description():
         output='log'
     )
 
-    # rosbag_record = Node(
-    #     package='rosbag2_transport',
-    #     executable='recorder',
-    #     name='recorder',
-    #     output="screen",
-    #     parameters=["/path/to/params.yaml"],
-    # )
-
     return LaunchDescription([
         # Central nodes
         world_to_map_tf,
         fake_map,
-        # swarm_collision_checker_node,
+        swarm_collision_checker_node,
         rosbag_record,
         # Visualization
         rviz_node,

@@ -14,8 +14,6 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess
 
 from launch.substitutions import LaunchConfiguration, PythonExpression
 
-SCENARIO_NAME = "forest_dense_1"
-
 def generate_launch_description():
     ''' Get launch argument values '''
     drone_id = LaunchConfiguration('drone_id')
@@ -23,6 +21,7 @@ def generate_launch_description():
     init_y = LaunchConfiguration('init_y')
     init_yaw = LaunchConfiguration('init_yaw')
     fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
+    num_drones = LaunchConfiguration('num_drones')
 
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
@@ -47,6 +46,10 @@ def generate_launch_description():
       default_value=''
     )
 
+    num_drones_arg = DeclareLaunchArgument(
+      'num_drones',
+      default_value='4'
+    )
 
     '''Frames'''
     map_frame = ["d", drone_id, "_origin"]
@@ -126,7 +129,7 @@ def generate_launch_description():
             '-d' # Run as daemon (not interactive terminal)
         ],
         name=['px4_sitl_', drone_id],
-        shell=False
+        shell=True
     )
 
     ''' Navigator: Planner module '''
@@ -140,6 +143,7 @@ def generate_launch_description():
             {'drone_id': drone_id},
             {'map_frame': map_frame},
             {'local_map_frame': local_map_frame},
+            {'navigator.num_drones': num_drones},
             navigator_cfg,
             voxel_map_cfg,
         ],
@@ -184,13 +188,14 @@ def generate_launch_description():
         init_y_launch_arg,
         init_yaw_launch_arg,
         fake_map_pcd_filepath_launch_arg,
+        num_drones_arg,
         # Static transforms
         drone_origin_tf,
         camera_link_tf,
-        # Processes
-        px4_sitl,
         # Nodes
         fake_sensor,
         navigator_node,
         trajectory_server,
+        # Drone simulation instance
+        px4_sitl,
     ])

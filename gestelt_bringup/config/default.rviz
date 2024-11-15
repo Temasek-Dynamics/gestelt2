@@ -4,19 +4,21 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /d01
-        - /d01/state1
-        - /d01/front_end1
+        - /central1
         - /d01/maps1
         - /d01/maps1/voro1
-        - /d01/maps1/occ1
-        - /d11
-        - /d11/back_end1
         - /d21/maps1/occ1
+        - /d41
+        - /d41/maps1
+        - /d41/maps1/voro_map1
+        - /d41/maps1/occ_map1
+        - /d61
         - /d71
-        - /d71/state1
+        - /d71/state1/odom1
         - /d71/state1/odom_ax1
-      Splitter Ratio: 0.6705882549285889
+        - /d71/front_end1
+        - /d71/back_end1
+      Splitter Ratio: 0.5298507213592529
     Tree Height: 707
   - Class: rviz_common/Selection
     Name: Selection
@@ -58,12 +60,12 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz_default_plugins/Axes
-      Enabled: true
+      Enabled: false
       Length: 0.5
       Name: world
       Radius: 0.07000000029802322
       Reference Frame: world
-      Value: true
+      Value: false
     - Alpha: 0.009999999776482582
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -116,7 +118,7 @@ Visualization Manager:
     - Class: rviz_common/Group
       Displays:
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: swarm_collisions
           Namespaces:
             {}
@@ -127,7 +129,7 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /swarm_collision_checker/collisions
-          Value: true
+          Value: false
       Enabled: true
       Name: central
     - Class: rviz_common/Group
@@ -193,6 +195,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/pose
               Value: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d0/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -201,7 +216,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -214,9 +229,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -241,6 +254,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d0/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d0/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -310,7 +351,7 @@ Visualization Manager:
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: true
+                  Enabled: false
                   Name: voro_map_100
                   Topic:
                     Depth: 5
@@ -326,7 +367,7 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/voro_map_100_updates
                   Use Timestamp: false
-                  Value: true
+                  Value: false
                 - Alpha: 0.20000000298023224
                   Binary representation: false
                   Binary threshold: 100
@@ -475,7 +516,7 @@ Visualization Manager:
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: true
+                  Enabled: false
                   Name: occ_map_100
                   Topic:
                     Depth: 5
@@ -491,14 +532,14 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/occ_map_100_updates
                   Use Timestamp: false
-                  Value: true
+                  Value: false
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: false
+                  Enabled: true
                   Name: occ_map_150
                   Topic:
                     Depth: 5
@@ -514,7 +555,7 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/occ_map_150_updates
                   Use Timestamp: false
-                  Value: false
+                  Value: true
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
@@ -668,7 +709,7 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: false
+          Enabled: true
           Name: static_collisions
           Namespaces:
             {}
@@ -679,21 +720,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d0/static_collisions
-          Value: false
-        - Class: rviz_default_plugins/Marker
-          Enabled: true
-          Name: agent_id_text
-          Namespaces:
-            agent_id: true
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /d0/agent_id_text
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d0
     - Class: rviz_common/Group
       Displays:
@@ -797,6 +825,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d1/pose
               Value: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d1/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -815,7 +856,7 @@ Visualization Manager:
                 Value: /d1/fe_plan/viz
               Value: true
             - Class: rviz_default_plugins/Marker
-              Enabled: true
+              Enabled: false
               Name: fe_plan_req
               Namespaces:
                 {}
@@ -826,8 +867,8 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d1/fe_plan_req
-              Value: true
-          Enabled: true
+              Value: false
+          Enabled: false
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -871,6 +912,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d0/mpc/traj
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d1/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -1310,20 +1379,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d1/static_collisions
           Value: true
-        - Class: rviz_default_plugins/Marker
-          Enabled: true
-          Name: agent_id_text
-          Namespaces:
-            {}
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /d1/agent_id_text
-          Value: true
-      Enabled: true
+      Enabled: false
       Name: d1
     - Class: rviz_common/Group
       Displays:
@@ -1427,6 +1483,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d2/pose
               Value: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d2/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -1460,6 +1529,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d2/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d2/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -1899,20 +1996,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d2/static_collisions
           Value: true
-        - Class: rviz_default_plugins/Marker
-          Enabled: true
-          Name: agent_id_text
-          Namespaces:
-            {}
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /d2/agent_id_text
-          Value: true
-      Enabled: true
+      Enabled: false
       Name: d2
     - Class: rviz_common/Group
       Displays:
@@ -2016,6 +2100,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d3/odom
               Value: true
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d3/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -2049,6 +2146,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d3/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d3/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -2488,20 +2613,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d3/static_collisions
           Value: true
-        - Class: rviz_default_plugins/Marker
-          Enabled: true
-          Name: agent_id_text
-          Namespaces:
-            {}
-          Topic:
-            Depth: 5
-            Durability Policy: Volatile
-            Filter size: 10
-            History Policy: Keep Last
-            Reliability Policy: Reliable
-            Value: /d3/agent_id_text
-          Value: true
-      Enabled: true
+      Enabled: false
       Name: d3
     - Class: rviz_common/Group
       Displays:
@@ -2605,6 +2717,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d4/odom
               Value: true
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d4/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -2638,6 +2763,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d4/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d4/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -2676,13 +2829,13 @@ Visualization Manager:
               Use Fixed Frame: true
               Use rainbow: true
               Value: false
-            - Alpha: 0.699999988079071
+            - Alpha: 0.10000000149011612
               Binary representation: false
               Binary threshold: 100
               Class: rviz_default_plugins/Map
               Color Scheme: map
               Draw Behind: false
-              Enabled: false
+              Enabled: true
               Name: voro_map
               Topic:
                 Depth: 5
@@ -2690,22 +2843,22 @@ Visualization Manager:
                 Filter size: 10
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d4/voro/voro_map
+                Value: /d4/occ_map_150
               Update Topic:
                 Depth: 5
                 Durability Policy: Volatile
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d4/voro/voro_map_updates
+                Value: /d4/occ_map_150_updates
               Use Timestamp: false
-              Value: false
-            - Alpha: 0.699999988079071
+              Value: true
+            - Alpha: 0.10000000149011612
               Binary representation: false
               Binary threshold: 100
               Class: rviz_default_plugins/Map
               Color Scheme: map
               Draw Behind: false
-              Enabled: false
+              Enabled: true
               Name: occ_map
               Topic:
                 Depth: 5
@@ -2713,29 +2866,29 @@ Visualization Manager:
                 Filter size: 10
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d4/voro/occ_map
+                Value: /d4/voro_map_150
               Update Topic:
                 Depth: 5
                 Durability Policy: Volatile
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d4/voro/occ_map_updates
+                Value: /d4/voro_map_150_updates
               Use Timestamp: false
-              Value: false
-          Enabled: false
+              Value: true
+          Enabled: true
           Name: maps
         - Class: rviz_default_plugins/Marker
           Enabled: true
-          Name: agent_id_text
+          Name: static_collisions
           Namespaces:
-            {}
+            static_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /d4/agent_id_text
+            Value: /d4/static_collisions
           Value: true
       Enabled: true
       Name: d4
@@ -2841,6 +2994,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d5/pose
               Value: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d5/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -2874,6 +3040,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d5/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d5/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -2962,7 +3156,7 @@ Visualization Manager:
           Name: maps
         - Class: rviz_default_plugins/Marker
           Enabled: true
-          Name: agent_id_text
+          Name: static_collisions
           Namespaces:
             {}
           Topic:
@@ -2971,9 +3165,9 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /d5/agent_id_text
+            Value: /d5/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d5
     - Class: rviz_common/Group
       Displays:
@@ -3077,6 +3271,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d6/pose
               Value: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d6/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -3095,7 +3302,7 @@ Visualization Manager:
                 Value: /d6/fe_plan/viz
               Value: true
             - Class: rviz_default_plugins/Marker
-              Enabled: true
+              Enabled: false
               Name: fe_plan_req
               Namespaces:
                 {}
@@ -3106,8 +3313,8 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d6/fe_plan_req
-              Value: true
-          Enabled: true
+              Value: false
+          Enabled: false
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -3123,6 +3330,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d6/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d6/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -3211,16 +3446,16 @@ Visualization Manager:
           Name: maps
         - Class: rviz_default_plugins/Marker
           Enabled: true
-          Name: agent_id_text
+          Name: static_collisions
           Namespaces:
-            {}
+            static_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /d6/agent_id_text
+            Value: /d6/static_collisions
           Value: true
       Enabled: true
       Name: d6
@@ -3326,6 +3561,19 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d7/pose
               Value: false
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: agent_id_text
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d7/agent_id_text
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -3343,7 +3591,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d7/fe_plan/viz
               Value: true
-          Enabled: false
+          Enabled: true
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -3359,6 +3607,34 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d7/minco_traj_viz
+              Value: true
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 25; 255; 0
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: mpc_traj
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                Filter size: 10
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /d7/mpc/traj
               Value: true
           Enabled: true
           Name: back_end
@@ -3447,7 +3723,7 @@ Visualization Manager:
           Name: maps
         - Class: rviz_default_plugins/Marker
           Enabled: true
-          Name: agent_id_text
+          Name: static_collisions
           Namespaces:
             {}
           Topic:
@@ -3456,9 +3732,9 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /d7/agent_id_text
+            Value: /d7/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d7
     - Class: rviz_common/Group
       Displays:
@@ -4426,33 +4702,33 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 7.804049015045166
+      Distance: 28.598466873168945
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -5.606832504272461
-        Y: -2.0053014755249023
-        Z: -1.1920928955078125e-05
+        X: -3.554612636566162
+        Y: 0.03446817398071289
+        Z: -3.300360913272016e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5447965860366821
+      Pitch: 1.274796724319458
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.142348289489746
+      Yaw: 3.1173205375671387
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
   Height: 1011
   Hide Left Dock: false
-  Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000015600000351fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000351000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000351fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003f00000351000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073e0000003efc0100000002fb0000000800540069006d006501000000000000073e0000026f00fffffffb0000000800540069006d00650100000000000004500000000000000000000004cd0000035100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Hide Right Dock: true
+  QMainWindow State: 000000ff00000000fd0000000400000000000001da00000351fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000351000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000351fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f00000351000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000039f0000003efc0100000002fb0000000800540069006d006501000000000000039f0000026f00fffffffb0000000800540069006d00650100000000000004500000000000000000000001bf0000035100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -4460,7 +4736,7 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Views:
-    collapsed: false
-  Width: 1854
+    collapsed: true
+  Width: 927
   X: 66
   Y: 32

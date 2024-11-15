@@ -1,10 +1,37 @@
 /**: 
   ros__parameters:
     navigator:
-      communication_less: true # [bool] If True, enable communication-less planning. Otherwise, priority based planning is used
-      use_linear_mpc: true # [bool] If True, use linear MPC instead of MINCO Trajectory generation
 
-      planner_frequency: 5.0            # [Hz] Frequency at which plan is generated
+      # plan_method options
+      # 0: COMMLESS_MINCO 
+      # 1: COMMLESS_MPC 
+      # 2: COMM_MINCO
+      plan_method: 1
+
+      mpc:
+        ctrl_samp_freq: 25.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
+        # MPC parameters
+        horizon: 15
+        time_step: 0.1 #[s]
+        # Objective Weights
+        R_p: 1000.0
+        R_v: 0.0
+        R_a: 0.0
+        R_u: 0.0 
+        R_u_con: 0.2
+        R_pN: 1000.0
+        R_vN: 1000.0
+        R_aN: 1000.0
+        # State bounds
+        v_min: -10.0
+        v_max: 10.0
+        a_min: -20.0
+        a_max: 20.0
+        # Control bounds
+        u_min: -50.0
+        u_max: 50.0
+
+      planner_frequency: 30.0            # [Hz] Frequency at which plan is generated
       generate_voronoi_frequency: 30.0  # [Hz] Frequency at which voronoi is generated
 
       planner: 

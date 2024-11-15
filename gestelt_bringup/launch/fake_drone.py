@@ -64,6 +64,8 @@ def generate_launch_description():
     base_link_frame = ["d", drone_id, "_base_link"]
     camera_frame = ["d", drone_id, "_camera_link"]
 
+    cloud_topic = ["/d", drone_id, "/cloud"]
+
     ''' Get parameter files '''
     traj_server_config = os.path.join(
       get_package_share_directory('trajectory_server'),
@@ -122,7 +124,7 @@ def generate_launch_description():
         ]
     )
 
-    ''' Navigator: Planner module '''
+    ''' Planner module '''
     navigator_node = Node(
         package='voronoi_planner',
         executable='voronoi_planner_node',
@@ -138,6 +140,23 @@ def generate_launch_description():
             voxel_map_cfg,
         ],
     )
+
+    # ''' Octomap mapping module '''
+    # octomap_mapping_node = Node(
+    #     package='octomap_server',
+    #     executable='octomap_server_node',
+    #     name='octomap_server',
+    #     output='log',
+    #     shell=False,
+    #     parameters=[
+    #         {'resolution': 0.1},
+    #         {'frame_id': map_frame},
+    #         {'sensor_model.max_range': 5.0},
+    #     ],
+    #     remappings=[
+    #         ('cloud_in', cloud_topic),
+    #     ],
+    # )
 
     ''' Trajectory server for executing trajectories '''
     trajectory_server = Node(
@@ -183,8 +202,10 @@ def generate_launch_description():
         # drone_origin_tf,
         camera_link_tf,
         # Nodes
-        navigator_node,
         fake_sensor,
-        fake_drone_node,
+        navigator_node,
         trajectory_server,
+        # octomap_mapping_node,
+        # Drone simulation instance
+        fake_drone_node,
     ])

@@ -95,8 +95,6 @@ void SpaceTimeAStar::expandVoroBubble(const VCell_T& origin_cell)
                     }
                 }
 
-
-
                 IntPoint nb_grid(nx, ny);
 
                 if (marked_bubble_cells_[origin_cell.z_cm].find(nb_grid) != marked_bubble_cells_[origin_cell.z_cm].end()) 
@@ -202,15 +200,16 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
 
     // set start and goal cell as obstacle
     dyn_voro_arr_[start_node.z_cm]->setObstacle(start_node.x, start_node.y);
+    dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
     // update distance map and Voronoi diagram
     dyn_voro_arr_[start_node.z_cm]->update(); 
+    dyn_voro_arr_[goal_node.z_cm]->update(); 
+    dyn_voro_arr_[start_node.z_cm]->updateAlternativePrunedDiagram();
+    dyn_voro_arr_[goal_node.z_cm]->updateAlternativePrunedDiagram();
     expandVoroBubble(start_node);
+    expandVoroBubble(goal_node);
     // Add cells around start and goal node to the marked bubble cells array
     dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
-
-    dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
-    dyn_voro_arr_[goal_node.z_cm]->update(); 
-    expandVoroBubble(goal_node);
     dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
 
     ////////
@@ -357,10 +356,13 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
 
             // Check if current cell is voronoi vertex. 
             // IF so, then add neighbors that go up and down
-            if (dyn_voro_arr[z_cm]->isVoronoiVertex(grid_pos(0), grid_pos(1))){
+            if (dyn_voro_arr_[z_cm]->getSqrDistToObs(grid_pos(0), grid_pos(1)) > 2) {
+            // if (dyn_voro_arr[z_cm]->isVoronoiAlternative(grid_pos(0), grid_pos(1))){
+                int z_cm_top = z_cm + voro_params_.z_sep_cm;
+                int z_cm_btm = z_cm - voro_params_.z_sep_cm;
+
                 if (z_cm == voro_params_.min_height_cm){
                     // Check Top layer only
-                    int z_cm_top = z_cm + voro_params_.z_sep_cm;
                     if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
@@ -370,7 +372,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 else if (z_cm == voro_params_.max_height_cm){
                     // Check Bottom layer only
-                    int z_cm_btm = z_cm - voro_params_.z_sep_cm;
                     if (!dyn_voro_arr[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
@@ -380,8 +381,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 else {
                     // Check both Top and Bottom layer 
-                    int z_cm_top = z_cm + voro_params_.z_sep_cm;
-                    int z_cm_btm = z_cm - voro_params_.z_sep_cm;
                     if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 

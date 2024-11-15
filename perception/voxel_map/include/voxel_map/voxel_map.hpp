@@ -326,6 +326,9 @@ private:
   bool dbg_input_entire_map_{false}; // flag to indicate that map will be constructed at the start from the entire pcd map (instead of through incremental sensor data)
   std::string entire_pcd_map_topic_; // Topic to listen for an entire PCD for debugging
 
+  bool dyn_obs_mark_in_occ_map_{false}; // flag to mark dynamic obstacles in occupancy map as occupied
+  double time_vel_{0.1}; // [s] time along velocity vector to mark as occupied
+
   bool check_collisions_{true}; // Flag for checking collisions
   double col_warn_radius_, col_fatal_radius_; // collision check radius
 
