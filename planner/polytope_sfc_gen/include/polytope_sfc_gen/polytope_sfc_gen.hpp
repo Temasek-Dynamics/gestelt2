@@ -69,30 +69,23 @@ public: // Public structs
    * @return true 
    * @return false 
    */
-  bool generateSFC(
-    const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path);
+  bool generateSFC(const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &obs_pts,
+                   const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d);
 
 public:
 
   /* Getter methods */
-
-  std::vector<Eigen::MatrixX4d> getPolySFCHyperplanes() const 
-  {
-    return poly_vec_hyp_;
-  }
-
-  // Return matrix of Size (3, M). Representing an array of vertex-based polyhedrons.
-  std::vector<Eigen::Matrix3Xd> getPolySFCVertices() const 
-  {
-    return poly_vec_vtx_;
-  }
-
   decomp_ros_msgs::msg::PolyhedronArray getSFCMsg();
 
-private:
-  bool generateSFCInner(std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>>& poly_vec,
-                      std::vector<LinearConstraint3D>& poly_constr_vec, 
-                      const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d);
+  std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> getPolyVec() const
+  {
+    return poly_vec_;
+  }
+
+  std::vector<LinearConstraint3D> getPolyConstrVec() const
+  {
+    return poly_constr_vec_;
+  }
 
 private: // Helper methods
   decomp_ros_msgs::msg::Polyhedron polyhedron_to_ros(const Polyhedron3D& poly);
@@ -110,9 +103,6 @@ private: // Private members
   /* Data structs */
   std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> poly_vec_; // Vector of polyhedrons represented as hyperplanes
   std::vector<LinearConstraint3D> poly_constr_vec_;   // Vector of Polytope constraints (In the form of Ax = b)
-
-  std::vector<Eigen::MatrixX4d> poly_vec_hyp_; // Matrix of size (N, 4) polyhedrons represented as vertices
-  std::vector<Eigen::Matrix3Xd> poly_vec_vtx_; // Matrix of size (3, M) polyhedrons represented as vertices
   
 }; // class PolytopeSFC
 
@@ -146,7 +136,7 @@ decomp_ros_msgs::msg::PolyhedronArray PolytopeSFC::polyhedron_array_to_ros(const
 
 template <int Dim>
 decomp_ros_msgs::msg::EllipsoidArray PolytopeSFC::ellipsoid_array_to_ros(const vec_E<Ellipsoid<Dim>>& Es) {
-  decomp_ros_msgs::msg::EllipsoidArray ellipsoids;
+  decomp_ros_msgs::msg::EllipsoidArray ellipsoids_arr;
   for (unsigned int i = 0; i < Es.size(); i++) {
     decomp_ros_msgs::msg::Ellipsoid ellipsoid;
     auto d = Es[i].d();
@@ -163,10 +153,10 @@ decomp_ros_msgs::msg::EllipsoidArray PolytopeSFC::ellipsoid_array_to_ros(const v
           ellipsoid.e[3 * x + y] = 0;
       }
     }
-    ellipsoids.ellipsoids.push_back(ellipsoid);
+    ellipsoids_arr.ellipsoids.push_back(ellipsoid);
   }
 
-  return ellipsoids;
+  return ellipsoids_arr;
 }
 
 } // namespace sfc

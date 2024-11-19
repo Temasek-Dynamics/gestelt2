@@ -55,11 +55,19 @@
 #include <minco_interfaces/msg/minco_trajectory.hpp>
 
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
+// Messages for SFC visualization
+#include <decomp_ros_msgs/msg/ellipsoid_array.hpp>
+#include <decomp_ros_msgs/msg/polyhedron_array.hpp>
 
+/* Map representations*/
 #include <voxel_map/voxel_map.hpp> 
-
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
+
+/* Global Search*/
 #include <space_time_astar/space_time_astar.hpp>
+
+/* Safe flight corridor */
+#include <polytope_sfc_gen/polytope_sfc_gen.hpp>
 
 #include <minco_traj_gen/minco_traj_gen.hpp> // MINCO trajectory generation
 
@@ -317,13 +325,20 @@ private:
   // Visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr plan_req_pub_; // start and goal visualization publisher
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr agent_id_text_pub_; // Agent ID text publisher
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr voronoi_graph_pub_; // publisher of voronoi graph vertices
 
+  // A*
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
+
+  // MINCO
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
 
+  // MPC
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mpc_pred_pos_pub_; // Visualize MPC trajectory
+
+  // SFC 
+  rclcpp::Publisher<decomp_ros_msgs::msg::PolyhedronArray>::SharedPtr poly_sfc_pub_; // start and goal visualization publisher
 
   /**
    * ROS Subscribers
@@ -515,8 +530,12 @@ private:
 
   Waypoint waypoints_; // Goal waypoint handler object
 
-  std::vector<Eigen::Vector3d> fe_path_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> fe_path_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
   std::vector<Eigen::Vector4d> fe_path_with_t_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
+
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> fe_path_smoothed_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
+  std::vector<Eigen::Vector4d> fe_path_with_t_smoothed_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
+
 
   /* SFC */
   std::unique_ptr<sfc::PolytopeSFC> poly_sfc_gen_; // Polytope safe flight corridor generator

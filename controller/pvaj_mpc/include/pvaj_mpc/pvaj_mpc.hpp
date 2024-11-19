@@ -373,7 +373,6 @@ namespace pvaj_mpc
 
 			mpc_.D_T.conservativeResize(mpc_.D_T.rows() + planes.rows(), 1);
 
-
 			for (int i = 0; i < planes.rows(); i++) { // For each hyperplane
 				mpc_.T.row(mpc_.T.rows()-1 - i).setZero();
 				// Assign first 3 coefficients of plane, ax + by + cx
@@ -385,7 +384,6 @@ namespace pvaj_mpc
 				// Last coefficient of plane, d
 				mpc_.D_T(mpc_.D_T.rows() - 1 - i, 0) = planes(i, 3);
 			}
-
 
 		}
 

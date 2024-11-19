@@ -81,7 +81,7 @@ void VoronoiPlanner::init()
   fe_planner_ = std::make_unique<global_planner::SpaceTimeAStar>(astar_params_, this->get_clock());
 
   // Initialize safe flight corridor
-  poly_sfc_gen_ = std::make_unique<PolytopeSFC>(map_, ply_sfc_params_);
+  poly_sfc_gen_ = std::make_unique<sfc::PolytopeSFC>(sfc_params_);
 
   // Initialize MPC controller
   mpc_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params_);
@@ -142,15 +142,23 @@ void VoronoiPlanner::initPubSubTimer()
     "voro_planning", 10);
   // voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph", 10);
 
-  agent_id_text_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("agent_id_text", 10);
-  plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan_req", 10);
+  agent_id_text_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+    "agent_id_text", 10);
+  plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+    "fe_plan_req", 10);
   fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
     "fe_plan/closed_list", 10);
-  fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("fe_plan/viz", 10);
+  fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+    "fe_plan/viz", 10);
 
-	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("minco_traj_viz", 10);
+	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
+    "minco_traj_viz", 10);
 
-  mpc_pred_pos_pub_ = this->create_publisher<nav_msgs::msg::Path>("mpc/traj", 10);
+  mpc_pred_pos_pub_ = this->create_publisher<nav_msgs::msg::Path>(
+    "mpc/traj", 10);
+
+  poly_sfc_pub_ = this->create_publisher<decomp_ros_msgs::msg::PolyhedronArray>(
+    "sfc", 10);
 
   /* Subscribers */
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -450,7 +458,9 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return false;
   }
 
+  /*****/
   /* 1) Assign voronoi map and reservation table to planner */
+  /*****/
 
   // Assign reservation table
   {
@@ -470,7 +480,9 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   fe_planner_->setVoroMap(dyn_voro_arr_, voro_params_);
 
+  /*****/
   /* 2) Get current position, velocity and acceleration */
+  /*****/
 
   auto plan_start_clock = this->get_clock()->now();
 
@@ -484,7 +496,9 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     start_acc.setZero();
   }
 
+  /*****/
   /* 3) Get Receding Horizon Planning goal */
+  /*****/
 
   // Get RHP goal
   Eigen::Vector3d rhp_goal_pos = getRHPGoal(
@@ -495,7 +509,9 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
 
 
+  /*****/
   /* 4) Plan HCA* path */
+  /*****/
 
   tm_front_end_plan_.start();
 
@@ -516,24 +532,26 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   tm_front_end_plan_.stop(verbose_print_);
 
 
-  /* 4) Retrieve and transform HCA* path to map frame, publish visualization of path */
+  /*****/
+  /* 5) Retrieve and transform HCA* path to map frame, publish visualization of path */
+  /*****/
 
-  std::vector<Eigen::Vector4d> lcl_map_path;
   // Current pose must converted from fixed map frame to local map frame 
   // before passing to planner
-  // lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
-  lcl_map_path = fe_planner_->getPathWithTime();
+  // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
 
-  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
+  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
                              std::vector<Eigen::Vector4d>& map_path_w_t,
-                             std::vector<Eigen::Vector3d>& map_path) {
+                             std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) {
     map_path.clear();
     map_path_w_t.clear();
     
-    for (size_t i = 0; i < lcl_map_path.size(); i++){
+    for (size_t i = 0; i < map_path_w_t_lclmapframe.size(); i++){
       Eigen::Vector4d map_pt;
-      map_pt.head<3>() = lclMapToMap(lcl_map_path[i].head<3>());
-      map_pt(3) = lcl_map_path[i](3);
+      map_pt.head<3>() = lclMapToMap(map_path_w_t_lclmapframe[i].head<3>());
+      map_pt(3) = map_path_w_t_lclmapframe[i](3);
 
       map_path.push_back(map_pt.head<3>());
       map_path_w_t.push_back(map_pt);
@@ -541,31 +559,59 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   };
 
   // Convert front-end path from local map frame to fixed map frame
-  lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
+  lclMapToMapPath(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
+  lclMapToMapPath(fe_path_with_t_lclmapframe_smoothed, fe_path_with_t_smoothed_, fe_path_smoothed_);
   // Visualize front-end path
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
-  // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
-  gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
+  /*****/
+  /* 6) Generate Polyhedron safe flight corridor */
+  /*****/
 
-  fe_plan_msg.agent_id = drone_id_;
-  fe_plan_msg.header.stamp = plan_start_clock;
-  fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
-
-  for (size_t i = 0; i < fe_path_with_t_.size(); i++){
-    geometry_msgs::msg::Pose pose;
-    pose.position.x = fe_path_with_t_[i](0); 
-    pose.position.y = fe_path_with_t_[i](1);
-    pose.position.z = fe_path_with_t_[i](2);
-    pose.orientation.w = 1.0; 
-
-    fe_plan_msg.plan.push_back(pose);
-    fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
+  if (!poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_))
+  {
+    logger_->logError("Failed to generate safe flight corridor!");
+    return false;
   }
 
-  fe_plan_broadcast_pub_->publish(fe_plan_msg);
+  logger_->logError(strFmt("Size of SFC: %d, Size of smoothed path: %d", 
+    poly_sfc_gen_->getPolyVec().size(), fe_path_smoothed_.size()));
 
-  /* 5) Generate commands for executing trajectory */
+  poly_sfc_pub_->publish(poly_sfc_gen_->getSFCMsg());
+
+  // for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
+  //   // Assign half-plane bounds to mpc problem
+  //   for (auto poly : poly_sfc_gen_->getPolyVec())
+  //   { 
+  //     int num_planes = poly.vs_.size(); // Num of planes from polyhedron
+
+  //     Eigen::MatrixX4d planes;
+
+  //     // for (int i = 0; i < num_planes; i++)
+  //     // {
+
+  //     // }
+  //     // poly.vs_[i].n_; // Normal
+  //     // poly.vs_[i].p_;  // Point
+
+  //     mpc_->setFSC(planes, i); 
+
+  //     // // Constraint: A_poly * x - b_poly <= 0
+  //     // MatDNf<3> A_poly(num_planes, 3);        
+  //     // VecDf b_poly(num_planes);               
+
+  //     // for (int i = 0; i < num_planes; i++) { // For each plane
+  //     //     A_poly.row(i) = poly.vs_[i].n_;                  // normal
+  //     //     b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // point.dot(normal)
+  //     // }
+  //   }
+  // }
+
+
+
+  /*****/
+  /* 7) Generate commands for executing trajectory */
+  /*****/
 
   // Find the nearest AStar path point to initial condition
   int fe_start_idx = 0;
@@ -580,7 +626,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     }
   }
 
-  // 5a) Set reference path for MPC 
+  // 7a) Set reference path for MPC 
   Eigen::Vector3d last_p_ref; // last position reference
   for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
     int idx = fe_start_idx + i * ref_samp_intv_;
@@ -601,7 +647,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     last_p_ref = p_ref;
   }
 
-  // 5b) Solve MPC and visualize path
+  // 7b) Solve MPC and visualize path
 
   // Set initial condition
   mpc_->setInitialCondition(start_pos, start_vel, start_acc);
@@ -743,22 +789,22 @@ bool VoronoiPlanner::planCommlessMINCO(const Eigen::Vector3d& goal_pos){
 
   /* 4) Retrieve and transform HCA* path to map frame, publish visualization of path */
 
-  std::vector<Eigen::Vector4d> lcl_map_path;
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe;
   // Current pose must converted from fixed map frame to local map frame 
   // before passing to planner
-  // lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
-  lcl_map_path = fe_planner_->getPathWithTime();
+  // fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
+  fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
 
-  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
+  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
                              std::vector<Eigen::Vector4d>& map_path_w_t,
-                             std::vector<Eigen::Vector3d>& map_path) {
+                             std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) {
     map_path.clear();
     map_path_w_t.clear();
     
-    for (size_t i = 0; i < lcl_map_path.size(); i++){
+    for (size_t i = 0; i < map_path_w_t_lclmapframe.size(); i++){
       Eigen::Vector4d map_pt;
-      map_pt.head<3>() = lclMapToMap(lcl_map_path[i].head<3>());
-      map_pt(3) = lcl_map_path[i](3);
+      map_pt.head<3>() = lclMapToMap(map_path_w_t_lclmapframe[i].head<3>());
+      map_pt(3) = map_path_w_t_lclmapframe[i](3);
 
       map_path.push_back(map_pt.head<3>());
       map_path_w_t.push_back(map_pt);
@@ -766,7 +812,7 @@ bool VoronoiPlanner::planCommlessMINCO(const Eigen::Vector3d& goal_pos){
   };
 
   // Convert front-end path from local map frame to fixed map frame
-  lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
+  lclMapToMapPath(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
   // Visualize front-end path
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
@@ -1290,7 +1336,7 @@ void VoronoiPlanner::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, 
   catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(
 			this->get_logger(), "Could not get transform from agent(%s) to map_frame_(%s): %s",
-			msg->header.frame_id, map_frame_.c_str(), ex.what());
+			msg->header.frame_id.c_str(), map_frame_.c_str(), ex.what());
     return;
   }
 

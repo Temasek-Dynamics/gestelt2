@@ -44,8 +44,6 @@
 
 #include <planner_utils/int_point.hpp>
 
-using namespace Eigen;
-
 inline int SQRT2 = 1.4142135623;
 
 /**

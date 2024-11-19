@@ -31,6 +31,11 @@
         u_min: -50.0
         u_max: 50.0
 
+      sfc:
+        bbox_x: 1.0
+        bbox_y: 2.0
+        bbox_z: 1.0
+
       planner_frequency: 30.0            # [Hz] Frequency at which plan is generated
       generate_voronoi_frequency: 30.0  # [Hz] Frequency at which voronoi is generated
 

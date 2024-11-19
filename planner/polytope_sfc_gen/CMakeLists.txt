@@ -21,10 +21,10 @@ set(EXTERNAL_LIBRARIES
 set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
+  geometry_msgs
   # SFC library
   decomp_util
   decomp_ros_msgs
-  geometry_msgs
 )
 
 set(EXPORTED_DEPENDENCIES
