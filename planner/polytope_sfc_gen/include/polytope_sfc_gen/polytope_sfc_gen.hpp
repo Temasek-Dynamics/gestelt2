@@ -43,7 +43,7 @@ namespace sfc
 
 struct PolytopeSFCParams{
   /* SFC Generation */
-  std::string map_frame{"world"};
+  std::string map_frame{"map"};
 
   // Liu SFC Params
   double bbox_x{1.0}; // Bounding box x

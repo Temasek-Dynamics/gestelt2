@@ -24,17 +24,14 @@ struct Hyperplane {
     return std::abs(signed_dist(pt));
   }
 
-  /// Point on the plane
-  Vecf<Dim> p_;
-  /// Normal of the plane, directional
-  Vecf<Dim> n_;
+  Vecf<Dim> p_; // Point on the plane
+  Vecf<Dim> n_; // Normal of the plane, directional
 };
 
 ///Hyperplane2D: first is the point on the hyperplane, second is the normal
 typedef Hyperplane<2> Hyperplane2D;
 ///Hyperplane3D: first is the point on the hyperplane, second is the normal
 typedef Hyperplane<3> Hyperplane3D;
-
 
 ///Polyhedron class
 template <int Dim>

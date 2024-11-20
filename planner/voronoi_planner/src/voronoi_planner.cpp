@@ -541,10 +541,18 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
+  std::vector<int> fe_path_smoothed_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
 
-  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
+  // std::cout << "fe_path_smoothed_idx with size " << fe_path_smoothed_idx.size() << std::endl;
+  // for (int i = 0; i < fe_path_smoothed_idx.size(); ++i)
+  // {
+  //   std::cout << "  (" << i <<"): " << fe_path_smoothed_idx[i] << std::endl;
+  // }
+
+  auto transformPathFromLclMapToMap = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
                              std::vector<Eigen::Vector4d>& map_path_w_t,
-                             std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) {
+                             std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) 
+  {
     map_path.clear();
     map_path_w_t.clear();
     
@@ -559,8 +567,8 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   };
 
   // Convert front-end path from local map frame to fixed map frame
-  lclMapToMapPath(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
-  lclMapToMapPath(fe_path_with_t_lclmapframe_smoothed, fe_path_with_t_smoothed_, fe_path_smoothed_);
+  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
+  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe_smoothed, fe_path_with_t_smoothed_, fe_path_smoothed_);
   // Visualize front-end path
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
@@ -574,40 +582,13 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return false;
   }
 
-  logger_->logError(strFmt("Size of SFC: %d, Size of smoothed path: %d", 
-    poly_sfc_gen_->getPolyVec().size(), fe_path_smoothed_.size()));
+  std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> polyhedrons 
+    = poly_sfc_gen_->getPolyVec();
 
   poly_sfc_pub_->publish(poly_sfc_gen_->getSFCMsg());
 
-  // for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
-  //   // Assign half-plane bounds to mpc problem
-  //   for (auto poly : poly_sfc_gen_->getPolyVec())
-  //   { 
-  //     int num_planes = poly.vs_.size(); // Num of planes from polyhedron
-
-  //     Eigen::MatrixX4d planes;
-
-  //     // for (int i = 0; i < num_planes; i++)
-  //     // {
-
-  //     // }
-  //     // poly.vs_[i].n_; // Normal
-  //     // poly.vs_[i].p_;  // Point
-
-  //     mpc_->setFSC(planes, i); 
-
-  //     // // Constraint: A_poly * x - b_poly <= 0
-  //     // MatDNf<3> A_poly(num_planes, 3);        
-  //     // VecDf b_poly(num_planes);               
-
-  //     // for (int i = 0; i < num_planes; i++) { // For each plane
-  //     //     A_poly.row(i) = poly.vs_[i].n_;                  // normal
-  //     //     b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // point.dot(normal)
-  //     // }
-  //   }
-  // }
-
-
+  // logger_->logInfo(strFmt(" Size of SFC: %d, Size of smoothed path: %d", 
+  //                   polyhedrons.size(), fe_path_smoothed_.size()));
 
   /*****/
   /* 7) Generate commands for executing trajectory */
@@ -618,7 +599,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   double min_dis = std::numeric_limits<double>::max();
 
   // TODO: improve this routine using KDTree
-  for (int i = 0; i < fe_path_.size(); i++) { // find the nearest point
+  for (int i = 0; i < (int) fe_path_.size(); ++i) { // find the nearest point
     double dis = (cur_pos_ - fe_path_[i]).norm();
     if (dis < min_dis) {
         min_dis = dis;
@@ -626,11 +607,93 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     }
   }
 
-  // 7a) Set reference path for MPC 
+  // 7a) Set Safe Flight corridor
+
+  auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
+                                Eigen::MatrixX4d& planes) {
+    int num_planes = (int) poly.vs_.size();
+    planes.resize(num_planes, 4);
+
+    for (int i = 0; i < num_planes; ++i) // for each plane
+    {
+      Eigen::Vector3d normal = poly.vs_[i].n_; // normal points outward (a,b,c) as in ax+by+cz = d
+      Eigen::Vector3d pt = poly.vs_[i].p_; // Point on plane
+
+      double d = normal.dot(pt);   // Scalar d obtained from point.dot(normal)
+
+      // Final plane needs to have normal pointing outwards
+      planes.row(i) << -normal(0), -normal(1), -normal(2), -d;
+    }
+
+    // D = - [A, B, C].T * [x, y, z]
+
+    // planes.resize(6, 4); // Ax + By + Cz + D = 0, D = -(Ax + By + Cz)
+
+    // planes.row(0) <<  1,  0,  0, -100;
+    // planes.row(1) <<  0,  1,  0, -100;
+    // planes.row(2) <<  0,  0,  1, -100;
+    
+    // planes.row(3) << -1,  0,  0,  -100;
+    // planes.row(4) <<  0, -1,  0,  -100;
+    // planes.row(5) <<  0,  0, -1,  -100;
+
+  };
+
+  // int poly_idx = 0;
+  // for (int i = 0; i < mpc_->MPC_HORIZON; i++) // for each MPC point
+  // {
+  //   int idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
+
+  //   int cur_poly_start_idx = fe_path_smoothed_idx[poly_idx];
+  //   int cur_poly_end_idx = fe_path_smoothed_idx[poly_idx+1];
+
+  //   if (idx >= cur_poly_start_idx && idx >= cur_poly_end_idx)
+  //   { // if idx 
+  //     poly_idx++; // Iterate to next polygon
+ 
+  //     if (poly_idx > polyhedrons.size() -1){
+  //       logger_->logError("CODE ERROR! j exceeds size of polyehdrons");
+  //     }
+  //   }
+
+  //   Eigen::MatrixX4d planes;
+  //   polyhedronToPlanes(polyhedrons[poly_idx], planes);
+
+  //   mpc_->setFSC(planes, i); 
+  // }
+
+  for (int i = 0, poly_idx = 0; i < mpc_->MPC_HORIZON; i++) // for each MPC point
+  {
+    int idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
+
+    int poly_start_idx = fe_path_smoothed_idx[poly_idx];
+    int poly_end_idx = fe_path_smoothed_idx[poly_idx+1];
+
+    if (idx >= poly_end_idx) {
+      logger_->logInfo(strFmt("idx(%d) >= %d", idx, poly_start_idx ));
+      poly_idx++; // Iterate to next polygon
+
+      if (poly_idx > polyhedrons.size() -1){
+        logger_->logError(" CODE ERROR! poly_idx exceeds size of polyehdrons");
+        poly_idx = polyhedrons.size() -1;
+      }
+    }
+
+    Eigen::MatrixX4d planes;
+    polyhedronToPlanes(polyhedrons[poly_idx], planes);
+
+    if (!mpc_->isInFSC(fe_path_[idx], planes)) { // if not in sfc
+      logger_->logError(strFmt("  CODE ERROR! idx %d is not in polygon %d", idx, poly_idx ));
+    }
+
+    mpc_->setFSC(planes, i); 
+  }
+
+  // 7b) Set reference path for MPC 
   Eigen::Vector3d last_p_ref; // last position reference
   for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
     int idx = fe_start_idx + i * ref_samp_intv_;
-    idx = (idx >= fe_path_.size()) ? fe_path_.size() - 1 : idx; 
+    idx = (idx >= (int)fe_path_.size()) ? fe_path_.size() - 1 : idx; 
 
     Eigen::Vector3d p_ref = fe_path_[idx]; // position reference
     Eigen::Vector3d v_ref(0, 0, 0); // vel reference
@@ -647,7 +710,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     last_p_ref = p_ref;
   }
 
-  // 7b) Solve MPC and visualize path
+  // 7c) Solve MPC and visualize path
 
   // Set initial condition
   mpc_->setInitialCondition(start_pos, start_vel, start_acc);
@@ -789,13 +852,11 @@ bool VoronoiPlanner::planCommlessMINCO(const Eigen::Vector3d& goal_pos){
 
   /* 4) Retrieve and transform HCA* path to map frame, publish visualization of path */
 
-  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe;
   // Current pose must converted from fixed map frame to local map frame 
   // before passing to planner
-  // fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
-  fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
 
-  auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
+  auto transformPathFromLclMapToMap = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
                              std::vector<Eigen::Vector4d>& map_path_w_t,
                              std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) {
     map_path.clear();
@@ -812,7 +873,8 @@ bool VoronoiPlanner::planCommlessMINCO(const Eigen::Vector3d& goal_pos){
   };
 
   // Convert front-end path from local map frame to fixed map frame
-  lclMapToMapPath(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
+  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
+  
   // Visualize front-end path
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
@@ -1288,7 +1350,7 @@ void VoronoiPlanner::sendMPCCmdTimerCB()
 
   std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
 
-  if (idx >= mpc_pred_acc_.size()){
+  if (idx >= (int) mpc_pred_acc_.size()){
     logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
   }
 

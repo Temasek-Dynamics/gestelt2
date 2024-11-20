@@ -229,9 +229,12 @@ namespace pvaj_mpc
 				mpc_.A_sfc.resize(mpc_.T.rows(), mpc_.A_p.cols());
 				mpc_.A_sfc_upp.resize(mpc_.D_T.rows(), 1);
 				// Set SFC upper bound
-				// T * A_p <= -D_T -T * B_p
+				// T * A_p <= -D_T - T * B_p
+				
+				// T * (A_p +  B_p) + D_T <= 0
+
 				mpc_.A_sfc = mpc_.T * mpc_.A_p;
-				mpc_.A_sfc_upp = -mpc_.D_T - mpc_.T * mpc_.B_p;
+				mpc_.A_sfc_upp = - mpc_.D_T - mpc_.T * mpc_.B_p;
 
 				// Update entire matrix
 				mpc_.A.resize(mpc_.A_sys.rows() + mpc_.A_sfc.rows(), mpc_.A_sys.cols());
@@ -355,8 +358,9 @@ namespace pvaj_mpc
 		/**
 		 * @brief Set safe flight corridor 
 		 * 
-		 * @param planes 
-		 * @param step 
+		 * @param planes Each row of the matrix is a half plane equation 
+		 * in the form (a,b,c,d) corr. to equation ax + by + cx + d
+		 * @param step Timestep
 		 */
 		void setFSC(Eigen::MatrixX4d& planes, int step)
 		{
@@ -368,21 +372,18 @@ namespace pvaj_mpc
 			planes_[step] = planes;
 
 			mpc_.T.conservativeResize(mpc_.T.rows() + planes.rows(), mpc_.A_p.rows());
-
 			mpc_.A_sfc_low.conservativeResize(mpc_.A_sfc_low.rows() + planes.rows(), 1);
-
 			mpc_.D_T.conservativeResize(mpc_.D_T.rows() + planes.rows(), 1);
 
 			for (int i = 0; i < planes.rows(); i++) { // For each hyperplane
 				mpc_.T.row(mpc_.T.rows()-1 - i).setZero();
 				// Assign first 3 coefficients of plane, ax + by + cx
 				mpc_.T.block(mpc_.T.rows()-1 - i, step*3, 1, 3) = Eigen::Vector3d(planes(i, 0), planes(i, 1), planes(i, 2)).transpose(); 
+				// Last coefficient of plane, d
+				mpc_.D_T(mpc_.D_T.rows() - 1 - i, 0) = planes(i, 3);
 
 				// Set SFC lower bound 
 				mpc_.A_sfc_low(mpc_.A_sfc_low.rows()-1 - i, 0) = -OSQP_INFTY;
-
-				// Last coefficient of plane, d
-				mpc_.D_T(mpc_.D_T.rows() - 1 - i, 0) = planes(i, 3);
 			}
 
 		}
@@ -763,7 +764,8 @@ namespace pvaj_mpc
 		 * @brief Is in safe flight corridor
 		 * 
 		 * @param pos Position to check
-		 * @param planes Set of hyperplanes
+		 * @param planes Set of hyperplanes, Each row of the matrix is a 
+		 * half plane equation in the form (a,b,c,d) corr. to equation ax + by + cx + d
 		 * @return true In safe flight corridor 
 		 * @return false Outside safe flight corridor
 		 */
@@ -774,12 +776,14 @@ namespace pvaj_mpc
 			}
 			
 			for (int i = 0; i < planes.rows(); i++) {
+				// fulfilling this means on wrong side of plane (outside SFC)
 				if (pos.x()*planes(i,0) 
 					+ pos.y()*planes(i,1) 
 					+ pos.z()*planes(i,2) 
-					+ planes(i,3) > 0) // fulfilling this means on wrong side of plane (outside SFC)
+					+ planes(i,3) > 0) 
 				{ 
-					// std::cout << "plane:" << i << " " << planes_.block<1, 4>(i, 0) << std::endl;
+					std::cout << "		point:" << pos.transpose() << std::endl;
+					std::cout << "		plane_" << i << ": " << planes.block<1, 4>(i, 0) << std::endl;
 					return false;
 				}
 			}
@@ -817,6 +821,9 @@ namespace pvaj_mpc
 		// Vector of set of hyper planes, (n, 4) sized matrix with each row 
 		// containing hyperplane coefficients. Each element is a different step 
 		// of the MPC problem
+		// Each element of the vector is a timestep
+		// 	Each row of the matrix is a half plane equation in the form (a,b,c,d) 
+		//	corr. to equation ax + by + cx + d
 	    std::vector<Eigen::MatrixX4d> planes_; 
 
 		// Dynamical parameters

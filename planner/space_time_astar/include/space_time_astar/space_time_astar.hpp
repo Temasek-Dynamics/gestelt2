@@ -174,6 +174,9 @@ public:
   /* Get post-smoothed path */
   std::vector<Eigen::Vector3d> getSmoothedPath();
 
+  /* Get indices of smooth path on original front-end path*/
+  std::vector<int> getSmoothedPathIdx();
+
   /**
    * @brief Get successful plan in terms of path positions
    *
@@ -213,7 +216,10 @@ private:
   std::vector<Eigen::Vector3d> path_pos_; // (WORLD FRAME) Spatial path 
   std::vector<Eigen::Vector4d> path_pos_t_; // (WORLD FRAME) Spatial-temporal path 
   std::vector<Eigen::Vector3d> path_smoothed_; // (WORLD FRAME) post smoothed spatial path 
-  std::vector<Eigen::Vector4d> path_smoothed_t_; // (WORLD FRAME) post smoothed spatial-temporal path 
+  std::vector<Eigen::Vector4d> path_smoothed_t_; // (WORLD FRAME) post smoothed spatial-temporal path
+   
+  std::vector<int> path_smoothed_idx_; // Index of each smoothed path point in original spatial path
+
   std::vector<VCell_T> path_idx_vt_; // (LOCAL FRAME) Final planned Path in terms of indices
   std::vector<VCell_T> path_idx_smoothed_t_; // (LOCAL FRAME) Final planned Path in terms of indices
 
@@ -283,6 +289,7 @@ inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen:
   return path_pos_t;
 }
 
+
 inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getSmoothedPathWithTime()
 {
   return path_smoothed_t_;
@@ -292,6 +299,12 @@ inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getSmoothedPath()
 {
   return path_smoothed_;
 }
+
+inline std::vector<int> SpaceTimeAStar::getSmoothedPathIdx()
+{
+  return path_smoothed_idx_;
+}
+
 
 inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
 {

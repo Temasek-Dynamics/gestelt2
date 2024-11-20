@@ -54,24 +54,24 @@ bool PolytopeSFC::generateSFC(const std::vector<Eigen::Vector3d, Eigen::aligned_
 
     poly_vec_ = ellip_decomp_util_.get_polyhedrons();
 
-    std::vector<LinearConstraint3D> poly_constr_vec_new;
+    // std::vector<LinearConstraint3D> poly_constr_vec_new;
 
-    // Construct poly_constr_vec
-    for (const auto& poly: poly_vec_)
-    {
-        int num_planes = poly.vs_.size(); // Num of planes from polyhedron
-        // Constraint: A_poly * x - b_poly <= 0
-        MatDNf<3> A_poly(num_planes, 3);        
-        VecDf b_poly(num_planes);               
+    // // Construct poly_constr_vec
+    // for (const auto& poly: poly_vec_)
+    // {
+    //     int num_planes = poly.vs_.size(); // Num of planes from polyhedron
+    //     // Constraint: A_poly * x - b_poly <= 0
+    //     MatDNf<3> A_poly(num_planes, 3);        
+    //     VecDf b_poly(num_planes);               
 
-        for (int i = 0; i < num_planes; i++) { // For each plane
-            A_poly.row(i) = poly.vs_[i].n_;                  // normal
-            b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // point.dot(normal)
-        }
-        poly_constr_vec_new.push_back(LinearConstraint3D(A_poly, b_poly));
-    }
+    //     for (int i = 0; i < num_planes; i++) { // For each plane
+    //         A_poly.row(i) = poly.vs_[i].n_;                  // normal (a,b,c) as in ax+by+cz+d
+    //         b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // Scalar d obtained from point.dot(normal)
+    //     }
+    //     poly_constr_vec_new.push_back(LinearConstraint3D(A_poly, b_poly));
+    // }
 
-    poly_constr_vec_ = poly_constr_vec_new;
+    // poly_constr_vec_ = poly_constr_vec_new;
 
     return true;
 }

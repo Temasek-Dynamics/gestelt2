@@ -467,13 +467,13 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
 {
     // Clear existing data structures
     path_idx_vt_.clear();
-
     path_pos_t_.clear();
     path_pos_.clear();
 
     path_idx_smoothed_t_.clear();
     path_smoothed_.clear();
     path_smoothed_t_.clear();
+    path_smoothed_idx_.clear();
 
     // Trace back the nodes through the pointer to their parent
     VCell_T cur_node = final_node;
@@ -485,13 +485,8 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
     // Push back the start node
     path_idx_vt_.push_back(cur_node);
 
-    // // Reverse the order of the path so that it goes from start to goal
-    // std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
-
     // For each gridnode, get the position and index,
     // So we can obtain a path in terms of indices and positions
-    // for (const VCell_T& cell : path_idx_vt_)
-    // {
     for (int i = path_idx_vt_.size()-1; i >= 0; i--)
     {
         DblPoint map_2d_pos;
@@ -511,25 +506,30 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
     // /* Get smoothed path */
 
     // For each gridnode, get the position and index,
-    // So we can obtain a path in terms of indices and positions
+    // So as to get a path in terms of indices and positions
     path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
+    path_smoothed_idx_.push_back(0);
     for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
     {
     if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
         // Add current point to smoothed path
         path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+        path_smoothed_idx_.push_back(i);
     }
     else {
         IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
         IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
 
         if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
-        // Add current point to smoothed path
-        path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+            // Add current point to smoothed path
+            path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+            
+            path_smoothed_idx_.push_back(i);
         }
     }
     }
     path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+    path_smoothed_idx_.push_back(path_idx_vt_.size()-1);
 
     // For each gridnode, get the position and index,
     // So we can obtain a path in terms of indices and positions
