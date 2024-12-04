@@ -458,6 +458,10 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return false;
   }
 
+  if (plan_once_ && plan_complete_){
+    return true;
+  }
+
   /*****/
   /* 1) Assign voronoi map and reservation table to planner */
   /*****/
@@ -558,6 +562,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     
     for (size_t i = 0; i < map_path_w_t_lclmapframe.size(); i++){
       Eigen::Vector4d map_pt;
+      // Transform from local map frame to map
       map_pt.head<3>() = lclMapToMap(map_path_w_t_lclmapframe[i].head<3>());
       map_pt(3) = map_path_w_t_lclmapframe[i](3);
 
@@ -567,8 +572,10 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   };
 
   // Convert front-end path from local map frame to fixed map frame
-  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
-  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe_smoothed, fe_path_with_t_smoothed_, fe_path_smoothed_);
+  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe, 
+                              fe_path_with_t_, fe_path_);
+  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe_smoothed, 
+                              fe_path_with_t_smoothed_, fe_path_smoothed_);
   // Visualize front-end path
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
@@ -576,12 +583,14 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 6) Generate Polyhedron safe flight corridor */
   /*****/
 
+  // Generate SFC based on smoothed front-end path
   if (!poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_))
   {
     logger_->logError("Failed to generate safe flight corridor!");
     return false;
   }
 
+  // Get polyhedrons
   std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> polyhedrons 
     = poly_sfc_gen_->getPolyVec();
 
@@ -609,6 +618,34 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   // 7a) Set Safe Flight corridor
 
+  //   for (int j = 0; j < planes.rows(); j++){
+
+  // Print out all planes in polyhedron
+  for (int i = 0; i < (int)polyhedrons.size(); i++)
+  {
+    std::cout << "Polyhedron " << i << ":" << std::endl;
+    auto poly = polyhedrons[i];
+    int num_planes = (int) poly.vs_.size();
+
+    for (int j = 0; j < num_planes; ++j) // for each plane
+    {
+      std::cout << "Plane " << j << ": " << std::endl;
+
+      Eigen::Vector3d normal = poly.vs_[j].n_; // normal points outward (a,b,c) as in ax+by+cz = d
+      Eigen::Vector3d pt = poly.vs_[j].p_; // Point on plane
+
+      std::cout << "  normal: " << normal.transpose() << std::endl;
+      std::cout << "  pt: " << pt.transpose() << std::endl;
+
+      double d = normal.dot(pt);   // Scalar d obtained from point.dot(normal)
+
+      // ax + by + cy + d = 0
+    }
+  }
+
+
+
+
   auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
                                 Eigen::MatrixX4d& planes) {
     int num_planes = (int) poly.vs_.size();
@@ -622,9 +659,11 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
       double d = normal.dot(pt);   // Scalar d obtained from point.dot(normal)
 
       // Final plane needs to have normal pointing outwards
-      planes.row(i) << -normal(0), -normal(1), -normal(2), -d;
+      // ax + by + cy + d = 0
+      planes.row(i) << normal(0), normal(1), normal(2), -d;
     }
 
+    
     // D = - [A, B, C].T * [x, y, z]
 
     // planes.resize(6, 4); // Ax + By + Cz + D = 0, D = -(Ax + By + Cz)
@@ -662,14 +701,31 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   //   mpc_->setFSC(planes, i); 
   // }
 
+  std::cout << "Segment 0 start: " << fe_path_smoothed_[0].transpose() << std::endl;
+  std::cout << "Segment 0 end: " << fe_path_smoothed_[1].transpose() << std::endl;
+
+  std::cout << "Segment 1 start: " << fe_path_smoothed_[1].transpose() << std::endl;
+  std::cout << "Segment 1 end: " << fe_path_smoothed_[2].transpose() << std::endl;
+
+  // // Print out all planes in polyhedron
+  // for (int i = 0; i < (int)polyhedrons.size(); i++)
+  // {
+  //   Eigen::MatrixX4d planes;
+  //   polyhedronToPlanes(polyhedrons[i], planes);
+  //   std::cout << "Polyhedron " << i << ":" << std::endl;
+  //   for (int j = 0; j < planes.rows(); j++){
+  //     std::cout << "Plane " << j << ": " << planes.row(j) << std::endl;
+  //   }
+  // }
+
   for (int i = 0, poly_idx = 0; i < mpc_->MPC_HORIZON; i++) // for each MPC point
   {
     int idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
 
-    int poly_start_idx = fe_path_smoothed_idx[poly_idx];
-    int poly_end_idx = fe_path_smoothed_idx[poly_idx+1];
+    int poly_start_idx = fe_path_smoothed_idx[poly_idx]; //start of segment
+    int poly_end_idx = fe_path_smoothed_idx[poly_idx+1]; //end of segment
 
-    if (idx >= poly_end_idx) {
+    if (idx >= poly_end_idx) { // FE Path index exceed segment
       logger_->logInfo(strFmt("idx(%d) >= %d", idx, poly_start_idx ));
       poly_idx++; // Iterate to next polygon
 
@@ -682,6 +738,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     Eigen::MatrixX4d planes;
     polyhedronToPlanes(polyhedrons[poly_idx], planes);
 
+    std::cout << "fe_path_[" << idx << "]:" << fe_path_[idx] << std::endl;
     if (!mpc_->isInFSC(fe_path_[idx], planes)) { // if not in sfc
       logger_->logError(strFmt("  CODE ERROR! idx %d is not in polygon %d", idx, poly_idx ));
     }

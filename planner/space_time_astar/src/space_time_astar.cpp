@@ -485,9 +485,11 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
     // Push back the start node
     path_idx_vt_.push_back(cur_node);
 
+    std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
+
     // For each gridnode, get the position and index,
     // So we can obtain a path in terms of indices and positions
-    for (int i = path_idx_vt_.size()-1; i >= 0; i--)
+    for (int i = 0; i < path_idx_vt_.size(); i++)
     {
         DblPoint map_2d_pos;
         int z_cm = path_idx_vt_[i].z_cm;
@@ -528,6 +530,7 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
         }
     }
     }
+    // add goal
     path_idx_smoothed_t_.push_back(path_idx_vt_.back());
     path_smoothed_idx_.push_back(path_idx_vt_.size()-1);
 

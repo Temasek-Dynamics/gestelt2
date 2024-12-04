@@ -782,7 +782,9 @@ namespace pvaj_mpc
 					+ pos.z()*planes(i,2) 
 					+ planes(i,3) > 0) 
 				{ 
-					std::cout << "		point:" << pos.transpose() << std::endl;
+					std::cout << "NOT IN SFC:"  << std::endl;
+					std::cout << "		pos:" << pos.transpose() << std::endl;
+					// std::cout << "		point:" << pos.transpose() << std::endl;
 					std::cout << "		plane_" << i << ": " << planes.block<1, 4>(i, 0) << std::endl;
 					return false;
 				}
