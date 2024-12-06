@@ -959,8 +959,8 @@ void VoronoiPlanner::sendMPCCmdTimerCB()
     // Get index of point closest to current time
     //  elapsed time from start divided by time step of MPC
     int idx =  std::floor(e_t_start / mpc_->MPC_STEP); 
+    idx = std::clamp(idx, 0, mpc_pred_pos_.size());
 
-    std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
 
     if (idx >= (int) mpc_pred_pos_.size()){
       logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
@@ -968,6 +968,7 @@ void VoronoiPlanner::sendMPCCmdTimerCB()
 
     // TODO: Check if values are valid
       
+    std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
 
     // Publish PVA command
     pubPVAJCmd(mpc_pred_pos_[idx], 
