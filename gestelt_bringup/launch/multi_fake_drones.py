@@ -19,7 +19,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
-SCENARIO_NAME = "forest_sparse_1"
+# SCENARIO_NAME = "forest_sparse_1"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
 # SCENARIO_NAME = "antipodal_swap_4_sparse"
@@ -27,7 +27,7 @@ SCENARIO_NAME = "forest_sparse_1"
 # SCENARIO_NAME = "antipodal_swap_4_empty"
 
 # SCENARIO_NAME = "antipodal_swap_8_normal"
-# SCENARIO_NAME = "antipodal_swap_8_sparse"
+SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
 class Scenario:
@@ -189,6 +189,9 @@ def generate_launch_description():
         bag_topics.append(prefix + "voro_map_100")
         bag_topics.append(prefix + "voro_map_150")
         bag_topics.append(prefix + "voro_map_200")
+        # Subscription to safe flight corridor
+        bag_topics.append(prefix + "sfc")
+        
     bag_topics.append("/swarm_collision_checker/collisions")
     bag_topics.append("/rosout")
     bag_topics.append("/tf")

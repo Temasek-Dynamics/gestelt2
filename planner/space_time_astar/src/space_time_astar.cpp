@@ -489,7 +489,7 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
 
     // For each gridnode, get the position and index,
     // So we can obtain a path in terms of indices and positions
-    for (int i = 0; i < path_idx_vt_.size(); i++)
+    for (size_t i = 0; i < path_idx_vt_.size(); i++)
     {
         DblPoint map_2d_pos;
         int z_cm = path_idx_vt_[i].z_cm;
@@ -513,22 +513,23 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
     path_smoothed_idx_.push_back(0);
     for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
     {
-    if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
-        // Add current point to smoothed path
-        path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-        path_smoothed_idx_.push_back(i);
-    }
-    else {
-        IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
-        IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
-
-        if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
+        // If different height
+        if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ 
             // Add current point to smoothed path
             path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-            
             path_smoothed_idx_.push_back(i);
         }
-    }
+        // Else check for line of sight
+        else {
+            IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
+            IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
+
+            if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
+                // Add current point to smoothed path
+                path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+                path_smoothed_idx_.push_back(i);
+            }
+        }
     }
     // add goal
     path_idx_smoothed_t_.push_back(path_idx_vt_.back());

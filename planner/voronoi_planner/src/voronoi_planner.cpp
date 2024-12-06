@@ -377,7 +377,6 @@ void VoronoiPlanner::initParams()
 void VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
   switch (plan_method_) {
     case PlanMethod::COMMLESS_MINCO:
-
       if (!planCommlessMINCO(goal_pos)){
         auto plan_start_clock = this->get_clock()->now();
 
@@ -512,7 +511,6 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // Publish start and goal visualization
   viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
 
-
   /*****/
   /* 4) Plan HCA* path */
   /*****/
@@ -544,14 +542,11 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // before passing to planner
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
-  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
-  std::vector<int> fe_path_smoothed_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getPathWithTimeSampled(10);
+  std::vector<int> fe_path_sampled_idx = fe_planner_->getPathIdxSampled(10); // Index of sampled original path
 
-  // std::cout << "fe_path_smoothed_idx with size " << fe_path_smoothed_idx.size() << std::endl;
-  // for (int i = 0; i < fe_path_smoothed_idx.size(); ++i)
-  // {
-  //   std::cout << "  (" << i <<"): " << fe_path_smoothed_idx[i] << std::endl;
-  // }
+  // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
+  // std::vector<int> fe_path_sampled_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
 
   auto transformPathFromLclMapToMap = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
                              std::vector<Eigen::Vector4d>& map_path_w_t,
@@ -608,42 +603,40 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   double min_dis = std::numeric_limits<double>::max();
 
   // TODO: improve this routine using KDTree
-  for (int i = 0; i < (int) fe_path_.size(); ++i) { // find the nearest point
+  for (int i = 0; i < (int)fe_path_.size() ; ++i) { // find the nearest point
     double dis = (cur_pos_ - fe_path_[i]).norm();
     if (dis < min_dis) {
         min_dis = dis;
         fe_start_idx = i;
     }
-  }
 
-  // 7a) Set Safe Flight corridor
-
-  //   for (int j = 0; j < planes.rows(); j++){
-
-  // Print out all planes in polyhedron
-  for (int i = 0; i < (int)polyhedrons.size(); i++)
-  {
-    std::cout << "Polyhedron " << i << ":" << std::endl;
-    auto poly = polyhedrons[i];
-    int num_planes = (int) poly.vs_.size();
-
-    for (int j = 0; j < num_planes; ++j) // for each plane
-    {
-      std::cout << "Plane " << j << ": " << std::endl;
-
-      Eigen::Vector3d normal = poly.vs_[j].n_; // normal points outward (a,b,c) as in ax+by+cz = d
-      Eigen::Vector3d pt = poly.vs_[j].p_; // Point on plane
-
-      std::cout << "  normal: " << normal.transpose() << std::endl;
-      std::cout << "  pt: " << pt.transpose() << std::endl;
-
-      double d = normal.dot(pt);   // Scalar d obtained from point.dot(normal)
-
-      // ax + by + cy + d = 0
+    if (i >= 10){
+      break;
     }
   }
 
+  // // Print out all planes in polyhedron
+  // for (int i = 0; i < (int)polyhedrons.size(); i++)
+  // {
+  //   std::cout << "Polyhedron " << i << ":" << std::endl;
+  //   auto poly = polyhedrons[i];
+  //   int num_planes = (int) poly.vs_.size();
 
+  //   for (int j = 0; j < num_planes; ++j) // for each plane
+  //   {
+  //     std::cout << "Plane " << j << ": " << std::endl;
+
+  //     Eigen::Vector3d normal = poly.vs_[j].n_; // normal points outward (a,b,c) as in ax+by+cz = d
+  //     Eigen::Vector3d pt = poly.vs_[j].p_; // Point on plane
+
+  //     std::cout << "  normal: " << normal.transpose() << std::endl;
+  //     std::cout << "  pt: " << pt.transpose() << std::endl;
+
+  //     double d = normal.dot(pt);   // Scalar d obtained from point.dot(normal)
+
+  //     // ax + by + cy + d = 0
+  //   }
+  // }
 
 
   auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
@@ -678,59 +671,26 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   };
 
-  // int poly_idx = 0;
-  // for (int i = 0; i < mpc_->MPC_HORIZON; i++) // for each MPC point
-  // {
-  //   int idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
+  int final_fe_idx = (int)fe_path_.size(); // index of final front-end point that lies in SFC
 
-  //   int cur_poly_start_idx = fe_path_smoothed_idx[poly_idx];
-  //   int cur_poly_end_idx = fe_path_smoothed_idx[poly_idx+1];
-
-  //   if (idx >= cur_poly_start_idx && idx >= cur_poly_end_idx)
-  //   { // if idx 
-  //     poly_idx++; // Iterate to next polygon
- 
-  //     if (poly_idx > polyhedrons.size() -1){
-  //       logger_->logError("CODE ERROR! j exceeds size of polyehdrons");
-  //     }
-  //   }
-
-  //   Eigen::MatrixX4d planes;
-  //   polyhedronToPlanes(polyhedrons[poly_idx], planes);
-
-  //   mpc_->setFSC(planes, i); 
-  // }
-
-  std::cout << "Segment 0 start: " << fe_path_smoothed_[0].transpose() << std::endl;
-  std::cout << "Segment 0 end: " << fe_path_smoothed_[1].transpose() << std::endl;
-
-  std::cout << "Segment 1 start: " << fe_path_smoothed_[1].transpose() << std::endl;
-  std::cout << "Segment 1 end: " << fe_path_smoothed_[2].transpose() << std::endl;
-
-  // // Print out all planes in polyhedron
-  // for (int i = 0; i < (int)polyhedrons.size(); i++)
-  // {
-  //   Eigen::MatrixX4d planes;
-  //   polyhedronToPlanes(polyhedrons[i], planes);
-  //   std::cout << "Polyhedron " << i << ":" << std::endl;
-  //   for (int j = 0; j < planes.rows(); j++){
-  //     std::cout << "Plane " << j << ": " << planes.row(j) << std::endl;
-  //   }
-  // }
-
+  // 7a) Set Safe Flight corridor for each MPC reference point
   for (int i = 0, poly_idx = 0; i < mpc_->MPC_HORIZON; i++) // for each MPC point
   {
-    int idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
+    int fe_idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
+    if (fe_idx >= (int)fe_path_.size()){ // exceed size of fe path
+      fe_idx = fe_path_.size() - 1;
+    }
 
-    int poly_start_idx = fe_path_smoothed_idx[poly_idx]; //start of segment
-    int poly_end_idx = fe_path_smoothed_idx[poly_idx+1]; //end of segment
+    int poly_start_idx = fe_path_sampled_idx[poly_idx]; //idx of fe_path at start of segment
+    int poly_end_idx = fe_path_sampled_idx[poly_idx+1]; //idx of fe_path at end of segment
 
-    if (idx >= poly_end_idx) { // FE Path index exceed segment
-      logger_->logInfo(strFmt("idx(%d) >= %d", idx, poly_start_idx ));
+    if (fe_idx >= poly_end_idx) { // FE Path index exceed idx of fe_path at end of segment
+      // logger_->logInfo(strFmt("FE Path idx(%d) >= segment %d", fe_idx, poly_start_idx ));
       poly_idx++; // Iterate to next polygon
 
+      // if already last polygon
       if (poly_idx > polyhedrons.size() -1){
-        logger_->logError(" CODE ERROR! poly_idx exceeds size of polyehdrons");
+        // logger_->logError(" CODE ERROR! poly_idx exceeds size of polyehdrons");
         poly_idx = polyhedrons.size() -1;
       }
     }
@@ -738,28 +698,41 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     Eigen::MatrixX4d planes;
     polyhedronToPlanes(polyhedrons[poly_idx], planes);
 
-    std::cout << "fe_path_[" << idx << "]:" << fe_path_[idx] << std::endl;
-    if (!mpc_->isInFSC(fe_path_[idx], planes)) { // if not in sfc
-      logger_->logError(strFmt("  CODE ERROR! idx %d is not in polygon %d", idx, poly_idx ));
+    if (!mpc_->isInFSC(fe_path_[fe_idx], planes)) { 
+      // if front end point is not in sfc
+      // Then all reference points should end at previous fe_idx
+      logger_->logError(strFmt("  CODE ERROR! FE Path idx %d is not in polygon %d", fe_idx, poly_idx ));
+      final_fe_idx = fe_idx - 1 >= 0 ? fe_idx-1 : 0;
+      break;
     }
 
+    // Set safe flight corridor for i-th control iteration
     mpc_->setFSC(planes, i); 
   }
 
   // 7b) Set reference path for MPC 
   Eigen::Vector3d last_p_ref; // last position reference
   for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
-    int idx = fe_start_idx + i * ref_samp_intv_;
-    idx = (idx >= (int)fe_path_.size()) ? fe_path_.size() - 1 : idx; 
+    int fe_idx = fe_start_idx + i * ref_samp_intv_;
+    if (fe_idx > final_fe_idx){ // exceed final SFC-bounded point on FE path
+      fe_idx = final_fe_idx;
+    }
+    else if (fe_idx >= (int)fe_path_.size()){ // exceed size of fe path
+      fe_idx = fe_path_.size() - 1;
+    }
 
-    Eigen::Vector3d p_ref = fe_path_[idx]; // position reference
+    Eigen::Vector3d p_ref = fe_path_[fe_idx]; // position reference
     Eigen::Vector3d v_ref(0, 0, 0); // vel reference
     Eigen::Vector3d a_ref(0, 0, 0); // acc reference
 
     if (i == 0) // First iteration
+    {
       v_ref = (p_ref - cur_pos_) / mpc_->MPC_STEP;
-    else 
+    }
+    else // rest of the iteration
+    {
       v_ref = (p_ref - last_p_ref) / mpc_->MPC_STEP;
+    }
 
     // Set PVA reference at given step i
     mpc_->setReference(p_ref, v_ref, a_ref, i);
@@ -777,12 +750,8 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   Eigen::MatrixXd A1, B1; // system transition matrix
   Eigen::VectorXd x_optimal = mpc_->X_0_;
 
-  bool mpc_success;
-
-  {
-    mpc_success = mpc_->run();
-    last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
-  }
+  bool mpc_success = mpc_->run();
+  last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
 
   if (mpc_success){ // Successful MPC solve
 
@@ -826,7 +795,6 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     }
     
     pubMPCPath(mpc_pred_pos_);
-
   }
   else {
     logger_->logError("MPC Solve failure!");
@@ -837,419 +805,6 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   return true;
 
-}
-
-bool VoronoiPlanner::planCommlessMINCO(const Eigen::Vector3d& goal_pos){
-  if (!init_voro_maps_){
-    logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
-    return false;
-  }
-
-  /* 1) Assign voronoi map and reservation table to planner */
-
-  // {
-  //   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
-  //   fe_planner_->setReservationTable(rsvn_tbl_);
-  // }
-
-  std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
-
-  // Assign voronoi map
-  voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
-  voro_params_.local_origin_x = bool_map_3d_.origin(0);
-  voro_params_.local_origin_y = bool_map_3d_.origin(1);
-  voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
-  voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
-  voro_params_.res = bool_map_3d_.resolution;
-
-  fe_planner_->setVoroMap(dyn_voro_arr_, voro_params_);
-
-  /* 2) Get current position, velocity and acceleration */
-
-  Eigen::Vector3d start_pos, start_vel, start_acc;
-
-  auto plan_start_clock = this->get_clock()->now();
-
-  if (!sampleMINCOTrajectory(poly_traj_, plan_start_clock.nanoseconds()/1e9, start_pos, start_vel, start_acc))
-  {
-    start_pos = cur_pos_;
-    start_vel = cur_vel_;
-    start_acc.setZero();
-  }
-
-  /* 3) Get Receding Horizon Planning goal */
-
-  // Get RHP goal
-  // Eigen::Vector3d rhp_goal_pos = goal_pos;
-  Eigen::Vector3d rhp_goal_pos = getRHPGoal(
-    start_pos, goal_pos, 
-    voxel_map_->getLocalMapOrigin(0.15), voxel_map_->getLocalMapMax(0.15));
-
-  viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
-
-  /* 4) Plan HCA* path */
-
-  tm_front_end_plan_.start();
-
-  if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
-  {
-    logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
-                              drone_id_, start_pos(0), start_pos(1), start_pos(2), 
-                              rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
-                              fe_planner_->getClosedList().size()));
-
-    // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
-    //                   fe_closed_list_viz_pub_, map_frame_);
-
-    tm_front_end_plan_.stop(verbose_print_);
-    return false;
-  }
-
-  tm_front_end_plan_.stop(verbose_print_);
-
-  /* 4) Retrieve and transform HCA* path to map frame, publish visualization of path */
-
-  // Current pose must converted from fixed map frame to local map frame 
-  // before passing to planner
-  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
-
-  auto transformPathFromLclMapToMap = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
-                             std::vector<Eigen::Vector4d>& map_path_w_t,
-                             std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) {
-    map_path.clear();
-    map_path_w_t.clear();
-    
-    for (size_t i = 0; i < map_path_w_t_lclmapframe.size(); i++){
-      Eigen::Vector4d map_pt;
-      map_pt.head<3>() = lclMapToMap(map_path_w_t_lclmapframe[i].head<3>());
-      map_pt(3) = map_path_w_t_lclmapframe[i](3);
-
-      map_path.push_back(map_pt.head<3>());
-      map_path_w_t.push_back(map_pt);
-    }
-  };
-
-  // Convert front-end path from local map frame to fixed map frame
-  transformPathFromLclMapToMap(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
-  
-  // Visualize front-end path
-  viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
-
-  // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
-  gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
-
-  fe_plan_msg.agent_id = drone_id_;
-  fe_plan_msg.header.stamp = plan_start_clock;
-  fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
-
-  for (size_t i = 0; i < fe_path_with_t_.size(); i++){
-    geometry_msgs::msg::Pose pose;
-    pose.position.x = fe_path_with_t_[i](0); 
-    pose.position.y = fe_path_with_t_[i](1);
-    pose.position.z = fe_path_with_t_[i](2);
-    pose.orientation.w = 1.0; 
-
-    fe_plan_msg.plan.push_back(pose);
-    fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
-  }
-
-  fe_plan_broadcast_pub_->publish(fe_plan_msg);
-
-  /* 5) Generate commands for executing trajectory */
-
-  std::vector<Eigen::Vector4d> mjo_fe_path;
-  // Sample at regular intervals from front-end path
-  for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
-  {	
-    mjo_fe_path.push_back(Eigen::Vector4d{
-      fe_path_with_t_[i](0),
-      fe_path_with_t_[i](1),
-      fe_path_with_t_[i](2),
-      fe_path_with_t_[i](3)
-    });
-  }
-
-  if (mjo_fe_path.size() >= 2){
-    /* Generate minimum jerk trajectory */
-
-    auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
-                              const std::vector<Eigen::Vector4d>& space_time_path,
-                              const Eigen::Matrix3d& start_PVA,
-                              const Eigen::Matrix3d& goal_PVA,
-                              const double& t_plan_start){
-      
-      Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
-      Eigen::VectorXd seg_durations(space_time_path.size()-1);
-
-      for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
-        inner_pts.col(j) = space_time_path[i].head<3>();
-      }
-
-      for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
-        seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
-      }
-
-      mjo->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
-
-      return mjo->getTraj(t_plan_start);
-    };
-
-    Eigen::Matrix3d start_PVA, goal_PVA;
-    start_PVA << start_pos, start_vel, start_acc;
-    goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
-
-    poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.nanoseconds()/1e9);
-
-    Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
-
-    minco_interfaces::msg::PolynomialTrajectory poly_msg; 
-    minco_interfaces::msg::MincoTrajectory MINCO_msg; 
-
-    polyTrajToMincoMsg(poly_traj_, plan_start_clock.nanoseconds()/1e9, poly_msg, MINCO_msg);
-
-    poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
-    // TODO: convert MINCO_msg to world frame
-    // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
-    
-    // Publish visualization
-    viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
-  }
-
-  plan_complete_ = true;
-
-  return true;
-
-}
-
-bool VoronoiPlanner::planCommMINCO(const Eigen::Vector3d& goal_pos){
-  // if (!init_voro_maps_){
-  //   logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
-  //   return false;
-  // }
-
-  // if (plan_once_ && plan_complete_){
-  //   return true;
-  // }
-
-  // // /* Lambda for checking if all higher priority plans are received*/
-  // // auto isAllPrioPlansRcv = [&] () {
-  // //   // Only check from 0 to current drone_id
-  // //   for (int i = 0; i < drone_id_; i++){ 
-  // //     if (rsvn_tbl_.find(i) == rsvn_tbl_.end()){
-  // //       return false;
-  // //     }
-  // //   }
-  // //   return true;
-  // // };
-
-  // // rclcpp::Rate loop_rate(10);
-  // // while (!isAllPrioPlansRcv()){
-  // //   loop_rate.sleep();
-  // // }
-
-  // // Update reservation table on planner
-  // {
-  //   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
-  //   fe_planner_->setReservationTable(rsvn_tbl_);
-  //   // rsvn_tbl_.clear();
-  // }
-
-  // std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
-
-  // // Assign voronoi map
-  // voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
-  // voro_params_.local_origin_x = bool_map_3d_.origin(0);
-  // voro_params_.local_origin_y = bool_map_3d_.origin(1);
-  // voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
-  // voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
-  // voro_params_.res = bool_map_3d_.resolution;
-
-  // fe_planner_->setVoroMap(dyn_voro_arr_, 
-  //                         voro_params_);
-
-  // Eigen::Vector3d start_pos, start_vel, start_acc;
-
-  // // Eigen::Vector3d rhp_goal_pos = goal_pos;
-
-  // auto plan_start_clock = this->get_clock()->now();
-
-  // if (!sampleMINCOTrajectory(poly_traj_, plan_start_clock.nanoseconds()/1e9;, start_pos, start_vel, start_acc))
-  // {
-  //   start_pos = cur_pos_;
-  //   start_vel = cur_vel_;
-  //   start_acc.setZero();
-  // }
-
-  // // Get RHP goal
-  // Eigen::Vector3d rhp_goal_pos = getRHPGoal(
-  //   start_pos, goal_pos, 
-  //   voxel_map_->getLocalMapOrigin(0.2), voxel_map_->getLocalMapMax(0.2));
-
-  // // logger_->logError(strFmt("Drone %d: start_pos(%f, %f, %f): des_goal(%f, %f, %f) to rhp_goal(%f, %f, %f)", 
-  // //                           drone_id_, 
-  // //                           start_pos(0), start_pos(1), start_pos(2), 
-  // //                           goal_pos(0), goal_pos(1), goal_pos(2), 
-  // //                           rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2)));
-
-  // viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
-
-  // tm_front_end_plan_.start();
-
-  // if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
-  // {
-  //   logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
-  //                             drone_id_, start_pos(0), start_pos(1), start_pos(2), 
-  //                             rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
-  //                             fe_planner_->getClosedList().size()));
-
-  //   tm_front_end_plan_.stop(verbose_print_);
-
-  //   // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
-  //   //                   fe_closed_list_viz_pub_, map_frame_);
-
-  //   return false;
-  // }
-
-  // tm_front_end_plan_.stop(verbose_print_);
-
-  // // Retrieve space time path 
-  // std::vector<Eigen::Vector4d> lcl_map_path;
-  // // Current pose must converted from fixed map frame to local map frame before passing to planner
-  // // lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
-  // lcl_map_path = fe_planner_->getPathWithTime();
-
-  // auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
-  //                            std::vector<Eigen::Vector4d>& map_path_w_t,
-  //                            std::vector<Eigen::Vector3d>& map_path) {
-  //   map_path.clear();
-  //   map_path_w_t.clear();
-    
-  //   for (size_t i = 0; i < lcl_map_path.size(); i++){
-  //     Eigen::Vector4d map_pt;
-  //     map_pt.head<3>() = lclMapToMap(lcl_map_path[i].head<3>());
-  //     map_pt(3) = lcl_map_path[i](3);
-
-  //     map_path.push_back(map_pt.head<3>());
-  //     map_path_w_t.push_back(map_pt);
-  //   }
-  // };
-
-  // // Convert front-end path from local map frame to fixed map frame
-  // lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
-
-  // // Visualize front-end path
-  // // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, map_frame_) ;
-  // viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
-
-  // // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
-  // gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
-
-  // fe_plan_msg.agent_id = drone_id_;
-  // fe_plan_msg.header.stamp = this->get_clock()->now();
-  // fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;;
-
-  // for (size_t i = 0; i < fe_path_with_t_.size(); i++){
-  //   geometry_msgs::msg::Pose pose;
-  //   pose.position.x = fe_path_with_t_[i](0); 
-  //   pose.position.y = fe_path_with_t_[i](1);
-  //   pose.position.z = fe_path_with_t_[i](2);
-  //   pose.orientation.w = 1.0; 
-
-  //   fe_plan_msg.plan.push_back(pose);
-  //   fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
-  // }
-
-  // fe_plan_broadcast_pub_->publish(fe_plan_msg);
-
-  // std::vector<Eigen::Vector4d> mjo_fe_path;
-  // // Sample at regular intervals from front-end path
-  // for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
-	// {	
-	// 	mjo_fe_path.push_back(Eigen::Vector4d{
-	// 		fe_path_with_t_[i](0),
-	// 		fe_path_with_t_[i](1),
-	// 		fe_path_with_t_[i](2),
-	// 		fe_path_with_t_[i](3)
-	// 	});
-	// }
-
-  // if (mjo_fe_path.size() >= 2){
-  //   /* Generate minimum jerk trajectory */
-
-
-  //   auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
-  //                             const std::vector<Eigen::Vector4d>& space_time_path,
-  //                             const Eigen::Matrix3d& start_PVA,
-  //                             const Eigen::Matrix3d& goal_PVA,
-  //                             const double& t_plan_start){
-      
-  //     Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
-  //     Eigen::VectorXd seg_durations(space_time_path.size()-1);
-
-  //     for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
-  //       inner_pts.col(j) = space_time_path[i].head<3>();
-  //     }
-
-  //     for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
-  //       seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
-  //     }
-
-  //     mjo->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
-
-  //     return mjo->getTraj(t_plan_start);
-  //   };
-
-  //   Eigen::Matrix3d start_PVA, goal_PVA;
-  //   start_PVA << start_pos, start_vel, start_acc;
-  //   goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
-
-  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.nanoseconds()/1e9);
-
-  //   Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
-
-  //   minco_interfaces::msg::PolynomialTrajectory poly_msg; 
-  //   minco_interfaces::msg::MincoTrajectory MINCO_msg; 
-
-  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.nanoseconds()/1e9, poly_msg, MINCO_msg);
-
-  //   poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
-  //   // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
-	  
-  //   // Publish visualization
-  //   viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
-  // }
-
-
-
-  // // if (json_output_)
-  // // {
-  // //   json path_json;
-  // //   path_json["map"] = "map0";
-
-  // //   for (auto& pt : fe_path_with_t_)
-  // //   {
-	// // 			path_json["a_star_path"].push_back({
-	// // 				{"point", {pt(0), pt(1), pt(2)}},
-	// // 				{"time", {pt(3)}},
-	// // 			});
-  // //   }
-
-  // //   std::ofstream o(output_json_filepath_.c_str());
-  // //   o << std::setw(4) << path_json << std::endl;
-
-  // //   printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
-  // // }
-
-  // // if (verbose_print_)
-  // // {
-  // //   logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
-  // //                             drone_id_, fe_path_[0](0), fe_path_[0](1), fe_path_[0](2), 
-  // //                             fe_path_.back()(0), fe_path_.back()(1), fe_path_.back()(2)));
-  // // }
-
-  // plan_complete_ = true;
-
-  return true;
 }
 
 /* Timer callbacks*/
@@ -1383,40 +938,43 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
 void VoronoiPlanner::sendMPCCmdTimerCB()
 {
+    if (mpc_pred_pos_.empty() 
+        || mpc_pred_vel_.empty() 
+        || mpc_pred_acc_.empty())
+    {
+      return;
+    }
 
-  if (mpc_pred_pos_.empty() 
-      || mpc_pred_vel_.empty() 
-      || mpc_pred_acc_.empty())
-  {
-    return;
-  }
+    double t_start = this->get_clock()->now().nanoseconds()/1e9;
+    // // Get time t relative to start of MPC trajectory
+    double e_t_start = t_start - last_mpc_solve_; 
+    double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
+    
+    if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
+    {
+      // Exceeded duration of trajectory or trajectory timestamp invalid
+      return;
+    }
 
-  double t_start = this->get_clock()->now().nanoseconds()/1e9;
-  // // Get time t relative to start of MPC trajectory
-  double e_t_start = t_start - last_mpc_solve_; 
-  double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
-  
-  if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
-  {
-    // Exceeded duration of trajectory or trajectory timestamp invalid
-    return;
-  }
+    // Get index of point closest to current time
+    //  elapsed time from start divided by time step of MPC
+    int idx =  std::floor(e_t_start / mpc_->MPC_STEP); 
 
-  // Get index of point closest to current time
-  int idx =  std::floor(e_t_start / mpc_->MPC_STEP); 
+    std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
 
-  std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
+    if (idx >= (int) mpc_pred_pos_.size()){
+      logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
+    }
 
-  if (idx >= (int) mpc_pred_acc_.size()){
-    logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
-  }
+    // TODO: Check if values are valid
+      
 
-  // Publish PVA command
-  pubPVAJCmd(mpc_pred_pos_[idx], 
-            Eigen::Vector2d(0.0, NAN), 
-            mpc_pred_vel_[idx], 
-            mpc_pred_acc_[idx], 
-            mpc_pred_u_[idx]);
+    // Publish PVA command
+    pubPVAJCmd(mpc_pred_pos_[idx], 
+              Eigen::Vector2d(0.0, NAN), 
+              mpc_pred_vel_[idx], 
+              mpc_pred_acc_[idx], 
+              mpc_pred_u_[idx]);
 }
 
 /* Subscriber callbacks*/
@@ -1680,6 +1238,421 @@ void VoronoiPlanner::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest:
 
   plan(plan_end);
 }
+
+/* Unused functions */
+
+bool VoronoiPlanner::planCommlessMINCO(const Eigen::Vector3d& goal_pos){
+  // if (!init_voro_maps_){
+  //   logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
+  //   return false;
+  // }
+
+  // /* 1) Assign voronoi map and reservation table to planner */
+
+  // // {
+  // //   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
+  // //   fe_planner_->setReservationTable(rsvn_tbl_);
+  // // }
+
+  // std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+
+  // // Assign voronoi map
+  // voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
+  // voro_params_.local_origin_x = bool_map_3d_.origin(0);
+  // voro_params_.local_origin_y = bool_map_3d_.origin(1);
+  // voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
+  // voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
+  // voro_params_.res = bool_map_3d_.resolution;
+
+  // fe_planner_->setVoroMap(dyn_voro_arr_, voro_params_);
+
+  // /* 2) Get current position, velocity and acceleration */
+
+  // Eigen::Vector3d start_pos, start_vel, start_acc;
+
+  // auto plan_start_clock = this->get_clock()->now();
+
+  // if (!sampleMINCOTrajectory(poly_traj_, plan_start_clock.nanoseconds()/1e9, start_pos, start_vel, start_acc))
+  // {
+  //   start_pos = cur_pos_;
+  //   start_vel = cur_vel_;
+  //   start_acc.setZero();
+  // }
+
+  // /* 3) Get Receding Horizon Planning goal */
+
+  // // Get RHP goal
+  // // Eigen::Vector3d rhp_goal_pos = goal_pos;
+  // Eigen::Vector3d rhp_goal_pos = getRHPGoal(
+  //   start_pos, goal_pos, 
+  //   voxel_map_->getLocalMapOrigin(0.15), voxel_map_->getLocalMapMax(0.15));
+
+  // viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
+
+  // /* 4) Plan HCA* path */
+
+  // tm_front_end_plan_.start();
+
+  // if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
+  // {
+  //   logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
+  //                             drone_id_, start_pos(0), start_pos(1), start_pos(2), 
+  //                             rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
+  //                             fe_planner_->getClosedList().size()));
+
+  //   // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
+  //   //                   fe_closed_list_viz_pub_, map_frame_);
+
+  //   tm_front_end_plan_.stop(verbose_print_);
+  //   return false;
+  // }
+
+  // tm_front_end_plan_.stop(verbose_print_);
+
+  // /* 4) Retrieve and transform HCA* path to map frame, publish visualization of path */
+
+  // // Current pose must converted from fixed map frame to local map frame 
+  // // before passing to planner
+  // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
+
+  // auto transformPathFromLclMapToMap = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
+  //                            std::vector<Eigen::Vector4d>& map_path_w_t,
+  //                            std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& map_path) {
+  //   map_path.clear();
+  //   map_path_w_t.clear();
+    
+  //   for (size_t i = 0; i < map_path_w_t_lclmapframe.size(); i++){
+  //     Eigen::Vector4d map_pt;
+  //     map_pt.head<3>() = lclMapToMap(map_path_w_t_lclmapframe[i].head<3>());
+  //     map_pt(3) = map_path_w_t_lclmapframe[i](3);
+
+  //     map_path.push_back(map_pt.head<3>());
+  //     map_path_w_t.push_back(map_pt);
+  //   }
+  // };
+
+  // // Convert front-end path from local map frame to fixed map frame
+  // transformPathFromLclMapToMap(fe_path_with_t_lclmapframe, fe_path_with_t_, fe_path_);
+  
+  // // Visualize front-end path
+  // viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
+
+  // // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
+  // gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
+
+  // fe_plan_msg.agent_id = drone_id_;
+  // fe_plan_msg.header.stamp = plan_start_clock;
+  // fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;
+
+  // for (size_t i = 0; i < fe_path_with_t_.size(); i++){
+  //   geometry_msgs::msg::Pose pose;
+  //   pose.position.x = fe_path_with_t_[i](0); 
+  //   pose.position.y = fe_path_with_t_[i](1);
+  //   pose.position.z = fe_path_with_t_[i](2);
+  //   pose.orientation.w = 1.0; 
+
+  //   fe_plan_msg.plan.push_back(pose);
+  //   fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
+  // }
+
+  // fe_plan_broadcast_pub_->publish(fe_plan_msg);
+
+  // /* 5) Generate commands for executing trajectory */
+
+  // std::vector<Eigen::Vector4d> mjo_fe_path;
+  // // Sample at regular intervals from front-end path
+  // for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
+  // {	
+  //   mjo_fe_path.push_back(Eigen::Vector4d{
+  //     fe_path_with_t_[i](0),
+  //     fe_path_with_t_[i](1),
+  //     fe_path_with_t_[i](2),
+  //     fe_path_with_t_[i](3)
+  //   });
+  // }
+
+  // if (mjo_fe_path.size() >= 2){
+  //   /* Generate minimum jerk trajectory */
+
+  //   auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
+  //                             const std::vector<Eigen::Vector4d>& space_time_path,
+  //                             const Eigen::Matrix3d& start_PVA,
+  //                             const Eigen::Matrix3d& goal_PVA,
+  //                             const double& t_plan_start){
+      
+  //     Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+  //     Eigen::VectorXd seg_durations(space_time_path.size()-1);
+
+  //     for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+  //       inner_pts.col(j) = space_time_path[i].head<3>();
+  //     }
+
+  //     for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+  //       seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+  //     }
+
+  //     mjo->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+
+  //     return mjo->getTraj(t_plan_start);
+  //   };
+
+  //   Eigen::Matrix3d start_PVA, goal_PVA;
+  //   start_PVA << start_pos, start_vel, start_acc;
+  //   goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+
+  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.nanoseconds()/1e9);
+
+  //   Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
+
+  //   minco_interfaces::msg::PolynomialTrajectory poly_msg; 
+  //   minco_interfaces::msg::MincoTrajectory MINCO_msg; 
+
+  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.nanoseconds()/1e9, poly_msg, MINCO_msg);
+
+  //   poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
+  //   // TODO: convert MINCO_msg to world frame
+  //   // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
+    
+  //   // Publish visualization
+  //   viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
+  // }
+
+  // plan_complete_ = true;
+
+  return true;
+}
+
+bool VoronoiPlanner::planCommMINCO(const Eigen::Vector3d& goal_pos){
+  // if (!init_voro_maps_){
+  //   logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
+  //   return false;
+  // }
+
+  // if (plan_once_ && plan_complete_){
+  //   return true;
+  // }
+
+  // // /* Lambda for checking if all higher priority plans are received*/
+  // // auto isAllPrioPlansRcv = [&] () {
+  // //   // Only check from 0 to current drone_id
+  // //   for (int i = 0; i < drone_id_; i++){ 
+  // //     if (rsvn_tbl_.find(i) == rsvn_tbl_.end()){
+  // //       return false;
+  // //     }
+  // //   }
+  // //   return true;
+  // // };
+
+  // // rclcpp::Rate loop_rate(10);
+  // // while (!isAllPrioPlansRcv()){
+  // //   loop_rate.sleep();
+  // // }
+
+  // // Update reservation table on planner
+  // {
+  //   std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
+  //   fe_planner_->setReservationTable(rsvn_tbl_);
+  //   // rsvn_tbl_.clear();
+  // }
+
+  // std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+
+  // // Assign voronoi map
+  // voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
+  // voro_params_.local_origin_x = bool_map_3d_.origin(0);
+  // voro_params_.local_origin_y = bool_map_3d_.origin(1);
+  // voro_params_.max_height_cm = bool_map_3d_.max_height_cm;
+  // voro_params_.min_height_cm = bool_map_3d_.min_height_cm;
+  // voro_params_.res = bool_map_3d_.resolution;
+
+  // fe_planner_->setVoroMap(dyn_voro_arr_, 
+  //                         voro_params_);
+
+  // Eigen::Vector3d start_pos, start_vel, start_acc;
+
+  // // Eigen::Vector3d rhp_goal_pos = goal_pos;
+
+  // auto plan_start_clock = this->get_clock()->now();
+
+  // if (!sampleMINCOTrajectory(poly_traj_, plan_start_clock.nanoseconds()/1e9;, start_pos, start_vel, start_acc))
+  // {
+  //   start_pos = cur_pos_;
+  //   start_vel = cur_vel_;
+  //   start_acc.setZero();
+  // }
+
+  // // Get RHP goal
+  // Eigen::Vector3d rhp_goal_pos = getRHPGoal(
+  //   start_pos, goal_pos, 
+  //   voxel_map_->getLocalMapOrigin(0.2), voxel_map_->getLocalMapMax(0.2));
+
+  // // logger_->logError(strFmt("Drone %d: start_pos(%f, %f, %f): des_goal(%f, %f, %f) to rhp_goal(%f, %f, %f)", 
+  // //                           drone_id_, 
+  // //                           start_pos(0), start_pos(1), start_pos(2), 
+  // //                           goal_pos(0), goal_pos(1), goal_pos(2), 
+  // //                           rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2)));
+
+  // viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
+
+  // tm_front_end_plan_.start();
+
+  // if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
+  // {
+  //   logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
+  //                             drone_id_, start_pos(0), start_pos(1), start_pos(2), 
+  //                             rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
+  //                             fe_planner_->getClosedList().size()));
+
+  //   tm_front_end_plan_.stop(verbose_print_);
+
+  //   // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
+  //   //                   fe_closed_list_viz_pub_, map_frame_);
+
+  //   return false;
+  // }
+
+  // tm_front_end_plan_.stop(verbose_print_);
+
+  // // Retrieve space time path 
+  // std::vector<Eigen::Vector4d> lcl_map_path;
+  // // Current pose must converted from fixed map frame to local map frame before passing to planner
+  // // lcl_map_path = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
+  // lcl_map_path = fe_planner_->getPathWithTime();
+
+  // auto lclMapToMapPath = [&](const std::vector<Eigen::Vector4d>& lcl_map_path, 
+  //                            std::vector<Eigen::Vector4d>& map_path_w_t,
+  //                            std::vector<Eigen::Vector3d>& map_path) {
+  //   map_path.clear();
+  //   map_path_w_t.clear();
+    
+  //   for (size_t i = 0; i < lcl_map_path.size(); i++){
+  //     Eigen::Vector4d map_pt;
+  //     map_pt.head<3>() = lclMapToMap(lcl_map_path[i].head<3>());
+  //     map_pt(3) = lcl_map_path[i](3);
+
+  //     map_path.push_back(map_pt.head<3>());
+  //     map_path_w_t.push_back(map_pt);
+  //   }
+  // };
+
+  // // Convert front-end path from local map frame to fixed map frame
+  // lclMapToMapPath(lcl_map_path, fe_path_with_t_, fe_path_);
+
+  // // Visualize front-end path
+  // // viz_helper_->pubSpaceTimePath(fe_path_with_t_, fe_plan_viz_pub_, map_frame_) ;
+  // viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
+
+  // // Convert from space time path to gestelt_interfaces::msg::SpaceTimePath
+  // gestelt_interfaces::msg::SpaceTimePath fe_plan_msg;
+
+  // fe_plan_msg.agent_id = drone_id_;
+  // fe_plan_msg.header.stamp = this->get_clock()->now();
+  // fe_plan_msg.t_plan_start = plan_start_clock.nanoseconds()/1e9;;
+
+  // for (size_t i = 0; i < fe_path_with_t_.size(); i++){
+  //   geometry_msgs::msg::Pose pose;
+  //   pose.position.x = fe_path_with_t_[i](0); 
+  //   pose.position.y = fe_path_with_t_[i](1);
+  //   pose.position.z = fe_path_with_t_[i](2);
+  //   pose.orientation.w = 1.0; 
+
+  //   fe_plan_msg.plan.push_back(pose);
+  //   fe_plan_msg.plan_time.push_back(int(fe_path_with_t_[i](3)));
+  // }
+
+  // fe_plan_broadcast_pub_->publish(fe_plan_msg);
+
+  // std::vector<Eigen::Vector4d> mjo_fe_path;
+  // // Sample at regular intervals from front-end path
+  // for (size_t i = 0; i < fe_path_with_t_.size(); i += fe_stride_)
+	// {	
+	// 	mjo_fe_path.push_back(Eigen::Vector4d{
+	// 		fe_path_with_t_[i](0),
+	// 		fe_path_with_t_[i](1),
+	// 		fe_path_with_t_[i](2),
+	// 		fe_path_with_t_[i](3)
+	// 	});
+	// }
+
+  // if (mjo_fe_path.size() >= 2){
+  //   /* Generate minimum jerk trajectory */
+
+
+  //   auto genMinJerkTraj = [&](std::unique_ptr<minco::MinJerkOpt>& mjo,
+  //                             const std::vector<Eigen::Vector4d>& space_time_path,
+  //                             const Eigen::Matrix3d& start_PVA,
+  //                             const Eigen::Matrix3d& goal_PVA,
+  //                             const double& t_plan_start){
+      
+  //     Eigen::MatrixXd inner_pts(3, space_time_path.size()-2);
+  //     Eigen::VectorXd seg_durations(space_time_path.size()-1);
+
+  //     for (size_t i = 1, j = 0; i < space_time_path.size()-1; i++, j++){
+  //       inner_pts.col(j) = space_time_path[i].head<3>();
+  //     }
+
+  //     for (size_t i = 1, j = 0; i < space_time_path.size(); i++, j++){
+  //       seg_durations(j) = double(space_time_path[i](3) - space_time_path[j](3)) * t_unit_;
+  //     }
+
+  //     mjo->generate(start_PVA, goal_PVA, inner_pts, seg_durations);
+
+  //     return mjo->getTraj(t_plan_start);
+  //   };
+
+  //   Eigen::Matrix3d start_PVA, goal_PVA;
+  //   start_PVA << start_pos, start_vel, start_acc;
+  //   goal_PVA << mjo_fe_path.back().head<3>(), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero();
+
+  //   poly_traj_ = genMinJerkTraj(min_jerk_opt_, mjo_fe_path, start_PVA, goal_PVA, plan_start_clock.nanoseconds()/1e9);
+
+  //   Eigen::MatrixXd mjo_cstr_pts = min_jerk_opt_->getConstraintPts(5);
+
+  //   minco_interfaces::msg::PolynomialTrajectory poly_msg; 
+  //   minco_interfaces::msg::MincoTrajectory MINCO_msg; 
+
+  //   polyTrajToMincoMsg(poly_traj_, plan_start_clock.nanoseconds()/1e9, poly_msg, MINCO_msg);
+
+  //   poly_traj_pub_->publish(poly_msg); // [map frame] Publish to corresponding drone for execution
+  //   // minco_traj_broadcast_pub_->publish(MINCO_msg); // [map frame] Broadcast to all other drones
+	  
+  //   // Publish visualization
+  //   viz_helper::VizHelper::pubExecTraj(mjo_cstr_pts, minco_traj_viz_pub_, map_frame_);
+  // }
+
+
+
+  // // if (json_output_)
+  // // {
+  // //   json path_json;
+  // //   path_json["map"] = "map0";
+
+  // //   for (auto& pt : fe_path_with_t_)
+  // //   {
+	// // 			path_json["a_star_path"].push_back({
+	// // 				{"point", {pt(0), pt(1), pt(2)}},
+	// // 				{"time", {pt(3)}},
+	// // 			});
+  // //   }
+
+  // //   std::ofstream o(output_json_filepath_.c_str());
+  // //   o << std::setw(4) << path_json << std::endl;
+
+  // //   printf("Saved path json to path: %s\n",  output_json_filepath_.c_str());
+  // // }
+
+  // // if (verbose_print_)
+  // // {
+  // //   logger_->logError(strFmt("Generated FE plan from (%f, %f, %f) to (%f, %f, %f)", 
+  // //                             drone_id_, fe_path_[0](0), fe_path_[0](1), fe_path_[0](2), 
+  // //                             fe_path_.back()(0), fe_path_.back()(1), fe_path_.back()(2)));
+  // // }
+
+  // plan_complete_ = true;
+
+  return true;
+}
+
 
 } // namespace navigator
 
