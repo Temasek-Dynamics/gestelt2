@@ -6,15 +6,21 @@ Panels:
       Expanded:
         - /Grid1
         - /TF1/Frames1
+        - /central1
         - /d01/front_end1
         - /d01/maps1
         - /d01/sfc1
         - /d21/maps1/occ1
+        - /d31
+        - /d31/maps1
+        - /d31/maps1/voro1
+        - /d31/maps1/voro1/voro_map_1501
+        - /d31/maps1/voro1/voro_map_1501/Status1
         - /d71/state1/odom1
         - /d71/state1/odom_ax1
         - /d71/front_end1
         - /d71/back_end1
-      Splitter Ratio: 0.5323529243469238
+      Splitter Ratio: 0.6441176533699036
     Tree Height: 739
   - Class: rviz_common/Selection
     Name: Selection
@@ -96,25 +102,75 @@ Visualization Manager:
       Use rainbow: true
       Value: true
     - Class: rviz_default_plugins/TF
-      Enabled: false
+      Enabled: true
       Filter (blacklist): ""
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
-        All Enabled: false
+        All Enabled: true
+        d0_base_link:
+          Value: true
+        d0_camera_link:
+          Value: true
+        d0_lcl_map:
+          Value: true
+        d1_base_link:
+          Value: true
+        d1_camera_link:
+          Value: true
+        d1_lcl_map:
+          Value: true
+        d2_base_link:
+          Value: true
+        d2_camera_link:
+          Value: true
+        d2_lcl_map:
+          Value: true
+        d3_base_link:
+          Value: true
+        d3_camera_link:
+          Value: true
+        d3_lcl_map:
+          Value: true
+        map:
+          Value: true
+        world:
+          Value: true
       Marker Scale: 2
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        world:
+          d0_base_link:
+            d0_camera_link:
+              {}
+          d0_lcl_map:
+            {}
+          d1_base_link:
+            d1_camera_link:
+              {}
+          d1_lcl_map:
+            {}
+          d2_base_link:
+            d2_camera_link:
+              {}
+          d2_lcl_map:
+            {}
+          d3_base_link:
+            d3_camera_link:
+              {}
+          d3_lcl_map:
+            {}
+          map:
+            {}
       Update Interval: 0
-      Value: false
+      Value: true
     - Class: rviz_common/Group
       Displays:
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: swarm_collisions
           Namespaces:
             {}
@@ -125,7 +181,7 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /swarm_collision_checker/collisions
-          Value: true
+          Value: false
       Enabled: true
       Name: central
     - Class: rviz_common/Group
@@ -1386,7 +1442,7 @@ Visualization Manager:
           Enabled: true
           Name: static_collisions
           Namespaces:
-            {}
+            static_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -2581,7 +2637,7 @@ Visualization Manager:
                 Value: /d3/voro_planning_updates
               Use Timestamp: false
               Value: false
-          Enabled: false
+          Enabled: true
           Name: maps
         - Alpha: 1
           Autocompute Intensity Bounds: true
@@ -2737,7 +2793,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3014,7 +3070,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3291,7 +3347,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3581,7 +3637,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3598,9 +3654,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4720,22 +4774,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 30.06957244873047
+      Distance: 26.03560447692871
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.9778342247009277
-        Y: 0.2796286940574646
-        Z: -5.7220458984375e-06
+        X: 4.282711982727051
+        Y: 1.0474433898925781
+        Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9247969388961792
+      Pitch: 1.3447965383529663
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
       Yaw: 6.192357063293457
@@ -4746,7 +4800,7 @@ Window Geometry:
   Height: 1043
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000015600000371fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000371000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000371fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003f00000371000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d00650100000000000007800000026f00fffffffb0000000800540069006d006501000000000000045000000000000000000000050f0000037100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001e300000371fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000371000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000371fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003f00000371000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d00650100000000000007800000026f00fffffffb0000000800540069006d00650100000000000004500000000000000000000004820000037100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

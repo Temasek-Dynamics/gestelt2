@@ -284,7 +284,6 @@ namespace pvaj_mpc
 			solver.data()->setLowerBound(mpc_.Alow);
 			solver.data()->setUpperBound(mpc_.Aupp);
 
-
 			bool init_flag = solver.initSolver();
 			OsqpEigen::ErrorExitFlag solve_flag;
 
@@ -320,9 +319,9 @@ namespace pvaj_mpc
 				return true;
 			} 
 			else { // FAILURE
-				bool flag = isInFSC(X_0_.block<3,1>(0,0), planes_[0]);
+				bool in_sfc = isInFSC(X_0_.block<3,1>(0,0), planes_[0]);
 				// std::cout << "planes: " << std::endl << planes_ << std::endl;
-				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " << std::boolalpha << flag << std::endl;
+				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " << std::boolalpha << in_sfc << std::endl;
 				if (init_flag) {
 					OsqpEigen::Status status = solver.getStatus();
 					if (status == OsqpEigen::Status::DualInfeasibleInaccurate) {

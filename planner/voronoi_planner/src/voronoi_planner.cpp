@@ -37,11 +37,11 @@ VoronoiPlanner::VoronoiPlanner()
 
 	// Create callback groups
   planning_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
+    rclcpp::CallbackGroupType::MutuallyExclusive); // for planning
   mapping_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
+    rclcpp::CallbackGroupType::MutuallyExclusive); // for generating voronoi maps
   swarm_plan_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::Reentrant);
+    rclcpp::CallbackGroupType::Reentrant); 
   others_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::Reentrant);
 
@@ -206,7 +206,7 @@ void VoronoiPlanner::initPubSubTimer()
 
 	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
                                                   std::bind(&VoronoiPlanner::genVoroMapTimerCB, this),
-                                                  planning_cb_group_);
+                                                  mapping_cb_group_);
 
 	send_mpc_cmd_timer_ = this->create_wall_timer((1.0/ctrl_samp_freq_) *1000ms, 
                                                   std::bind(&VoronoiPlanner::sendMPCCmdTimerCB, this),
@@ -452,10 +452,6 @@ void VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
 }
 
 bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
-  if (!init_voro_maps_){
-    logger_->logInfo("Voronoi maps not initialized! Request a plan after initialization!");
-    return false;
-  }
 
   if (plan_once_ && plan_complete_){
     return true;
@@ -467,11 +463,14 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   // Assign reservation table
   {
-    std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
-    fe_planner_->setReservationTable(rsvn_tbl_);
+    // std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
+    // fe_planner_->setReservationTable(rsvn_tbl_);
   }
 
-  std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+
+  // Wait for condition variable notification
+  std::unique_lock<std::mutex> voro_u_lk(voro_map_mtx_);
+  voro_cv_.wait(voro_u_lk, [&]{return voro_ready_;});
 
   // Assign voronoi map
   voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
@@ -520,9 +519,14 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
   {
     logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
-                              drone_id_, start_pos(0), start_pos(1), start_pos(2), 
+                              drone_id_, 
+                              start_pos(0), start_pos(1), start_pos(2), 
                               rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
                               fe_planner_->getClosedList().size()));
+    logger_->logError(strFmt("  Drone %d: local_map origin (%f, %f, %f)", 
+                              drone_id_, 
+                              bool_map_3d_.origin(0), 
+                              bool_map_3d_.origin(1)));
 
     // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
     //                   fe_closed_list_viz_pub_, map_frame_);
@@ -531,8 +535,12 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return false;
   }
 
-  tm_front_end_plan_.stop(verbose_print_);
+  // Notify the voronoi map generation thread that plan is complete
+  voro_ready_ = false;
+  voro_consumed_ = true;
+  voro_cv_.notify_all();
 
+  tm_front_end_plan_.stop(verbose_print_);
 
   /*****/
   /* 5) Retrieve and transform HCA* path to map frame, publish visualization of path */
@@ -774,7 +782,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     // yaw_yawrate = calculateYaw(fe_path_, plan_start_clock.nanoseconds()/1e9, ...);
 
     {
-      std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
+      std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
       // Visualize path
       mpc_pred_u_.clear();
@@ -804,18 +812,12 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   plan_complete_ = true;
 
   return true;
-
 }
 
 /* Timer callbacks*/
 
-
 void VoronoiPlanner::planFETimerCB()
 {
-  if (!init_voro_maps_){
-    return;
-  }
-
   // Check if waypoint queue is empty
   if (waypoints_.empty()){
     auto plan_start_clock = this->get_clock()->now();
@@ -863,11 +865,12 @@ void VoronoiPlanner::genVoroMapTimerCB()
     return;
   }
 
-  tm_voro_map_init_.start();
-
-  std::lock_guard<std::mutex> voro_map_guard(voro_map_mtx_);
+  std::unique_lock<std::mutex> voro_u_lk(voro_map_mtx_);
+  voro_cv_.wait(voro_u_lk, [&]{return voro_consumed_;}); // wait for voronoi map to be consumed
 
   // std::vector<Eigen::Vector3d> voro_verts;
+
+  tm_voro_map_init_.start();
 
   for (auto const& bool_map : bool_map_3d_.bool_maps) // For each boolean map
   {
@@ -885,7 +888,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     // Initialize dynamic voronoi 
     dyn_voro_arr_[z_cm].reset();
     dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>();
-    dyn_voro_arr_[z_cm]->setParams(dyn_voro_params), 
+    dyn_voro_arr_[z_cm]->setParams(dyn_voro_params);
     // Map is received in local_map_frame_
     dyn_voro_arr_[z_cm]->initializeMap( bool_map_3d_.width, 
                                         bool_map_3d_.height, 
@@ -933,49 +936,66 @@ void VoronoiPlanner::genVoroMapTimerCB()
   tm_voro_map_init_.stop(false);
 
   // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
-  init_voro_maps_ = true; // Flag to indicate that all voronoi maps have been initialized
+
+  // Notify the planning thread that the voronoi map is ready
+  voro_ready_ = true;
+  voro_consumed_ = false;
+  voro_cv_.notify_all();
 }
 
 void VoronoiPlanner::sendMPCCmdTimerCB()
 {
-    if (mpc_pred_pos_.empty() 
-        || mpc_pred_vel_.empty() 
-        || mpc_pred_acc_.empty())
-    {
-      return;
-    }
 
-    double t_start = this->get_clock()->now().nanoseconds()/1e9;
-    // // Get time t relative to start of MPC trajectory
-    double e_t_start = t_start - last_mpc_solve_; 
-    double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
+  if (mpc_pred_pos_.empty() 
+      || mpc_pred_vel_.empty() 
+      || mpc_pred_acc_.empty())
+  {
+    return;
+  }
+  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+
+  double t_start = this->get_clock()->now().nanoseconds()/1e9;
+  // // Get time t relative to start of MPC trajectory
+  double e_t_start = t_start - last_mpc_solve_; 
+  double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
+  
+  if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
+  {
+    // Exceeded duration of trajectory or trajectory timestamp invalid
+    return;
+  }
+
+  // Get index of point closest to current time
+  //  elapsed time from start divided by time step of MPC
+  int idx =  std::floor(e_t_start / mpc_->MPC_STEP); 
+
+  if (idx >= (int) mpc_pred_pos_.size()){
+    logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
+    return;
+  }
+
+  // TODO: Check if values are valid
+  auto checkValidCmd = [&](const Eigen::Vector3d& vec, const int& min_val, const int& max_val){
+      for (const auto& val : vec){
+        if (val < min_val || val > max_val){
+          return false;
+        }
+      }
+    return true;
+  };
+
+  if (!checkValidCmd(mpc_pred_pos_[idx], -100.0, 100.0) ){
+    logger_->logInfo("Invalid MPC predicted position") ;
+    return;
+  }
     
-    if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
-    {
-      // Exceeded duration of trajectory or trajectory timestamp invalid
-      return;
-    }
 
-    // Get index of point closest to current time
-    //  elapsed time from start divided by time step of MPC
-    int idx =  std::floor(e_t_start / mpc_->MPC_STEP); 
-    idx = std::clamp(idx, 0, mpc_pred_pos_.size());
-
-
-    if (idx >= (int) mpc_pred_pos_.size()){
-      logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
-    }
-
-    // TODO: Check if values are valid
-      
-    std::lock_guard<std::mutex> mpc_pred_mtx_grd(mpc_pred_mtx_);
-
-    // Publish PVA command
-    pubPVAJCmd(mpc_pred_pos_[idx], 
-              Eigen::Vector2d(0.0, NAN), 
-              mpc_pred_vel_[idx], 
-              mpc_pred_acc_[idx], 
-              mpc_pred_u_[idx]);
+  // Publish PVA command
+  pubPVAJCmd(mpc_pred_pos_[idx], 
+            Eigen::Vector2d(0.0, NAN), 
+            mpc_pred_vel_[idx], 
+            mpc_pred_acc_[idx], 
+            mpc_pred_u_[idx]);
 }
 
 /* Subscriber callbacks*/
@@ -1024,13 +1044,15 @@ void VoronoiPlanner::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, 
     return;
   }
 
-  if (!init_voro_maps_){
-    return;
-  }
 
   // /**
   //  * Clear reservation table and add to it
   //  */
+
+  // if (!init_voro_maps_){
+  //   return;
+  // }
+
   // std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
 
   // double t_plan_start = ((double) msg->header.stamp.nanosec) * 1e-9;

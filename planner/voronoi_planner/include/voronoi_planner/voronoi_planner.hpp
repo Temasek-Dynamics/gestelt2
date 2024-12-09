@@ -508,15 +508,16 @@ private:
   Eigen::Vector3d cur_pos_{0.0, 0.0, 0.0}, cur_vel_{0.0, 0.0, 0.0}, cur_acc_{0.0, 0.0, 0.0};   // [MAP FRAME] current state
   Eigen::Vector3d map_origin_{0.0, 0.0, 0.0}; // Fixed Map origin relative to world
 
-  /* Mutexes*/
+  /* Mutexes and condition variables*/
   std::mutex rsvn_tbl_mtx_;
-  std::mutex voro_map_mtx_;
-  std::mutex cur_state_mtx_;
-
+  std::mutex voro_map_mtx_; // Mutex for voronoi map
   std::mutex mpc_pred_mtx_; // MUtex for MPC predicted trajectories
 
+  std::condition_variable voro_cv_;
+  bool voro_ready_{false};
+  bool voro_consumed_{true};
+
   /* Flags*/
-  bool init_voro_maps_{false}; // flag to indicate if voronoi map is initialized
   bool plan_complete_{false}; // flag to indicate a plan has been completed
 
   /* Mapping */

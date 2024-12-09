@@ -40,7 +40,7 @@ def generate_launch_description():
     #   parameters=dump_params(rosbag_player_params, 'player'),
     # )
 
-    name = "bag_06122024_18_28_09"
+    name = "bag_09122024_16_44_40"
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',

@@ -532,6 +532,7 @@ void VoxelMap::updateLocalMapTimerCB()
         continue;
       }
 
+      // Convert from global map to local map 
       Eigen::Vector3d lcl_map_start_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
       double z_m = swarm_poses_[id](2);
 

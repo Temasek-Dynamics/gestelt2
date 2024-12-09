@@ -168,15 +168,22 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     if (!dyn_voro_arr_[start_z_cm]->posToIdx(
         DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d))
     {   
-        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] Start position is not within map bounds!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": "
+            << "[HCA*] Start position (" << start_pos_3d.transpose() 
+            << "), Start Node (" << start_node_2d.x << ", " << start_node_2d.y 
+            << ") is not within map bounds (" 
+            << dyn_voro_arr_[start_z_cm]->getSizeX() << "," << dyn_voro_arr_[start_z_cm]->getSizeY() << ")" << std::endl;
         return false;
     }
     if (!dyn_voro_arr_[goal_z_cm]->posToIdx(
         DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
     {   
-        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] Goal position is not within map bounds!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": "
+            << "[HCA*] Goal position (" << goal_pos_3d.transpose() 
+            << "), Goal Node (" << goal_node_2d.x << ", " << goal_node_2d.y 
+            << ") is not within map bounds (" 
+            << dyn_voro_arr_[goal_z_cm]->getSizeX() << "," << dyn_voro_arr_[goal_z_cm]->getSizeY() << ")" << std::endl;
+
         return false;
     }
 

@@ -737,13 +737,7 @@ DynamicVoronoi::markerMatchResult DynamicVoronoi::markerMatch(int x, int y) {
 bool DynamicVoronoi::posToIdx(const DblPoint& map_pos, IntPoint& grid_pos) {
   
   grid_pos.x = (map_pos.x - params_.origin_x) / params_.res;
-
-  // if (flip_y_){
-  //   grid_pos.y = sizeY - (map_pos.y - params_.origin_y) / params_.res;
-  // }
-  // else {
-    grid_pos.y = (map_pos.y - params_.origin_y) / params_.res;
-  // }
+  grid_pos.y = (map_pos.y - params_.origin_y) / params_.res;
 
   if (!isInMap(grid_pos.x, grid_pos.y)){
     // std::cout << "[DynamicVoronoi::posToIdx] (" << grid_pos.x << "," << grid_pos.y << ") not in map" << std::endl;

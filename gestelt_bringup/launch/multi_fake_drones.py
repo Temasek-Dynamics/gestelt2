@@ -22,12 +22,12 @@ from launch.substitutions import PathJoinSubstitution
 # SCENARIO_NAME = "forest_sparse_1"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
-# SCENARIO_NAME = "antipodal_swap_4_sparse"
+SCENARIO_NAME = "antipodal_swap_4_sparse"
 # SCENARIO_NAME = "antipodal_swap_4_dense"
 # SCENARIO_NAME = "antipodal_swap_4_empty"
 
 # SCENARIO_NAME = "antipodal_swap_8_normal"
-SCENARIO_NAME = "antipodal_swap_8_sparse"
+# SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
 class Scenario:
