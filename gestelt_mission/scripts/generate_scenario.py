@@ -18,7 +18,89 @@ class ScenarioGenerator:
 
         return yaw_norm
     
+    def forwardFlight(self, m_size_x, m_size_y, num_agents, goal_z, name=None, map_name=None):
+        """Generate forward swarm flight scenario
+
+        Args:
+            m_size_x (_type_): Map size in x
+            m_size_y (_type_): Map size in y
+            num_agents (_type_): Number of agents
+            goal_z (_type_): height of goal
+            name (_type_, optional): _description_. Defaults to None.
+            map_name (_type_, optional): _description_. Defaults to None.
+        """
+        if name is None:
+            name = "forward_flight_" + str(num_agents)
+        if map_name is None:
+            map_name = "empty_map"
+
+        spawns_pos = []
+        goals_pos = []
+
+        start_y = -m_size_y/2 - 1.5  
+        inter_agent_sep = 1.5 # inter agent separation
+
+        for i in range(num_agents):
+            if i%2 == 0:
+                spawn_x = (-i/2) * inter_agent_sep
+            else: 
+                spawn_x = (int(i/2) + 1) * inter_agent_sep
+            spawn_y = start_y
+            spawn_yaw = self.normalizeYaw(0.0001) 
+
+            goal_x = spawn_x
+            goal_y = -spawn_y
+
+            spawns_pos.append([spawn_x, spawn_y, spawn_yaw])
+            goals_pos.append([goal_x, goal_y, goal_z])
+
+        self.scenes_dict[name] = {
+            "description" : "",
+            "map" : map_name,
+            "take_off_height": self.take_off_height,
+            "num_agents" : num_agents,
+            "spawns_pos": spawns_pos,
+            "goals_pos": goals_pos
+        } 
+
+        if self.visualize:
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6) )
+
+            # Plot spawn points 
+            for i in range(len(spawns_pos)):
+                ax1.plot(spawns_pos[i][0], spawns_pos[i][1], 
+                         'o', label=f'Agent_{i}_spawn')
+                # Direction
+                dx = goals_pos[i][0] - spawns_pos[i][0]
+                dy = goals_pos[i][1] - spawns_pos[i][1]
+                ax1.arrow(spawns_pos[i][0], spawns_pos[i][1],
+                          dx, dy, width=0.05)
+                ax1.text(spawns_pos[i][0], spawns_pos[i][1], 
+                         f's_{i}', fontsize=10)
+            # # Plot goal points 
+            for i in range(len(goals_pos)):
+                ax2.plot(goals_pos[i][0], goals_pos[i][1], 
+                         'o', label=f'Agent_{i}_goal')
+                ax2.text(goals_pos[i][0], goals_pos[i][1], 
+                         f'g_{i}', fontsize=10)
+            
+            ax1.legend()
+            ax2.legend()
+            plt.show()
+
+        pass
+    
     def antipodalSwap(self, radius, num_agents, goal_z, name=None, map_name=None):
+        """Generate antipodal swap scenario
+
+        Args:
+            radius (_type_): distance between agents
+            num_agents (_type_): _description_
+            goal_z (_type_): _description_
+            name (_type_, optional): _description_. Defaults to None.
+            map_name (_type_, optional): _description_. Defaults to None.
+        """
+
         if name is None:
             name = "antipodal_swap_" + str(num_agents)
         if map_name is None:
@@ -98,12 +180,21 @@ class ScenarioGenerator:
 def main():
     scene_gen = ScenarioGenerator(take_off_height=1.5, visualize=True)
 
-    scene_gen.antipodalSwap(
-        radius = 8.0, 
-        num_agents = 4,
+    # scene_gen.antipodalSwap(
+    #     radius = 8.0, 
+    #     num_agents = 4,
+    #     goal_z = 1.5,
+    #     name = "antipodal_swap_8", 
+    #     map_name = "forest_dense", 
+    # )
+
+    scene_gen.forwardFlight(
+        m_size_x = 25.0, 
+        m_size_y = 50.0,
+        num_agents = 8,
         goal_z = 1.5,
-        name = "antipodal_swap_8", 
-        map_name = "forest_dense", 
+        name = "forward_flight_8", 
+        map_name = "long_forest_sparse_50x25", 
     )
 
     scene_gen.saveJSON(

@@ -7,15 +7,14 @@ Panels:
         - /Grid1
         - /TF1/Frames1
         - /central1
+        - /d01
         - /d01/front_end1
         - /d01/maps1
+        - /d01/maps1/voro1
         - /d01/sfc1
         - /d21/maps1/occ1
-        - /d31
         - /d31/maps1
-        - /d31/maps1/voro1
         - /d31/maps1/voro1/voro_map_1501
-        - /d31/maps1/voro1/voro_map_1501/Status1
         - /d71/state1/odom1
         - /d71/state1/odom_ax1
         - /d71/front_end1
@@ -428,7 +427,7 @@ Visualization Manager:
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: false
+                  Enabled: true
                   Name: voro_map_150
                   Topic:
                     Depth: 5
@@ -444,7 +443,7 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/voro_map_150_updates
                   Use Timestamp: false
-                  Value: false
+                  Value: true
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
@@ -1442,7 +1441,7 @@ Visualization Manager:
           Enabled: true
           Name: static_collisions
           Namespaces:
-            static_collision: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -2447,7 +2446,7 @@ Visualization Manager:
                     Value: /d3/voro_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: true
+              Enabled: false
               Name: voro
             - Class: rviz_common/Group
               Displays:
@@ -4774,25 +4773,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 26.03560447692871
+      Distance: 41.32240295410156
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.282711982727051
-        Y: 1.0474433898925781
-        Z: 0
+        X: 1.812812328338623
+        Y: 7.509185791015625
+        Z: 1.25405567814596e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3447965383529663
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 6.192357063293457
+      Yaw: 4.912355899810791
     Saved: ~
 Window Geometry:
   Displays:

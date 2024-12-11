@@ -20,8 +20,11 @@
         z_sep_cm:  50    # [cm] Separation between slices
 
       global_map: 
-        size_x: 50.0  # [m]
-        size_y: 50.0  # [m]
+        # size_x: 50.0  # [m]
+        # size_y: 50.0  # [m]
+        # size_z: 10.0  # [m]
+        size_x: 150.0  # [m]
+        size_y: 150.0  # [m]
         size_z: 10.0  # [m]
 
       local_map:  # Local map used by planner

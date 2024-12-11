@@ -348,11 +348,18 @@ void VoxelMap::updateLocalMap(){
   // FREE VALUE: 0
   // UNKNOWN VALUE: -1
 
-  // Update local map origin 
+
+
+  // Update local map origin, which is the location of the local map origin IN the map frame
   mp_.local_map_origin_ = Eigen::Vector3d(
     md_.body_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
     md_.body_to_map.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
     mp_.ground_height_);
+
+  // logger_->logInfo(strFmt("Body_to_map: (%f, %f). Local map origin(%f, %f)", 
+  //   md_.body_to_map.block<3,1>(0,3)(0), md_.body_to_map.block<3,1>(0,3)(1),
+  //   mp_.local_map_origin_(0), mp_.local_map_origin_(1)));
+
   // Update local map max position based on current UAV position
   mp_.local_map_max_ = Eigen::Vector3d(
     md_.body_to_map.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 

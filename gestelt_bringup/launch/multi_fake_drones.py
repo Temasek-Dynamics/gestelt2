@@ -20,9 +20,10 @@ from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
 # SCENARIO_NAME = "forest_sparse_1"
+SCENARIO_NAME = "forward_flight_4"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
-SCENARIO_NAME = "antipodal_swap_4_sparse"
+# SCENARIO_NAME = "antipodal_swap_4_sparse"
 # SCENARIO_NAME = "antipodal_swap_4_dense"
 # SCENARIO_NAME = "antipodal_swap_4_empty"
 

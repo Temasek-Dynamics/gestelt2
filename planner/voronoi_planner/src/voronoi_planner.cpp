@@ -400,7 +400,6 @@ void VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
       if (!planCommlessMPC(goal_pos)){
 
       }
-
       break;
     case PlanMethod::COMM_MINCO:
       if (!planCommMINCO(goal_pos)){
@@ -453,9 +452,9 @@ void VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
 
 bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
-  if (plan_once_ && plan_complete_){
-    return true;
-  }
+  // if (plan_once_ && plan_complete_){
+  //   return true;
+  // }
 
   /*****/
   /* 1) Assign voronoi map and reservation table to planner */
@@ -469,8 +468,9 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
 
   // Wait for condition variable notification
-  std::unique_lock<std::mutex> voro_u_lk(voro_map_mtx_);
-  voro_cv_.wait(voro_u_lk, [&]{return voro_ready_;});
+  voro_map_mtx_.lock();
+  // std::unique_lock<std::mutex> voro_u_lk(voro_map_mtx_);
+  // voro_cv_.wait(voro_u_lk, [&]{return voro_ready_;});
 
   // Assign voronoi map
   voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
@@ -516,14 +516,17 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   tm_front_end_plan_.start();
 
-  if (!fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos)))
+  bool fe_plan_success = fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
+  voro_map_mtx_.unlock();
+
+  if (!fe_plan_success)
   {
     logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
                               drone_id_, 
                               start_pos(0), start_pos(1), start_pos(2), 
                               rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
                               fe_planner_->getClosedList().size()));
-    logger_->logError(strFmt("  Drone %d: local_map origin (%f, %f, %f)", 
+    logger_->logError(strFmt("  Drone %d: local_map origin (%f, %f)", 
                               drone_id_, 
                               bool_map_3d_.origin(0), 
                               bool_map_3d_.origin(1)));
@@ -536,9 +539,9 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   }
 
   // Notify the voronoi map generation thread that plan is complete
-  voro_ready_ = false;
-  voro_consumed_ = true;
-  voro_cv_.notify_all();
+  // voro_ready_ = false;
+  // voro_consumed_ = true;
+  // voro_cv_.notify_all();
 
   tm_front_end_plan_.stop(verbose_print_);
 
@@ -865,8 +868,10 @@ void VoronoiPlanner::genVoroMapTimerCB()
     return;
   }
 
-  std::unique_lock<std::mutex> voro_u_lk(voro_map_mtx_);
-  voro_cv_.wait(voro_u_lk, [&]{return voro_consumed_;}); // wait for voronoi map to be consumed
+  voro_map_mtx_.lock();
+
+  // std::unique_lock<std::mutex> voro_u_lk(voro_map_mtx_);
+  // voro_cv_.wait(voro_u_lk, [&]{return voro_consumed_;}); // wait for voronoi map to be consumed
 
   // std::vector<Eigen::Vector3d> voro_verts;
 
@@ -937,10 +942,12 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
 
+
+  voro_map_mtx_.unlock();
   // Notify the planning thread that the voronoi map is ready
-  voro_ready_ = true;
-  voro_consumed_ = false;
-  voro_cv_.notify_all();
+  // voro_ready_ = true;
+  // voro_consumed_ = false;
+  // voro_cv_.notify_all();
 }
 
 void VoronoiPlanner::sendMPCCmdTimerCB()
@@ -1675,7 +1682,6 @@ bool VoronoiPlanner::planCommMINCO(const Eigen::Vector3d& goal_pos){
 
   return true;
 }
-
 
 } // namespace navigator
 
