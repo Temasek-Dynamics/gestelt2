@@ -191,9 +191,9 @@ def main():
     scene_gen.forwardFlight(
         m_size_x = 25.0, 
         m_size_y = 50.0,
-        num_agents = 8,
+        num_agents = 16,
         goal_z = 1.5,
-        name = "forward_flight_8", 
+        name = "forward_flight_16", 
         map_name = "long_forest_sparse_50x25", 
     )
 

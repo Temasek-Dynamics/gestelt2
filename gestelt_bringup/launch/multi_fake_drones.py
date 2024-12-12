@@ -20,7 +20,8 @@ from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
 # SCENARIO_NAME = "forest_sparse_1"
-SCENARIO_NAME = "forward_flight_4"
+SCENARIO_NAME = "forward_flight_8"
+# SCENARIO_NAME = "forward_flight_16"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
 # SCENARIO_NAME = "antipodal_swap_4_sparse"
@@ -176,6 +177,7 @@ def generate_launch_description():
         prefix = "/d" + str(id) + "/"
         bag_topics.append(prefix + "odom")
         bag_topics.append(prefix + "static_collisions")
+        bag_topics.append(prefix + "agent_id_text")
         # Subscription to paths
         bag_topics.append(prefix + "fe_plan/viz")
         bag_topics.append(prefix + "minco_traj_viz")

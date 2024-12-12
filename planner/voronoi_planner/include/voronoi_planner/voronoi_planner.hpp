@@ -546,7 +546,10 @@ private:
   std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
   
   /* MPC */
-  std::unique_ptr<pvaj_mpc::MPCController> mpc_; // MPC controller
+  std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller
+
+  Eigen::Vector3d p_optimal_, v_optimal_, a_optimal_, u_optimal_;
+  bool mpc_success_;
 
   std::vector<Eigen::Vector3d> mpc_pred_u_; // Predicted MPC control trajectory
   std::vector<Eigen::Vector3d> mpc_pred_pos_; // Predicted MPC position trajectory
@@ -556,7 +559,9 @@ private:
 
   /* Timers to measure computation time */
   logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Front end plan generation
-  logger_wrapper::Timer tm_voro_map_init_{"voro_map_init"}; // Voronoi map discretization
+  logger_wrapper::Timer tm_sfc_{"sfc_generation"}; // Safe flight corridors generation
+  logger_wrapper::Timer tm_mpc_{"mpc_trajectory"}; // MPC trajectory generation
+  logger_wrapper::Timer tm_voro_gen_{"3d_voro_gen"}; // 3D Voronoi roadmap generation
 
   /* Visualization */
   std::unique_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
@@ -774,7 +779,7 @@ inline bool VoronoiPlanner::sampleMPCTrajectory(
 
   // // Get time t relative to start of MPC trajectory
   // double e_t_start = time_samp - last_mpc_solve_; 
-  // double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
+  // double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_controller_->MPC_STEP;
 
   // if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
   // {
@@ -782,7 +787,7 @@ inline bool VoronoiPlanner::sampleMPCTrajectory(
   //   return false;
   // }
 
-  // int idx =  std::ceil(e_t_start / mpc_->MPC_STEP); 
+  // int idx =  std::ceil(e_t_start / mpc_controller_->MPC_STEP); 
 
   // if (idx >= mpc_pred_acc_.size() ){
   //   logger_->logError("ERROR!! sampleMPCTrajectory idx exceeded!");

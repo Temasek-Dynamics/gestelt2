@@ -48,7 +48,9 @@ VoronoiPlanner::VoronoiPlanner()
   initPubSubTimer();
 
   tm_front_end_plan_.updateID(drone_id_);
-  tm_voro_map_init_.updateID(drone_id_);
+  tm_sfc_.updateID(drone_id_);
+  tm_mpc_.updateID(drone_id_);
+  tm_voro_gen_.updateID(drone_id_);
 }
 
 void VoronoiPlanner::init()
@@ -84,7 +86,7 @@ void VoronoiPlanner::init()
   poly_sfc_gen_ = std::make_unique<sfc::PolytopeSFC>(sfc_params_);
 
   // Initialize MPC controller
-  mpc_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params_);
+  mpc_controller_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params_);
 
   // Initialize map
   voxel_map_ = std::make_unique<voxel_map::VoxelMap>(
@@ -452,9 +454,9 @@ void VoronoiPlanner::plan(const Eigen::Vector3d& goal_pos){
 
 bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
-  // if (plan_once_ && plan_complete_){
-  //   return true;
-  // }
+  if (plan_once_ && plan_complete_){
+    return true;
+  }
 
   /*****/
   /* 1) Assign voronoi map and reservation table to planner */
@@ -490,7 +492,7 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
 
-  if (!sampleMPCTrajectory(mpc_, plan_start_clock.nanoseconds()/1e9, 
+  if (!sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
                           start_pos, start_vel, start_acc))
   {
     start_pos = cur_pos_;
@@ -518,6 +520,8 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   bool fe_plan_success = fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
   voro_map_mtx_.unlock();
+  tm_front_end_plan_.stop(false);
+  tm_front_end_plan_.getWallAvg(verbose_print_);
 
   if (!fe_plan_success)
   {
@@ -526,15 +530,14 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
                               start_pos(0), start_pos(1), start_pos(2), 
                               rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
                               fe_planner_->getClosedList().size()));
-    logger_->logError(strFmt("  Drone %d: local_map origin (%f, %f)", 
-                              drone_id_, 
-                              bool_map_3d_.origin(0), 
-                              bool_map_3d_.origin(1)));
+    // logger_->logError(strFmt("  Drone %d: local_map origin (%f, %f)", 
+    //                           drone_id_, 
+    //                           bool_map_3d_.origin(0), 
+    //                           bool_map_3d_.origin(1)));
 
     // viz_helper_->pubFrontEndClosedList(fe_planner_->getClosedList(), 
     //                   fe_closed_list_viz_pub_, map_frame_);
 
-    tm_front_end_plan_.stop(verbose_print_);
     return false;
   }
 
@@ -542,8 +545,6 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // voro_ready_ = false;
   // voro_consumed_ = true;
   // voro_cv_.notify_all();
-
-  tm_front_end_plan_.stop(verbose_print_);
 
   /*****/
   /* 5) Retrieve and transform HCA* path to map frame, publish visualization of path */
@@ -554,10 +555,12 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getPathWithTimeSampled(10);
-  std::vector<int> fe_path_sampled_idx = fe_planner_->getPathIdxSampled(10); // Index of sampled original path
+  // fe_sfc_segment_idx: Index of sampled original path. Indexed by polygon number. 
+  //    The value is the front-end index at that polygon's starting segment
+  std::vector<int> fe_sfc_segment_idx = fe_planner_->getPathIdxSampled(10);
 
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
-  // std::vector<int> fe_path_sampled_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
+  // std::vector<int> fe_sfc_segment_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
 
   auto transformPathFromLclMapToMap = [&](const std::vector<Eigen::Vector4d>& map_path_w_t_lclmapframe, 
                              std::vector<Eigen::Vector4d>& map_path_w_t,
@@ -589,8 +592,13 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 6) Generate Polyhedron safe flight corridor */
   /*****/
 
+  tm_sfc_.start();
+  bool gen_sfc_success = poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
+  tm_sfc_.stop(false);
+  tm_sfc_.getWallAvg(verbose_print_);
+
   // Generate SFC based on smoothed front-end path
-  if (!poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_))
+  if (!gen_sfc_success)
   {
     logger_->logError("Failed to generate safe flight corridor!");
     return false;
@@ -649,7 +657,6 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   //   }
   // }
 
-
   auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
                                 Eigen::MatrixX4d& planes) {
     int num_planes = (int) poly.vs_.size();
@@ -667,49 +674,81 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
       planes.row(i) << normal(0), normal(1), normal(2), -d;
     }
 
-    
-    // D = - [A, B, C].T * [x, y, z]
-
-    // planes.resize(6, 4); // Ax + By + Cz + D = 0, D = -(Ax + By + Cz)
-
-    // planes.row(0) <<  1,  0,  0, -100;
-    // planes.row(1) <<  0,  1,  0, -100;
-    // planes.row(2) <<  0,  0,  1, -100;
-    
-    // planes.row(3) << -1,  0,  0,  -100;
-    // planes.row(4) <<  0, -1,  0,  -100;
-    // planes.row(5) <<  0,  0, -1,  -100;
-
   };
 
-  int final_fe_idx = (int)fe_path_.size(); // index of final front-end point that lies in SFC
 
   // 7a) Set Safe Flight corridor for each MPC reference point
-  for (int i = 0, poly_idx = 0; i < mpc_->MPC_HORIZON; i++) // for each MPC point
+
+  auto getPolygonIdx = [&](const int& fe_idx, std::vector<int>& fe_sampled_idx) -> int {
+    for (int i = 1; i < fe_sampled_idx.size(); i++){
+      if (fe_idx <= fe_sampled_idx[i]){
+        return i-1;
+      }
+    }
+
+    return -1; 
+  };
+
+  // int final_fe_idx = fe_start_idx; // last index of front end path that lies in SFC
+  // // For each front_end point, check that it is within polygonal bounds
+  // for (int i = 0; i < mpc_controller_->MPC_HORIZON; ++i){ // for each MPC point
+  //   int fe_idx = fe_start_idx + i;
+
+  //   final_fe_idx = fe_idx;
+
+  //   // Check if Front end point exceeded safe flight corridor 
+  //   if (fe_idx > fe_sfc_segment_idx.back()){
+  //     break;
+  //   }
+  //   // Check if front end point exceeded front end path
+  //   if (fe_idx >= (int) fe_path_.size()){
+  //     break;
+  //   }
+
+  //   int poly_idx = getPolygonIdx(fe_idx, fe_sfc_segment_idx);
+  //   if (poly_idx == -1){ 
+  //     // exceeded safe flight corridor
+  //     break;
+  //   }
+
+  //   Eigen::MatrixX4d planes;
+  //   polyhedronToPlanes(polyhedrons[poly_idx], planes);
+
+  //   if (!mpc_controller_->isInFSC(fe_path_[fe_idx], planes)) { 
+  //     // if fe_idx not in sfc. Then all MPC reference points should end at previous fe_idx
+  //     logger_->logError(strFmt("  CODE ERROR! FE Path idx %d is not in polygon %d", fe_idx, poly_idx ));
+  //     final_fe_idx = fe_idx - 1 >= 0 ? fe_idx-1 : 0;
+  //     break;
+  //   }
+
+  //   // Set safe flight corridor for i-th control iteration
+  //   mpc_controller_->setFSC(planes, i); 
+  // }
+
+  int final_fe_idx = (int) fe_path_.size(); // last index of front end path that lies in SFC
+  for (int i = 0, poly_idx = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC point
   {
     int fe_idx = fe_start_idx + i * ref_samp_intv_; // Current FE path index
     if (fe_idx >= (int)fe_path_.size()){ // exceed size of fe path
       fe_idx = fe_path_.size() - 1;
     }
 
-    int poly_start_idx = fe_path_sampled_idx[poly_idx]; //idx of fe_path at start of segment
-    int poly_end_idx = fe_path_sampled_idx[poly_idx+1]; //idx of fe_path at end of segment
+    // int poly_start_idx = fe_sfc_segment_idx[poly_idx]; //idx of fe_path at start of segment
+    int poly_end_idx = fe_sfc_segment_idx[poly_idx+1]; //idx of fe_path at end of segment
 
     if (fe_idx >= poly_end_idx) { // FE Path index exceed idx of fe_path at end of segment
       // logger_->logInfo(strFmt("FE Path idx(%d) >= segment %d", fe_idx, poly_start_idx ));
       poly_idx++; // Iterate to next polygon
 
-      // if already last polygon
-      if (poly_idx > polyhedrons.size() -1){
-        // logger_->logError(" CODE ERROR! poly_idx exceeds size of polyehdrons");
-        poly_idx = polyhedrons.size() -1;
-      }
+      // if already last polygon, then set as last polygon
+      poly_idx = poly_idx > (int)polyhedrons.size() - 1 ? (int)polyhedrons.size() -1 : poly_idx;
+      // logger_->logError(" CODE ERROR! poly_idx exceeds size of polyehdrons");
     }
 
     Eigen::MatrixX4d planes;
     polyhedronToPlanes(polyhedrons[poly_idx], planes);
 
-    if (!mpc_->isInFSC(fe_path_[fe_idx], planes)) { 
+    if (!mpc_controller_->isInFSC(fe_path_[fe_idx], planes)) { 
       // if front end point is not in sfc
       // Then all reference points should end at previous fe_idx
       logger_->logError(strFmt("  CODE ERROR! FE Path idx %d is not in polygon %d", fe_idx, poly_idx ));
@@ -718,13 +757,14 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     }
 
     // Set safe flight corridor for i-th control iteration
-    mpc_->setFSC(planes, i); 
+    mpc_controller_->setFSC(planes, i); 
   }
 
   // 7b) Set reference path for MPC 
   Eigen::Vector3d last_p_ref; // last position reference
-  for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
-    int fe_idx = fe_start_idx + i * ref_samp_intv_;
+  for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) 
+  {
+    int fe_idx = fe_start_idx + i;
     if (fe_idx > final_fe_idx){ // exceed final SFC-bounded point on FE path
       fe_idx = final_fe_idx;
     }
@@ -738,15 +778,15 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
     if (i == 0) // First iteration
     {
-      v_ref = (p_ref - cur_pos_) / mpc_->MPC_STEP;
+      v_ref = (p_ref - cur_pos_) / mpc_controller_->MPC_STEP;
     }
     else // rest of the iteration
     {
-      v_ref = (p_ref - last_p_ref) / mpc_->MPC_STEP;
+      v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
     }
 
     // Set PVA reference at given step i
-    mpc_->setReference(p_ref, v_ref, a_ref, i);
+    mpc_controller_->setReference(p_ref, v_ref, a_ref, i);
 
     last_p_ref = p_ref;
   }
@@ -754,63 +794,74 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // 7c) Solve MPC and visualize path
 
   // Set initial condition
-  mpc_->setInitialCondition(start_pos, start_vel, start_acc);
+  mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
 
-  Eigen::Vector3d u_optimal, p_optimal, v_optimal, a_optimal, u_predict;
   Eigen::Vector2d yaw_yawrate{0.0, NAN};
   Eigen::MatrixXd A1, B1; // system transition matrix
-  Eigen::VectorXd x_optimal = mpc_->X_0_;
+  Eigen::VectorXd x_optimal = mpc_controller_->X_0_;
 
-  bool mpc_success = mpc_->run();
+  tm_mpc_.start();
+  bool mpc_success = mpc_controller_->run();
+  tm_mpc_.stop(false);
+  tm_mpc_.getWallAvg(verbose_print_);
+
   last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
 
-  if (mpc_success){ // Successful MPC solve
-
-    mpc_->getOptimalControl(u_optimal, 0);
-    mpc_->getSystemModel(A1, B1, mpc_->MPC_STEP);
-
-    x_optimal = A1 * x_optimal + B1 * u_optimal;
-
-    p_optimal = x_optimal.segment<3>(0); 
-    v_optimal = x_optimal.segment<3>(3);
-    a_optimal = x_optimal.segment<3>(6); 
-
-    // Set yaw
-    // TODO: figure out a better way
-    // int lk_ahd = 5; // Look ahead distance
-    // int lk_ahd_idx = (fe_start_idx + lk_ahd) < fe_path_.size() ? fe_start_idx + lk_ahd : fe_start_idx;
-    // yaw_yawrate(0) = std::atan2(fe_path_[lk_ahd_idx](1) - cur_pos_(1), 
-    //                             fe_path_[lk_ahd_idx](0) - cur_pos_(0));
-
-    // yaw_yawrate = calculateYaw(fe_path_, plan_start_clock.nanoseconds()/1e9, ...);
-
-    {
-      std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
-
-      // Visualize path
-      mpc_pred_u_.clear();
-      mpc_pred_pos_.clear();
-      mpc_pred_vel_.clear();
-      mpc_pred_acc_.clear();
-
-      x_optimal = mpc_->X_0_;
-      for (int i = 0; i < mpc_->MPC_HORIZON; i++) {
-          mpc_->getOptimalControl(u_predict, i);
-          mpc_->getSystemModel(A1, B1, mpc_->MPC_STEP);
-          x_optimal = A1 * x_optimal + B1 * u_predict;
-          mpc_pred_u_.push_back(u_predict);
-          mpc_pred_pos_.push_back(x_optimal.segment<3>(0));
-          mpc_pred_vel_.push_back(x_optimal.segment<3>(3));
-          mpc_pred_acc_.push_back(x_optimal.segment<3>(6));
-      }
-    }
-    
-    pubMPCPath(mpc_pred_pos_);
-  }
-  else {
+  if (!mpc_success){ // Successful MPC solve
     logger_->logError("MPC Solve failure!");
     return false;
   }
+
+  mpc_controller_->getOptimalControl(u_optimal_, 0);
+  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->MPC_STEP);
+
+  // Get next optimal position
+  x_optimal = A1 * x_optimal + B1 * u_optimal_;
+
+  // Set yaw
+  // TODO: figure out a better way
+  // int lk_ahd = 5; // Look ahead distance
+  // int lk_ahd_idx = (fe_start_idx + lk_ahd) < fe_path_.size() ? fe_start_idx + lk_ahd : fe_start_idx;
+  // yaw_yawrate(0) = std::atan2(fe_path_[lk_ahd_idx](1) - cur_pos_(1), 
+  //                             fe_path_[lk_ahd_idx](0) - cur_pos_(0));
+
+  // yaw_yawrate = calculateYaw(fe_path_, plan_start_clock.nanoseconds()/1e9, ...);
+
+  {
+    std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+
+    p_optimal_ = x_optimal.segment<3>(0); 
+    v_optimal_ = x_optimal.segment<3>(3);
+    a_optimal_ = x_optimal.segment<3>(6); 
+
+    // // Publish PVA command
+    // pubPVAJCmd(p_optimal_, 
+    //           Eigen::Vector2d(0.0, NAN), 
+    //           v_optimal_, 
+    //           a_optimal_, 
+    //           u_optimal_);
+
+    // Visualize path
+    mpc_pred_u_.clear();
+    mpc_pred_pos_.clear();
+    mpc_pred_vel_.clear();
+    mpc_pred_acc_.clear();
+
+    x_optimal = mpc_controller_->X_0_;
+
+    Eigen::Vector3d u_predict;
+    for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) {
+        mpc_controller_->getOptimalControl(u_predict, i);
+        mpc_controller_->getSystemModel(A1, B1, mpc_controller_->MPC_STEP);
+        x_optimal = A1 * x_optimal + B1 * u_predict;
+        mpc_pred_u_.push_back(u_predict);
+        mpc_pred_pos_.push_back(x_optimal.segment<3>(0));
+        mpc_pred_vel_.push_back(x_optimal.segment<3>(3));
+        mpc_pred_acc_.push_back(x_optimal.segment<3>(6));
+    }
+  }
+  
+  pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 
   plan_complete_ = true;
 
@@ -875,7 +926,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
   // std::vector<Eigen::Vector3d> voro_verts;
 
-  tm_voro_map_init_.start();
+  tm_voro_gen_.start();
 
   for (auto const& bool_map : bool_map_3d_.bool_maps) // For each boolean map
   {
@@ -938,7 +989,7 @@ void VoronoiPlanner::genVoroMapTimerCB()
     // voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
   }
 
-  tm_voro_map_init_.stop(false);
+  tm_voro_gen_.stop(false);
 
   // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
 
@@ -952,7 +1003,6 @@ void VoronoiPlanner::genVoroMapTimerCB()
 
 void VoronoiPlanner::sendMPCCmdTimerCB()
 {
-
   if (mpc_pred_pos_.empty() 
       || mpc_pred_vel_.empty() 
       || mpc_pred_acc_.empty())
@@ -964,7 +1014,7 @@ void VoronoiPlanner::sendMPCCmdTimerCB()
   double t_start = this->get_clock()->now().nanoseconds()/1e9;
   // // Get time t relative to start of MPC trajectory
   double e_t_start = t_start - last_mpc_solve_; 
-  double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_->MPC_STEP;
+  double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_controller_->MPC_STEP;
   
   if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
   {
@@ -974,7 +1024,7 @@ void VoronoiPlanner::sendMPCCmdTimerCB()
 
   // Get index of point closest to current time
   //  elapsed time from start divided by time step of MPC
-  int idx =  std::floor(e_t_start / mpc_->MPC_STEP); 
+  int idx =  std::floor(e_t_start / mpc_controller_->MPC_STEP); 
 
   if (idx >= (int) mpc_pred_pos_.size()){
     logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
@@ -992,7 +1042,8 @@ void VoronoiPlanner::sendMPCCmdTimerCB()
   };
 
   if (!checkValidCmd(mpc_pred_pos_[idx], -100.0, 100.0) ){
-    logger_->logInfo("Invalid MPC predicted position") ;
+    logger_->logInfo(strFmt("Invalid MPC predicted position: (%f, %f, %f)"
+      , mpc_pred_pos_[idx](0), mpc_pred_pos_[idx](1), mpc_pred_pos_[idx](2))) ;
     return;
   }
     
