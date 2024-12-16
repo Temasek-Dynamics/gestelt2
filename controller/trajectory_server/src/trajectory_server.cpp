@@ -83,6 +83,7 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("offboard_control_mode", 1);
 
 	/* Frequencies for timers and periodic publishers*/
+	this->declare_parameter("navigator_heartbeat_timeout", 0.5);
 	this->declare_parameter("set_offb_ctrl_freq", 4.0);
 	this->declare_parameter("pub_state_freq", 30.0);
 	this->declare_parameter("pub_ctrl_freq", 30.0);
@@ -99,6 +100,7 @@ void TrajectoryServer::initParams()
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
 	/* Frequencies for timers and periodic publishers*/
+	nav_heartbeat_timeout_ = this->get_parameter("navigator_heartbeat_timeout").as_double();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
 	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
 	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
@@ -148,6 +150,10 @@ void TrajectoryServer::initPubSubTimers()
 		"uav_state", 10);
 
 	/* Subscribers */
+	navigator_heartbeat_sub_ = this->create_subscription<std_msgs::msg::Empty>(
+		"navigator/heartbeat", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::navHeartbeatSubCB, this, _1), fcu_sub_opt);
+
 	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
 		"/all_uav_command", rclcpp::ServicesQoS(), 
 		std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
@@ -187,6 +193,11 @@ void TrajectoryServer::initSrv()
 /****************** */
 /* SUBSCRIBER CALLBACKS */
 /****************** */
+void TrajectoryServer::navHeartbeatSubCB(const std_msgs::msg::Empty::UniquePtr msg)
+{
+	last_nav_heartbeat_ = this->get_clock()->now().seconds();
+}
+
 void TrajectoryServer::linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg)
 {
 	// Message received in ENU frame
@@ -424,6 +435,11 @@ void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVComma
 
 void TrajectoryServer::setOffboardTimerCB()
 {
+	if (last_nav_heartbeat_ - this->get_clock()->now().seconds() > nav_heartbeat_timeout_){
+		// set to hovering
+		return;
+	}
+
 	gestelt_interfaces::msg::UAVState uav_state;
 
 	// Check all states

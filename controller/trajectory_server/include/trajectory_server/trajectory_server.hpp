@@ -36,6 +36,8 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 
+#include <std_msgs/msg/empty.hpp>
+
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/actuator_motors.hpp>
 #include <px4_msgs/msg/vehicle_torque_setpoint.hpp>
@@ -175,6 +177,7 @@ private:
 	void odometrySubCB(const VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const VehicleStatus::UniquePtr msg);
 	void linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg);
+	void navHeartbeatSubCB(const std_msgs::msg::Empty::UniquePtr msg);
 
 	/* PX4-related methods */
 
@@ -214,6 +217,7 @@ private:
 	/* Subscribers */
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr fcu_odom_sub_;
 	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
+	rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr navigator_heartbeat_sub_;
 	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
 	rclcpp::Subscription<TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
 
@@ -235,6 +239,7 @@ private:
 	double pub_state_freq_; // [Hz] Frequency to publish odometry
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
+	double nav_heartbeat_timeout_; // [Hz] Frequency of state machine ticks
 
 	TrajectoryType traj_type_;	// Trajectory plugin type
 
@@ -268,6 +273,7 @@ private:
 	
 	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 
+	double last_nav_heartbeat_{0.0}; // Time since last navigator heartbeat 
 }; // class TrajectoryServer
 
 #endif //TRAJECTORY_SERVER_HPP_

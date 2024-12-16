@@ -39,6 +39,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2/exceptions.h>
 
+#include <std_msgs/msg/empty.hpp>
+
 #include <geometry_msgs/msg/pose_stamped.hpp>
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
@@ -252,6 +254,9 @@ public:
 private:
   /* Timer callbacks */
 
+  /* Timer for publishing heartbeat*/
+  void heartbeatTimerCB();
+
   /* Timer for front-end planner*/
   void planFETimerCB();
 
@@ -299,6 +304,7 @@ private:
   /**
    * Periodically running timers
    */
+	rclcpp::TimerBase::SharedPtr heartbeat_timer_;	    // Timer for heartbeat
 	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	    // Timer for planning front end path
 	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_; // Timer for generating discretized voronoi diagram
 	rclcpp::TimerBase::SharedPtr send_mpc_cmd_timer_; // Timer for sampling predicted MPC path
@@ -313,6 +319,8 @@ private:
   std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
 
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
+
+  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr heartbeat_pub_; // Publish MPC commands
 
   // Planning publishers
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
@@ -479,8 +487,9 @@ private:
 
   // Planning params
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
-  double fe_planner_freq_{10}; // [Hz] Frequency for front-end planning
-  double gen_voro_map_freq_{20}; // [Hz] Frequency for front-end planning
+  double heartbeat_freq_{10.0}; // [Hz] Frequency for publishing heartbeat
+  double fe_planner_freq_{10.0}; // [Hz] Frequency for front-end planning
+  double gen_voro_map_freq_{20.0}; // [Hz] Frequency for front-end planning
   double sqr_goal_tol_{0.1}; // [m] Distance to goal before it is considered fulfilled.
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time

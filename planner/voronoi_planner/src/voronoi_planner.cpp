@@ -134,10 +134,13 @@ void VoronoiPlanner::initPubSubTimer()
   lin_mpc_cmd_pub_ = this->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
     "lin_mpc_cmd", rclcpp::SensorDataQoS());
 
-  poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>(
-    "poly_traj", rclcpp::SensorDataQoS());
-  minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>(
-    "minco_traj/broadcast", rclcpp::SensorDataQoS());
+  heartbeat_pub_ = this->create_publisher<std_msgs::msg::Empty>(
+    "navigator/heartbeat", rclcpp::SensorDataQoS());
+
+  // poly_traj_pub_ = this->create_publisher<minco_interfaces::msg::PolynomialTrajectory>(
+  //   "poly_traj", rclcpp::SensorDataQoS());
+  // minco_traj_broadcast_pub_ = this->create_publisher<minco_interfaces::msg::MincoTrajectory>(
+  //   "minco_traj/broadcast", rclcpp::SensorDataQoS());
 
   /* Visualization Publishers */
   voro_planning_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
@@ -202,6 +205,10 @@ void VoronoiPlanner::initPubSubTimer()
   }
 
   /* Timers */
+	heartbeat_timer_ = this->create_wall_timer((1.0/heartbeat_freq_) *1000ms, 
+                                            std::bind(&VoronoiPlanner::heartbeatTimerCB, this), 
+                                            others_cb_group_);
+
 	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
                                             std::bind(&VoronoiPlanner::planFETimerCB, this), 
                                             planning_cb_group_);
@@ -223,6 +230,7 @@ void VoronoiPlanner::initParams()
   this->declare_parameter(param_ns+".num_drones", 4);
   this->declare_parameter(param_ns+".plan_method", -1);
   this->declare_parameter(param_ns+".generate_voronoi_frequency", 10.0);
+  this->declare_parameter(param_ns+".heartbeat_frequency", 10.0);
   this->declare_parameter(param_ns+".planner_frequency", 10.0);
 
   /* Frame ids */
@@ -278,6 +286,7 @@ void VoronoiPlanner::initParams()
 
   drone_id_ = this->get_parameter("drone_id").as_int();
   num_drones_ = this->get_parameter(param_ns+".num_drones").as_int();
+  heartbeat_freq_ = this->get_parameter(param_ns+".heartbeat_frequency").as_double();
   fe_planner_freq_ = this->get_parameter(param_ns+".planner_frequency").as_double();
   gen_voro_map_freq_ = this->get_parameter(param_ns+".generate_voronoi_frequency").as_double();
 
@@ -869,6 +878,10 @@ bool VoronoiPlanner::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 }
 
 /* Timer callbacks*/
+void VoronoiPlanner::heartbeatTimerCB()
+{
+  heartbeat_pub_->publish(std_msgs::msg::Empty());
+}
 
 void VoronoiPlanner::planFETimerCB()
 {

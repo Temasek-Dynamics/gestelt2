@@ -6,7 +6,9 @@ Panels:
       Expanded:
         - /Grid1
         - /TF1/Frames1
-        - /d01/sfc1
+        - /d01
+        - /d01/maps1
+        - /d01/maps1/occ1
         - /d11/front_end1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
@@ -117,7 +119,7 @@ Visualization Manager:
           Enabled: true
           Name: swarm_collisions
           Namespaces:
-            {}
+            swarm_collision: true
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -212,7 +214,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -481,7 +483,7 @@ Visualization Manager:
                     Value: /d0/voro_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: true
+              Enabled: false
               Name: voro
             - Class: rviz_common/Group
               Displays:
@@ -646,7 +648,7 @@ Visualization Manager:
                     Value: /d0/occ_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: false
+              Enabled: true
               Name: occ
             - Alpha: 0.699999988079071
               Binary representation: false
@@ -722,7 +724,7 @@ Visualization Manager:
         - Alpha: 0.10000000149011612
           BoundColor: 153; 193; 241
           Class: decomp_rviz_plugins/PolyhedronArray
-          Enabled: true
+          Enabled: false
           MeshColor: 0; 170; 255
           Name: sfc
           Scale: 0.10000000149011612
@@ -734,7 +736,7 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d0/sfc
-          Value: true
+          Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
       Enabled: true
@@ -1524,6 +1526,7 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2142,6 +2145,7 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2760,6 +2764,7 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3038,6 +3043,7 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3608,6 +3614,7 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4726,26 +4733,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 90.71571350097656
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: -2.8028831481933594
-        Y: 1.3992037773132324
-        Z: 8.330700438818894e-06
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2547965049743652
+      Scale: 45.45229721069336
       Target Frame: <Fixed Frame>
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 1.6823513507843018
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0.4335384666919708
+      Y: 1.0377534627914429
     Saved: ~
 Window Geometry:
   Displays:
