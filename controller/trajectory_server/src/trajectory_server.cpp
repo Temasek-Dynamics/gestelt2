@@ -38,8 +38,6 @@ TrajectoryServer::TrajectoryServer()
 	
   	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
-	logger_->logInfo("Initializing...");
-
 	initParams();
 
 	// start UAV state machine
@@ -77,7 +75,7 @@ void TrajectoryServer::initParams()
 	 */
 
 	this->declare_parameter("drone_id", 0);
-	
+
 	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("base_link_frame", "base_link");
 
@@ -85,6 +83,7 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("offboard_control_mode", 1);
 
 	/* Frequencies for timers and periodic publishers*/
+	this->declare_parameter("navigator_state_timeout", 0.5);
 	this->declare_parameter("set_offb_ctrl_freq", 4.0);
 	this->declare_parameter("pub_state_freq", 30.0);
 	this->declare_parameter("pub_ctrl_freq", 30.0);
@@ -101,6 +100,7 @@ void TrajectoryServer::initParams()
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
 	/* Frequencies for timers and periodic publishers*/
+	nav_state_timeout_ = this->get_parameter("navigator_state_timeout").as_double();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
 	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
 	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
@@ -112,8 +112,11 @@ void TrajectoryServer::initParams()
 		if (name == "MINCO"){
 			return TrajectoryType::MINCO;
 		}
+		else if (name == "MPC"){
+			return TrajectoryType::MPC;
+		}
 		else {
-			return TrajectoryType::MINCO;
+			return TrajectoryType::UNDEFINED_TRAJ_TYPE;
 		}
 	};
 
@@ -147,6 +150,10 @@ void TrajectoryServer::initPubSubTimers()
 		"uav_state", 10);
 
 	/* Subscribers */
+	navigator_state_sub_ = this->create_subscription<gestelt_interfaces::msg::NavState>(
+		"navigator/state", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::navStateSubCB, this, _1), fcu_sub_opt);
+
 	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
 		"/all_uav_command", rclcpp::ServicesQoS(), 
 		std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
@@ -158,6 +165,10 @@ void TrajectoryServer::initPubSubTimers()
 	vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
 		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
+
+	lin_mpc_cmd_sub_ = this->create_subscription<TrajectorySetpoint>(
+		"lin_mpc_cmd", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::linMPCCmdSubCB, this, _1), fcu_sub_opt);
 
 	/* Timers */
 	pub_ctrl_timer_ = this->create_wall_timer((1.0/pub_ctrl_freq_)*1000ms, 
@@ -182,6 +193,37 @@ void TrajectoryServer::initSrv()
 /****************** */
 /* SUBSCRIBER CALLBACKS */
 /****************** */
+void TrajectoryServer::navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg)
+{
+	// process msg
+	// msg->state
+	// gestelt_interfaces::msg::NavState::IDLE
+	// gestelt_interfaces::msg::NavState::PLANNING
+	// gestelt_interfaces::msg::NavState::PLANNING_TIMEOUT
+
+	// if (msg->state == gestelt_interfaces::msg::NavState::PLANNING_TIMEOUT){
+	// 	// Set to landing
+	// 	sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
+	// }
+
+	last_nav_heartbeat_ = this->get_clock()->now().seconds();
+}
+
+void TrajectoryServer::linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg)
+{
+	// Message received in ENU frame
+
+	if (UAV::is_in_state<Mission>())
+	{
+		pos_enu_ = Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]);
+		vel_enu_ = Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]);
+		acc_enu_ = Eigen::Vector3d(msg->acceleration[0], msg->acceleration[1], msg->acceleration[2]);
+		jerk_enu_ = Eigen::Vector3d(msg->jerk[0], msg->jerk[1], msg->jerk[2]);
+
+		yaw_yawrate_(0) = msg->yaw;
+		yaw_yawrate_(1) = msg->yawspeed;
+	}
+}
 
 void TrajectoryServer::vehicleStatusSubCB(const VehicleStatus::UniquePtr msg)
 {
@@ -368,11 +410,10 @@ void TrajectoryServer::odometrySubCB(const VehicleOdometry::UniquePtr msg)
 
 void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg)
 {
-	logger_->logInfoThrottle(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
-					msg->command, msg->mode, msg->value),
-					1.0);
+	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
+					msg->command, msg->mode, msg->value));
 
-	// Checkn if value and mode is within bounds for specific commands
+	// Check if value and mode is within bounds for specific commands
 	switch (msg->command)
 	{
 		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_TAKEOFF:  
@@ -405,6 +446,11 @@ void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVComma
 
 void TrajectoryServer::setOffboardTimerCB()
 {
+	if (last_nav_heartbeat_ - this->get_clock()->now().seconds() > nav_state_timeout_){
+		// Set to landing
+		sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
+	}
+
 	gestelt_interfaces::msg::UAVState uav_state;
 
 	// Check all states
@@ -520,16 +566,12 @@ void TrajectoryServer::pubCtrlTimerCB()
 		Eigen::Vector3d cmd_pos_enu;		// Last commanded position [ENU frame]
 		Eigen::Vector2d cmd_yaw_yawrate;
 		Eigen::Vector3d cmd_vel_enu;		
-		Eigen::Vector3d cmd_acc_enu;		
+		Eigen::Vector3d cmd_acc_enu;	
 
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
-			case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY:
-				if (poly_traj_cmd_->getCmd(cmd_pos_enu, cmd_yaw_yawrate, cmd_vel_enu, cmd_acc_enu))
-				{	
-					pos_enu_ = cmd_pos_enu;
-					yaw_yawrate_ = cmd_yaw_yawrate;
-					vel_enu_ = cmd_vel_enu;	
-					acc_enu_ = cmd_acc_enu;	
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY:
+
+				if (traj_type_ == TrajectoryType::MPC) {
 
 					// Correct commanded position with ground_height_
 					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
@@ -537,27 +579,48 @@ void TrajectoryServer::pubCtrlTimerCB()
 
 					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, vel_enu_, acc_enu_);
 				}
-				else { 
-					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
-					yaw_yawrate_(1) = NAN; 
-					Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+				else if (traj_type_ == TrajectoryType::MINCO) {
+					if (poly_traj_cmd_->getCmd(cmd_pos_enu, cmd_yaw_yawrate, cmd_vel_enu, cmd_acc_enu))
+					{	
+						pos_enu_ = cmd_pos_enu;
+						yaw_yawrate_ = cmd_yaw_yawrate;
+						vel_enu_ = cmd_vel_enu;	
+						acc_enu_ = cmd_acc_enu;	
 
-					publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, nan_3d, nan_3d);
+						// Correct commanded position with ground_height_
+						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
+						yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
+
+						publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, vel_enu_, acc_enu_);
+					}
+					else { 
+						// logger_->logWarnThrottle("No valid MINCO trajectory received...", 1.0);
+
+						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(pos_enu_(0), pos_enu_(1), pos_enu_(2) + ground_height_); // Adjust for ground height
+						yaw_yawrate_(1) = NAN; 
+						Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+
+						publishTrajectorySetpoint(pos_enu_corr, yaw_yawrate_, nan_3d, nan_3d);
+					}
+				}
+				else {
+					logger_->logWarnThrottle("UNDEFINED TRAJECTORY TYPE!", 1.0);
 				}
 				break;
-			case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: 
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: 
 				// publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
 				break;
-			case gestelt_interfaces::srv::UAVCommand::Request::MODE_RATES: 
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES: 
 				// publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
-			case gestelt_interfaces::srv::UAVCommand::Request::MODE_THRUST_TORQUE: 
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE: 
 				// publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
-			case gestelt_interfaces::srv::UAVCommand::Request::MODE_MOTORS:
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_MOTORS:
 				// publishActuatorCmds(Eigen::Vector4d(1.0, 1.0, 1.0, 1.0));
 				break;
 			default:
+				logger_->logWarnThrottle("UNDEFINED TRAJECTORY MODE", 1.0);
 				// Undefined. Do nothing
 				break;
 		}
@@ -743,7 +806,7 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	Eigen::Vector3d vel_ned = transform_static_frame(vel, frame_transforms::StaticTF::ENU_TO_NED);
 	Eigen::Vector3d acc_ned = transform_static_frame(acc, frame_transforms::StaticTF::ENU_TO_NED);
 
-	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};
 	msg.velocity = {(float) vel_ned(0), (float) vel_ned(1), (float) vel_ned(2)};
 	msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
@@ -987,7 +1050,6 @@ void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv
 	}
 
 }
-
 
 /****************** */
 /* HELPER METHODS */

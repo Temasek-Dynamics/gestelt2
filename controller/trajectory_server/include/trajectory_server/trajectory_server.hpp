@@ -36,6 +36,8 @@
 
 #include <tf2_ros/transform_broadcaster.h>
 
+#include <std_msgs/msg/empty.hpp>
+
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/actuator_motors.hpp>
 #include <px4_msgs/msg/vehicle_torque_setpoint.hpp>
@@ -52,10 +54,9 @@
 #include <nav_msgs/msg/odometry.hpp>
 
 #include <gestelt_interfaces/srv/uav_command.hpp>
-
 #include <gestelt_interfaces/msg/all_uav_command.hpp>
-
 #include <gestelt_interfaces/msg/uav_state.hpp>
+#include <gestelt_interfaces/msg/nav_state.hpp>
 
 #include <logger_wrapper/logger_wrapper.hpp>
 
@@ -104,6 +105,8 @@ enum PX4_CUSTOM_SUB_MODE_AUTO {
 
 enum TrajectoryType {
 	MINCO,
+	MPC,
+	UNDEFINED_TRAJ_TYPE,
 };
 
 class TrajectoryServer : public rclcpp::Node
@@ -172,6 +175,8 @@ private:
 	void allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
 	void odometrySubCB(const VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const VehicleStatus::UniquePtr msg);
+	void linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg);
+	void navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg);
 
 	/* PX4-related methods */
 
@@ -211,7 +216,9 @@ private:
 	/* Subscribers */
 	rclcpp::Subscription<VehicleOdometry>::SharedPtr fcu_odom_sub_;
 	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
+	rclcpp::Subscription<gestelt_interfaces::msg::NavState>::SharedPtr navigator_state_sub_;
 	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
+	rclcpp::Subscription<TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
 
 	/* Services */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
@@ -231,6 +238,7 @@ private:
 	double pub_state_freq_; // [Hz] Frequency to publish odometry
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
+	double nav_state_timeout_; // [Hz] Frequency of state machine ticks
 
 	TrajectoryType traj_type_;	// Trajectory plugin type
 
@@ -248,9 +256,10 @@ private:
 	double ground_height_{0.0}; // Starting ground height
 
 	Eigen::Vector3d pos_enu_{0.0, 0.0, 0.0};		// Last commanded position [ENU frame]
-	Eigen::Vector2d yaw_yawrate_{0.0, 0.0};
 	Eigen::Vector3d vel_enu_{0.0, 0.0, 0.0};		
 	Eigen::Vector3d acc_enu_{0.0, 0.0, 0.0};				
+	Eigen::Vector3d jerk_enu_{0.0, 0.0, 0.0};	    // For logging purposes, not used in command
+	Eigen::Vector2d yaw_yawrate_{0.0, 0.0};
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
@@ -263,6 +272,7 @@ private:
 	
 	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 
+	double last_nav_heartbeat_{0.0}; // Time since last navigator heartbeat 
 }; // class TrajectoryServer
 
 #endif //TRAJECTORY_SERVER_HPP_

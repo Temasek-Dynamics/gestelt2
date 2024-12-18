@@ -96,6 +96,8 @@
         "any": "cpp",
         "ranges": "cpp",
         "valarray": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp"
     }
 }

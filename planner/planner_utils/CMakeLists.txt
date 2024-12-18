@@ -17,11 +17,13 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_ros REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(dynamic_voronoi REQUIRED)
 
 add_library(planner_utils src/planner_utils.cpp)
 add_library(planner_utils::planner_utils ALIAS planner_utils)
 ament_target_dependencies(planner_utils 
-  Eigen3)
+  Eigen3
+  dynamic_voronoi)
 target_compile_features(planner_utils PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(planner_utils PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

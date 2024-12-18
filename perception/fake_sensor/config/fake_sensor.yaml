@@ -28,17 +28,27 @@
       # [m] Resolution of sensor
       resolution: 0.1
 
+      # horizontal:
+      #   # Number of horizontal laser lines 
+      #   laser_line_num: 80
+      #   # [degrees] the horizontal angle range
+      #   laser_range_dgr: 100.0
+      
+      # vertical:
+      #   # Number of vertical laser lines 
+      #   laser_line_num: 15
+      #   # [degrees] vertical angle range
+      #   laser_range_dgr: 40.0
+
       horizontal:
         # Number of horizontal laser lines 
-        laser_line_num: 80
+        laser_line_num: 280
         # [degrees] the horizontal angle range
-        laser_range_dgr: 100.0
+        laser_range_dgr: 359.0
       
       vertical:
         # Number of vertical laser lines 
         laser_line_num: 15
         # [degrees] vertical angle range
         laser_range_dgr: 40.0
-
-
 

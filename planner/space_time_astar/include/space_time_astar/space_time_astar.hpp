@@ -152,6 +152,10 @@ public:
    */
   std::vector<Eigen::Vector4d> getPathWithTime();
 
+  std::vector<Eigen::Vector4d> getPathWithTimeSampled(const int& sampling_intv);
+
+  std::vector<int> getPathIdxSampled(const int& sampling_intv);
+
   /**
    * @brief Get successful plan in terms of space i,e. (x,y,z) 
    * with current starting pose inserted 
@@ -159,6 +163,7 @@ public:
    * @return std::vector<Eigen::Vector3d> current position in LOCAL MAP frame
    */
   std::vector<Eigen::Vector3d> getPath(const Eigen::Vector3d& cur_pos);
+
 
   /**
    * @brief Get successful plan in terms of space and time i.e. (x,y,z,t)
@@ -173,6 +178,9 @@ public:
 
   /* Get post-smoothed path */
   std::vector<Eigen::Vector3d> getSmoothedPath();
+
+  /* Get indices of smooth path on original front-end path*/
+  std::vector<int> getSmoothedPathIdx();
 
   /**
    * @brief Get successful plan in terms of path positions
@@ -213,7 +221,10 @@ private:
   std::vector<Eigen::Vector3d> path_pos_; // (WORLD FRAME) Spatial path 
   std::vector<Eigen::Vector4d> path_pos_t_; // (WORLD FRAME) Spatial-temporal path 
   std::vector<Eigen::Vector3d> path_smoothed_; // (WORLD FRAME) post smoothed spatial path 
-  std::vector<Eigen::Vector4d> path_smoothed_t_; // (WORLD FRAME) post smoothed spatial-temporal path 
+  std::vector<Eigen::Vector4d> path_smoothed_t_; // (WORLD FRAME) post smoothed spatial-temporal path
+   
+  std::vector<int> path_smoothed_idx_; // Index of each smoothed path point in original spatial path
+
   std::vector<VCell_T> path_idx_vt_; // (LOCAL FRAME) Final planned Path in terms of indices
   std::vector<VCell_T> path_idx_smoothed_t_; // (LOCAL FRAME) Final planned Path in terms of indices
 
@@ -244,6 +255,46 @@ inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime()
 {
   return path_pos_t_;
 }
+
+/**
+ * @brief Get path sampled at intervals. Can be used to generate safe flight corridors
+ * 
+ * @param sampling_intv 
+ * @return std::vector<Eigen::Vector3d> 
+ */
+inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTimeSampled(const int& sampling_intv)
+{
+  std::vector<Eigen::Vector4d> path_samp;
+
+  path_samp.push_back(path_pos_t_[0]);
+  for (size_t i = 1; i < path_pos_t_.size()-1; ++i)
+  {
+    // if no line of sight between current and previous point, then split up some more 
+    if (i % sampling_intv == 0){
+      path_samp.push_back(path_pos_t_[i]);
+    }
+  }
+  path_samp.push_back(path_pos_t_.back());
+
+  return path_samp;
+}
+
+inline std::vector<int> SpaceTimeAStar::getPathIdxSampled(const int& sampling_intv)
+{
+  std::vector<int> path_samp_idx;
+  
+  path_samp_idx.push_back(0);
+  for (size_t i = 1; i < path_pos_t_.size()-1; ++i)
+  {
+    if (i % sampling_intv == 0){
+      path_samp_idx.push_back(i);
+    }
+  }
+  path_samp_idx.push_back(path_pos_t_.size()-1);
+
+  return path_samp_idx;
+}
+ 
 
 inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getPath(const Eigen::Vector3d& cur_pos)
 {
@@ -283,6 +334,7 @@ inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getPathWithTime(const Eigen:
   return path_pos_t;
 }
 
+
 inline std::vector<Eigen::Vector4d> SpaceTimeAStar::getSmoothedPathWithTime()
 {
   return path_smoothed_t_;
@@ -292,6 +344,12 @@ inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getSmoothedPath()
 {
   return path_smoothed_;
 }
+
+inline std::vector<int> SpaceTimeAStar::getSmoothedPathIdx()
+{
+  return path_smoothed_idx_;
+}
+
 
 inline std::vector<Eigen::Vector3d> SpaceTimeAStar::getClosedList()
 {

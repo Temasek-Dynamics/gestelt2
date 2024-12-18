@@ -10,7 +10,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    map_filename = "map_test"
+    map_filename = "new_map"
     map_filepath = os.path.join(
       os.path.expanduser("~"), 'gestelt_ws/src/Gestelt2/gestelt_bringup/pcd_maps',
     )

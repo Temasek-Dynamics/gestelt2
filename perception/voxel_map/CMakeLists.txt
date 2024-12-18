@@ -13,9 +13,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(PCL REQUIRED)
-find_package(eigen3_cmake_module REQUIRED)
-find_package(Eigen3 REQUIRED)
+set(EXTERNAL_LIBRARIES
+  PCL
+	eigen3_cmake_module
+	Eigen3)
 
 set(ROS_LIBRABRIES
 	ament_cmake
@@ -30,12 +31,14 @@ set(ROS_LIBRABRIES
   message_filters
   logger_wrapper
   bonxai
+  octomap
   ikd_tree)
 
 set(EXPORTED_DEPENDENCIES
   PCL
   pcl_conversions
   bonxai
+  octomap
   ikd_tree
 )
 
@@ -43,32 +46,29 @@ foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-add_library(voxel_map src/voxel_map.cpp)
-add_library(voxel_map::voxel_map ALIAS voxel_map)
-ament_target_dependencies(voxel_map 
-  Eigen3  
-  pcl_conversions
-  rclcpp
-  sensor_msgs
-  nav_msgs
-  geometry_msgs
-  visualization_msgs
-  tf2_ros
-  message_filters
-  logger_wrapper
-  bonxai
-  ikd_tree)
-target_compile_features(voxel_map PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(voxel_map PUBLIC
+foreach(dependency IN ITEMS ${EXTERNAL_LIBRARIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
+
+add_library(${PROJECT_NAME} 
+  src/${PROJECT_NAME}.cpp
+)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+ament_target_dependencies(${PROJECT_NAME} 
+  ${ROS_LIBRABRIES}
+)
+target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_link_libraries(voxel_map
+target_link_libraries(${PROJECT_NAME}
   ${PCL_LIBRARIES}
+  Eigen3::Eigen
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(voxel_map PRIVATE "VOXEL_MAP_BUILDING_LIBRARY")
+target_compile_definitions(${PROJECT_NAME} PRIVATE "${PROJECT_NAME}_BUILDING_LIBRARY")
 
 ############
 # Install ##
@@ -79,7 +79,7 @@ install(
   DESTINATION include/${PROJECT_NAME}
 )
 install(
-  TARGETS voxel_map
+  TARGETS ${PROJECT_NAME}
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -102,7 +102,7 @@ ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
 ament_export_libraries(
-  voxel_map
+  ${PROJECT_NAME}
 )
 ament_export_targets(
   export_${PROJECT_NAME}

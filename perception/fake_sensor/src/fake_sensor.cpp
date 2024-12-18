@@ -74,6 +74,24 @@ FakeSensor::FakeSensor()
 		vox_grid_ = std::make_shared<pcl::VoxelGrid<pcl::PointXYZ>>();
 	}
 
+	// Passthrough filter to filter out noise in close proximity of the agent
+	pass_fil_x_ = std::make_shared<pcl::PassThrough<pcl::PointXYZ>>();
+	pass_fil_y_ = std::make_shared<pcl::PassThrough<pcl::PointXYZ>>();
+	pass_fil_z_ = std::make_shared<pcl::PassThrough<pcl::PointXYZ>>();
+
+	pass_fil_x_->setFilterFieldName ("x");
+	pass_fil_y_->setFilterFieldName ("y");
+	pass_fil_z_->setFilterFieldName ("z");
+
+	pass_fil_x_->setFilterLimits (-0.05, 0.05);
+	pass_fil_y_->setFilterLimits (-0.05, 0.05);
+	pass_fil_z_->setFilterLimits (-0.05, 0.05);
+
+	pass_fil_x_->setNegative (true);
+	pass_fil_y_->setNegative (true);
+	pass_fil_z_->setNegative (true);
+
+
 	// Load point cloud map from file
 	if (pcl::io::loadPCDFile(map_filepath, *fake_map_cloud_) == -1) 
 	{
@@ -183,11 +201,13 @@ void FakeSensor::TFListenCB()
 
 void FakeSensor::sensorUpdateTimerCB()
 {
-	if (!cam_tf_valid_ && !pose_rcv_){
-		return;
-	}
 
 	if (listen_to_tf_){
+		if (!cam_tf_valid_)
+		{
+			return;
+		}
+
 		geometry_msgs::msg::TransformStamped sensor_to_map_tf;
 
 		{
@@ -211,7 +231,10 @@ void FakeSensor::sensorUpdateTimerCB()
 		}
 
 		// Generate point cloud from position and orientation of sensor
-		sensor_renderer_.render_sensed_points(sensor_pos_in_map_frame, sensor_ori_in_map_frame, *sensor_cloud_);
+		sensor_renderer_.render_sensed_points(
+			sensor_pos_in_map_frame,  // sensor position in map frame
+			sensor_ori_in_map_frame,  // sensor orientation in map frame
+			*sensor_cloud_);
 		
 		// Create transformation matrix from global to sensor frame
 		sensor_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
@@ -225,8 +248,16 @@ void FakeSensor::sensorUpdateTimerCB()
 		sensor_to_map_tf_mat_(3, 3) = 1.0;
 
 		map_to_sensor_tf_mat_ = sensor_to_map_tf_mat_.inverse();
+
+		// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
+		pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, map_to_sensor_tf_mat_);
 	}
 	else {
+		if (!pose_rcv_)
+		{
+			return;
+		}
+
 		{
 			std::lock_guard<std::mutex> odom_mtx_guard(odom_mutex_);
 
@@ -248,19 +279,17 @@ void FakeSensor::sensorUpdateTimerCB()
 			return;
 		}
 
-		sensor_to_map_tf_mat_ = map_to_sensor_tf_mat_.inverse();
-
 		// Generate point cloud from position and orientation of sensor
 		sensor_renderer_.render_sensed_points(
-			sensor_to_map_tf_mat_.block<3,1>(0,3), 	// sensor position in map frame
-			sensor_to_map_tf_mat_.block<3, 3>(0, 0), // sensor orientation in map frame
+			map_to_sensor_tf_mat_.block<3, 1>(0, 3), // sensor position in map frame
+			map_to_sensor_tf_mat_.block<3, 3>(0, 0), // sensor orientation in map frame
 			*sensor_cloud_);
-		
-		// map_to_sensor_tf_mat_ = map_to_sensor_tf_mat_.inverse().eval();
-	}
 
-	// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
-	pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, map_to_sensor_tf_mat_);
+		sensor_to_map_tf_mat_ = map_to_sensor_tf_mat_.inverse();
+
+		// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
+		pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, sensor_to_map_tf_mat_);
+	}
 
 	// Downsample cloud
 	if (voxel_filter_enable_){
@@ -268,6 +297,17 @@ void FakeSensor::sensorUpdateTimerCB()
 		vox_grid_->setLeafSize(voxel_size_, voxel_size_, voxel_size_);
 		vox_grid_->filter(*sensor_cloud_);
 	}
+
+	// Filter away points very close to the agent
+
+	pass_fil_x_-> setInputCloud (sensor_cloud_);
+	pass_fil_y_-> setInputCloud (sensor_cloud_);
+	pass_fil_z_-> setInputCloud (sensor_cloud_);
+
+	pass_fil_x_-> filter (*sensor_cloud_);
+	pass_fil_y_-> filter (*sensor_cloud_);
+	pass_fil_z_-> filter (*sensor_cloud_);
+	
 
 	// Publish cloud 
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;

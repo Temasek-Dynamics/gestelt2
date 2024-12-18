@@ -198,7 +198,7 @@ namespace viz_helper{
       }
     }
 
-    void pubFrontEndPath( const std::vector<Eigen::Vector3d>& path, 
+    void pubFrontEndPath( const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>& path, 
                           Publisher<Marker>& publisher,
                           const std::string& frame_id) 
     {

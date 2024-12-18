@@ -277,6 +277,9 @@ public:
   // Get number of voxels in local map
   Eigen::Vector3i getLocalMapNumVoxels() const;
 
+  // Get points in local map (in fixed map frame). Used by safe flight corridor generation
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLclObsPts();
+
   // Get inflation value
   double getInflation() const;
 
@@ -326,6 +329,9 @@ private:
   bool dbg_input_entire_map_{false}; // flag to indicate that map will be constructed at the start from the entire pcd map (instead of through incremental sensor data)
   std::string entire_pcd_map_topic_; // Topic to listen for an entire PCD for debugging
 
+  bool dyn_obs_mark_in_occ_map_{false}; // flag to mark dynamic obstacles in occupancy map as occupied
+  double time_vel_{0.1}; // [s] time along velocity vector to mark as occupied
+
   bool check_collisions_{true}; // Flag for checking collisions
   double col_warn_radius_, col_fatal_radius_; // collision check radius
 
@@ -361,9 +367,10 @@ private:
   /* Data structures for maps */
   MappingData md_;  // Mapping data
 
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> local_occ_map_pts_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> local_global_occ_map_pts_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_lclmapframe_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_fixedmapframe_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_map_frame_;  // Point cloud global map in UAV Origin frame
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_fixedmapframe_; // Vector of obstacle points used for sfc generation
 
   std::unique_ptr<BonxaiT> bonxai_map_; // Bonxai data structure 
   std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
@@ -378,7 +385,7 @@ private:
 
   /* Mutexes */
   std::mutex bool_map_3d_mtx_;  // Mutex lock for bool map 3d
-  std::mutex lcl_occ_map_mtx_;  // Mutex lock for local_occ_map_pts_
+  std::mutex lcl_occ_map_mtx_;  // Mutex lock for lcl_pcd_lclmapframe_
 
   /* Stopwatch for profiling performance */
   logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
@@ -402,13 +409,17 @@ inline void VoxelMap::updateSwarmState(
 
 /* Getters */
 
-inline double VoxelMap::getRes() const{ return mp_.resolution_; }
+inline double VoxelMap::getRes() const{ 
+  return mp_.resolution_; }
 
-inline Eigen::Vector3d VoxelMap::getGlobalOrigin() const{ return mp_.global_map_origin_; }
+inline Eigen::Vector3d VoxelMap::getGlobalOrigin() const{ 
+  return mp_.global_map_origin_; }
 
-inline Eigen::Vector3d VoxelMap::getLocalMapOrigin() const{ return mp_.local_map_origin_; }
+inline Eigen::Vector3d VoxelMap::getLocalMapOrigin() const{ 
+  return mp_.local_map_origin_; }
 
-inline Eigen::Vector3d VoxelMap::getLocalMapMax() const{ return mp_.local_map_max_; }
+inline Eigen::Vector3d VoxelMap::getLocalMapMax() const{ 
+  return mp_.local_map_max_; }
 
 inline Eigen::Vector3d VoxelMap::getLocalMapOrigin(const double& offset) const{ 
   return mp_.local_map_origin_ + Eigen::Vector3d::Constant(offset); }
@@ -416,9 +427,17 @@ inline Eigen::Vector3d VoxelMap::getLocalMapOrigin(const double& offset) const{
 inline Eigen::Vector3d VoxelMap::getLocalMapMax(const double& offset) const{ 
   return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); }
 
-inline Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { return mp_.global_map_num_voxels_; }
+inline Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { 
+  return mp_.global_map_num_voxels_; }
 
-inline Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { return mp_.local_map_num_voxels_; }
+inline Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { 
+  return mp_.local_map_num_voxels_; }
+
+inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VoxelMap::getLclObsPts(){
+  std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
+  return lcl_pts_fixedmapframe_;
+}
+
 
 inline double VoxelMap::getInflation() const{ return mp_.static_inflation_; }
 

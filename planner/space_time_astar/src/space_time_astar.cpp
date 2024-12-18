@@ -80,9 +80,19 @@ void SpaceTimeAStar::expandVoroBubble(const VCell_T& origin_cell)
                     continue; // skip if not 4 connected connection
                 }
 
-                if (dyn_voro_arr_[origin_cell.z_cm]->getSqrDistToObs(nx,ny) < 1) 
-                {
-                    continue;   // Skip if occupied or near obstacle
+                if (abs(nx-origin_cell.x) <= 1 && abs(ny-origin_cell.y) <= 1) { // around starting cell
+
+                    if (dyn_voro_arr_[origin_cell.z_cm]->getSqrDistToObs(nx,ny) < 1) 
+                    {
+                        continue;   // Skip if occupied or near obstacle
+                    }
+                }
+                else {
+
+                    if (dyn_voro_arr_[origin_cell.z_cm]->getSqrDistToObs(nx,ny) <= 4) 
+                    {
+                        continue;   // Skip if occupied or near obstacle
+                    }
                 }
 
                 IntPoint nb_grid(nx, ny);
@@ -94,7 +104,7 @@ void SpaceTimeAStar::expandVoroBubble(const VCell_T& origin_cell)
 
                 marked_bubble_cells_[origin_cell.z_cm].insert(nb_grid);
 
-                if (!dyn_voro_arr_[origin_cell.z_cm]->isVoronoi(nx,ny)){ 
+                if (!dyn_voro_arr_[origin_cell.z_cm]->isVoronoiAlternative(nx,ny)){ 
                     // if 4-con neighbor is not voronoi then push to list
                     q.push(nb_grid); 
                 }
@@ -158,15 +168,22 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     if (!dyn_voro_arr_[start_z_cm]->posToIdx(
         DblPoint(start_pos_3d(0), start_pos_3d(1)), start_node_2d))
     {   
-        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] Start position is not within map bounds!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": "
+            << "[HCA*] Start position (" << start_pos_3d.transpose() 
+            << "), Start Node (" << start_node_2d.x << ", " << start_node_2d.y 
+            << ") is not within map bounds (" 
+            << dyn_voro_arr_[start_z_cm]->getSizeX() << "," << dyn_voro_arr_[start_z_cm]->getSizeY() << ")" << std::endl;
         return false;
     }
     if (!dyn_voro_arr_[goal_z_cm]->posToIdx(
         DblPoint(goal_pos_3d(0), goal_pos_3d(1)), goal_node_2d))
     {   
-        std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-            "[HCA*] Goal position is not within map bounds!" << std::endl;
+        std::cerr << "D" << astar_params_.drone_id <<  ": "
+            << "[HCA*] Goal position (" << goal_pos_3d.transpose() 
+            << "), Goal Node (" << goal_node_2d.x << ", " << goal_node_2d.y 
+            << ") is not within map bounds (" 
+            << dyn_voro_arr_[goal_z_cm]->getSizeX() << "," << dyn_voro_arr_[goal_z_cm]->getSizeY() << ")" << std::endl;
+
         return false;
     }
 
@@ -191,78 +208,16 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     // set start and goal cell as obstacle
     dyn_voro_arr_[start_node.z_cm]->setObstacle(start_node.x, start_node.y);
     dyn_voro_arr_[goal_node.z_cm]->setObstacle(goal_node.x, goal_node.y);
-
     // update distance map and Voronoi diagram
     dyn_voro_arr_[start_node.z_cm]->update(); 
     dyn_voro_arr_[goal_node.z_cm]->update(); 
-
-    // Add cells around start and goal node to the marked bubble cells array
+    dyn_voro_arr_[start_node.z_cm]->updateAlternativePrunedDiagram();
+    dyn_voro_arr_[goal_node.z_cm]->updateAlternativePrunedDiagram();
     expandVoroBubble(start_node);
     expandVoroBubble(goal_node);
-
+    // Add cells around start and goal node to the marked bubble cells array
     dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
     dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
-
-    ////////
-    // Method A: use nearest voronoi cell
-    ////////
-    
-    // // Get voronoi vertices and put them into KDTree
-    // std::vector<Eigen::Vector2i> start_voro_vtx, goal_voro_vtx;
-
-    // for (int x=0; x < dyn_voro_arr_[start_node.z_cm]->getSizeX(); x++) {
-    //   for (int y=0; y < dyn_voro_arr_[start_node.z_cm]->getSizeY(); y++) {
-    //     if (dyn_voro_arr_[start_node.z_cm]->isVoronoiVertex(x, y)){
-    //       start_voro_vtx.push_back(Eigen::Vector2i{x, y});
-    //     }
-    //   }
-    // }
-
-    // for (int x=0; x < dyn_voro_arr_[goal_node.z_cm]->getSizeX(); x++) {
-    //   for (int y=0; y < dyn_voro_arr_[goal_node.z_cm]->getSizeY(); y++) {
-    //     if (dyn_voro_arr_[goal_node.z_cm]->isVoronoiVertex(x, y)){
-    //       goal_voro_vtx.push_back(Eigen::Vector2i{x, y});
-    //     }
-    //   }
-    // }
-    
-    // // Get nearest voronoi cell for start and ghoal
-    // auto start_kdtree = 
-    //     KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, start_voro_vtx);
-    // auto goal_kdtree = 
-    //     KDTreeVectorOfVectorsAdaptor<std::vector<Eigen::Vector2i>, double>(2, goal_voro_vtx);
-
-    // const size_t        num_closest = 1;
-    // std::vector<size_t> out_indices(num_closest);
-    // std::vector<double> out_distances_sq(num_closest);
-    // std::vector<double> query_pt(2);
-
-    // query_pt[0] = (double)start_node_2d.x;
-    // query_pt[1] = (double)start_node_2d.y;
-    // start_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
-
-    // Eigen::Vector2i nearest_s_v_eig = start_voro_vtx[out_indices[0]];
-    // IntPoint nearest_s_v(nearest_s_v_eig(0), nearest_s_v_eig(1)); 
-
-    // query_pt[0] = (double)goal_node_2d.x;
-    // query_pt[1] = (double)goal_node_2d.y;
-    // goal_kdtree.query(&query_pt[0], num_closest, &out_indices[0], &out_distances_sq[0]);
-
-    // Eigen::Vector2i nearest_g_v_eig = start_voro_vtx[out_indices[0]];
-    // IntPoint nearest_g_v(nearest_g_v_eig(0), nearest_g_v_eig(1)); 
-
-    // Construct path from start/goal to nearest voronoi cell and mark as bubble cell
-    // if (!markLineOfSight(start_node_2d, nearest_s_v, start_node.z_cm, marked_bubble_cells_)){
-    //     std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-    //         "[HCA*] No clear line of sight from start to nearest voronoi cell" << std::endl;
-    //     return false;
-    // }
-
-    // if (!markLineOfSight(nearest_g_v, goal_node_2d, goal_node.z_cm, marked_bubble_cells_)){
-    //     std::cerr << "D" << astar_params_.drone_id <<  ": " <<
-    //         "[HCA*] No clear line of sight from goal to nearest voronoi cell" << std::endl;
-    //     return false;
-    // }
 
     // Set dynamic voronoi used for planning
     dyn_voro_pln_ = dyn_voro_arr_[start_node.z_cm];
@@ -324,7 +279,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                         continue;
                     }
                     
-                    if (!(dyn_voro_arr[z_cm]->isVoronoi(nx, ny) 
+                    if (!(dyn_voro_arr[z_cm]->isVoronoiAlternative(nx, ny) 
                         || (marked_bubble_cells.find(z_cm) != marked_bubble_cells.end()
                             && marked_bubble_cells[z_cm].find(IntPoint(nx, ny)) != marked_bubble_cells[z_cm].end())))
                     {
@@ -341,10 +296,13 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
 
             // Check if current cell is voronoi vertex. 
             // IF so, then add neighbors that go up and down
-            if (dyn_voro_arr[z_cm]->isVoronoiVertex(grid_pos(0), grid_pos(1))){
+            if (dyn_voro_arr_[z_cm]->getSqrDistToObs(grid_pos(0), grid_pos(1)) > 2) {
+            // if (dyn_voro_arr[z_cm]->isVoronoiAlternative(grid_pos(0), grid_pos(1))){
+                int z_cm_top = z_cm + voro_params_.z_sep_cm;
+                int z_cm_btm = z_cm - voro_params_.z_sep_cm;
+
                 if (z_cm == voro_params_.min_height_cm){
                     // Check Top layer only
-                    int z_cm_top = z_cm + voro_params_.z_sep_cm;
                     if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
@@ -354,7 +312,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 else if (z_cm == voro_params_.max_height_cm){
                     // Check Bottom layer only
-                    int z_cm_btm = z_cm - voro_params_.z_sep_cm;
                     if (!dyn_voro_arr[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
@@ -364,8 +321,6 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 else {
                     // Check both Top and Bottom layer 
-                    int z_cm_top = z_cm + voro_params_.z_sep_cm;
-                    int z_cm_btm = z_cm - voro_params_.z_sep_cm;
                     if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
@@ -452,13 +407,13 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
 {
     // Clear existing data structures
     path_idx_vt_.clear();
-
     path_pos_t_.clear();
     path_pos_.clear();
 
     path_idx_smoothed_t_.clear();
     path_smoothed_.clear();
     path_smoothed_t_.clear();
+    path_smoothed_idx_.clear();
 
     // Trace back the nodes through the pointer to their parent
     VCell_T cur_node = final_node;
@@ -470,14 +425,11 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
     // Push back the start node
     path_idx_vt_.push_back(cur_node);
 
-    // // Reverse the order of the path so that it goes from start to goal
-    // std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
+    std::reverse(path_idx_vt_.begin(), path_idx_vt_.end());
 
     // For each gridnode, get the position and index,
     // So we can obtain a path in terms of indices and positions
-    // for (const VCell_T& cell : path_idx_vt_)
-    // {
-    for (int i = path_idx_vt_.size()-1; i >= 0; i--)
+    for (size_t i = 0; i < path_idx_vt_.size(); i++)
     {
         DblPoint map_2d_pos;
         int z_cm = path_idx_vt_[i].z_cm;
@@ -493,43 +445,50 @@ void SpaceTimeAStar::tracePath(const VCell_T& final_node)
 
     }
 
-    // // /* Get smoothed path */
+    // /* Get smoothed path */
 
-    // // For each gridnode, get the position and index,
-    // // So we can obtain a path in terms of indices and positions
-    // path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
-    // for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
-    // {
-    // if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ // If different height
-    //     // Add current point to smoothed path
-    //     path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-    // }
-    // else {
-    //     IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
-    //     IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
+    // For each gridnode, get the position and index,
+    // So as to get a path in terms of indices and positions
+    path_idx_smoothed_t_.push_back(path_idx_vt_[0]);
+    path_smoothed_idx_.push_back(0);
+    for (size_t i = 1; i < path_idx_vt_.size()-1; i++)
+    {
+        // If different height
+        if (path_idx_smoothed_t_.back().z_cm != path_idx_vt_[i].z_cm){ 
+            // Add current point to smoothed path
+            path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+            path_smoothed_idx_.push_back(i);
+        }
+        // Else check for line of sight
+        else {
+            IntPoint a(path_idx_smoothed_t_.back().x, path_idx_smoothed_t_.back().y);
+            IntPoint b(path_idx_vt_[i].x, path_idx_vt_[i].y);
 
-    //     if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
-    //     // Add current point to smoothed path
-    //     path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
-    //     }
-    // }
-    // }
-    // path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+            if (!lineOfSight(a, b, path_idx_smoothed_t_.back().z_cm )){ // If no line of sight
+                // Add current point to smoothed path
+                path_idx_smoothed_t_.push_back(path_idx_vt_[i]);
+                path_smoothed_idx_.push_back(i);
+            }
+        }
+    }
+    // add goal
+    path_idx_smoothed_t_.push_back(path_idx_vt_.back());
+    path_smoothed_idx_.push_back(path_idx_vt_.size()-1);
 
-    // // For each gridnode, get the position and index,
-    // // So we can obtain a path in terms of indices and positions
-    // for (const VCell_T& cell : path_idx_smoothed_t_)
-    // {
-    // DblPoint map_2d_pos;
+    // For each gridnode, get the position and index,
+    // So we can obtain a path in terms of indices and positions
+    for (const VCell_T& cell : path_idx_smoothed_t_)
+    {
+        DblPoint map_2d_pos;
 
-    // // Convert to map position
-    // dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
-    // // Add space time map position to path and transform it from local map to world frame
-    // path_smoothed_t_.push_back(
-    //     Eigen::Vector4d{map_2d_pos.x, map_2d_pos.y, cell.z_m, (double) cell.t});
-    // path_smoothed_.push_back(
-    //     Eigen::Vector3d{map_2d_pos.x, map_2d_pos.y, cell.z_m});
-    // }
+        // Convert to map position
+        dyn_voro_arr_[cell.z_cm]->idxToPos(IntPoint(cell.x, cell.y), map_2d_pos);
+        // Add space time map position to path and transform it from local map to world frame
+        path_smoothed_t_.push_back(
+            Eigen::Vector4d{map_2d_pos.x, map_2d_pos.y, cell.z_m, (double) cell.t});
+        path_smoothed_.push_back(
+            Eigen::Vector3d{map_2d_pos.x, map_2d_pos.y, cell.z_m});
+    }
 }
 
 } // namespace global_planner

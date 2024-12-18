@@ -19,13 +19,16 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 # SCENARIO_NAME = "forest_dense_1"
+# SCENARIO_NAME = "forest_sparse_1"
+SCENARIO_NAME = "forward_flight_8"
+# SCENARIO_NAME = "forward_flight_16"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
 # SCENARIO_NAME = "antipodal_swap_4_sparse"
 # SCENARIO_NAME = "antipodal_swap_4_dense"
 # SCENARIO_NAME = "antipodal_swap_4_empty"
 
-SCENARIO_NAME = "antipodal_swap_8_normal"
+# SCENARIO_NAME = "antipodal_swap_8_normal"
 # SCENARIO_NAME = "antipodal_swap_8_sparse"
 # SCENARIO_NAME = "map_test"
 
@@ -125,7 +128,7 @@ def generate_launch_description():
 
 
     # Mission node: Sends goals to agents
-    swarm_collision_checker = Node(
+    swarm_collision_checker_node = Node(
         package='swarm_collision_checker',
         executable='swarm_collision_checker_node',
         output='screen',
@@ -174,9 +177,11 @@ def generate_launch_description():
         prefix = "/d" + str(id) + "/"
         bag_topics.append(prefix + "odom")
         bag_topics.append(prefix + "static_collisions")
+        bag_topics.append(prefix + "agent_id_text")
         # Subscription to paths
         bag_topics.append(prefix + "fe_plan/viz")
         bag_topics.append(prefix + "minco_traj_viz")
+        bag_topics.append(prefix + "mpc/traj")
         # Subscription to 3d occupancy voxel map
         bag_topics.append(prefix + "occ_map")
         # Subscription to maps
@@ -187,6 +192,9 @@ def generate_launch_description():
         bag_topics.append(prefix + "voro_map_100")
         bag_topics.append(prefix + "voro_map_150")
         bag_topics.append(prefix + "voro_map_200")
+        # Subscription to safe flight corridor
+        bag_topics.append(prefix + "sfc")
+        
     bag_topics.append("/swarm_collision_checker/collisions")
     bag_topics.append("/rosout")
     bag_topics.append("/tf")
@@ -205,19 +213,11 @@ def generate_launch_description():
         output='log'
     )
 
-    # rosbag_record = Node(
-    #     package='rosbag2_transport',
-    #     executable='recorder',
-    #     name='recorder',
-    #     output="screen",
-    #     parameters=["/path/to/params.yaml"],
-    # )
-
     return LaunchDescription([
         # Central nodes
         world_to_map_tf,
         fake_map,
-        swarm_collision_checker,
+        swarm_collision_checker_node,
         rosbag_record,
         # Visualization
         rviz_node,
