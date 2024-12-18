@@ -7,8 +7,6 @@ Panels:
         - /Grid1
         - /TF1/Frames1
         - /d01
-        - /d01/maps1
-        - /d01/maps1/occ1
         - /d11/front_end1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
@@ -119,7 +117,7 @@ Visualization Manager:
           Enabled: true
           Name: swarm_collisions
           Namespaces:
-            swarm_collision: true
+            {}
           Topic:
             Depth: 5
             Durability Policy: Volatile
@@ -214,7 +212,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                {}
+                plan_req_viz: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3113,7 +3111,7 @@ Visualization Manager:
               Color: 255; 255; 255
               Color Transformer: Intensity
               Decay Time: 0
-              Enabled: false
+              Enabled: true
               Invert Rainbow: false
               Max Color: 255; 255; 255
               Max Intensity: 4096
@@ -3133,7 +3131,7 @@ Visualization Manager:
                 Value: /d5/occ_map
               Use Fixed Frame: true
               Use rainbow: true
-              Value: false
+              Value: true
             - Alpha: 0.699999988079071
               Binary representation: false
               Binary threshold: 100
@@ -3195,6 +3193,24 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d5/static_collisions
           Value: true
+        - Alpha: 0.10000000149011612
+          BoundColor: 153; 193; 241
+          Class: decomp_rviz_plugins/PolyhedronArray
+          Enabled: true
+          MeshColor: 0; 170; 255
+          Name: sfc
+          Scale: 0.10000000149011612
+          State: Both
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            Filter size: 10
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /d5/sfc
+          Value: true
+          VsColor: 0; 255; 0
+          VsScale: 0.10000000149011612
       Enabled: true
       Name: d5
     - Class: rviz_common/Group
@@ -4733,21 +4749,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
-      Class: rviz_default_plugins/TopDownOrtho
+      Class: rviz_default_plugins/XYOrbit
+      Distance: 6.193639278411865
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: 4.840695381164551
+        Y: -25.395679473876953
+        Z: -1.52587890625e-05
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 45.45229721069336
+      Pitch: 1.209796667098999
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz_default_plugins)
-      X: 0.4335384666919708
-      Y: 1.0377534627914429
+      Value: XYOrbit (rviz_default_plugins)
+      Yaw: 4.832396030426025
     Saved: ~
 Window Geometry:
   Displays:

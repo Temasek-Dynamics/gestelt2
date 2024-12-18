@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(voronoi_planner)
+project(navigator)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
@@ -59,22 +59,22 @@ endforeach()
 
 # Add executable
 
-add_executable(voronoi_planner_node 
-  src/voronoi_planner_node.cpp 
-  src/voronoi_planner.cpp)
-ament_target_dependencies(voronoi_planner_node 
+add_executable(navigator_node 
+  src/navigator_node.cpp 
+  src/navigator.cpp)
+ament_target_dependencies(navigator_node 
   ${ROS_LIBRABRIES}
 )
-target_include_directories(voronoi_planner_node PUBLIC
+target_include_directories(navigator_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(voronoi_planner_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_link_libraries(voronoi_planner_node
+target_compile_features(navigator_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_libraries(navigator_node
   Eigen3::Eigen
   # nlohmann_json::nlohmann_json
 )
 
-install(TARGETS voronoi_planner_node
+install(TARGETS navigator_node
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

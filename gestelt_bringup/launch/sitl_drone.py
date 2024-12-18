@@ -134,11 +134,11 @@ def generate_launch_description():
 
     ''' Navigator: Planner module '''
     navigator_node = Node(
-        package='voronoi_planner',
-        executable='voronoi_planner_node',
+        package='navigator',
+        executable='navigator_node',
         output='screen',
         shell=False,
-        name='voronoi_planner',
+        name='navigator',
         parameters=[
             {'drone_id': drone_id},
             {'map_frame': map_frame},

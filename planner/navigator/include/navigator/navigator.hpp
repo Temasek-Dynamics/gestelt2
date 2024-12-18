@@ -23,8 +23,8 @@
  *
  ****************************************************************************/
 
-#ifndef _VORONOI_PLANNER_HPP_
-#define _VORONOI_PLANNER_HPP_
+#ifndef _NAVIGATOR_HPP_
+#define _NAVIGATOR_HPP_
 
 #include <Eigen/Eigen>
 
@@ -52,6 +52,7 @@
 #include <gestelt_interfaces/msg/plan_request.hpp>
 #include <gestelt_interfaces/msg/space_time_path.hpp>
 #include <gestelt_interfaces/msg/goals.hpp>
+#include <gestelt_interfaces/msg/nav_state.hpp>
 
 #include <minco_interfaces/msg/polynomial_trajectory.hpp>
 #include <minco_interfaces/msg/minco_trajectory.hpp>
@@ -64,6 +65,7 @@
 /* Map representations*/
 #include <voxel_map/voxel_map.hpp> 
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
+#include <planner_utils/voronoi_roadmap.hpp>
 
 /* Global Search*/
 #include <space_time_astar/space_time_astar.hpp>
@@ -198,13 +200,13 @@ private:
   std::vector<Eigen::Vector3d> wp_queue;
 };
 
-class VoronoiPlanner : public rclcpp::Node
+class Navigator : public rclcpp::Node
 {
 public:
 
-  VoronoiPlanner();
+  Navigator();
 
-  virtual ~VoronoiPlanner();
+  virtual ~Navigator();
 
   /* Initialize planner and map */
   void init();
@@ -216,15 +218,6 @@ public:
   /* Core methods */
 
   /**
-   * @brief Plan a path from start to goal
-   * 
-   * @param goal 
-   * @return true planning succeeded
-   * @return false planning failed
-   */
-  void plan(const Eigen::Vector3d& goal_pos);
-
-  /**
    * @brief (Linear MPC) Plan a path from start to goal
    * 
    * @param goal 
@@ -233,29 +226,11 @@ public:
    */
   bool planCommlessMPC(const Eigen::Vector3d& goal_pos);
 
-  /**
-   * @brief (COMMS-LESS) Plan a path from start to goal 
-   * 
-   * @param goal 
-   * @return true planning succeeded
-   * @return false planning failed
-   */
-  bool planCommlessMINCO(const Eigen::Vector3d& goal_pos);
-
-  /**
-   * @brief (COMMS-BASED) Plan a path from start to goal
-   * 
-   * @param goal 
-   * @return true planning succeeded
-   * @return false planning failed
-   */
-  bool planCommMINCO(const Eigen::Vector3d& goal_pos);
-
 private:
   /* Timer callbacks */
 
-  /* Timer for publishing heartbeat*/
-  void heartbeatTimerCB();
+  /* Timer for publishing state of planner*/
+  void pubStateTimerCB();
 
   /* Timer for front-end planner*/
   void planFETimerCB();
@@ -267,9 +242,6 @@ private:
   void sendMPCCmdTimerCB();
 
   /* Subscription callbacks */
-
-  /* Front end plan subscription */
-  void FEPlanSubCB(const gestelt_interfaces::msg::SpaceTimePath::UniquePtr msg);
 
   /* Subscription callback to goals */
   void goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg);
@@ -304,7 +276,7 @@ private:
   /**
    * Periodically running timers
    */
-	rclcpp::TimerBase::SharedPtr heartbeat_timer_;	    // Timer for heartbeat
+	rclcpp::TimerBase::SharedPtr pub_state_timer_;	    // Timer for heartbeat
 	rclcpp::TimerBase::SharedPtr plan_fe_timer_;	    // Timer for planning front end path
 	rclcpp::TimerBase::SharedPtr gen_voro_map_timer_; // Timer for generating discretized voronoi diagram
 	rclcpp::TimerBase::SharedPtr send_mpc_cmd_timer_; // Timer for sampling predicted MPC path
@@ -320,7 +292,7 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
 
-  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr heartbeat_pub_; // Publish MPC commands
+  rclcpp::Publisher<gestelt_interfaces::msg::NavState>::SharedPtr nav_state_pub_; // Publish Navigator state
 
   // Planning publishers
   rclcpp::Publisher<gestelt_interfaces::msg::SpaceTimePath>::SharedPtr fe_plan_broadcast_pub_; // Publish front-end plans broadcasted to other agents
@@ -486,11 +458,17 @@ private:
   std::string local_map_frame_;  // Frame ID of UAV's local map
 
   // Planning params
+
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
-  double heartbeat_freq_{10.0}; // [Hz] Frequency for publishing heartbeat
+  
+  double pub_state_freq_{10.0}; // [Hz] Frequency for publishing state
   double fe_planner_freq_{10.0}; // [Hz] Frequency for front-end planning
   double gen_voro_map_freq_{20.0}; // [Hz] Frequency for front-end planning
+  
   double sqr_goal_tol_{0.1}; // [m] Distance to goal before it is considered fulfilled.
+  
+  double planner_recovery_timeout_{3.0}; // Recovery timeout for planner
+  
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time
   
@@ -518,21 +496,23 @@ private:
   Eigen::Vector3d map_origin_{0.0, 0.0, 0.0}; // Fixed Map origin relative to world
 
   /* Mutexes and condition variables*/
-  std::mutex rsvn_tbl_mtx_;
-  std::mutex voro_map_mtx_; // Mutex for voronoi map
+  std::mutex rsvn_tbl_mtx_; // Mutex for reservation table
+  std::mutex roadmap_mtx_; // Mutex for voronoi map
   std::mutex mpc_pred_mtx_; // MUtex for MPC predicted trajectories
 
-  std::condition_variable voro_cv_;
-  bool voro_ready_{false};
-  bool voro_consumed_{true};
+  std::condition_variable cons_map_cv_; // cond. var. for consuming voronoi roadmap
+  std::condition_variable prod_map_cv_;  // cond. var. for producing voronoi roadmap
+  bool map_ready_for_cons_{false}; // Indicates voronoi roadmap ready for consumption
 
   /* Flags*/
+  bool currently_planning_{false}; // flag to indicate navigator has a goal to plan to
   bool plan_complete_{false}; // flag to indicate a plan has been completed
 
   /* Mapping */
   std::unique_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
   voxel_map::BoolMap3D bool_map_3d_; // Bool map slices 
   std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
+  std::shared_ptr<VoronoiRoadmap> voro_roadmap_;
 
   /* Planner  */
   std::unique_ptr<global_planner::SpaceTimeAStar> fe_planner_; // Front end planner
@@ -546,6 +526,7 @@ private:
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> fe_path_smoothed_; // [MAP FRAME] Front-end Space path in space coordinates (x,y,z) 
   std::vector<Eigen::Vector4d> fe_path_with_t_smoothed_; // [MAP FRAME]  Front-end Space time  path in space-time coordinates (x,y,z,t)
 
+  double last_plan_success_{-1.0}; // Time that plan was last successful
 
   /* SFC */
   std::unique_ptr<sfc::PolytopeSFC> poly_sfc_gen_; // Polytope safe flight corridor generator
@@ -556,9 +537,6 @@ private:
   
   /* MPC */
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller
-
-  Eigen::Vector3d p_optimal_, v_optimal_, a_optimal_, u_optimal_;
-  bool mpc_success_;
 
   std::vector<Eigen::Vector3d> mpc_pred_u_; // Predicted MPC control trajectory
   std::vector<Eigen::Vector3d> mpc_pred_pos_; // Predicted MPC position trajectory
@@ -578,14 +556,14 @@ private:
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_; // Class for logging
 
-}; // class VoronoiPlanner
+}; // class Navigator
 
-inline bool VoronoiPlanner::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
+inline bool Navigator::isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal)
 {
   return (pos - goal).squaredNorm() < sqr_goal_tol_;
 }
 
-inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
+inline void Navigator::voronoimapToOccGrid( const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                                                 const double& origin_x, const double& origin_y, 
                                                 nav_msgs::msg::OccupancyGrid& occ_grid)
 {
@@ -625,7 +603,7 @@ inline void VoronoiPlanner::voronoimapToOccGrid( const dynamic_voronoi::DynamicV
   }
 }
 
-inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
+inline void Navigator::occmapToOccGrid(const dynamic_voronoi::DynamicVoronoi& dyn_voro, 
                                             const double& origin_x, const double& origin_y,
                                             nav_msgs::msg::OccupancyGrid& occ_grid)
 {
@@ -663,7 +641,7 @@ inline void VoronoiPlanner::occmapToOccGrid(const dynamic_voronoi::DynamicVorono
   }
 }
 
-inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Trajectory>& traj, 
+inline void Navigator::polyTrajToMincoMsg(const std::shared_ptr<minco::Trajectory>& traj, 
                               const double& traj_start_time,
                               minco_interfaces::msg::PolynomialTrajectory &poly_msg, 
                               minco_interfaces::msg::MincoTrajectory &MINCO_msg)
@@ -741,7 +719,7 @@ inline void VoronoiPlanner::polyTrajToMincoMsg(const std::shared_ptr<minco::Traj
 }
 
 
-inline bool VoronoiPlanner::sampleMINCOTrajectory(
+inline bool Navigator::sampleMINCOTrajectory(
   const std::shared_ptr<minco::Trajectory>& traj,
   const double& time_samp, 
   Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
@@ -768,7 +746,7 @@ inline bool VoronoiPlanner::sampleMINCOTrajectory(
   return true;
 }
 
-inline bool VoronoiPlanner::sampleMPCTrajectory(
+inline bool Navigator::sampleMPCTrajectory(
   std::unique_ptr<pvaj_mpc::MPCController>& mpc,
   const double& time_samp, 
   Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
@@ -813,7 +791,7 @@ inline bool VoronoiPlanner::sampleMPCTrajectory(
 
 // P1: Start
 // P2: global goal
-inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
+inline Eigen::Vector3d Navigator::getRHPGoal(
   const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
   const Eigen::Vector3d& local_map_min, const Eigen::Vector3d& local_map_max)
 {
@@ -949,7 +927,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
   return P3_gbl;
 }
 
-// inline Eigen::Vector2d VoronoiPlanner::calculateYaw(
+// inline Eigen::Vector2d Navigator::calculateYaw(
 //     const std::vector<Eigen::Vector3d>& fe_path,
 //     const double& e_t_start, const double& dt);
 // 	{
@@ -1008,7 +986,7 @@ inline Eigen::Vector3d VoronoiPlanner::getRHPGoal(
 // 		return yaw_yawrate;
 // 	}
 
-inline void VoronoiPlanner::pubPVAJCmd(	const Eigen::Vector3d& pos, 
+inline void Navigator::pubPVAJCmd(	const Eigen::Vector3d& pos, 
                                     const Eigen::Vector2d& yaw_yawrate,
                                     const Eigen::Vector3d& vel,
                                     const Eigen::Vector3d& acc,
@@ -1029,7 +1007,7 @@ inline void VoronoiPlanner::pubPVAJCmd(	const Eigen::Vector3d& pos,
 	lin_mpc_cmd_pub_->publish(msg);
 }
 
-inline void VoronoiPlanner::pubMPCPath(std::vector<Eigen::Vector3d> &path) {
+inline void Navigator::pubMPCPath(std::vector<Eigen::Vector3d> &path) {
     nav_msgs::msg::Path msg;
 
     msg.header.frame_id = map_frame_;
@@ -1049,6 +1027,6 @@ inline void VoronoiPlanner::pubMPCPath(std::vector<Eigen::Vector3d> &path) {
 } // namespace navigator
 
 
-#endif // _VORONOI_PLANNER_HPP_
+#endif // _NAVIGATOR_HPP_
 
 

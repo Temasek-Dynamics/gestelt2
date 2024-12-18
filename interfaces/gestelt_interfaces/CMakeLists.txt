@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PlanRequest.msg"
   "msg/SpaceTimePath.msg"
   "msg/UAVState.msg"
+  "msg/NavState.msg"
   DEPENDENCIES 
     std_msgs 
     geometry_msgs 

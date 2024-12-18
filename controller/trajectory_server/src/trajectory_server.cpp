@@ -83,7 +83,7 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("offboard_control_mode", 1);
 
 	/* Frequencies for timers and periodic publishers*/
-	this->declare_parameter("navigator_heartbeat_timeout", 0.5);
+	this->declare_parameter("navigator_state_timeout", 0.5);
 	this->declare_parameter("set_offb_ctrl_freq", 4.0);
 	this->declare_parameter("pub_state_freq", 30.0);
 	this->declare_parameter("pub_ctrl_freq", 30.0);
@@ -100,7 +100,7 @@ void TrajectoryServer::initParams()
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
 	/* Frequencies for timers and periodic publishers*/
-	nav_heartbeat_timeout_ = this->get_parameter("navigator_heartbeat_timeout").as_double();
+	nav_state_timeout_ = this->get_parameter("navigator_state_timeout").as_double();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
 	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
 	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
@@ -150,9 +150,9 @@ void TrajectoryServer::initPubSubTimers()
 		"uav_state", 10);
 
 	/* Subscribers */
-	navigator_heartbeat_sub_ = this->create_subscription<std_msgs::msg::Empty>(
-		"navigator/heartbeat", rclcpp::SensorDataQoS(), 
-		std::bind(&TrajectoryServer::navHeartbeatSubCB, this, _1), fcu_sub_opt);
+	navigator_state_sub_ = this->create_subscription<gestelt_interfaces::msg::NavState>(
+		"navigator/state", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::navStateSubCB, this, _1), fcu_sub_opt);
 
 	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
 		"/all_uav_command", rclcpp::ServicesQoS(), 
@@ -193,8 +193,19 @@ void TrajectoryServer::initSrv()
 /****************** */
 /* SUBSCRIBER CALLBACKS */
 /****************** */
-void TrajectoryServer::navHeartbeatSubCB(const std_msgs::msg::Empty::UniquePtr msg)
+void TrajectoryServer::navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg)
 {
+	// process msg
+	// msg->state
+	// gestelt_interfaces::msg::NavState::IDLE
+	// gestelt_interfaces::msg::NavState::PLANNING
+	// gestelt_interfaces::msg::NavState::PLANNING_TIMEOUT
+
+	// if (msg->state == gestelt_interfaces::msg::NavState::PLANNING_TIMEOUT){
+	// 	// Set to landing
+	// 	sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
+	// }
+
 	last_nav_heartbeat_ = this->get_clock()->now().seconds();
 }
 
@@ -402,7 +413,7 @@ void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVComma
 	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
 					msg->command, msg->mode, msg->value));
 
-	// Checkn if value and mode is within bounds for specific commands
+	// Check if value and mode is within bounds for specific commands
 	switch (msg->command)
 	{
 		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_TAKEOFF:  
@@ -435,9 +446,9 @@ void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVComma
 
 void TrajectoryServer::setOffboardTimerCB()
 {
-	if (last_nav_heartbeat_ - this->get_clock()->now().seconds() > nav_heartbeat_timeout_){
-		// set to hovering
-		return;
+	if (last_nav_heartbeat_ - this->get_clock()->now().seconds() > nav_state_timeout_){
+		// Set to landing
+		sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
 	}
 
 	gestelt_interfaces::msg::UAVState uav_state;

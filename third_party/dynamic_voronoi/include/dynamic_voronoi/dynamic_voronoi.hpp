@@ -46,9 +46,11 @@ public:
   void initializeMap(int _sizeX, int _sizeY, const std::vector<bool>& bool_map_1d_arr) ;
 
   //! update distance map and Voronoi diagram to reflect the changes
-  void update(bool updateRealDist=true) ;
+  void update(bool updateRealDist=true);
+
   //! prune the Voronoi diagram
-  void prune() ;
+  void prune();
+
   //! prune the Voronoi diagram by globally revisiting all Voronoi nodes. 
   // Takes more time but gives a more sparsely pruned Voronoi graph. 
   // You need to call this after every call to update()
@@ -80,7 +82,7 @@ public:
   //! returns the squared obstacle distance at the specified location
   int getSqrDistToObs( int x, int y ) {
     if( (x>0) && (x<sizeX) && (y>0) && (y<sizeY)){
-      return data_[x][y].sqdist; 
+      return (*data_)[x][y].sqdist; 
     } 
     else {
       return -1;
@@ -97,8 +99,6 @@ private:
     int obstY;  // Position of nearest obstacle
     bool needsRaise;
   };
-
-  typedef std::shared_ptr<dataCell[]> dataCellArr;
 
   typedef enum {
     voronoiKeep=-4, 
@@ -185,15 +185,6 @@ public:
     return sizeY;
   }
 
-  // std::unique_ptr<dataCellArr[]> getData() const {
-  //   return data_;
-  // }
-
-  //! retrieve the alternatively pruned diagram. see updateAlternativePrunedDiagram()
-  int** alternativePrunedDiagram() {
-    return alternativeDiagram;
-  };
-
 public:
   DynamicVoronoiParams params_;
 
@@ -209,12 +200,10 @@ private:
   std::vector<IntPoint> lastObstacles;
 
   // maps
-  // bool flip_y_{false}; // Whether to flip the input map about y-axis
   int sizeY;  // Size of map along y
   int sizeX;  // Size of map along x
-  std::shared_ptr<dataCellArr[]> data_{nullptr};
-
-  int** alternativeDiagram{NULL};
+  std::unique_ptr<std::vector<std::vector<dataCell>>> data_{nullptr};
+  std::unique_ptr<std::vector<std::vector<int>>> alt_diag_{nullptr};
 
 }; // end class DynamicVoronoi
 

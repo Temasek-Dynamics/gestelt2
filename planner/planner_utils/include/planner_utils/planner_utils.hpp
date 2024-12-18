@@ -4,6 +4,7 @@
 #include "planner_utils/visibility_control.h"
 
 #include <planner_utils/planner_common.hpp>
+#include <planner_utils/voronoi_roadmap.hpp>
 
 // namespace planner_utils
 // {

@@ -23,7 +23,7 @@
  *
  ****************************************************************************/
 
-#include <voronoi_planner/voronoi_planner.hpp>
+#include <navigator/navigator.hpp>
 
 int main(int argc, char *argv[])
 {
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 	rclcpp::init(argc, argv);
 	rclcpp::executors::MultiThreadedExecutor executor;
 
-	auto node = std::make_shared<navigator::VoronoiPlanner>();
+	auto node = std::make_shared<navigator::Navigator>();
 	node->init();
 	executor.add_node(node);
 	executor.spin();
