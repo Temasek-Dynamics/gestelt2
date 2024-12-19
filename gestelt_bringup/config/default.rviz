@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Grid1
         - /TF1/Frames1
+        - /central1
         - /d01
         - /d11/front_end1
         - /d21/maps1/occ1
@@ -227,7 +228,6 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
-                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1524,7 +1524,6 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
-                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2762,7 +2761,6 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
-                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3338,7 +3336,6 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
-                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4750,25 +4747,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 6.193639278411865
+      Distance: 23.638795852661133
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.840695381164551
-        Y: -25.395679473876953
+        X: -0.6141357421875
+        Y: -5.449501037597656
         Z: -1.52587890625e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.209796667098999
+      Pitch: 1.1697977781295776
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.832396030426025
+      Yaw: 4.452383518218994
     Saved: ~
 Window Geometry:
   Displays:

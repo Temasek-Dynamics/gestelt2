@@ -3,8 +3,19 @@
     # Available trajectory types: MINCO, MPC
     trajectory_type: MPC
 
+    # Available interfaces are MAVROS or MICRO_XRCE_DDS
+    fcu_interface: MAVROS
+
     # Safety params
-    navigator_heartbeat_timeout: 0.5  # [s] Timeout for navigator heartbeat
+    safety:
+      navigator_state_timeout: 0.5  # [s] Timeout for navigator heartbeat
+      geofence: # [m] Geofence around world origin
+        min_x: -50.0
+        min_y: -50.0
+        min_z: 0.3
+        max_x: 50.0
+        max_y: 50.0
+        max_z: 5.0
 
     # Frequency for timers
     set_offb_ctrl_freq: 5.0  #[ Hz] Offboard control mode publish frequency

@@ -24,6 +24,7 @@ set(ROS_LIBRABRIES
 	tf2_ros
 	px4_msgs
 	geometry_msgs
+	mavros_msgs
 	nav_msgs
 	sensor_msgs
 	gestelt_interfaces
