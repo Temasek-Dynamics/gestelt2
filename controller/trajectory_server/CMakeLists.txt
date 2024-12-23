@@ -73,6 +73,7 @@ ament_target_dependencies(trajectory_server_node
 	Eigen3
 	geometry_msgs
 	nav_msgs
+	mavros_msgs
 	sensor_msgs
 	gestelt_interfaces
 	minco_interfaces

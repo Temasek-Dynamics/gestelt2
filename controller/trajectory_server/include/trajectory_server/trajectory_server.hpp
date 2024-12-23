@@ -37,6 +37,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <std_msgs/msg/empty.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/actuator_motors.hpp>
@@ -52,9 +53,7 @@
 #include <px4_msgs/msg/vehicle_status.hpp>
 
 #include <mavros_msgs/msg/position_target.hpp>
-#include <mavros_msgs/msg/command_bool.hpp>
 #include <mavros_msgs/msg/state.hpp>
-#include <mavros_msgs/msg/set_mode.hpp>
 
 #include <nav_msgs/msg/odometry.hpp>
 
@@ -125,24 +124,29 @@ enum TrajectoryType {
 
 /* Geofence is used for enforcing limits on positional commands */
 struct Geofence{
+	Geofence(const std::shared_ptr<logger_wrapper::LoggerWrapper>& logger)
+	: logger_(logger)
+	{
+	}
+
 	bool withinLimits(const Eigen::Vector3d& pos){
 
 		if (pos(0) < min_x || pos(0) > max_x){
-			logError(str_fmt("Commanded x position (%f) exceeded limits (%f,%f)", 
+			logger_->logError(strFmt("Commanded x position (%f) exceeded limits (%f,%f)", 
 				pos(0), min_x, max_x));
 
 			return false;
 		}
 		else if (pos(1) < min_y || pos(1) > max_y) {
 
-			logError(str_fmt("Commanded y position (%f) exceeded limits (%f,%f)", 
+			logger_->logError(strFmt("Commanded y position (%f) exceeded limits (%f,%f)", 
 				pos(1), min_y, max_y));
 
 			return false;
 		}
 		else if (pos(2) < min_z || pos(2) > max_z) {
 
-			logError(str_fmt("Commanded z position (%f) exceeded limits (%f,%f)", 
+			logger_->logError(strFmt("Commanded z position (%f) exceeded limits (%f,%f)", 
 				pos(2), min_z, max_z));
 
 			return false;
@@ -150,11 +154,12 @@ struct Geofence{
 
 		return true;
 	}
+	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
 	double min_x, max_x;
 	double min_y, max_y;
 	double min_z, max_z;
-}
+};
 
 class TrajectoryServer : public rclcpp::Node
 {
@@ -225,15 +230,15 @@ private:
 	void linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg);
 	void navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg);
 
+	void mavrosStateSubCB(const mavros_msgs::msg::State::UniquePtr msg);
+	void mavrosOdomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
+
 	/* PX4-related methods */
 
 	/* Helper methods */
 
-	Eigen::Vector3d TrajectoryServer::quaternionToRPY(const Eigen::Quaterniond& q){
-
-		Eigen::Vector3d euler = q.toRotationMatrix().eulerAngles(0, 1, 2); // In roll, pitch and yaw
-
-		return euler;
+	Eigen::Vector3d quaternionToRPY(const Eigen::Quaterniond& q){
+		return q.toRotationMatrix().eulerAngles(0, 1, 2); // In roll, pitch and yaw
 	}
 
 	/* Checking methods */
@@ -313,7 +318,7 @@ private:
 	FCUInterface fcu_interface_; // Type of interface with FCU, currently available are Mavros and Micro XRCE D-S
 
 	/* Safety */
-	Geofence geofence_; // Geofence to enforce positional limits
+	std::unique_ptr<Geofence> geofence_; // Geofence to enforce positional limits
 
 	/* Trajectory command data */
 	std::unique_ptr<PolyTrajCmd> poly_traj_cmd_; // MINCO trajectory command reader

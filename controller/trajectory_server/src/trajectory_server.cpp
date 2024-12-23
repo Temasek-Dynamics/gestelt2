@@ -35,7 +35,9 @@ TrajectoryServer::TrajectoryServer()
 : Node("trajectory_server")
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
-	
+
+	geofence_ = std::make_unique<Geofence>(logger_);
+
   	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
 	initParams();
@@ -66,7 +68,7 @@ void TrajectoryServer::init()
 	poly_traj_cmd_ = std::make_unique<PolyTrajCmd>(this->shared_from_this());
 
 	// Initialize mavros handler
-	mavros_handler_ = std::make_unique<MavrosHandler>(this->shared_from_this());
+	mavros_handler_ = std::make_unique<MavrosHandler>(this->shared_from_this(), map_frame_);
 
 	logger_->logInfo("Initialized");
 }
@@ -94,12 +96,12 @@ void TrajectoryServer::initParams()
 
 	/* Safety */
 	nav_state_timeout_ = this->declare_parameter("safety.navigator_state_timeout", 0.5);
-	geofence_.min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
-	geofence_.min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
-	geofence_.min_z = this->declare_parameter("safety.geofence.min_z", 0.0);
-	geofence_.max_x = this->declare_parameter("safety.geofence.max_x", 0.0);
-	geofence_.max_y = this->declare_parameter("safety.geofence.max_y", 0.0);
-	geofence_.max_z = this->declare_parameter("safety.geofence.max_z", 0.0);
+	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
+	geofence_->min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
+	geofence_->min_z = this->declare_parameter("safety.geofence.min_z", 0.0);
+	geofence_->max_x = this->declare_parameter("safety.geofence.max_x", 0.0);
+	geofence_->max_y = this->declare_parameter("safety.geofence.max_y", 0.0);
+	geofence_->max_z = this->declare_parameter("safety.geofence.max_z", 0.0);
 
 	/**
 	 * Get params
@@ -187,7 +189,7 @@ void TrajectoryServer::initPubSubTimers()
 			std::bind(&TrajectoryServer::mavrosOdomSubCB, this, _1), fcu_sub_opt);
 
 	}
-	else if (fcu_interface == FCUInterface::MICRO_XRCE_DDS) {
+	else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS) {
 
 		/* Publishers */
 		odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
@@ -221,7 +223,7 @@ void TrajectoryServer::initPubSubTimers()
 
 	}
 	else {
-		logger_->logError("INVALID FLIGHT CONTROLLER INTERFACE SPECIFIED. Set fcu_interface param properly", 1.0);
+		logger_->logError("INVALID FLIGHT CONTROLLER INTERFACE SPECIFIED. Set fcu_interface param properly");
 		rclcpp::shutdown();
 	}
 
@@ -252,11 +254,13 @@ void TrajectoryServer::initSrv()
 
 void TrajectoryServer::mavrosStateSubCB(const mavros_msgs::msg::State::UniquePtr msg)
 {
-	mavros_handler.setState(*msg);
+	mavros_handler_->setState(msg);
 }
 
 void TrajectoryServer::mavrosOdomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 {
+	mavros_handler_->setOdom(msg);
+	
 	cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x, 
 								msg->pose.pose.position.y, 
 								msg->pose.pose.position.z};
@@ -264,7 +268,6 @@ void TrajectoryServer::mavrosOdomSubCB(const nav_msgs::msg::Odometry::UniquePtr 
 	cur_vel_ = Eigen::Vector3d{	msg->twist.twist.linear.x, 
                                 msg->twist.twist.linear.y, 
                                 msg->twist.twist.linear.z};
-
 
 
 	// Quaternionf q << quat.x, quat.y, quat.z, quat.w;
@@ -489,6 +492,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 {
 	static double take_off_hover_T = 1.0/5.0;// Take off and landing period
 	static double estop_T = 1.0/50.0;// EStop period
+	cmd_yaw_yawrate_(1) = NAN; //set yaw rate to 0
 
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
@@ -506,11 +510,9 @@ void TrajectoryServer::pubCtrlTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<TakingOff>()){
-		cmd_yaw_yawrate_(1) = NAN; 
 		cmd_pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
 		// Adjust for ground height
-		Eigen::Vector3d pos_enu_corr = cmd_pos_enu_;
-		pos_enu_corr(2) += ground_height_;
+		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
 
@@ -526,11 +528,8 @@ void TrajectoryServer::pubCtrlTimerCB()
 
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		cmd_yaw_yawrate_(1) = NAN; 
-
 		// Adjust for ground height
-		Eigen::Vector3d pos_enu_corr = cmd_pos_enu_;
-		pos_enu_corr(2) += ground_height_;
+		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
 
@@ -545,19 +544,22 @@ void TrajectoryServer::pubCtrlTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<Mission>()){
+		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+		
+		if (!geofence_->withinLimits(pos_enu_corr)){
+			// skip if command is not within limits
+			logger_->logError("OUT OF GEOFENCE: SKIP COMMAND EXECUTION!");
+			return;
+		}
+
 		if (fcu_interface_ == FCUInterface::MAVROS){
-			Eigen::Vector3d pos_enu_corr = cmd_pos_enu_;
-			pos_enu_corr(2) += ground_height_;
 
 			mavros_handler_->execMission(pos_enu_corr, cmd_vel_enu_, cmd_acc_enu_, cmd_yaw_yawrate_);
 		}
 		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
 			switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 				case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY:
-
 					// Correct commanded position with ground_height_
-					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
-					cmd_yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
 
 					publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
 					break;
@@ -620,7 +622,7 @@ void TrajectoryServer::SMTickTimerCB()
 		cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_); 
 
 		if (fcu_interface_ == FCUInterface::MAVROS){
-			mavros_handler->setLastCmd(cmd_pos_enu_, cmd_yaw_yawrate_);
+			mavros_handler_->setGroundheight(ground_height_);
 		}
 		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
 			if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
@@ -635,7 +637,7 @@ void TrajectoryServer::SMTickTimerCB()
 		logger_->logInfoThrottle("[Landing]", 1.0);
 
 		if (fcu_interface_ == FCUInterface::MAVROS){
-			if (mavros_handler_->isLanded(take_off_landing_tol_)){
+			if (mavros_handler_->isLanded()){
 				sendEvent(Idle_E());
 			}
 		}
@@ -651,7 +653,7 @@ void TrajectoryServer::SMTickTimerCB()
 		double take_off_h = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
 
 		if (fcu_interface_ == FCUInterface::MAVROS){
-			if (mavros_handler_->isTakenOff(take_off_h, take_off_landing_tol_)){
+			if (mavros_handler_->isTakenOff(take_off_h)){
 				sendEvent(Hover_E());
 			}
 		}

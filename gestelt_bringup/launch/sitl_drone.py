@@ -90,6 +90,16 @@ def generate_launch_description():
       'voxel_map.yaml'
     )
 
+    px4_pluginlists_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'px4_pluginlists.yaml'
+    )
+
+    px4_config_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'px4_config.yaml'
+    )
+
 
     """Nodes"""
     # Publish TF for map to fixed drone origin
@@ -181,6 +191,35 @@ def generate_launch_description():
         ],
     )
 
+    mavlink_udp_port =  str(14560 + int([drone_id][0]))
+    mavlink_tcp_port =  str(4560 + int([drone_id][0]))
+    fcu_addr =  str(14540 + int([drone_id][0]))
+    fcu_port =  str(14580 + int([drone_id][0]))
+    fcu_url = "udp://:" + fcu_addr + "@localhost:" + fcu_port
+
+
+    mavros_node = Node(
+      package='mavros',
+      executable='mavros_node',
+      output='screen',
+      shell=False,
+      name=['mavros_node_', drone_id],
+
+      parameters=[
+        {'fcu_url': fcu_url},
+        # {'gcs_url': },
+        {'tgt_system': str(1 + int([drone_id][0]))},
+        {'tgt_component': "1"},
+        {'fcu_protocol': "v2.0"},
+        px4_pluginlists_cfg,
+        px4_config_cfg,
+        {'local_position.frame_id', map_frame },
+        {'local_position.tf.send', True },
+        {'local_position.tf.frame_id', map_frame },
+        {'local_position.tf.child_frame_id', base_link_frame },
+      ],
+    )
+
     return LaunchDescription([
         # Launch arguments
         drone_id_launch_arg,
@@ -196,6 +235,8 @@ def generate_launch_description():
         fake_sensor,
         navigator_node,
         trajectory_server,
+        # Mavlink to ROS bridge
+        mavros_node,
         # Drone simulation instance
         px4_sitl,
     ])

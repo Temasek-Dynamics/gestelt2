@@ -26,53 +26,75 @@
 #ifndef MAVROS_HANDLER_HPP_
 #define MAVROS_HANDLER_HPP_
 
+#include <chrono>
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <mavros_msgs/msg/position_target.hpp>
-#include <mavros_msgs/msg/command_bool.hpp>
 #include <mavros_msgs/msg/state.hpp>
-#include <mavros_msgs/msg/set_mode.hpp>
+#include <mavros_msgs/srv/command_bool.hpp>
+#include <mavros_msgs/srv/set_mode.hpp>
+
+#include <nav_msgs/msg/odometry.hpp>
+
+#include <Eigen/Eigen>
 
 class MavrosHandler 
 {
 public:
-    MavrosHandler(rclcpp::Node::SharedPtr node)
-    : node_(node)
-    {
-		/* Service clients */
-		mavros_arm_client_ = 
-			node_->create_client<mavros_msgs::msg::CommandBool>("mavros/cmd/arming");
-		mavros_set_mode_client_ = 
-			node_->create_client<mavros_msgs::msg::SetMode>("mavros/set_mode");
+  MavrosHandler(rclcpp::Node::SharedPtr node, std::string map_frame)
+  : node_(node), map_frame_(map_frame)
+  {
+    /* Service clients */
+    mavros_arm_client_ = 
+      node_->create_client<mavros_msgs::srv::CommandBool>("mavros/cmd/arming");
+    mavros_set_mode_client_ = 
+      node_->create_client<mavros_msgs::srv::SetMode>("mavros/set_mode");
 
-		/* Create publishers */
-		mavros_cmd_pub_ = node_->create_publisher<mavros_msgs::msg::PositionTarget>(
-			"mavros/setpoint_raw/local", 10);
+    /* Create publishers */
+    mavros_cmd_pub_ = node_->create_publisher<mavros_msgs::msg::PositionTarget>(
+      "mavros/setpoint_raw/local", 10);
+  }
 
-    }
-
-	void setState(const mavros_msgs::msg::State& state)
-	{
-		state_ = state;
+	void setState(const mavros_msgs::msg::State::UniquePtr& state){
+		state_ = *state;
 	}
+
+	void setOdom(const nav_msgs::msg::Odometry::UniquePtr& odom){
+		odom_ = *odom;
+
+    cur_pos_corr_ = Eigen::Vector3d(
+      odom_.pose.pose.position.x, 
+      odom_.pose.pose.position.y, 
+      odom_.pose.pose.position.z - ground_height_) ;
+	}
+
+  void setGroundheight(const double& h){
+    ground_height_ = h;
+  }
+
+  /* Changing of states */
 
 	// Toggle enable/disable offboard
 	bool toggleOffboardMode(bool toggle);
 
-	// Set last commanded value, used for:
-	//		1. Hovering
-	//		2. Takeoff
-	//		3. landing
-	void setLastCmd();
-	
-	// Execute taking off of drone
-	void execTakeOff();
-
-	// Execute hovering
-	void execHover();
+  /* Execution of controls */
 
 	// Execute landing
 	void execLand();
+
+	// Execute taking off of drone
+	void execTakeOff(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate);
+
+	// Execute hovering
+	void execHover(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate);
+
+	// Execute mission
+	void execMission(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
+    const Eigen::Vector2d& yaw_yawrate);
+
+  void publishCmd(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
+    const Eigen::Vector2d& yaw_yawrate, uint16_t type_mask);
 
 	/* Checks */
 
@@ -86,157 +108,224 @@ public:
 	bool isLanded();
 
 	// Check if take off execution is complete
-	bool isTakenOff();
+	bool isTakenOff(const double& takeoff_h);
 
 private:
-    rclcpp::Node::SharedPtr node_;
+  rclcpp::Node::SharedPtr node_;
 
-	/* (Mavros) UAV state*/
-	mavros_msgs::msg::State state_;
+  /* Params */
+  double take_off_landing_tol_{0.2};
+  std::string map_frame_;
+
+  /* Data */
+  double ground_height_{0.0}; 
+  Eigen::Vector3d cur_pos_corr_;// Correct for ground height
+
+	mavros_msgs::msg::State state_; // (Mavros) UAV state
+  nav_msgs::msg::Odometry odom_; // Vehicle odometry
 
 	/* Publishers */
 	rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr mavros_cmd_pub_;
 
 	/* Service Clients */
-	rclcpp::Client<mavros_msgs::msg::CommandBool>::SharedPtr mavros_arm_client_;
-	rclcpp::Client<mavros_msgs::msg::SetMode>::SharedPtr mavros_set_mode_client_; 
+	rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr mavros_arm_client_;
+	rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr mavros_set_mode_client_; 
 
 	// Values set from mavros_msgs/PositionTarget message constants
 	uint16_t IGNORE_VEL{mavros_msgs::msg::PositionTarget::IGNORE_VX | mavros_msgs::msg::PositionTarget::IGNORE_VY | mavros_msgs::msg::PositionTarget::IGNORE_VZ}; // Ignore velocity in typemask
 	uint16_t IGNORE_ACC{mavros_msgs::msg::PositionTarget::IGNORE_AFX | mavros_msgs::msg::PositionTarget::IGNORE_AFY | mavros_msgs::msg::PositionTarget::IGNORE_AFZ}; // Ignore acceleration in typemask
 	uint16_t IGNORE_YAW{mavros_msgs::msg::PositionTarget::IGNORE_YAW}; // Ignore yaw in typemask
 	uint16_t IGNORE_YAW_RATE{mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE}; // Ignore yaw rate in typemask
-}
+};
+
+/* Checks */
 
 inline bool MavrosHandler::isUAVReady() {
-	return (mavros_state_.mode == "OFFBOARD") 
-		&& mavros_state_.armed;
+	return (state_.mode == "OFFBOARD") 
+		&& state_.armed;
 }
 
 inline bool MavrosHandler::isUAVIdle() {
-	return (mavros_state_.mode == "AUTO.LOITER") 
-		&& !mavros_state_.armed;
+	return (state_.mode == "AUTO.LOITER") 
+		&& !state_.armed;
 }
 
 inline bool MavrosHandler::isLanded()
 {
 	// Check that difference between desired landing height and current UAV position
 	// is within tolerance 
-	return abs(uav_pose_.pose.position.z - landed_height_) < take_off_landing_tol_;
+	return abs(cur_pos_corr_(2) - 0.0) < take_off_landing_tol_;
 }
 
-inline bool MavrosHandler::isTakenOff()
+inline bool MavrosHandler::isTakenOff(const double& takeoff_h)
 {
-	return abs(uav_pose_.pose.position.z - takeoff_height_) < take_off_landing_tol_;
+	return abs(cur_pos_corr_(2) - takeoff_h) < take_off_landing_tol_;
 }
+
+/* Changing of states */
 
 inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 {
-    bool arm_val = toggle ?  true : false;
-    std::string set_mode_val = toggle ? "OFFBOARD" : "AUTO.LOITER"; 
+    // mavros_msgs::CommandBool arm_cmd;
+    // arm_cmd.request.value = arm_val;
 
-    auto conditions_fulfilled = [&] () {
-      return (toggle ? isUAVReady() : isUAVIdle());
-    };
+    // mavros_msgs::SetMode set_mode_srv;
+    // set_mode_srv.request.custom_mode = set_mode_val;
 
-    mavros_msgs::CommandBool arm_cmd;
-    arm_cmd.request.value = arm_val;
+    auto arm_cmd_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+    arm_cmd_req->value = toggle ?  true : false;
 
-    mavros_msgs::SetMode set_mode_srv;
-    set_mode_srv.request.custom_mode = set_mode_val;
+    auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+    set_mode_req->custom_mode = toggle ? "OFFBOARD" : "AUTO.LOITER"; 
+
+	// rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr mavros_arm_client_;
+	// rclcpp::Client<mavros_msgs::srv::SetMode>::SharedPtr mavros_set_mode_client_; 
 
     // Make sure takeoff is not immediately sent, 
     // this will help to stream the correct data to the program first.
     // Will give a 1sec buffer
     // ros::Duration(1.0).sleep();
 
-    ros::Rate rate(pub_cmd_freq_);
+    rclcpp::Rate loop_rate(15.0);
 
     // send a few setpoints before starting
-    for (int i = 0; ros::ok() && i < 10; i++)
+    for (int i = 0; i < 10 && rclcpp::ok(); i++)
     {
-      execTakeOff();
-      ros::spinOnce();
-      rate.sleep();
+      execTakeOff(Eigen::Vector3d::Zero(), Eigen::Vector2d::Zero());
+      loop_rate.sleep();
+
+      rclcpp::spin_some(node_);
     }
-    ros::Time last_request_t = ros::Time::now();
+		// auto last_request_t = node_->get_clock()->now();
+
+    auto conditions_fulfilled = [&] () {
+      return (toggle ? isUAVReady() : isUAVIdle());
+    };
 
     while (!conditions_fulfilled()){
+      // bool request_timeout = ((node_->get_clock()->now() - last_request_t) > rclcpp::Duration::from_seconds(2.0));
 
-      bool request_timeout = ((ros::Time::now() - last_request_t) > ros::Duration(2.0));
-
-      if (mavros_state_.mode != set_mode_val && request_timeout)
+      // Set mode
+      if (state_.mode != set_mode_req->custom_mode)
       {
-        if (set_mode_client.call(set_mode_srv))
+        auto result = mavros_set_mode_client_->async_send_request(set_mode_req);
+
+        if (rclcpp::spin_until_future_complete(node_, result, std::chrono::milliseconds(10000)) 
+            == rclcpp::FutureReturnCode::SUCCESS)
         {
-          if (set_mode_srv.response.mode_sent){
-            logInfo(str_fmt("Setting %s mode successful", set_mode_val.c_str()));
+          auto response = result.get();
+
+          if (response->mode_sent){
+            RCLCPP_INFO(node_->get_logger(), "Setting %s mode successful", 
+              set_mode_req->custom_mode.c_str());
           }
           else {
-            logInfo(str_fmt("Setting %s mode failed", set_mode_val.c_str()));
+            RCLCPP_ERROR(node_->get_logger(), "Setting %s mode failed", 
+              set_mode_req->custom_mode.c_str());
           }
         }
         else {
-          logInfo("Service call to PX4 set_mode_client failed");
+          RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client failed");
         }
 
-        last_request_t = ros::Time::now();
+        // last_request_t = node_->get_clock()->now();
       }
-      else if (mavros_state_.armed != arm_val && request_timeout) 
+
+      // Arm/disarm
+      if (state_.armed != arm_cmd_req->value) 
       {
-        if (arming_client.call(arm_cmd)){
-          if (arm_cmd.response.success){
-            logInfo(str_fmt("Setting arm to %d successful", arm_val));
+        auto result = mavros_arm_client_->async_send_request(arm_cmd_req);
+
+        if (rclcpp::spin_until_future_complete(node_, result, std::chrono::milliseconds(10000)) 
+            == rclcpp::FutureReturnCode::SUCCESS)
+        {
+          auto response = result.get();
+
+          if (response->success){
+            RCLCPP_INFO(node_->get_logger(), "Setting arm to %d successful", 
+              arm_cmd_req->value );
           }
           else {
-            logInfo(str_fmt("Setting arm to %d failed", arm_val));
+            RCLCPP_ERROR(node_->get_logger(), "Setting arm to %d failed", 
+              arm_cmd_req->value );
           }
         }
         else {
-          logInfo("Service call to PX4 arming_client failed");
+          RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client failed");
         }
 
-        last_request_t = ros::Time::now();
+        // last_request_t = node_->get_clock()->now();
       }
-      ros::spinOnce();
-      rate.sleep();        
+
+      loop_rate.sleep();   
     }
 
     return true;
 }
 
+/* Execution of controls */
+
 inline void MavrosHandler::execTakeOff(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate)
 { 
   int type_mask = IGNORE_VEL | IGNORE_ACC | IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
 
-  publishCmd( p, Vector3d::Zero(), Vector3d::Zero(),
-              yaw_yawrate 
-              type_mask);
+  publishCmd( p, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+              yaw_yawrate, type_mask);
 }
 
 inline void MavrosHandler::execHover(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate)
 {
   int type_mask = IGNORE_VEL | IGNORE_ACC | IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
 
-  publishCmd( p, Vector3d::Zero(), Vector3d::Zero(),
-              yaw_yawrate 
-              type_mask);
+  publishCmd( p, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+              yaw_yawrate, type_mask);
 }
 
 inline void MavrosHandler::execMission(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
   const Eigen::Vector2d& yaw_yawrate)
 {
-	publishCmd(p, v, a, yaw_yawrate, );
+  int type_mask = IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
+	publishCmd(p, v, a, yaw_yawrate, type_mask);
 }
 
-inline void MavrosHandler::publishCmd(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
+inline void MavrosHandler::execLand()
+{
+  // TODO: implement mavros_set_mode_client_ to land
+
+  auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+  set_mode_req->custom_mode = "LAND"; 
+
+  while (!isLanded()){
+    auto result = mavros_set_mode_client_->async_send_request(set_mode_req);
+
+    if (rclcpp::spin_until_future_complete(node_, result, std::chrono::milliseconds(10000)) 
+        == rclcpp::FutureReturnCode::SUCCESS)
+    {
+      auto response = result.get();
+
+      if (response->mode_sent){
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting %s mode successful", set_mode_req->custom_mode.c_str());
+      }
+      else {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting %s mode failed", set_mode_req->custom_mode.c_str());
+      }
+    }
+    else {
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Service call to PX4 set_mode_client failed");
+    }
+  }
+
+}
+
+inline void MavrosHandler::publishCmd(const Eigen::Vector3d& p, 
+  const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
   const Eigen::Vector2d& yaw_yawrate, uint16_t type_mask)
 {
   mavros_msgs::msg::PositionTarget cmd_msg;
 
-  cmd_msg.header.stamp = ros::Time::now();
-  cmd_msg.header.frame_id = origin_frame_;
-  cmd_msg.coordinate_frame = mavros_msgs::PositionTarget::FRAME_LOCAL_NED;
+  cmd_msg.header.stamp = node_->get_clock()->now();
+  cmd_msg.header.frame_id = map_frame_;
+  cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
   cmd_msg.type_mask = type_mask;
 
   cmd_msg.position.x = p(0);
@@ -252,7 +341,7 @@ inline void MavrosHandler::publishCmd(const Eigen::Vector3d& p, const Eigen::Vec
   cmd_msg.yaw_rate = yaw_yawrate(1);
   // ROS_INFO("Velocity for final command: %f, %f, %f", v(0), v(1), v(2));
   // ROS_INFO("Acceleration for final command: %f, %f, %f", a(0), a(1), a(2));
-  mavros_cmd_pub_->publish(pos_cmd);
+  mavros_cmd_pub_->publish(cmd_msg);
 }
 
 #endif // MAVROS_HANDLER_HPP_
