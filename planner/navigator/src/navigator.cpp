@@ -179,6 +179,10 @@ void Navigator::initPubSubTimer()
   // Subscribe to odometry individually from each agent
   for (int i = 0; i < num_drones_; i++){
 
+    if (i == drone_id_){
+      continue;
+    }
+
     std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
       std::bind(&Navigator::swarmOdomCB, this, _1, i);
 

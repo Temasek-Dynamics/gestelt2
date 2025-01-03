@@ -58,6 +58,8 @@ public:
 
 	void setState(const mavros_msgs::msg::State::UniquePtr& state){
 		state_ = *state;
+
+    connected_to_fcu_ = state_.connected;
 	}
 
 	void setOdom(const nav_msgs::msg::Odometry::UniquePtr& odom){
@@ -110,6 +112,11 @@ public:
 	// Check if take off execution is complete
 	bool isTakenOff(const double& takeoff_h);
 
+  // returns true if FCU is connected via mavlink
+  bool isConnected() const{
+    return connected_to_fcu_;
+  }
+
 private:
   rclcpp::Node::SharedPtr node_;
 
@@ -118,6 +125,7 @@ private:
   std::string map_frame_;
 
   /* Data */
+  bool connected_to_fcu_{false};
   double ground_height_{0.0}; 
   Eigen::Vector3d cur_pos_corr_;// Correct for ground height
 

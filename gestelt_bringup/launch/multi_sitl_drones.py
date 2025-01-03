@@ -119,7 +119,7 @@ def generate_launch_description():
         cmd=[
             'python3', px4_gz,
             '--world', 'default',
-            '--headless',
+            # '--headless',
         ],
         name='gazebo',
         shell=False
@@ -239,8 +239,8 @@ def generate_launch_description():
         # Visualization
         rviz_node,
         # Processes
-        gazebo,
-        xrce_agent,
+        # gazebo,
+        # xrce_agent,
         # Mission
         mission_node,
         # Simulation instances

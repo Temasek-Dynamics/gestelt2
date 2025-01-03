@@ -196,7 +196,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -213,7 +213,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -226,8 +226,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -845,7 +844,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -862,9 +861,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1397,7 +1394,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d1/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d1
     - Class: rviz_common/Group
       Displays:
@@ -1505,7 +1502,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1522,8 +1519,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2015,7 +2011,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d2/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d2
     - Class: rviz_common/Group
       Displays:
@@ -2123,7 +2119,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2140,9 +2136,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2634,7 +2628,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d3/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d3
     - Class: rviz_common/Group
       Displays:
@@ -2742,7 +2736,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2759,8 +2753,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -2912,7 +2905,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d4/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d4
     - Class: rviz_common/Group
       Displays:
@@ -3020,7 +3013,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3037,9 +3030,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3209,7 +3200,7 @@ Visualization Manager:
           Value: true
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: true
+      Enabled: false
       Name: d5
     - Class: rviz_common/Group
       Displays:
@@ -3317,7 +3308,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3334,8 +3325,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3500,7 +3490,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d6/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d6
     - Class: rviz_common/Group
       Displays:
@@ -3608,7 +3598,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3625,9 +3615,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3779,7 +3767,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d7/static_collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: d7
     - Class: rviz_common/Group
       Displays:

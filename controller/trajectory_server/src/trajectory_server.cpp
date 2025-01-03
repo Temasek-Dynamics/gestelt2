@@ -175,7 +175,6 @@ void TrajectoryServer::initPubSubTimers()
 
 		/* Publishers */
 
-
 		vel_magnitude_pub_ = this->create_publisher<std_msgs::msg::Float32>(
 			"vel_magnitude", 10);
 
@@ -187,6 +186,10 @@ void TrajectoryServer::initPubSubTimers()
 		mavros_odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
 			"odom", rclcpp::SensorDataQoS(), 
 			std::bind(&TrajectoryServer::mavrosOdomSubCB, this, _1), fcu_sub_opt);
+
+		all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
+			"/all_uav_command", rclcpp::ServicesQoS(), 
+			std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
 
 	}
 	else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS) {
@@ -610,9 +613,18 @@ void TrajectoryServer::SMTickTimerCB()
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
 		logger_->logWarnThrottle("[Unconnected]", 1.0);
-		if (connected_to_fcu_){
-			sendEvent(Idle_E());
+
+		if (fcu_interface_ == FCUInterface::MAVROS){
+			if (mavros_handler_->isConnected()){
+				sendEvent(Idle_E());
+			}
 		}
+		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
+			if (connected_to_fcu_){
+				sendEvent(Idle_E());
+			}
+		}
+
 	}
 	else if (UAV::is_in_state<Idle>()){
 		logger_->logInfoThrottle("[Idle]", 1.0);

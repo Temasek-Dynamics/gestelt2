@@ -16,6 +16,7 @@
   <depend>fake_drone</depend>
   <depend>fake_sensor</depend>
   <depend>trajectory_server</depend>
+  <depend>mavros</depend>
   
   <depend>gestelt_mission</depend>
   <depend>swarm_collision_checker</depend>
