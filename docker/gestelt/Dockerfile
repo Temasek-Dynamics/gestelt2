@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-jazzy-pcl-conversions \
     ros-jazzy-message-filters \
     ros-jazzy-mavlink \
+    ros-jazzy-geographic-msgs \ 
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh \ 

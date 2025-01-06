@@ -65,7 +65,6 @@
 /* Map representations*/
 #include <voxel_map/voxel_map.hpp> 
 #include <dynamic_voronoi/dynamic_voronoi.hpp>
-#include <planner_utils/voronoi_roadmap.hpp>
 
 /* Global Search*/
 #include <space_time_astar/space_time_astar.hpp>
@@ -512,7 +511,6 @@ private:
   std::unique_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object
   voxel_map::BoolMap3D bool_map_3d_; // Bool map slices 
   std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // array of voronoi objects with key of height (cm)
-  std::shared_ptr<VoronoiRoadmap> voro_roadmap_;
 
   /* Planner  */
   std::unique_ptr<global_planner::SpaceTimeAStar> fe_planner_; // Front end planner
