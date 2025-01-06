@@ -9,6 +9,7 @@ Panels:
         - /d01
         - /d01/state1
         - /d01/state1/odom_ax1
+        - /d01/state1/odom_ax1/Topic1
         - /d11/front_end1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
@@ -169,8 +170,8 @@ Visualization Manager:
                 Depth: 5
                 Durability Policy: Volatile
                 Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
+                History Policy: System Default
+                Reliability Policy: Best Effort
                 Value: /d0/odom
               Value: true
             - Alpha: 1
@@ -229,7 +230,6 @@ Visualization Manager:
               Namespaces:
                 fe_path_lines: true
                 fe_path_start_goal: true
-                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4738,25 +4738,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 11.417945861816406
+      Distance: 9.272222518920898
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -4.7769927978515625
-        Y: 0.017151832580566406
-        Z: -1.52587890625e-05
+        X: 8.023519515991211
+        Y: -0.1117854118347168
+        Z: -1.7522503185318783e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2647980451583862
+      Pitch: 0.9197982549667358
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.917396545410156
+      Yaw: 4.762397289276123
     Saved: ~
 Window Geometry:
   Displays:

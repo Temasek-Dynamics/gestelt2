@@ -159,7 +159,6 @@ void TrajectoryServer::initPubSubTimers()
 		"uav_state", 10);
 
 	/* Subscribers */
-
 	navigator_state_sub_ = this->create_subscription<gestelt_interfaces::msg::NavState>(
 		"navigator/state", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::navStateSubCB, this, _1), fcu_sub_opt);
@@ -677,10 +676,10 @@ void TrajectoryServer::SMTickTimerCB()
 		}
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		// logger_->logInfoThrottle("[Hovering]", 1.0);
+		logger_->logInfoThrottle("[Hovering]", 2.0);
 	}
 	else if (UAV::is_in_state<Mission>()){
-		// logger_->logInfoThrottle("[Mission]", 1.0);
+		logger_->logInfoThrottle("[Mission]", 2.0);
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
 		// logger_->logInfoThrottle("[EmergencyStop]", 1.0);

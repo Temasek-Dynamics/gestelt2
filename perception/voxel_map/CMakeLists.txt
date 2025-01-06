@@ -31,14 +31,12 @@ set(ROS_LIBRABRIES
   message_filters
   logger_wrapper
   bonxai
-  octomap
   ikd_tree)
 
 set(EXPORTED_DEPENDENCIES
   PCL
   pcl_conversions
   bonxai
-  octomap
   ikd_tree
 )
 
