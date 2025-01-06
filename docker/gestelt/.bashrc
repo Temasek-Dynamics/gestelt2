@@ -98,6 +98,8 @@ fi
 #    . /etc/bash_completion
 #fi
 
+export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/
+
 # ROS2 
 export RCUTILS_COLORIZED_OUTPUT=1
 export RCUTILS_LOGGING_USE_STDOUT=1

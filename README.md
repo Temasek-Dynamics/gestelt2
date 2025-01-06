@@ -18,6 +18,9 @@ Dependencies:
 - Simulation 
     - PX4-Autopilot: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
     - mavros: Commit `b49095727a6ff160e1e913b90a4ce50e383e8863`
+- Solvers
+    - [OSQP](https://osqp.org/docs/index.html)
+    - [OSQP-Eigen](https://github.com/robotology/osqp-eigen)
 
 2. Install ROS2 and associated dependencies
 - ROS 2 Jazzy

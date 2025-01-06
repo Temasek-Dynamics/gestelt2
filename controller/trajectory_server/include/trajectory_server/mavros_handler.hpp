@@ -124,6 +124,8 @@ private:
   double take_off_landing_tol_{0.2};
   std::string map_frame_;
 
+  std::chrono::duration<double, std::milli> dur_7s = std::chrono::milliseconds(7000);
+
   /* Data */
   bool connected_to_fcu_{false};
   double ground_height_{0.0}; 
@@ -200,7 +202,6 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 
   rclcpp::Rate srv_loop_rate(2.0);
   rclcpp::Rate cmd_loop_rate(15.0);
-  static auto dur_7s = std::chrono::milliseconds(7000);
 
   // send a few setpoints before starting
   for (int i = 0; i < 10 && rclcpp::ok(); i++)
