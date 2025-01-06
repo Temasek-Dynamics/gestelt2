@@ -131,7 +131,7 @@ void Navigator::initPubSubTimer()
   fe_plan_broadcast_pub_ = this->create_publisher<gestelt_interfaces::msg::SpaceTimePath>(
     "fe_plan/broadcast", rclcpp::SensorDataQoS());
 
-  lin_mpc_cmd_pub_ = this->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
+  lin_mpc_cmd_pub_ = this->create_publisher<mavros_msgs::msg::PositionTarget>(
     "lin_mpc_cmd", rclcpp::SensorDataQoS());
 
   nav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::NavState>(

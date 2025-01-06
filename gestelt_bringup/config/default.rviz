@@ -215,7 +215,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -228,8 +228,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -724,7 +723,7 @@ Visualization Manager:
         - Alpha: 0.10000000149011612
           BoundColor: 153; 193; 241
           Class: decomp_rviz_plugins/PolyhedronArray
-          Enabled: false
+          Enabled: true
           MeshColor: 0; 170; 255
           Name: sfc
           Scale: 0.10000000149011612
@@ -736,7 +735,7 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d0/sfc
-          Value: false
+          Value: true
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
       Enabled: true
@@ -4140,558 +4139,6 @@ Visualization Manager:
           Name: maps
       Enabled: false
       Name: d9
-    - Class: rviz_common/Group
-      Displays:
-        - Class: rviz_common/Group
-          Displays:
-            - Angle Tolerance: 0.10000000149011612
-              Class: rviz_default_plugins/Odometry
-              Covariance:
-                Orientation:
-                  Alpha: 0.5
-                  Color: 255; 255; 127
-                  Color Style: Unique
-                  Frame: Local
-                  Offset: 1
-                  Scale: 1
-                  Value: true
-                Position:
-                  Alpha: 0.30000001192092896
-                  Color: 204; 51; 204
-                  Scale: 1
-                  Value: true
-                Value: true
-              Enabled: true
-              Keep: 5
-              Name: odom
-              Position Tolerance: 0.10000000149011612
-              Shape:
-                Alpha: 1
-                Axes Length: 1
-                Axes Radius: 0.10000000149011612
-                Color: 255; 25; 0
-                Head Length: 0.30000001192092896
-                Head Radius: 0.10000000149011612
-                Shaft Length: 0.5
-                Shaft Radius: 0.05000000074505806
-                Value: Arrow
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/odom
-              Value: true
-            - Alpha: 1
-              Axes Length: 1
-              Axes Radius: 0.10000000149011612
-              Class: rviz_default_plugins/Pose
-              Color: 255; 25; 0
-              Enabled: true
-              Head Length: 0.30000001192092896
-              Head Radius: 0.10000000149011612
-              Name: pose
-              Shaft Length: 0.5
-              Shaft Radius: 0.05000000074505806
-              Shape: Arrow
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/pose
-              Value: true
-          Enabled: true
-          Name: state
-        - Class: rviz_common/Group
-          Displays:
-            - Class: rviz_default_plugins/Marker
-              Enabled: true
-              Name: /fe_plan/viz
-              Namespaces:
-                {}
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/fe_plan/viz
-              Value: true
-          Enabled: true
-          Name: front_end
-        - Class: rviz_common/Group
-          Displays:
-            - Class: rviz_default_plugins/Marker
-              Enabled: true
-              Name: minco_traj_viz
-              Namespaces:
-                {}
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/minco_traj_viz
-              Value: true
-          Enabled: true
-          Name: back_end
-        - Class: rviz_common/Group
-          Displays:
-            - Alpha: 1
-              Autocompute Intensity Bounds: true
-              Autocompute Value Bounds:
-                Max Value: 10
-                Min Value: -10
-                Value: true
-              Axis: Z
-              Channel Name: intensity
-              Class: rviz_default_plugins/PointCloud2
-              Color: 255; 255; 255
-              Color Transformer: Intensity
-              Decay Time: 0
-              Enabled: false
-              Invert Rainbow: false
-              Max Color: 255; 255; 255
-              Max Intensity: 4096
-              Min Color: 0; 0; 0
-              Min Intensity: 0
-              Name: 3d_occ_map
-              Position Transformer: XYZ
-              Selectable: true
-              Size (Pixels): 3
-              Size (m): 0.10000000149011612
-              Style: Spheres
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/occ_map
-              Use Fixed Frame: true
-              Use rainbow: true
-              Value: false
-            - Alpha: 0.699999988079071
-              Binary representation: false
-              Binary threshold: 100
-              Class: rviz_default_plugins/Map
-              Color Scheme: map
-              Draw Behind: false
-              Enabled: false
-              Name: voro_map
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/voro/voro_map
-              Update Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/voro/voro_map_updates
-              Use Timestamp: false
-              Value: false
-            - Alpha: 0.699999988079071
-              Binary representation: false
-              Binary threshold: 100
-              Class: rviz_default_plugins/Map
-              Color Scheme: map
-              Draw Behind: false
-              Enabled: false
-              Name: occ_map
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/voro/occ_map
-              Update Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d10/voro/occ_map_updates
-              Use Timestamp: false
-              Value: false
-          Enabled: true
-          Name: maps
-      Enabled: false
-      Name: d10
-    - Class: rviz_common/Group
-      Displays:
-        - Class: rviz_common/Group
-          Displays:
-            - Angle Tolerance: 0.10000000149011612
-              Class: rviz_default_plugins/Odometry
-              Covariance:
-                Orientation:
-                  Alpha: 0.5
-                  Color: 255; 255; 127
-                  Color Style: Unique
-                  Frame: Local
-                  Offset: 1
-                  Scale: 1
-                  Value: true
-                Position:
-                  Alpha: 0.30000001192092896
-                  Color: 204; 51; 204
-                  Scale: 1
-                  Value: true
-                Value: true
-              Enabled: true
-              Keep: 5
-              Name: odom
-              Position Tolerance: 0.10000000149011612
-              Shape:
-                Alpha: 1
-                Axes Length: 1
-                Axes Radius: 0.10000000149011612
-                Color: 255; 25; 0
-                Head Length: 0.30000001192092896
-                Head Radius: 0.10000000149011612
-                Shaft Length: 0.5
-                Shaft Radius: 0.05000000074505806
-                Value: Arrow
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/odom
-              Value: true
-            - Alpha: 1
-              Axes Length: 1
-              Axes Radius: 0.10000000149011612
-              Class: rviz_default_plugins/Pose
-              Color: 255; 25; 0
-              Enabled: true
-              Head Length: 0.30000001192092896
-              Head Radius: 0.10000000149011612
-              Name: pose
-              Shaft Length: 0.5
-              Shaft Radius: 0.05000000074505806
-              Shape: Arrow
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/pose
-              Value: true
-          Enabled: true
-          Name: state
-        - Class: rviz_common/Group
-          Displays:
-            - Class: rviz_default_plugins/Marker
-              Enabled: true
-              Name: /fe_plan/viz
-              Namespaces:
-                {}
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/fe_plan/viz
-              Value: true
-          Enabled: true
-          Name: front_end
-        - Class: rviz_common/Group
-          Displays:
-            - Class: rviz_default_plugins/Marker
-              Enabled: true
-              Name: minco_traj_viz
-              Namespaces:
-                {}
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/minco_traj_viz
-              Value: true
-          Enabled: true
-          Name: back_end
-        - Class: rviz_common/Group
-          Displays:
-            - Alpha: 1
-              Autocompute Intensity Bounds: true
-              Autocompute Value Bounds:
-                Max Value: 10
-                Min Value: -10
-                Value: true
-              Axis: Z
-              Channel Name: intensity
-              Class: rviz_default_plugins/PointCloud2
-              Color: 255; 255; 255
-              Color Transformer: Intensity
-              Decay Time: 0
-              Enabled: false
-              Invert Rainbow: false
-              Max Color: 255; 255; 255
-              Max Intensity: 4096
-              Min Color: 0; 0; 0
-              Min Intensity: 0
-              Name: 3d_occ_map
-              Position Transformer: XYZ
-              Selectable: true
-              Size (Pixels): 3
-              Size (m): 0.10000000149011612
-              Style: Spheres
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/occ_map
-              Use Fixed Frame: true
-              Use rainbow: true
-              Value: false
-            - Alpha: 0.699999988079071
-              Binary representation: false
-              Binary threshold: 100
-              Class: rviz_default_plugins/Map
-              Color Scheme: map
-              Draw Behind: false
-              Enabled: false
-              Name: voro_map
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/voro/voro_map
-              Update Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/voro/voro_map_updates
-              Use Timestamp: false
-              Value: false
-            - Alpha: 0.699999988079071
-              Binary representation: false
-              Binary threshold: 100
-              Class: rviz_default_plugins/Map
-              Color Scheme: map
-              Draw Behind: false
-              Enabled: false
-              Name: occ_map
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/voro/occ_map
-              Update Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d11/voro/occ_map_updates
-              Use Timestamp: false
-              Value: false
-          Enabled: true
-          Name: maps
-      Enabled: false
-      Name: d11
-    - Class: rviz_common/Group
-      Displays:
-        - Class: rviz_common/Group
-          Displays:
-            - Angle Tolerance: 0.10000000149011612
-              Class: rviz_default_plugins/Odometry
-              Covariance:
-                Orientation:
-                  Alpha: 0.5
-                  Color: 255; 255; 127
-                  Color Style: Unique
-                  Frame: Local
-                  Offset: 1
-                  Scale: 1
-                  Value: true
-                Position:
-                  Alpha: 0.30000001192092896
-                  Color: 204; 51; 204
-                  Scale: 1
-                  Value: true
-                Value: true
-              Enabled: true
-              Keep: 5
-              Name: odom
-              Position Tolerance: 0.10000000149011612
-              Shape:
-                Alpha: 1
-                Axes Length: 1
-                Axes Radius: 0.10000000149011612
-                Color: 255; 25; 0
-                Head Length: 0.30000001192092896
-                Head Radius: 0.10000000149011612
-                Shaft Length: 0.5
-                Shaft Radius: 0.05000000074505806
-                Value: Arrow
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/odom
-              Value: true
-            - Alpha: 1
-              Axes Length: 1
-              Axes Radius: 0.10000000149011612
-              Class: rviz_default_plugins/Pose
-              Color: 255; 25; 0
-              Enabled: true
-              Head Length: 0.30000001192092896
-              Head Radius: 0.10000000149011612
-              Name: pose
-              Shaft Length: 0.5
-              Shaft Radius: 0.05000000074505806
-              Shape: Arrow
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/pose
-              Value: true
-          Enabled: true
-          Name: state
-        - Class: rviz_common/Group
-          Displays:
-            - Class: rviz_default_plugins/Marker
-              Enabled: true
-              Name: /fe_plan/viz
-              Namespaces:
-                {}
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/fe_plan/viz
-              Value: true
-          Enabled: true
-          Name: front_end
-        - Class: rviz_common/Group
-          Displays:
-            - Class: rviz_default_plugins/Marker
-              Enabled: true
-              Name: minco_traj_viz
-              Namespaces:
-                {}
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/minco_traj_viz
-              Value: true
-          Enabled: true
-          Name: back_end
-        - Class: rviz_common/Group
-          Displays:
-            - Alpha: 1
-              Autocompute Intensity Bounds: true
-              Autocompute Value Bounds:
-                Max Value: 10
-                Min Value: -10
-                Value: true
-              Axis: Z
-              Channel Name: intensity
-              Class: rviz_default_plugins/PointCloud2
-              Color: 255; 255; 255
-              Color Transformer: Intensity
-              Decay Time: 0
-              Enabled: false
-              Invert Rainbow: false
-              Max Color: 255; 255; 255
-              Max Intensity: 4096
-              Min Color: 0; 0; 0
-              Min Intensity: 0
-              Name: 3d_occ_map
-              Position Transformer: XYZ
-              Selectable: true
-              Size (Pixels): 3
-              Size (m): 0.10000000149011612
-              Style: Spheres
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/occ_map
-              Use Fixed Frame: true
-              Use rainbow: true
-              Value: false
-            - Alpha: 0.699999988079071
-              Binary representation: false
-              Binary threshold: 100
-              Class: rviz_default_plugins/Map
-              Color Scheme: map
-              Draw Behind: false
-              Enabled: false
-              Name: voro_map
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/voro/voro_map
-              Update Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/voro/voro_map_updates
-              Use Timestamp: false
-              Value: false
-            - Alpha: 0.699999988079071
-              Binary representation: false
-              Binary threshold: 100
-              Class: rviz_default_plugins/Map
-              Color Scheme: map
-              Draw Behind: false
-              Enabled: false
-              Name: occ_map
-              Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                Filter size: 10
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/voro/occ_map
-              Update Topic:
-                Depth: 5
-                Durability Policy: Volatile
-                History Policy: Keep Last
-                Reliability Policy: Reliable
-                Value: /d12/voro/occ_map_updates
-              Use Timestamp: false
-              Value: false
-          Enabled: true
-          Name: maps
-      Enabled: false
-      Name: d12
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -4738,25 +4185,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 9.272222518920898
+      Distance: 16.301525115966797
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 8.023519515991211
-        Y: -0.1117854118347168
-        Z: -1.7522503185318783e-05
+        X: -0.3698105812072754
+        Y: -4.045683860778809
+        Z: -1.8985547285410576e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9197982549667358
+      Pitch: 0.5897966027259827
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.762397289276123
+      Yaw: 4.847409725189209
     Saved: ~
 Window Geometry:
   Displays:

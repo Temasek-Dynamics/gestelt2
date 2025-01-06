@@ -57,7 +57,6 @@
 #include <minco_interfaces/msg/polynomial_trajectory.hpp>
 #include <minco_interfaces/msg/minco_trajectory.hpp>
 
-#include <px4_msgs/msg/trajectory_setpoint.hpp>
 // Messages for SFC visualization
 #include <decomp_ros_msgs/msg/ellipsoid_array.hpp>
 #include <decomp_ros_msgs/msg/polyhedron_array.hpp>
@@ -298,7 +297,7 @@ private:
 
   rclcpp::Publisher<minco_interfaces::msg::PolynomialTrajectory>::SharedPtr poly_traj_pub_; // Publish polynomial trajectories for execution
 
-  rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr lin_mpc_cmd_pub_; // Publish MPC commands
+  rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr lin_mpc_cmd_pub_; // Publish MPC commands
   rclcpp::Publisher<minco_interfaces::msg::MincoTrajectory>::SharedPtr minco_traj_broadcast_pub_; // Publish MINCO trajectories broadcasted to other agents
 
   // Visualization
@@ -984,25 +983,34 @@ inline Eigen::Vector3d Navigator::getRHPGoal(
 // 		return yaw_yawrate;
 // 	}
 
-inline void Navigator::pubPVAJCmd(	const Eigen::Vector3d& pos, 
+inline void Navigator::pubPVAJCmd(	const Eigen::Vector3d& p, 
                                     const Eigen::Vector2d& yaw_yawrate,
-                                    const Eigen::Vector3d& vel,
-                                    const Eigen::Vector3d& acc,
+                                    const Eigen::Vector3d& v,
+                                    const Eigen::Vector3d& a,
                                     const Eigen::Vector3d& jerk)
 {
   // Send msg in ENU frame
-  px4_msgs::msg::TrajectorySetpoint msg{};
+  mavros_msgs::msg::PositionTarget cmd_msg;
 
-	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-	msg.position = {(float) pos(0), (float) pos(1), (float) pos(2)};
-	msg.velocity = {(float) vel(0), (float) vel(1), (float) vel(2)};
-	msg.acceleration = {(float) acc(0), (float) acc(1), (float) acc(2)};
-	msg.jerk = {(float) jerk(0), (float) jerk(1), (float) jerk(2)};
+  cmd_msg.header.stamp = node_->get_clock()->now();
+  cmd_msg.header.frame_id = map_frame_;
+  cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+  cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;
 
-	msg.yaw = yaw_yawrate(0); // [-PI:PI]
-	msg.yawspeed = yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
+  cmd_msg.position.x = p(0);
+  cmd_msg.position.y = p(1);
+  cmd_msg.position.z = p(2);
+  cmd_msg.velocity.x = v(0);
+  cmd_msg.velocity.y = v(1);
+  cmd_msg.velocity.z = v(2);
+  cmd_msg.acceleration_or_force.x = a(0);
+  cmd_msg.acceleration_or_force.y = a(1);
+  cmd_msg.acceleration_or_force.z = a(2);
 
-	lin_mpc_cmd_pub_->publish(msg);
+  cmd_msg.yaw = yaw_yawrate(0);
+  cmd_msg.yaw_rate = yaw_yawrate(1);
+
+	lin_mpc_cmd_pub_->publish(cmd_msg);
 }
 
 inline void Navigator::pubMPCPath(std::vector<Eigen::Vector3d> &path) {

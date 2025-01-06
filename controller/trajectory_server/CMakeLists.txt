@@ -22,7 +22,6 @@ set(ROS_LIBRABRIES
 	rclcpp
 	rclpy
 	tf2_ros
-	px4_msgs
 	geometry_msgs
 	mavros_msgs
 	nav_msgs
@@ -41,7 +40,6 @@ set(EXPORTED_DEPENDENCIES
 	rclcpp
 	rosidl_default_runtime
 	Eigen3
-	px4_msgs
 	geometry_msgs
 	sensor_msgs
 	gestelt_interfaces
@@ -69,7 +67,6 @@ add_executable(trajectory_server_node src/trajectory_server.cpp src/uavsm.cpp)
 ament_target_dependencies(trajectory_server_node 
 	rclcpp 
 	tf2_ros
-	px4_msgs 
 	Eigen3
 	geometry_msgs
 	nav_msgs

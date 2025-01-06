@@ -263,52 +263,8 @@ class Mission(Node):
 
         return goal_msg
 
-    
-    # def planReqTimerCB(self):
-
-    #     self.get_logger().info(f"Publishing plan request to all drones")
-
-    #     # Publish to all drones
-    #     for id in range(self.scenario.num_agents):
-    #         self.goals_pubs_[id].publish(self.plan_req_msgs[id])
-
-    #     # Timer only runs once
-    #     if not self.plan_req_timer_.is_canceled(): 
-    #         self.plan_req_timer_.cancel()
 
     def pubGoals(self):
         # Publish goals to all drones
         for id in range(self.scenario.num_agents):
             self.goals_pubs_[id].publish(self.plan_req_msgs[id])
-
-
-def main(args=None):
-    rclpy.init(args=args)
-
-    mission = Mission()
-
-    # Take off 
-    mission.cmdAllDronesPub(
-        UAVCommand.Request.COMMAND_TAKEOFF, 
-        UAVState.IDLE,
-        value=mission.scenario.take_off_height)
-    print("All drones switching to HOVER state")
-    # Mission mode
-    mission.cmdAllDronesPub(
-        UAVCommand.Request.COMMAND_START_MISSION, 
-        UAVState.HOVERING,
-        mode=0)
-    print("All drones switching to MISSION state")
-
-    mission.pubGoals()
-
-    # # Land mode
-    # mission.cmdAllDronesPub(UAVCommand.Request.COMMAND_LAN, UAVState.MISSION)
-
-    rclpy.spin(mission)
-
-    mission.destroy_node()
-    rclpy.shutdown()
-
-if __name__ == '__main__':
-    main()

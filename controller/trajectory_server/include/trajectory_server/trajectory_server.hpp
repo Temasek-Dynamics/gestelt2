@@ -39,19 +39,6 @@
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/float32.hpp>
 
-#include <px4_msgs/msg/trajectory_setpoint.hpp>
-#include <px4_msgs/msg/actuator_motors.hpp>
-#include <px4_msgs/msg/vehicle_torque_setpoint.hpp>
-#include <px4_msgs/msg/vehicle_thrust_setpoint.hpp>
-#include <px4_msgs/msg/vehicle_attitude_setpoint.hpp>
-#include <px4_msgs/msg/vehicle_rates_setpoint.hpp>
-
-#include <px4_msgs/msg/offboard_control_mode.hpp>
-#include <px4_msgs/msg/vehicle_command.hpp>
-
-#include <px4_msgs/msg/vehicle_odometry.hpp>
-#include <px4_msgs/msg/vehicle_status.hpp>
-
 #include <mavros_msgs/msg/position_target.hpp>
 #include <mavros_msgs/msg/state.hpp>
 
@@ -72,7 +59,6 @@
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
-using namespace px4_msgs::msg;
 using namespace std::placeholders;
 
 enum PX4_CUSTOM_MAIN_MODE {

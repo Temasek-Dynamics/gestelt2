@@ -24,7 +24,6 @@
   <depend>nav_msgs</depend>
   <depend>visualization_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>px4_msgs</depend>
   <depend>gestelt_interfaces</depend>
   <depend>minco_interfaces</depend>
   

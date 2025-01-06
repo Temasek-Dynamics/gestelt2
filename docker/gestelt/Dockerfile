@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     iproute2 \
     python3-vcstool \
     build-essential \
+    nlohmann-json3-dev \
     libasio-dev \
     libeigen3-dev \
     ros-jazzy-pcl-ros \ 
@@ -18,6 +19,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-jazzy-message-filters \
     ros-jazzy-mavlink \
     ros-jazzy-geographic-msgs \ 
+    geographiclib-tools \
+    libgeographiclib-dev \
+    libgeographiclib26 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh \ 
@@ -50,7 +54,7 @@ RUN vcs import < thirdparty.repos --recursive
 WORKDIR /gestelt_ws/
 RUN source /opt/ros/jazzy/setup.bash \
     && export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/ \
-    && colcon build --symlink-install 
+    && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker
 
 # Copy .bashrc file
 COPY .bashrc /root/
