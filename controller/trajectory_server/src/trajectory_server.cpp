@@ -950,7 +950,6 @@ void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv
 	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
 					request->command, request->mode, request->value));
 
-
 	// Checkn if value and mode is within bounds for specific commands
 	switch (request->command)
 	{
