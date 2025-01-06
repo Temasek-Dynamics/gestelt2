@@ -37,7 +37,6 @@
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <std_msgs/msg/empty.hpp>
-#include <std_msgs/msg/float32.hpp>
 
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/actuator_motors.hpp>
@@ -52,9 +51,6 @@
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <px4_msgs/msg/vehicle_status.hpp>
 
-#include <mavros_msgs/msg/position_target.hpp>
-#include <mavros_msgs/msg/state.hpp>
-
 #include <nav_msgs/msg/odometry.hpp>
 
 #include <gestelt_interfaces/srv/uav_command.hpp>
@@ -67,8 +63,6 @@
 #include <frame_transforms.hpp>
 #include <uavsm.hpp>
 #include <trajectory_server/poly_traj_cmd.hpp>
-
-#include <trajectory_server/mavros_handler.hpp>
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
@@ -109,56 +103,10 @@ enum PX4_CUSTOM_SUB_MODE_AUTO {
 	PX4_CUSTOM_SUB_MODE_EXTERNAL8
 };
 
-/* Geofence is used for enforcing limits on positional commands */
-enum FCUInterface {
-	MAVROS,
-	MICRO_XRCE_DDS
-};
-
-/* TrajectoryType is used for setting the expected trajectory command type */
 enum TrajectoryType {
-	MINCO, /* MINCO trajectory */
-	MPC, /* Position, velocity, acceleration commands */
+	MINCO,
+	MPC,
 	UNDEFINED_TRAJ_TYPE,
-};
-
-/* Geofence is used for enforcing limits on positional commands */
-struct Geofence{
-	Geofence(const std::shared_ptr<logger_wrapper::LoggerWrapper>& logger)
-	: logger_(logger)
-	{
-	}
-
-	bool withinLimits(const Eigen::Vector3d& pos){
-
-		if (pos(0) < min_x || pos(0) > max_x){
-			logger_->logError(strFmt("Commanded x position (%f) exceeded limits (%f,%f)", 
-				pos(0), min_x, max_x));
-
-			return false;
-		}
-		else if (pos(1) < min_y || pos(1) > max_y) {
-
-			logger_->logError(strFmt("Commanded y position (%f) exceeded limits (%f,%f)", 
-				pos(1), min_y, max_y));
-
-			return false;
-		}
-		else if (pos(2) < min_z || pos(2) > max_z) {
-
-			logger_->logError(strFmt("Commanded z position (%f) exceeded limits (%f,%f)", 
-				pos(2), min_z, max_z));
-
-			return false;
-		}
-
-		return true;
-	}
-	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
-
-	double min_x, max_x;
-	double min_y, max_y;
-	double min_z, max_z;
 };
 
 class TrajectoryServer : public rclcpp::Node
@@ -230,16 +178,9 @@ private:
 	void linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg);
 	void navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg);
 
-	void mavrosStateSubCB(const mavros_msgs::msg::State::UniquePtr msg);
-	void mavrosOdomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
-
 	/* PX4-related methods */
 
 	/* Helper methods */
-
-	Eigen::Vector3d quaternionToRPY(const Eigen::Quaterniond& q){
-		return q.toRotationMatrix().eulerAngles(0, 1, 2); // In roll, pitch and yaw
-	}
 
 	/* Checking methods */
 	
@@ -257,44 +198,30 @@ private:
 	rclcpp::TimerBase::SharedPtr sm_tick_timer_;
 
 	/* Publishers */
-		// Micro XRCE-DDS
-			// Control of Modes
-			rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_pub_;
-			rclcpp::Publisher<VehicleCommand>::SharedPtr vehicle_command_pub_;
+	rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_control_mode_pub_;
+	rclcpp::Publisher<VehicleCommand>::SharedPtr vehicle_command_pub_;
 
-			// Controller inputs
-			rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_pub_;
-			rclcpp::Publisher<VehicleAttitudeSetpoint>::SharedPtr attitude_setpoint_pub_;
-			rclcpp::Publisher<VehicleRatesSetpoint>::SharedPtr rates_setpoint_pub_;
-			rclcpp::Publisher<VehicleTorqueSetpoint>::SharedPtr torque_setpoint_pub_;
-			rclcpp::Publisher<VehicleThrustSetpoint>::SharedPtr thrust_setpoint_pub_;
-			rclcpp::Publisher<ActuatorMotors>::SharedPtr actuator_cmd_pub_;
+	// Controller inputs
+	rclcpp::Publisher<TrajectorySetpoint>::SharedPtr trajectory_setpoint_pub_;
+	rclcpp::Publisher<VehicleAttitudeSetpoint>::SharedPtr attitude_setpoint_pub_;
+	rclcpp::Publisher<VehicleRatesSetpoint>::SharedPtr rates_setpoint_pub_;
+	rclcpp::Publisher<VehicleTorqueSetpoint>::SharedPtr torque_setpoint_pub_;
+	rclcpp::Publisher<VehicleThrustSetpoint>::SharedPtr thrust_setpoint_pub_;
+	rclcpp::Publisher<ActuatorMotors>::SharedPtr actuator_cmd_pub_;
 
-			rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-
-		// Mavros
-			rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr vel_magnitude_pub_;
-
-		// State publishers
-			rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
+	// State publishers
+	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
+	rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
 
 	/* Subscribers */
-		// Subscribers to state
-		rclcpp::Subscription<gestelt_interfaces::msg::NavState>::SharedPtr navigator_state_sub_;
-		rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
+	rclcpp::Subscription<VehicleOdometry>::SharedPtr fcu_odom_sub_;
+	rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
+	rclcpp::Subscription<gestelt_interfaces::msg::NavState>::SharedPtr navigator_state_sub_;
+	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
+	rclcpp::Subscription<TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
 
-		// Micro XRCE-DDS
-		rclcpp::Subscription<VehicleOdometry>::SharedPtr fcu_odom_sub_;
-		rclcpp::Subscription<VehicleStatus>::SharedPtr vehicle_status_sub_;
-		rclcpp::Subscription<TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
-
-		// MAVROS
-		rclcpp::Subscription<mavros_msgs::msg::State>::SharedPtr mavros_status_sub_;
-		rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr mavros_odom_sub_;
-
-	/* Service Server */
+	/* Services */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
-
 
 	/* TF */
 	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; 
@@ -315,12 +242,8 @@ private:
 
 	TrajectoryType traj_type_;	// Trajectory plugin type
 
-	FCUInterface fcu_interface_; // Type of interface with FCU, currently available are Mavros and Micro XRCE D-S
-
-	/* Safety */
-	std::unique_ptr<Geofence> geofence_; // Geofence to enforce positional limits
-
 	/* Trajectory command data */
+
 	std::unique_ptr<PolyTrajCmd> poly_traj_cmd_; // MINCO trajectory command reader
 
 	/* Stored Data */
@@ -335,19 +258,17 @@ private:
 	Eigen::Vector3d cmd_pos_enu_{0.0, 0.0, 0.0};		// Last commanded position [ENU frame]
 	Eigen::Vector3d cmd_vel_enu_{0.0, 0.0, 0.0};		
 	Eigen::Vector3d cmd_acc_enu_{0.0, 0.0, 0.0};				
-	Eigen::Vector2d cmd_yaw_yawrate_{0.0, 0.0};
 	Eigen::Vector3d cmd_jerk_enu_{0.0, 0.0, 0.0};	    // For logging purposes, not used in command
+	Eigen::Vector2d cmd_yaw_yawrate_{0.0, 0.0};
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
-	/* (Micro XRCE-DDS) UAV state*/
-	bool connected_to_fcu_; // Indicates connection to FCU
+	/* UAV state*/
 	int arming_state_; // Arming state
 	int nav_state_; // Navigation state 
 	bool pre_flight_checks_pass_; // Pre flight checks pass
-
-	std::unique_ptr<MavrosHandler> mavros_handler_; // Class for handling mavros stuff
+	bool connected_to_fcu_; // Indicates connection to FCU
 	
 	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 

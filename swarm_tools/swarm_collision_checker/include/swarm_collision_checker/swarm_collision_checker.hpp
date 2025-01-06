@@ -43,6 +43,11 @@ public:
     auto reentrant_cb_opt = rclcpp::SubscriptionOptions();
     reentrant_cb_opt.callback_group = reentrant_cb_group_;
 
+    if (num_drones_ <= 1){
+      std::cout << "[swarm_collision_checker]: num_drones_ <= 1, shutting down..." << std::endl;
+      rclcpp::shutdown();
+    }
+
     for (int i = 0; i < num_drones_; i++){
       std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
         std::bind(&SwarmCollisionChecker::odomCB, this, _1, i);

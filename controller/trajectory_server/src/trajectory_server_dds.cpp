@@ -35,9 +35,7 @@ TrajectoryServer::TrajectoryServer()
 : Node("trajectory_server")
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
-
-	geofence_ = std::make_unique<Geofence>(logger_);
-
+	
   	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
 	initParams();
@@ -67,9 +65,6 @@ void TrajectoryServer::init()
 	// Initialize Trajectory command reader
 	poly_traj_cmd_ = std::make_unique<PolyTrajCmd>(this->shared_from_this());
 
-	// Initialize mavros handler
-	mavros_handler_ = std::make_unique<MavrosHandler>(this->shared_from_this(), map_frame_);
-
 	logger_->logInfo("Initialized");
 }
 
@@ -84,24 +79,17 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("base_link_frame", "base_link");
 
-	this->declare_parameter("trajectory_type", "");
-
-	this->declare_parameter("fcu_interface", "");
+	/* Offboard params */
+	this->declare_parameter("offboard_control_mode", 1);
 
 	/* Frequencies for timers and periodic publishers*/
+	this->declare_parameter("navigator_state_timeout", 0.5);
 	this->declare_parameter("set_offb_ctrl_freq", 4.0);
 	this->declare_parameter("pub_state_freq", 30.0);
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 
-	/* Safety */
-	nav_state_timeout_ = this->declare_parameter("safety.navigator_state_timeout", 0.5);
-	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
-	geofence_->min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
-	geofence_->min_z = this->declare_parameter("safety.geofence.min_z", 0.0);
-	geofence_->max_x = this->declare_parameter("safety.geofence.max_x", 0.0);
-	geofence_->max_y = this->declare_parameter("safety.geofence.max_y", 0.0);
-	geofence_->max_z = this->declare_parameter("safety.geofence.max_z", 0.0);
+	this->declare_parameter("trajectory_type", "");
 
 	/**
 	 * Get params
@@ -112,6 +100,7 @@ void TrajectoryServer::initParams()
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
 	/* Frequencies for timers and periodic publishers*/
+	nav_state_timeout_ = this->get_parameter("navigator_state_timeout").as_double();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
 	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
 	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
@@ -132,21 +121,6 @@ void TrajectoryServer::initParams()
 	};
 
 	traj_type_ = getTrajAdaptorType(this->get_parameter("trajectory_type").as_string());
-
-	auto getFCUInterface = [=](const std::string& name) -> FCUInterface
-	{
-		if (name == "MAVROS"){
-			return FCUInterface::MAVROS;
-		}
-		else if (name == "MICRO_XRCE_DDS"){
-			return FCUInterface::MICRO_XRCE_DDS;
-		}
-		else {
-			return FCUInterface::MAVROS;
-		}
-	};
-
-	fcu_interface_ = getFCUInterface(this->get_parameter("fcu_interface").as_string());
 }
 
 void TrajectoryServer::initPubSubTimers()
@@ -155,80 +129,46 @@ void TrajectoryServer::initPubSubTimers()
 		fcu_sub_opt.callback_group = fcu_cb_group_;
 
 	/* Publishers */
+	vehicle_command_pub_ = this->create_publisher<VehicleCommand>(
+		"fmu/in/vehicle_command", 10);
+
+	offboard_control_mode_pub_ = this->create_publisher<OffboardControlMode>(
+		"fmu/in/offboard_control_mode", 10);
+	
+	trajectory_setpoint_pub_ = this->create_publisher<TrajectorySetpoint>(
+		"fmu/in/trajectory_setpoint", 10);
+	actuator_cmd_pub_ = this->create_publisher<ActuatorMotors>(
+		"fmu/in/actuator_motors", 10);
+	torque_setpoint_pub_ = this->create_publisher<VehicleTorqueSetpoint>(
+		"fmu/in/vehicle_torque_setpoint", 10);
+	thrust_setpoint_pub_ = this->create_publisher<VehicleThrustSetpoint>(
+		"fmu/in/vehicle_thrust_setpoint", 10);
+
+	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
 		"uav_state", 10);
 
 	/* Subscribers */
-
 	navigator_state_sub_ = this->create_subscription<gestelt_interfaces::msg::NavState>(
 		"navigator/state", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::navStateSubCB, this, _1), fcu_sub_opt);
 
+	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
+		"/all_uav_command", rclcpp::ServicesQoS(), 
+		std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
+
+	fcu_odom_sub_ = this->create_subscription<VehicleOdometry>(
+		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::xrceOdomSubCB, this, _1), fcu_sub_opt);
+
+	vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
+		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
+		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
+
 	lin_mpc_cmd_sub_ = this->create_subscription<TrajectorySetpoint>(
 		"lin_mpc_cmd", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::linMPCCmdSubCB, this, _1), fcu_sub_opt);
-
-
-	// Mavros topics
-	if (fcu_interface_ == FCUInterface::MAVROS){
-		auto state_qos = rclcpp::QoS(10).transient_local();
-
-		/* Publishers */
-
-		vel_magnitude_pub_ = this->create_publisher<std_msgs::msg::Float32>(
-			"vel_magnitude", 10);
-
-		/* Subscribers */
-		mavros_status_sub_ = this->create_subscription<mavros_msgs::msg::State>(
-			"mavros/state", state_qos, 
-			std::bind(&TrajectoryServer::mavrosStateSubCB, this, _1), fcu_sub_opt);
-
-		mavros_odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-			"odom", rclcpp::SensorDataQoS(), 
-			std::bind(&TrajectoryServer::mavrosOdomSubCB, this, _1), fcu_sub_opt);
-
-		all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
-			"/all_uav_command", rclcpp::ServicesQoS(), 
-			std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
-
-	}
-	else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS) {
-
-		/* Publishers */
-		odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
-			"odom", 10);
-
-		vehicle_command_pub_ = this->create_publisher<VehicleCommand>(
-			"fmu/in/vehicle_command", 10);
-		offboard_control_mode_pub_ = this->create_publisher<OffboardControlMode>(
-			"fmu/in/offboard_control_mode", 10);
-		trajectory_setpoint_pub_ = this->create_publisher<TrajectorySetpoint>(
-			"fmu/in/trajectory_setpoint", 10);
-		actuator_cmd_pub_ = this->create_publisher<ActuatorMotors>(
-			"fmu/in/actuator_motors", 10);
-		torque_setpoint_pub_ = this->create_publisher<VehicleTorqueSetpoint>(
-			"fmu/in/vehicle_torque_setpoint", 10);
-		thrust_setpoint_pub_ = this->create_publisher<VehicleThrustSetpoint>(
-			"fmu/in/vehicle_thrust_setpoint", 10);
-
-		/* Subscribers */
-		all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
-			"/all_uav_command", rclcpp::ServicesQoS(), 
-			std::bind(&TrajectoryServer::allUAVCmdSubCB, this, _1), fcu_sub_opt);
-
-		fcu_odom_sub_ = this->create_subscription<VehicleOdometry>(
-			"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
-			std::bind(&TrajectoryServer::xrceOdomSubCB, this, _1), fcu_sub_opt);
-
-		vehicle_status_sub_ = this->create_subscription<VehicleStatus>(
-			"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
-			std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
-
-	}
-	else {
-		logger_->logError("INVALID FLIGHT CONTROLLER INTERFACE SPECIFIED. Set fcu_interface param properly");
-		rclcpp::shutdown();
-	}
 
 	/* Timers */
 	pub_ctrl_timer_ = this->create_wall_timer((1.0/pub_ctrl_freq_)*1000ms, 
@@ -253,38 +193,6 @@ void TrajectoryServer::initSrv()
 /****************** */
 /* SUBSCRIBER CALLBACKS */
 /****************** */
-// Mavros
-
-void TrajectoryServer::mavrosStateSubCB(const mavros_msgs::msg::State::UniquePtr msg)
-{
-	mavros_handler_->setState(msg);
-}
-
-void TrajectoryServer::mavrosOdomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
-{
-	mavros_handler_->setOdom(msg);
-	
-	cur_pos_= Eigen::Vector3d{msg->pose.pose.position.x, 
-								msg->pose.pose.position.y, 
-								msg->pose.pose.position.z};
-
-	cur_vel_ = Eigen::Vector3d{	msg->twist.twist.linear.x, 
-                                msg->twist.twist.linear.y, 
-                                msg->twist.twist.linear.z};
-
-
-	// Quaternionf q << quat.x, quat.y, quat.z, quat.w;
-	cur_ori_ = Eigen::Quaterniond (msg->pose.pose.orientation.w, 
-									msg->pose.pose.orientation.x, 
-									msg->pose.pose.orientation.y, 
-									msg->pose.pose.orientation.z);
-
-	// Correct for ground height
-	cur_pos_corr_ = Eigen::Vector3d(cur_pos_(0), cur_pos_(1), cur_pos_(2) - ground_height_) ;
-}
-
-// Mavigator and state machine command topics
-
 void TrajectoryServer::navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg)
 {
 	// process msg
@@ -317,40 +225,6 @@ void TrajectoryServer::linMPCCmdSubCB(const TrajectorySetpoint::UniquePtr msg)
 	}
 }
 
-void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg)
-{
-	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
-					msg->command, msg->mode, msg->value));
-
-	// Check if value and mode is within bounds for specific commands
-	switch (msg->command)
-	{
-		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_TAKEOFF:  
-			if (msg->value < 0.5 || msg->value > 3.0){
-				logger_->logError("Value for COMMAND_TAKEOFF should be between 0.5 and 3.0, inclusive");
-
-				return;
-			}
-
-			break;
-		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_START_MISSION: 
-
-			if (msg->mode > 4){
-				logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4 inclusive");
-
-				return;
-			}
-			break;
-		default:                    
-			break;
-	}
-
-	// Send event to state machine
-	sendUAVCommandEvent(msg->command, msg->value, msg->mode);
-}
-
-// Micro XRCE-DDS topics
-
 void TrajectoryServer::vehicleStatusSubCB(const VehicleStatus::UniquePtr msg)
 {
 	arming_state_ = msg->arming_state;
@@ -361,6 +235,130 @@ void TrajectoryServer::vehicleStatusSubCB(const VehicleStatus::UniquePtr msg)
 	// 							arming_state_, nav_state_, pre_flight_checks_pass_), 1.0);
 
 	connected_to_fcu_ = true;
+	{
+		// # Encodes the system state of the vehicle published by commander
+
+		// uint64 timestamp # time since system start (microseconds)
+
+		// uint64 armed_time # Arming timestamp (microseconds)
+		// uint64 takeoff_time # Takeoff timestamp (microseconds)
+
+		// uint8 arming_state
+		// uint8 ARMING_STATE_DISARMED = 1
+		// uint8 ARMING_STATE_ARMED    = 2
+
+		// uint8 latest_arming_reason
+		// uint8 latest_disarming_reason
+		// uint8 ARM_DISARM_REASON_TRANSITION_TO_STANDBY = 0
+		// uint8 ARM_DISARM_REASON_STICK_GESTURE = 1
+		// uint8 ARM_DISARM_REASON_RC_SWITCH = 2
+		// uint8 ARM_DISARM_REASON_COMMAND_INTERNAL = 3
+		// uint8 ARM_DISARM_REASON_COMMAND_EXTERNAL = 4
+		// uint8 ARM_DISARM_REASON_MISSION_START = 5
+		// uint8 ARM_DISARM_REASON_SAFETY_BUTTON = 6
+		// uint8 ARM_DISARM_REASON_AUTO_DISARM_LAND = 7
+		// uint8 ARM_DISARM_REASON_AUTO_DISARM_PREFLIGHT = 8
+		// uint8 ARM_DISARM_REASON_KILL_SWITCH = 9
+		// uint8 ARM_DISARM_REASON_LOCKDOWN = 10
+		// uint8 ARM_DISARM_REASON_FAILURE_DETECTOR = 11
+		// uint8 ARM_DISARM_REASON_SHUTDOWN = 12
+		// uint8 ARM_DISARM_REASON_UNIT_TEST = 13
+
+		// uint64 nav_state_timestamp # time when current nav_state activated
+
+		// uint8 nav_state_user_intention                  # Mode that the user selected (might be different from nav_state in a failsafe situation)
+
+		// uint8 nav_state                                 # Currently active mode
+		// uint8 NAVIGATION_STATE_MANUAL = 0               # Manual mode
+		// uint8 NAVIGATION_STATE_ALTCTL = 1               # Altitude control mode
+		// uint8 NAVIGATION_STATE_POSCTL = 2               # Position control mode
+		// uint8 NAVIGATION_STATE_AUTO_MISSION = 3         # Auto mission mode
+		// uint8 NAVIGATION_STATE_AUTO_LOITER = 4          # Auto loiter mode
+		// uint8 NAVIGATION_STATE_AUTO_RTL = 5             # Auto return to launch mode
+		// uint8 NAVIGATION_STATE_POSITION_SLOW = 6
+		// uint8 NAVIGATION_STATE_FREE5 = 7
+		// uint8 NAVIGATION_STATE_FREE4 = 8
+		// uint8 NAVIGATION_STATE_FREE3 = 9
+		// uint8 NAVIGATION_STATE_ACRO = 10                # Acro mode
+		// uint8 NAVIGATION_STATE_FREE2 = 11
+		// uint8 NAVIGATION_STATE_DESCEND = 12             # Descend mode (no position control)
+		// uint8 NAVIGATION_STATE_TERMINATION = 13         # Termination mode
+		// uint8 NAVIGATION_STATE_OFFBOARD = 14
+		// uint8 NAVIGATION_STATE_STAB = 15                # Stabilized mode
+		// uint8 NAVIGATION_STATE_FREE1 = 16
+		// uint8 NAVIGATION_STATE_AUTO_TAKEOFF = 17        # Takeoff
+		// uint8 NAVIGATION_STATE_AUTO_LAND = 18           # Land
+		// uint8 NAVIGATION_STATE_AUTO_FOLLOW_TARGET = 19  # Auto Follow
+		// uint8 NAVIGATION_STATE_AUTO_PRECLAND = 20       # Precision land with landing target
+		// uint8 NAVIGATION_STATE_ORBIT = 21               # Orbit in a circle
+		// uint8 NAVIGATION_STATE_AUTO_VTOL_TAKEOFF = 22   # Takeoff, transition, establish loiter
+		// uint8 NAVIGATION_STATE_EXTERNAL1 = 23
+		// uint8 NAVIGATION_STATE_EXTERNAL2 = 24
+		// uint8 NAVIGATION_STATE_EXTERNAL3 = 25
+		// uint8 NAVIGATION_STATE_EXTERNAL4 = 26
+		// uint8 NAVIGATION_STATE_EXTERNAL5 = 27
+		// uint8 NAVIGATION_STATE_EXTERNAL6 = 28
+		// uint8 NAVIGATION_STATE_EXTERNAL7 = 29
+		// uint8 NAVIGATION_STATE_EXTERNAL8 = 30
+		// uint8 NAVIGATION_STATE_MAX = 31
+
+		// uint8 executor_in_charge                        # Current mode executor in charge (0=Autopilot)
+
+		// uint32 valid_nav_states_mask                    # Bitmask for all valid nav_state values
+		// uint32 can_set_nav_states_mask                  # Bitmask for all modes that a user can select
+
+		// # Bitmask of detected failures
+		// uint16 failure_detector_status
+		// uint16 FAILURE_NONE = 0
+		// uint16 FAILURE_ROLL = 1              # (1 << 0)
+		// uint16 FAILURE_PITCH = 2             # (1 << 1)
+		// uint16 FAILURE_ALT = 4               # (1 << 2)
+		// uint16 FAILURE_EXT = 8               # (1 << 3)
+		// uint16 FAILURE_ARM_ESC = 16          # (1 << 4)
+		// uint16 FAILURE_BATTERY = 32          # (1 << 5)
+		// uint16 FAILURE_IMBALANCED_PROP = 64  # (1 << 6)
+		// uint16 FAILURE_MOTOR = 128           # (1 << 7)
+
+		// uint8 hil_state
+		// uint8 HIL_STATE_OFF = 0
+		// uint8 HIL_STATE_ON = 1
+
+		// uint8 FAILSAFE_DEFER_STATE_DISABLED = 0
+		// uint8 FAILSAFE_DEFER_STATE_ENABLED = 1
+		// uint8 FAILSAFE_DEFER_STATE_WOULD_FAILSAFE = 2 # Failsafes deferred, but would trigger a failsafe
+
+		// bool failsafe # true if system is in failsafe state (e.g.:RTL, Hover, Terminate, ...)
+		// bool failsafe_and_user_took_over # true if system is in failsafe state but the user took over control
+		// uint8 failsafe_defer_state # one of FAILSAFE_DEFER_STATE_*
+
+		// # Link loss
+		// bool gcs_connection_lost              # datalink to GCS lost
+		// uint8 gcs_connection_lost_counter     # counts unique GCS connection lost events
+		// bool high_latency_data_link_lost # Set to true if the high latency data link (eg. RockBlock Iridium 9603 telemetry module) is lost
+
+		// # MAVLink identification
+		// uint8 system_type  # system type, contains mavlink MAV_TYPE
+		// uint8 system_id	   # system id, contains MAVLink's system ID field
+		// uint8 component_id # subsystem / component id, contains MAVLink's component ID field
+
+		// bool safety_button_available # Set to true if a safety button is connected
+		// bool safety_off # Set to true if safety is off
+
+		// bool power_input_valid                            # set if input power is valid
+		// bool usb_connected                                # set to true (never cleared) once telemetry received from usb link
+
+		// bool open_drone_id_system_present
+		// bool open_drone_id_system_healthy
+
+		// bool avoidance_system_required                    # Set to true if avoidance system is enabled via COM_OBS_AVOID parameter
+		// bool avoidance_system_valid                       # Status of the obstacle avoidance system
+
+		// bool rc_calibration_in_progress
+		// bool calibration_enabled
+
+		// bool pre_flight_checks_pass		# true if all checks necessary to arm pass
+	}
+
 }
 
 void TrajectoryServer::xrceOdomSubCB(const VehicleOdometry::UniquePtr msg)
@@ -410,6 +408,38 @@ void TrajectoryServer::xrceOdomSubCB(const VehicleOdometry::UniquePtr msg)
 
 }
 
+void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg)
+{
+	logger_->logInfo(strFmt("Incoming request\n Command: %d" " Mode: %d" " Value: %f",
+					msg->command, msg->mode, msg->value));
+
+	// Check if value and mode is within bounds for specific commands
+	switch (msg->command)
+	{
+		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_TAKEOFF:  
+			if (msg->value < 0.5 || msg->value > 3.0){
+				logger_->logError("Value for COMMAND_TAKEOFF should be between 0.5 and 3.0, inclusive");
+
+				return;
+			}
+
+			break;
+		case gestelt_interfaces::msg::AllUAVCommand::COMMAND_START_MISSION: 
+
+			if (msg->mode > 4){
+				logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4 inclusive");
+
+				return;
+			}
+			break;
+		default:                    
+			break;
+	}
+
+	// Send event to state machine
+	sendUAVCommandEvent(msg->command, msg->value, msg->mode);
+}
+
 /****************** */
 /* TIMER CALLBACKS */
 /****************** */
@@ -421,81 +451,72 @@ void TrajectoryServer::setOffboardTimerCB()
 		sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
 	}
 
+	gestelt_interfaces::msg::UAVState uav_state;
+
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::UNCONNECTED;
 	}
 	else if (UAV::is_in_state<Idle>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::IDLE;
 	}
 	else if (UAV::is_in_state<Landing>()){
-		if (fcu_interface_ == FCUInterface::MAVROS){
+		uav_state.state = gestelt_interfaces::msg::UAVState::LANDING;
 
+		if (nav_state_ != VehicleStatus::NAVIGATION_STATE_AUTO_LAND)
+		{
+			// Set to land mode
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+											PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO,
+											PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND);
 		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			if (nav_state_ != VehicleStatus::NAVIGATION_STATE_AUTO_LAND)
-			{
-				// Set to land mode
-				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
-												PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO,
-												PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND);
-			}
-		}
-
 	}
 	else if (UAV::is_in_state<TakingOff>()){
-		if (fcu_interface_ == FCUInterface::MAVROS){
-			if (!mavros_handler_->isUAVReady()){
-				mavros_handler_->toggleOffboardMode(true);
-			}
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			if (arming_state_ != VehicleStatus::ARMING_STATE_ARMED)
-			{ 
-				// Arm vehicle
-				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
-												VehicleCommand::ARMING_ACTION_ARM);
-			}
+		uav_state.state = gestelt_interfaces::msg::UAVState::TAKINGOFF;
 
-			if (nav_state_ != VehicleStatus::NAVIGATION_STATE_OFFBOARD)
-			{ 
-				// Set to custom (offboard) mode
-				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
-												PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD);
-			}
-
-			// PERIODICALLY: Publish offboard control mode message 
-			publishOffboardCtrlMode(0);	// Position control
+		if (arming_state_ != VehicleStatus::ARMING_STATE_ARMED)
+		{ 
+			// Arm vehicle
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+											VehicleCommand::ARMING_ACTION_ARM);
 		}
 
+		if (nav_state_ != VehicleStatus::NAVIGATION_STATE_OFFBOARD)
+		{ 
+			// Set to custom (offboard) mode
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+											PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD);
+		}
+
+		// PERIODICALLY: Publish offboard control mode message 
+		publishOffboardCtrlMode(0);	// Position control
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		if (fcu_interface_ == FCUInterface::MAVROS){
-
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			// PERIODICALLY: Publish offboard control mode message 
-			publishOffboardCtrlMode(0);	// Position control
-		}
+		uav_state.state = gestelt_interfaces::msg::UAVState::HOVERING;
+		
+		// PERIODICALLY: Publish offboard control mode message 
+		publishOffboardCtrlMode(0);	// Position control
 	}
 	else if (UAV::is_in_state<Mission>()){
-		if (fcu_interface_ == FCUInterface::MAVROS){
-
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			// PERIODICALLY: Publish offboard control mode message
-			publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
-		}
+		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
+		
+		// PERIODICALLY: Publish offboard control mode message
+		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
+		uav_state.state = gestelt_interfaces::msg::UAVState::EMERGENCYSTOP;
 	}
 	else {
+		uav_state.state = gestelt_interfaces::msg::UAVState::UNDEFINED;
 	}
+
+	uav_state_pub_->publish(uav_state);
 }
 
 void TrajectoryServer::pubCtrlTimerCB()
 {
 	static double take_off_hover_T = 1.0/5.0;// Take off and landing period
 	static double estop_T = 1.0/50.0;// EStop period
-	cmd_yaw_yawrate_(1) = NAN; //set yaw rate to 0
 
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
@@ -505,99 +526,113 @@ void TrajectoryServer::pubCtrlTimerCB()
 		// Do nothing
 	}
 	else if (UAV::is_in_state<Landing>()){
-		if (fcu_interface_ == FCUInterface::MAVROS){
-      		mavros_handler_->execLand();
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			// Do nothing
-		}
+		// Do nothing
 	}
 	else if (UAV::is_in_state<TakingOff>()){
-		cmd_pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
-		// Adjust for ground height
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
-
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
+			cmd_yaw_yawrate_(1) = NAN; 
 
-			if (fcu_interface_ == FCUInterface::MAVROS){
-				mavros_handler_->execTakeOff(pos_enu_corr, cmd_yaw_yawrate_);
-			}
-			else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-				publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_);
-			}
+			cmd_pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
+			// Adjust for ground height
+			Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+				cmd_pos_enu_(0), 
+				cmd_pos_enu_(1), 
+				cmd_pos_enu_(2) + ground_height_); 
+
+			publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
 
 	}
 	else if (UAV::is_in_state<Hovering>()){
-		// Adjust for ground height
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
-
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
+			cmd_yaw_yawrate_(1) = NAN; 
 
-			if (fcu_interface_ == FCUInterface::MAVROS){
-      			mavros_handler_->execHover(pos_enu_corr, cmd_yaw_yawrate_);
-			}
-			else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-				publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_);
-			}
+			// Adjust for ground height
+			Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+				cmd_pos_enu_(0), 
+				cmd_pos_enu_(1), 
+				cmd_pos_enu_(2) + ground_height_); 
+
+			publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
+
 	}
 	else if (UAV::is_in_state<Mission>()){
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
-		
-		if (!geofence_->withinLimits(pos_enu_corr)){
-			// skip if command is not within limits
-			logger_->logError("OUT OF GEOFENCE: SKIP COMMAND EXECUTION!");
-			return;
-		}
 
-		if (fcu_interface_ == FCUInterface::MAVROS){
+		Eigen::Vector3d cmd_pos_enu;		// Last commanded position [ENU frame]
+		Eigen::Vector2d cmd_yaw_yawrate;
+		Eigen::Vector3d cmd_vel_enu;		
+		Eigen::Vector3d cmd_acc_enu;	
 
-			mavros_handler_->execMission(pos_enu_corr, cmd_vel_enu_, cmd_acc_enu_, cmd_yaw_yawrate_);
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
-				case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY:
+		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY:
+
+				if (traj_type_ == TrajectoryType::MPC) {
+
 					// Correct commanded position with ground_height_
+					Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+					cmd_yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
 
 					publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
-					break;
-				case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: 
-					// publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
-					break;
-				case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES: 
-					// publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
-					break;
-				case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE: 
-					// publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
-					break;
-				case gestelt_interfaces::msg::AllUAVCommand::MODE_MOTORS:
-					// publishActuatorCmds(Eigen::Vector4d(1.0, 1.0, 1.0, 1.0));
-					break;
-				default:
-					logger_->logWarnThrottle("UNDEFINED TRAJECTORY MODE", 1.0);
-					// Undefined. Do nothing
-					break;
-			}
+				}
+				else if (traj_type_ == TrajectoryType::MINCO) {
+					if (poly_traj_cmd_->getCmd(cmd_pos_enu, cmd_yaw_yawrate, cmd_vel_enu, cmd_acc_enu))
+					{	
+						cmd_pos_enu_ = cmd_pos_enu;
+						cmd_yaw_yawrate_ = cmd_yaw_yawrate;
+						cmd_vel_enu_ = cmd_vel_enu;	
+						cmd_acc_enu_ = cmd_acc_enu;	
+
+						// Correct commanded position with ground_height_
+						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+						cmd_yaw_yawrate_(1) = NAN; // set yaw_rate to NAN
+
+						publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
+					}
+					else { 
+						// logger_->logWarnThrottle("No valid MINCO trajectory received...", 1.0);
+
+						Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+						cmd_yaw_yawrate_(1) = NAN; 
+						Eigen::Vector3d nan_3d = Eigen::Vector3d::Constant(NAN);
+
+						publishTrajectorySetpoint(pos_enu_corr, cmd_yaw_yawrate_, nan_3d, nan_3d);
+					}
+				}
+				else {
+					logger_->logWarnThrottle("UNDEFINED TRAJECTORY TYPE!", 1.0);
+				}
+				break;
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: 
+				// publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
+				break;
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES: 
+				// publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
+				break;
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE: 
+				// publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
+				break;
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_MOTORS:
+				// publishActuatorCmds(Eigen::Vector4d(1.0, 1.0, 1.0, 1.0));
+				break;
+			default:
+				logger_->logWarnThrottle("UNDEFINED TRAJECTORY MODE", 1.0);
+				// Undefined. Do nothing
+				break;
 		}
 	}
 	else if (UAV::is_in_state<EmergencyStop>()){
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > estop_T){
-			if (fcu_interface_ == FCUInterface::MAVROS){
-
-			}
-			else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-					// Disarm vehicle forcefully
-					if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
-					{ 
-						this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
-												VehicleCommand::ARMING_ACTION_DISARM,
-												21196);
-					}
+			// Disarm vehicle forcefully
+			if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
+			{ 
+				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+										VehicleCommand::ARMING_ACTION_DISARM,
+										21196);
 			}
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
@@ -613,67 +648,35 @@ void TrajectoryServer::SMTickTimerCB()
 	// Check all states
 	if (UAV::is_in_state<Unconnected>()){
 		logger_->logWarnThrottle("[Unconnected]", 1.0);
-
-		if (fcu_interface_ == FCUInterface::MAVROS){
-			if (mavros_handler_->isConnected()){
-				sendEvent(Idle_E());
-			}
+		if (connected_to_fcu_){
+			sendEvent(Idle_E());
 		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			if (connected_to_fcu_){
-				sendEvent(Idle_E());
-			}
-		}
-
 	}
 	else if (UAV::is_in_state<Idle>()){
 		logger_->logInfoThrottle("[Idle]", 1.0);
-
+		if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
+		{ 
+			// Disarm vehicle
+			this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+									VehicleCommand::ARMING_ACTION_DISARM);
+		}
 		ground_height_ = cur_pos_(2); // Set ground height to last z value
+
 		cmd_pos_enu_ = cur_pos_corr_; // Set last commanded position as current position 
 		cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_); 
-
-		if (fcu_interface_ == FCUInterface::MAVROS){
-			mavros_handler_->setGroundheight(ground_height_);
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			if (arming_state_ != VehicleStatus::ARMING_STATE_DISARMED)
-			{ 
-				// Disarm vehicle
-				this->publish_vehicle_command(VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
-										VehicleCommand::ARMING_ACTION_DISARM);
-			}
-		}
 	}
 	else if (UAV::is_in_state<Landing>()){
 		logger_->logInfoThrottle("[Landing]", 1.0);
-
-		if (fcu_interface_ == FCUInterface::MAVROS){
-			if (mavros_handler_->isLanded()){
-				sendEvent(Idle_E());
-			}
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			if (arming_state_ == VehicleStatus::ARMING_STATE_DISARMED)
-			{
-				sendEvent(Idle_E());
-			}
+		if (arming_state_ == VehicleStatus::ARMING_STATE_DISARMED)
+		{
+			sendEvent(Idle_E());
 		}
 	}
 	else if (UAV::is_in_state<TakingOff>()){
 		logger_->logInfoThrottle("[TakingOff]", 1.0);
-		double take_off_h = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
-
-		if (fcu_interface_ == FCUInterface::MAVROS){
-			if (mavros_handler_->isTakenOff(take_off_h)){
-				sendEvent(Hover_E());
-			}
-		}
-		else if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-			if (abs(cur_pos_corr_(2) - take_off_h) < take_off_landing_tol_)
-			{
-				sendEvent(Hover_E());
-			}
+		if (abs(cur_pos_corr_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) < take_off_landing_tol_)
+		{
+			sendEvent(Hover_E());
 		}
 	}
 	else if (UAV::is_in_state<Hovering>()){
@@ -692,82 +695,49 @@ void TrajectoryServer::SMTickTimerCB()
 
 void TrajectoryServer::pubStateTimerCB()
 {
-	if (fcu_interface_ == FCUInterface::MICRO_XRCE_DDS){
-		nav_msgs::msg::Odometry odom_msg;
+	nav_msgs::msg::Odometry odom_msg;
 
-		odom_msg.header.frame_id = map_frame_;
-		odom_msg.header.stamp = this->get_clock()->now();
+	odom_msg.header.frame_id = map_frame_;
+	odom_msg.header.stamp = this->get_clock()->now();
 
-		odom_msg.child_frame_id = base_link_frame_;
+	odom_msg.child_frame_id = base_link_frame_;
 
-		odom_msg.pose.pose.position.x = cur_pos_corr_(0);
-		odom_msg.pose.pose.position.y = cur_pos_corr_(1);
-		odom_msg.pose.pose.position.z = cur_pos_corr_(2);
+	odom_msg.pose.pose.position.x = cur_pos_corr_(0);
+	odom_msg.pose.pose.position.y = cur_pos_corr_(1);
+	odom_msg.pose.pose.position.z = cur_pos_corr_(2);
 
-		odom_msg.pose.pose.orientation.w = cur_ori_.w();
-		odom_msg.pose.pose.orientation.x = cur_ori_.x();
-		odom_msg.pose.pose.orientation.y = cur_ori_.y();
-		odom_msg.pose.pose.orientation.z = cur_ori_.z();
+	odom_msg.pose.pose.orientation.w = cur_ori_.w();
+	odom_msg.pose.pose.orientation.x = cur_ori_.x();
+	odom_msg.pose.pose.orientation.y = cur_ori_.y();
+	odom_msg.pose.pose.orientation.z = cur_ori_.z();
 
-		odom_msg.twist.twist.linear.x = cur_vel_(0);
-		odom_msg.twist.twist.linear.y = cur_vel_(1);
-		odom_msg.twist.twist.linear.z = cur_vel_(2);
+	odom_msg.twist.twist.linear.x = cur_vel_(0);
+	odom_msg.twist.twist.linear.y = cur_vel_(1);
+	odom_msg.twist.twist.linear.z = cur_vel_(2);
 
-		odom_msg.twist.twist.angular.x = cur_ang_vel_(0);
-		odom_msg.twist.twist.angular.y = cur_ang_vel_(1);
-		odom_msg.twist.twist.angular.z = cur_ang_vel_(2);
+	odom_msg.twist.twist.angular.x = cur_ang_vel_(0);
+	odom_msg.twist.twist.angular.y = cur_ang_vel_(1);
+	odom_msg.twist.twist.angular.z = cur_ang_vel_(2);
 
-		odom_pub_->publish(odom_msg);
+	odom_pub_->publish(odom_msg);
 
-		// broadcast tf link from global map frame to local map origin 
-		geometry_msgs::msg::TransformStamped map_to_base_link_tf;
+	// broadcast tf link from global map frame to local map origin 
+	geometry_msgs::msg::TransformStamped map_to_base_link_tf;
 
-		map_to_base_link_tf.header.stamp = this->get_clock()->now();
-		map_to_base_link_tf.header.frame_id = map_frame_; 
-		map_to_base_link_tf.child_frame_id = base_link_frame_; 
+	map_to_base_link_tf.header.stamp = this->get_clock()->now();
+	map_to_base_link_tf.header.frame_id = map_frame_; 
+	map_to_base_link_tf.child_frame_id = base_link_frame_; 
 
-		map_to_base_link_tf.transform.translation.x = cur_pos_corr_(0);
-		map_to_base_link_tf.transform.translation.y = cur_pos_corr_(1);
-		map_to_base_link_tf.transform.translation.z = cur_pos_corr_(2);
+	map_to_base_link_tf.transform.translation.x = cur_pos_corr_(0);
+	map_to_base_link_tf.transform.translation.y = cur_pos_corr_(1);
+	map_to_base_link_tf.transform.translation.z = cur_pos_corr_(2);
 
-		map_to_base_link_tf.transform.rotation.x = cur_ori_.x();
-		map_to_base_link_tf.transform.rotation.y = cur_ori_.y();
-		map_to_base_link_tf.transform.rotation.z = cur_ori_.z();
-		map_to_base_link_tf.transform.rotation.w = cur_ori_.w();
-		
-		tf_broadcaster_->sendTransform(map_to_base_link_tf);
-
-	}
-
-	gestelt_interfaces::msg::UAVState uav_state;
-
-	// Check all states
-	if (UAV::is_in_state<Unconnected>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::UNCONNECTED;
-	}
-	else if (UAV::is_in_state<Idle>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::IDLE;
-	}
-	else if (UAV::is_in_state<Landing>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::LANDING;
-	}
-	else if (UAV::is_in_state<TakingOff>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::TAKINGOFF;
-	}
-	else if (UAV::is_in_state<Hovering>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::HOVERING;
-	}
-	else if (UAV::is_in_state<Mission>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
-	}
-	else if (UAV::is_in_state<EmergencyStop>()){
-		uav_state.state = gestelt_interfaces::msg::UAVState::EMERGENCYSTOP;
-	}
-	else {
-		uav_state.state = gestelt_interfaces::msg::UAVState::UNDEFINED;
-	}
-
-	uav_state_pub_->publish(uav_state);
+	map_to_base_link_tf.transform.rotation.x = cur_ori_.x();
+	map_to_base_link_tf.transform.rotation.y = cur_ori_.y();
+	map_to_base_link_tf.transform.rotation.z = cur_ori_.z();
+	map_to_base_link_tf.transform.rotation.w = cur_ori_.w();
+	
+	tf_broadcaster_->sendTransform(map_to_base_link_tf);
 }
 
 /****************** */

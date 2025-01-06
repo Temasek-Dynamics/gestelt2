@@ -1,0 +1,9 @@
+repositories:
+  ../mavros:
+    type: git
+    url: https://github.com/mavlink/mavros.git
+    version: b49095727a6ff160e1e913b90a4ce50e383e8863
+  ../px4_msgs:
+    type: git
+    url: https://github.com/PX4/px4_msgs.git
+    version: bcb3d020bd2f2a994b0633a6fccf8ae47190d867

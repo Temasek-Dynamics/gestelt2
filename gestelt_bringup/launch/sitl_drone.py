@@ -8,11 +8,15 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 
-from launch import LaunchDescription
+from launch import LaunchDescription, LaunchContext
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 
 from launch.substitutions import LaunchConfiguration, PythonExpression
+
+# def render_launch_config(context: LaunchContext, launch_config):
+#   launch_config_str = context.perform_substitution(launch_config)
+#   # Render xacro
 
 def generate_launch_description():
     ''' Get launch argument values '''
@@ -52,11 +56,14 @@ def generate_launch_description():
     )
 
     '''Frames'''
-    map_frame = ["d", drone_id, "_origin"]
-    local_map_frame = ["d", drone_id, "_lcl_map"]
-    base_link_frame = ["d", drone_id, "_base_link"]
-    camera_frame = ["d", drone_id, "_camera_link"]
+    map_frame = 'map'
+    # map_frame = ['d', drone_id, '_origin']
+    local_map_frame = ['d', drone_id, '_lcl_map']
+    base_link_frame = 'base_link'
+    # base_link_frame = ['d', drone_id, '_base_link']
+    camera_frame = ['d', drone_id, '_camera_link']
 
+    
     ''' Get directories '''
 
     px4_dir = os.path.join(
@@ -90,6 +97,16 @@ def generate_launch_description():
       'voxel_map.yaml'
     )
 
+    px4_pluginlists_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'px4_pluginlists.yaml'
+    )
+
+    px4_config_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'px4_config.yaml'
+    )
+
 
     """Nodes"""
     # Publish TF for map to fixed drone origin
@@ -108,29 +125,29 @@ def generate_launch_description():
                               base_link_frame, camera_frame])
 
     ''' PX4 SITL '''
-    px4_sitl = ExecuteProcess(
-        cmd=[
-            # Environment variables
-            'PX4_SYS_AUTOSTART=4001',
-            'PX4_GZ_WORLD=default',
-            'PX4_SIM_MODEL=gz_x500',
-            'PX4_GZ_STANDALONE=1',
-            ['PX4_GZ_MODEL_POSE="', init_x, ',', init_y, ',0,0,0,', init_yaw, '"'],
-            # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
-            'ROS_DOMAIN_ID=0',
-            'PX4_UXRCE_DDS_PORT=8888',
-            ['PX4_UXRCE_DDS_NS=d', drone_id],
-            # PX4 Executable
-            os.path.join(px4_build_dir, 'bin/px4'),      # PX4 executable
-            os.path.join(px4_build_dir, 'etc'),          # ?
-            '-w', os.path.join(px4_build_dir, 'rootfs'), # Working directory
-            '-s', os.path.join(px4_build_dir, 'etc/init.d-posix/rcS'), # Startup file
-            '-i', drone_id, # Instance number
-            '-d' # Run as daemon (not interactive terminal)
-        ],
-        name=['px4_sitl_', drone_id],
-        shell=True
-    )
+    # px4_sitl = ExecuteProcess(
+    #     cmd=[
+    #         # Environment variables
+    #         'PX4_SYS_AUTOSTART=4001',
+    #         'PX4_GZ_WORLD=default',
+    #         'PX4_SIM_MODEL=gz_x500',
+    #         'PX4_GZ_STANDALONE=1',
+    #         ['PX4_GZ_MODEL_POSE="', init_x, ',', init_y, ',0,0,0,', init_yaw, '"'],
+    #         # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
+    #         # 'ROS_DOMAIN_ID=0',
+    #         # 'PX4_UXRCE_DDS_PORT=8888',
+    #         # ['PX4_UXRCE_DDS_NS=d', drone_id],
+    #         # PX4 Executable
+    #         os.path.join(px4_build_dir, 'bin/px4'),      # PX4 executable
+    #         os.path.join(px4_build_dir, 'etc'),          # ?
+    #         '-w', os.path.join(px4_build_dir, 'rootfs'), # Working directory
+    #         '-s', os.path.join(px4_build_dir, 'etc/init.d-posix/rcS'), # Startup file
+    #         '-i', drone_id, # Instance number
+    #         '-d' # Run as daemon (not interactive terminal)
+    #     ],
+    #     name=['px4_sitl_', drone_id],
+    #     shell=True
+    # )
 
     ''' Navigator: Planner module '''
     navigator_node = Node(
@@ -138,7 +155,7 @@ def generate_launch_description():
         executable='navigator_node',
         output='screen',
         shell=False,
-        name='navigator',
+        name=['navigator_', drone_id],
         parameters=[
             {'drone_id': drone_id},
             {'map_frame': map_frame},
@@ -181,6 +198,38 @@ def generate_launch_description():
         ],
     )
 
+    '''Mavlink/Mavros'''
+    fcu_addr =  PythonExpression(['14540 +', drone_id])
+    # fcu_port =  PythonExpression(['14580 +', drone_id])
+    fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
+    fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
+    tgt_system = PythonExpression(['1 +', drone_id])
+
+    mavros_node = Node(
+      package='mavros',
+      executable='mavros_node',
+      output='screen',
+      shell=False,
+      namespace='mavros',
+      parameters=[
+        {'fcu_url': fcu_url},
+        {'gcs_url': ''},
+        {'tgt_system': tgt_system},
+        {'tgt_component': 1},
+        {'fcu_protocol': 'v2.0'},
+        px4_pluginlists_cfg,
+        px4_config_cfg,
+        {'local_position.frame_id': map_frame},
+        {'local_position.tf.send': 'true'},
+        {'local_position.tf.frame_id': map_frame},
+        {'local_position.tf.child_frame_id': base_link_frame},
+      ],
+      remappings=[
+        ('local_position/odom', ['/d', drone_id, '/odom']),
+      ],
+
+    )
+
     return LaunchDescription([
         # Launch arguments
         drone_id_launch_arg,
@@ -196,6 +245,8 @@ def generate_launch_description():
         fake_sensor,
         navigator_node,
         trajectory_server,
+        # Mavlink to ROS bridge
+        mavros_node,
         # Drone simulation instance
-        px4_sitl,
+        # px4_sitl,
     ])

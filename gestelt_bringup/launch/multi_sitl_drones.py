@@ -18,7 +18,10 @@ from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
 # SCENARIO_NAME = "forest_dense_1"
-# SCENARIO_NAME = "forest_sparse_1"
+SCENARIO_NAME = "forest_sparse_1"
+
+# SCENARIO_NAME = "forward_flight_8"
+# SCENARIO_NAME = "forward_flight_16"
 
 # SCENARIO_NAME = "antipodal_swap_4_normal"
 # SCENARIO_NAME = "antipodal_swap_4_sparse"
@@ -26,7 +29,7 @@ from launch_ros.actions import Node, PushROSNamespace
 # SCENARIO_NAME = "antipodal_swap_4_empty"
 
 # SCENARIO_NAME = "antipodal_swap_8_normal"
-SCENARIO_NAME = "antipodal_swap_8_sparse"
+# SCENARIO_NAME = "antipodal_swap_8_sparse"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -116,7 +119,7 @@ def generate_launch_description():
         cmd=[
             'python3', px4_gz,
             '--world', 'default',
-            '--headless',
+            # '--headless',
         ],
         name='gazebo',
         shell=False
@@ -236,8 +239,8 @@ def generate_launch_description():
         # Visualization
         rviz_node,
         # Processes
-        gazebo,
-        xrce_agent,
+        # gazebo,
+        # xrce_agent,
         # Mission
         mission_node,
         # Simulation instances
