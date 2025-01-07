@@ -35,7 +35,7 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-#include <ikd_tree/ikd_tree.hpp>
+// #include <ikd_tree/ikd_tree.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/wait_for_message.hpp>
@@ -313,8 +313,8 @@ private:
    * @return true 
    * @return false 
    */
-  bool getNearestOccupiedCell(const Eigen::Vector3d &pos, 
-                              Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb);
+  // bool getNearestOccupiedCell(const Eigen::Vector3d &pos, 
+  //                             Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb);
 
 private: 
   rclcpp::Node::SharedPtr node_;
@@ -373,7 +373,7 @@ private:
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_fixedmapframe_; // Vector of obstacle points used for sfc generation
 
   std::unique_ptr<BonxaiT> bonxai_map_; // Bonxai data structure 
-  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
+  // std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
 
   BoolMap3D bool_map_3d_; // Bool map slices 
 
@@ -454,25 +454,25 @@ inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
   return true;
 }
 
-inline bool VoxelMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
-                            Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb){
-  int nearest_num_nb = 1;
-  pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
-  std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
-  std::vector<float> nb_radius_vec;
+// inline bool VoxelMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
+//                             Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb){
+//   int nearest_num_nb = 1;
+//   pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
+//   std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
+//   std::vector<float> nb_radius_vec;
 
-  kdtree_->Nearest_Search(search_point, nearest_num_nb, nb_points, nb_radius_vec);
+//   kdtree_->Nearest_Search(search_point, nearest_num_nb, nb_points, nb_radius_vec);
 
-  if (nb_points.empty()){
-    return false;
-  }
+//   if (nb_points.empty()){
+//     return false;
+//   }
 
-  dist_to_nearest_nb = sqrt(nb_radius_vec[0]);
+//   dist_to_nearest_nb = sqrt(nb_radius_vec[0]);
 
-  occ_nearest = Eigen::Vector3d{nb_points[0].x, nb_points[0].y, nb_points[0].z};
+//   occ_nearest = Eigen::Vector3d{nb_points[0].x, nb_points[0].y, nb_points[0].z};
 
-  return true;
-}
+//   return true;
+// }
 
 /* Checks */
 

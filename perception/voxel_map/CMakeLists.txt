@@ -31,13 +31,14 @@ set(ROS_LIBRABRIES
   message_filters
   logger_wrapper
   bonxai
-  ikd_tree)
+  # ikd_tree
+)
 
 set(EXPORTED_DEPENDENCIES
   PCL
   pcl_conversions
   bonxai
-  ikd_tree
+  # ikd_tree
 )
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})

@@ -246,7 +246,7 @@ void VoxelMap::reset(const double& resolution){
 
   // Set up KDTree for collision checks
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
-  kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+  // kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
 
   lcl_pcd_lclmapframe_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   lcl_pcd_fixedmapframe_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
@@ -423,7 +423,7 @@ void VoxelMap::updateLocalMap(){
   }
 
   // Add local occ points in fixed map frame to KDTree
-  kdtree_->Build(lcl_pcd_fixedmapframe_->points);
+  // kdtree_->Build(lcl_pcd_fixedmapframe_->points);
 }
 
 void VoxelMap::getMapSlice(const double& slice_z_cm, 
@@ -657,9 +657,9 @@ void VoxelMap::checkCollisionsTimerCB()
   // Get nearest obstacle position
   Eigen::Vector3d occ_nearest;
   double dist_to_obs;
-  if (!getNearestOccupiedCell(query_pos, occ_nearest, dist_to_obs)){
-    return;
-  }
+  // if (!getNearestOccupiedCell(query_pos, occ_nearest, dist_to_obs)){
+  //   return;
+  // }
 
   // Publish collision sphere visualizations.
   if (dist_to_obs <= col_warn_radius_){

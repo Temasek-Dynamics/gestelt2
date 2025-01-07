@@ -54,7 +54,7 @@ RUN vcs import < thirdparty.repos --recursive
 WORKDIR /gestelt_ws/
 RUN source /opt/ros/jazzy/setup.bash \
     && export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/ \
-    && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker
+    && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree
 
 # Copy .bashrc file
 COPY .bashrc /root/

@@ -42,7 +42,7 @@
         max_range: 5.0   # [m] Maximum range of sensor
 
       collision_check: # For visualizing collision with static obstacles
-        enable: true    # Enable checking of collisions
+        enable: false    # Enable checking of collisions
         warn_radius: 0.25  # [m]  Distance to collision to display warning sphere
         fatal_radius: 0.14  # [m] Distance to collision to display fatal sphere
         check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
