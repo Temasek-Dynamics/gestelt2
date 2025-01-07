@@ -14,6 +14,10 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 
 from launch.substitutions import LaunchConfiguration, PythonExpression
 
+# def render_launch_config(context: LaunchContext, launch_config):
+#   launch_config_str = context.perform_substitution(launch_config)
+#   # Render xacro
+
 def generate_launch_description():
     ''' Get launch argument values '''
     drone_id = LaunchConfiguration('drone_id')

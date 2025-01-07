@@ -50,7 +50,7 @@ class Mission(Node):
 
         """ Parameter Server """
         self.declare_parameter('scenario', '')
-        self.declare_parameter('init_delay', 1)
+        self.declare_parameter('init_delay', 2)
 
         self.scenario_name = self.get_parameter('scenario').get_parameter_value().string_value
         self.init_delay = self.get_parameter('init_delay').get_parameter_value().integer_value
@@ -80,9 +80,10 @@ class Mission(Node):
         #         self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
 
         """Publishers"""
-        self.goals_pubs_ = []
         self.all_uav_cmd_pub = self.create_publisher(
             AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
+        
+        self.goals_pubs_ = []
         for id in range(self.scenario.num_agents):
             self.goals_pubs_.append(self.create_publisher(
                                         Goals, 
@@ -155,17 +156,17 @@ class Mission(Node):
         """
         retry_num = 0
         
-        self.get_logger().info(f"Commanding all drones: (cmd:{command}, value:{value}, mode:{mode})")
+        self.get_logger().info(f"Commanding all drones via topic '/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
         
+        # Publish to all drones
+        # Wait for drone states to be req_state before triggering state transition
         if req_state != None:
-            # Publish to all drones
             for id in range(self.scenario.num_agents):
                 while not self.isInReqState(id, req_state):
-                    time.sleep(0.5)
+                    time.sleep(1.0)
                     retry_num += 1
                     if (retry_num > self.max_retries):
                         return False
-                
 
         msg = AllUAVCommand()
         msg.command = command
@@ -173,6 +174,7 @@ class Mission(Node):
         msg.mode = mode
 
         self.all_uav_cmd_pub.publish(msg)
+        self.get_logger().info(f"Commanded all drones via '/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
 

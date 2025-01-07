@@ -39,6 +39,8 @@
 
 #include <Eigen/Eigen>
 
+using namespace std::chrono_literals;
+
 class MavrosHandler 
 {
 public:
@@ -124,7 +126,7 @@ private:
   double take_off_landing_tol_{0.2};
   std::string map_frame_;
 
-  std::chrono::duration<double, std::milli> dur_7s = std::chrono::milliseconds(7000);
+  std::chrono::duration<double, std::milli> dur_7s = std::chrono::milliseconds(10000);
 
   /* Data */
   bool connected_to_fcu_{false};
@@ -225,13 +227,12 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
       // we don't use spin_until_future_complete()
       std::future_status status;
 
-      switch (status = result.wait_for(dur_7s); status)
+      switch (status = result.wait_for(7s); status)
       {
         case std::future_status::deferred:
           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client deferred");
           break;
         case std::future_status::timeout:
-          std::cout << "timeout\n";
           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client timeout");
           break;
         case std::future_status::ready:
@@ -256,13 +257,12 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 
       std::future_status status;
 
-      switch (status = result.wait_for(dur_7s); status)
+      switch (status = result.wait_for(7s); status)
       {
         case std::future_status::deferred:
           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client deferred");
           break;
         case std::future_status::timeout:
-          std::cout << "timeout\n";
           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client timeout");
           break;
         case std::future_status::ready:
@@ -323,13 +323,12 @@ inline void MavrosHandler::execLand()
 
     std::future_status status;
 
-    switch (status = result.wait_for(dur_7s); status)
+    switch (status = result.wait_for(7s); status)
     {
       case std::future_status::deferred:
         RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client deferred");
         break;
       case std::future_status::timeout:
-        std::cout << "timeout\n";
         RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client timeout");
         break;
       case std::future_status::ready:

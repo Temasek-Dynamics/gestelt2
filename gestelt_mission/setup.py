@@ -4,7 +4,7 @@ package_name = 'gestelt_mission'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -22,8 +22,6 @@ setup(
     entry_points={
         'console_scripts': [
             'mission = gestelt_mission.mission:main',
-            'land = gestelt_mission.land:main',
-            'takeoff = gestelt_mission.takeoff:main',
         ],
     },
 )

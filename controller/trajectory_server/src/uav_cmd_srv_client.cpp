@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 
   std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("uav_command_client");
   rclcpp::Client<gestelt_interfaces::srv::UAVCommand>::SharedPtr client =
-    node->create_client<gestelt_interfaces::srv::UAVCommand>("/uav_command");
+    node->create_client<gestelt_interfaces::srv::UAVCommand>("/d0/uav_command");
 
   auto request = std::make_shared<gestelt_interfaces::srv::UAVCommand::Request>();
   request->header.stamp = node->get_clock()->now();

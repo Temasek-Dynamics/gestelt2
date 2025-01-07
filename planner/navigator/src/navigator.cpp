@@ -132,7 +132,7 @@ void Navigator::initPubSubTimer()
     "fe_plan/broadcast", rclcpp::SensorDataQoS());
 
   lin_mpc_cmd_pub_ = this->create_publisher<mavros_msgs::msg::PositionTarget>(
-    "lin_mpc_cmd", rclcpp::SensorDataQoS());
+    "navigator/intmd_cmd", rclcpp::SensorDataQoS());
 
   nav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::NavState>(
     "navigator/state", rclcpp::SensorDataQoS());

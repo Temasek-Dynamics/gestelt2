@@ -33,6 +33,7 @@ set(ROS_LIBRABRIES
   visualization_msgs
   gestelt_interfaces
   minco_interfaces
+  mavros_msgs
   # Mapping and planning
   voxel_map
   dynamic_voronoi
