@@ -49,6 +49,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
+#include <mavros_msgs/msg/position_target.hpp>
+
 #include <gestelt_interfaces/msg/plan_request.hpp>
 #include <gestelt_interfaces/msg/space_time_path.hpp>
 #include <gestelt_interfaces/msg/goals.hpp>
@@ -992,7 +994,7 @@ inline void Navigator::pubPVAJCmd(	const Eigen::Vector3d& p,
   // Send msg in ENU frame
   mavros_msgs::msg::PositionTarget cmd_msg;
 
-  cmd_msg.header.stamp = node_->get_clock()->now();
+  cmd_msg.header.stamp = this->get_clock()->now();
   cmd_msg.header.frame_id = map_frame_;
   cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
   cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;

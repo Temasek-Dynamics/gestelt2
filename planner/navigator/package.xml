@@ -26,6 +26,8 @@
   <depend>geometry_msgs</depend>
   <depend>gestelt_interfaces</depend>
   <depend>minco_interfaces</depend>
+  <depend>mavros_msgs</depend>
+  
   
   <!-- Mapping and planning -->
   <depend>voxel_map</depend>
