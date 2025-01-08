@@ -187,7 +187,6 @@ def generate_launch_description():
       remappings=[
         ('local_position/odom', ['/d', drone_id, '/odom']),
       ],
-
     )
 
     return LaunchDescription([

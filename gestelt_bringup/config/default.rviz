@@ -4,9 +4,8 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /fake_map1/Status1
         - /TF1/Frames1
-        - /central1
-        - /d01
         - /d01/state1
         - /d01/state1/odom_ax1
         - /d01/state1/odom_ax1/Topic1
@@ -91,9 +90,9 @@ Visualization Manager:
       Style: Spheres
       Topic:
         Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
+        Durability Policy: System Default
+        History Policy: System Default
+        Reliability Policy: Best Effort
         Value: /fake_map
       Use Fixed Frame: true
       Use rainbow: true
@@ -129,7 +128,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /swarm_collision_checker/collisions
           Value: true
-      Enabled: true
+      Enabled: false
       Name: central
     - Class: rviz_common/Group
       Displays:
@@ -198,7 +197,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4221,5 +4220,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1854
-  X: 66
-  Y: 32
+  X: 214
+  Y: 69

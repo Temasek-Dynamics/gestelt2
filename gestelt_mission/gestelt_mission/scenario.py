@@ -45,8 +45,10 @@ class Scenario:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
 class Mission(Node):
-    def __init__(self):
+    def __init__(self, no_scenario=False):
         super().__init__('mission_node')
+
+        print(f"Initializing mission...")
 
         """ Parameter Server """
         self.declare_parameter('scenario', '')
@@ -59,6 +61,14 @@ class Mission(Node):
 
         # Sleep for init_delay
         time.sleep(self.init_delay)
+
+        """Publisher to all UAVs"""
+        self.all_uav_cmd_pub = self.create_publisher(
+            AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
+
+        if (no_scenario):
+            print("No scenario required! Only initializing publisher to '/all_uav_command'")
+            return
 
         """ Read scenario JSON to get goal positions """
         self.scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
@@ -80,22 +90,12 @@ class Mission(Node):
         #         self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
 
         """Publishers"""
-        self.all_uav_cmd_pub = self.create_publisher(
-            AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
-        
+
         self.goals_pubs_ = []
         for id in range(self.scenario.num_agents):
             self.goals_pubs_.append(self.create_publisher(
                                         Goals, 
                                         'd' + str(id) + '/goals', 10))
-
-        """Subscribers"""
-        # self.uav_state_subs_ = []
-        # for id in range(self.scenario.num_agents):
-        #     self.uav_state_subs_.append(self.create_subscription(
-        #                                 UAVState, 
-        #                                 'd' + str(id) + '/uav_state', 
-        #                                 self.UAVStateSub, 10))
 
         """Set goals_pos"""
         self.plan_req_msgs = []

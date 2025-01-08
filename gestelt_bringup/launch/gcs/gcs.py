@@ -17,19 +17,8 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
-# SCENARIO_NAME = "forest_dense_1"
-SCENARIO_NAME = "forest_sparse_1"
-
-# SCENARIO_NAME = "forward_flight_8"
-# SCENARIO_NAME = "forward_flight_16"
-
-# SCENARIO_NAME = "antipodal_swap_4_normal"
-# SCENARIO_NAME = "antipodal_swap_4_sparse"
-# SCENARIO_NAME = "antipodal_swap_4_dense"
-# SCENARIO_NAME = "antipodal_swap_4_empty"
-
-# SCENARIO_NAME = "antipodal_swap_8_normal"
-# SCENARIO_NAME = "antipodal_swap_8_sparse"
+SCENARIO_NAME = "sutd_1"
+# SCENARIO_NAME = "sutd_2"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -61,33 +50,6 @@ class Scenario:
 
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
-
-def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
-
-    sitl_drone_launchfile = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('gestelt_bringup'),
-                'launch',
-                'sitl_drone.py'
-            ])
-        ]),
-        launch_arguments={
-            'drone_id': str(id),
-            'init_x': str(spawn_pos[0]),
-            'init_y': str(spawn_pos[1]),
-            'init_yaw': str(spawn_pos[2]),
-            'fake_map_pcd_filepath': str(pcd_filepath),
-            'num_drones': str(num_drones),
-        }.items()
-    )
-
-    return GroupAction(
-      actions=[
-          PushROSNamespace('d' + str(id)),
-          sitl_drone_launchfile,
-        ]
-    )
 
 def generate_launch_description():
     scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
@@ -144,19 +106,6 @@ def generate_launch_description():
         arguments=['-d' + rviz_cfg]
     )
 
-    # Mission node: Sends goals to agents
-    mission_node = Node(
-        package='gestelt_mission',
-        executable='mission',
-        output='screen',
-        shell=False,
-        name='mission_node',
-        parameters = [
-            {'scenario': scenario.name},
-            {'init_delay': 5},
-        ]
-    )
-
     # ROSBag 
     bag_topics = []
     for id in range(scenario.num_agents):
@@ -197,8 +146,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         fake_map_publisher,
-        # swarm_collision_checker_node,
         rosbag_record,
         rviz_node,
-        mission_node,
+        # swarm_collision_checker_node,
     ])

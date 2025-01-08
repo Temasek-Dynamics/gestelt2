@@ -4,6 +4,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     mission = Mission()
+    print("Started up mission")
 
     # Take off 
     mission.cmdAllDronesPub(
