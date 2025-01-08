@@ -119,21 +119,21 @@ def generate_launch_description():
         ],
     )
 
-    # Mission node: Sends goals to agents
-    swarm_collision_checker_node = Node(
-        package='swarm_collision_checker',
-        executable='swarm_collision_checker_node',
-        output='screen',
-        shell=False,
-        name='swarm_collision_checker_node',
-        parameters = [
-            {'num_drones': scenario.num_agents},
-            {'odom_topic': "odom"},
-            {'collision_check.frequency': 20.0},
-            {'collision_check.warn_radius': 0.225},
-            {'collision_check.fatal_radius': 0.14},
-        ]
-    )
+    # # Mission node: Sends goals to agents
+    # swarm_collision_checker_node = Node(
+    #     package='swarm_collision_checker',
+    #     executable='swarm_collision_checker_node',
+    #     output='screen',
+    #     shell=False,
+    #     name='swarm_collision_checker_node',
+    #     parameters = [
+    #         {'num_drones': scenario.num_agents},
+    #         {'odom_topic': "odom"},
+    #         {'collision_check.frequency': 20.0},
+    #         {'collision_check.warn_radius': 0.225},
+    #         {'collision_check.fatal_radius': 0.14},
+    #     ]
+    # )
 
     # RVIZ Visualization
     rviz_node = Node(

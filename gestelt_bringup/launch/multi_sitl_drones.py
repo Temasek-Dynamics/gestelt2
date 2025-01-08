@@ -165,13 +165,13 @@ def generate_launch_description():
     )
 
     # RVIZ Visualization
-    # rviz_node = Node(
-    #     package='rviz2',
-    #     executable='rviz2',
-    #     output='log',
-    #     shell=False,
-    #     arguments=['-d' + rviz_cfg]
-    # )
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        output='log',
+        shell=False,
+        arguments=['-d' + rviz_cfg]
+    )
 
     # Mission node: Sends goals to agents
     mission_node = Node(
@@ -237,7 +237,7 @@ def generate_launch_description():
         # swarm_collision_checker_node,
         rosbag_record,
         # Visualization
-        rviz_node,
+        # rviz_node,
         # Processes
         # gazebo,
         # xrce_agent,

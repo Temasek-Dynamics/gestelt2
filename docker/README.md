@@ -5,14 +5,17 @@
 ## Building and Pushing images to Docker Hub repository
 ```bash
 # docker build --platform linux/arm64 -t gestelt/mavoro:latest .
-docker build -t gestelt/mavoro:latest .
+cd docker/gestelt_base
+docker build -t gestelt/mavoro:base --push .
+cd docker/gestelt_overlay
+docker build -t gestelt/mavoro:latest --push .
 
 # Tag image
 docker tag ORIGINAL_TAG NEW_TAG
 docker push gestelt/mavoro:latest
 
 # All-in-one build and push (add --no-cache for a clean rebuild)
-docker build --platform linux/arm64 -t gestelt/mavoro:latest --push .
+docker build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
 ```
 
 ## Running containers
@@ -21,22 +24,10 @@ docker build --platform linux/arm64 -t gestelt/mavoro:latest --push .
 # Add --rm to remove the container after exiting
 # -e is to specify environment variables
 docker run -it --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro:latest
-
-# To run with GUI
-xhost +
-docker run -it --privileged \
-            --env=LOCAL_USER_ID="$(id -u)" \
-            -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
-            -e DISPLAY=:0 \
-            --network host \
-            gestelt/mavoro:latest bash
-            # --rm \
-            # -p 14560:14570/udp \
-
+docker run -it --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro:latest
 
 # Find name of new machine 
 docker ps -l
-
 # List all docker containers
 docker ps -a
 # Start stopped container
@@ -70,7 +61,7 @@ docker pull gestelt/mavoro:latest
 docker run -it --rm --network host --privileged -e "DRONE_ID=$DRONE_ID" gestelt/mavoro:latest
 ```
 
-# Installing docker
+## Installing docker
 ```bash
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9B98116C9AA302C7
 sudo apt-get update
@@ -81,6 +72,21 @@ sudo usermod -aG docker $USER
 
 # Test the installation
 docker run hello-world 
+```
+
+
+# Additional commands
+```bash
+# To run with GUI
+xhost +
+docker run -it --privileged \
+            --env=LOCAL_USER_ID="$(id -u)" \
+            -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
+            -e DISPLAY=:0 \
+            --network host \
+            gestelt/mavoro:latest bash
+            # --rm \
+            # -p 14560:14570/udp \
 ```
 
 # Repositories

@@ -7,9 +7,12 @@
 docker run -it --privileged --network host -e "DRONE_ID=0" gestelt/mavoro:latest
 ros2 launch gestelt_bringup offboard.py
 ```
+3. configuration for auto-connect to wifi 
+```bash
+/config/etc/wifi_cfg.sh
+```
 
-
-## Scripts
+## Scripts to modify
 1. Startup script: /home/visbot/bin/visquad.sh
 2. wifi_cfg.sh
 2. visbot_itof.launch

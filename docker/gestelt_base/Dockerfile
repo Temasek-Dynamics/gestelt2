@@ -9,8 +9,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     vim \
     wget \
     iproute2 \
-    python3-vcstool \
+    gcc-snapshot \
     build-essential \
+    software-properties-common \
+    python3-vcstool \
     nlohmann-json3-dev \
     libasio-dev \
     libeigen3-dev \
@@ -37,7 +39,6 @@ RUN wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/
     && bash ./install_geographiclib_datasets.sh
 
 # Install OSQP and OSQP-eigen for Linear MPC
-
 WORKDIR /root/
 RUN git clone https://github.com/osqp/osqp.git \
     && cd osqp \
@@ -54,19 +55,6 @@ RUN git clone https://github.com/robotology/osqp-eigen.git \
     && cmake ../ \
     && make \
     && make install 
-
-# # Make directory and clone repository
-# WORKDIR /gestelt_ws/src/
-# RUN git clone https://github.com/Temasek-Dynamics/gestelt2 -b mavros_interface 
-# WORKDIR /gestelt_ws/src/gestelt2
-# RUN vcs import < thirdparty.repos --recursive
-# WORKDIR /gestelt_ws/
-# RUN source /opt/ros/jazzy/setup.bash \
-#     && export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/ \
-#     && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree 
-
-# # Copy .bashrc file
-# COPY .bashrc /root/
 
 # DRONE_ID environment variable can be overriden on docker image startup
 ENV DRONE_ID=0
