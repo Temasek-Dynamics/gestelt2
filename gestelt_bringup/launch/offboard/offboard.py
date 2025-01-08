@@ -190,7 +190,7 @@ def generate_launch_description():
 
     )
 
-    return LaunchDescription([
+    launch_desc = LaunchDescription([
         # Launch arguments
         drone_id_launch_arg,
         init_x_launch_arg,
@@ -207,3 +207,10 @@ def generate_launch_description():
         # Mavlink to ROS bridge
         mavros_node,
     ])
+
+    return GroupAction(
+      actions=[
+          PushROSNamespace(['d', drone_id]),
+          launch_desc,
+        ]
+    )
