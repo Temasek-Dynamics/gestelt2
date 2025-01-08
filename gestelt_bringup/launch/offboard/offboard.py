@@ -23,7 +23,6 @@ def generate_launch_description():
     drone_id = LaunchConfiguration('drone_id')
     init_x = LaunchConfiguration('init_x')
     init_y = LaunchConfiguration('init_y')
-    init_yaw = LaunchConfiguration('init_yaw')
     fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
     num_drones = LaunchConfiguration('num_drones')
 
@@ -38,10 +37,6 @@ def generate_launch_description():
     )
     init_y_launch_arg = DeclareLaunchArgument(
       'init_y',
-      default_value='0.0'
-    )
-    init_yaw_launch_arg = DeclareLaunchArgument(
-      'init_yaw',
       default_value='0.0'
     )
 
@@ -62,17 +57,7 @@ def generate_launch_description():
     base_link_frame = 'base_link'
     # base_link_frame = ['d', drone_id, '_base_link']
     camera_frame = ['d', drone_id, '_camera_link']
-
     
-    ''' Get directories '''
-
-    px4_dir = os.path.join(
-      os.path.expanduser("~"), 'PX4-Autopilot'
-    )
-
-    px4_build_dir = os.path.join(
-      px4_dir, "build/px4_sitl_default"
-    )
 
     ''' Get parameter files '''
     traj_server_config = os.path.join(
@@ -123,31 +108,6 @@ def generate_launch_description():
                        output="log",
                       arguments = ["0", "0", "0", "0", "0", "0", 
                               base_link_frame, camera_frame])
-
-    ''' PX4 SITL '''
-    # px4_sitl = ExecuteProcess(
-    #     cmd=[
-    #         # Environment variables
-    #         'PX4_SYS_AUTOSTART=4001',
-    #         'PX4_GZ_WORLD=default',
-    #         'PX4_SIM_MODEL=gz_x500',
-    #         'PX4_GZ_STANDALONE=1',
-    #         ['PX4_GZ_MODEL_POSE="', init_x, ',', init_y, ',0,0,0,', init_yaw, '"'],
-    #         # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
-    #         # 'ROS_DOMAIN_ID=0',
-    #         # 'PX4_UXRCE_DDS_PORT=8888',
-    #         # ['PX4_UXRCE_DDS_NS=d', drone_id],
-    #         # PX4 Executable
-    #         os.path.join(px4_build_dir, 'bin/px4'),      # PX4 executable
-    #         os.path.join(px4_build_dir, 'etc'),          # ?
-    #         '-w', os.path.join(px4_build_dir, 'rootfs'), # Working directory
-    #         '-s', os.path.join(px4_build_dir, 'etc/init.d-posix/rcS'), # Startup file
-    #         '-i', drone_id, # Instance number
-    #         '-d' # Run as daemon (not interactive terminal)
-    #     ],
-    #     name=['px4_sitl_', drone_id],
-    #     shell=True
-    # )
 
     ''' Navigator: Planner module '''
     navigator_node = Node(
@@ -235,7 +195,6 @@ def generate_launch_description():
         drone_id_launch_arg,
         init_x_launch_arg,
         init_y_launch_arg,
-        init_yaw_launch_arg,
         fake_map_pcd_filepath_launch_arg,
         num_drones_arg,
         # Static transforms
@@ -247,6 +206,4 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         mavros_node,
-        # Drone simulation instance
-        # px4_sitl,
     ])

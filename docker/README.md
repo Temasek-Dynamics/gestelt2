@@ -18,9 +18,21 @@ docker build --platform linux/arm64 -t gestelt/mavoro:latest --push .
 ## Running containers
 ```bash
 # To use host USB devices, add "--privileged" flag or "--device=/dev/ttyAML1"
-docker run -it --rm --network host --privileged -e "DRONE_ID=0" gestelt/mavoro:latest
+# Add --rm to remove the container after exiting
+# -e is to specify environment variables
+docker run -it --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro:latest
 
-docker run -it --network host --privileged gestelt/mavoro:latest
+# To run with GUI
+xhost +
+docker run -it --privileged \
+            --env=LOCAL_USER_ID="$(id -u)" \
+            -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
+            -e DISPLAY=:0 \
+            --network host \
+            gestelt/mavoro:latest bash
+            # --rm \
+            # -p 14560:14570/udp \
+
 
 # Find name of new machine 
 docker ps -l

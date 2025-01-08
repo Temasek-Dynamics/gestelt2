@@ -55,16 +55,18 @@ RUN git clone https://github.com/robotology/osqp-eigen.git \
     && make \
     && make install 
 
-# Make directory and clone repository
-WORKDIR /gestelt_ws/src/
-RUN git clone https://github.com/Temasek-Dynamics/gestelt2 -b mavros_interface 
-WORKDIR /gestelt_ws/
-RUN source /opt/ros/jazzy/setup.bash \
-    && export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/ \
-    && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
+# # Make directory and clone repository
+# WORKDIR /gestelt_ws/src/
+# RUN git clone https://github.com/Temasek-Dynamics/gestelt2 -b mavros_interface 
+# WORKDIR /gestelt_ws/src/gestelt2
+# RUN vcs import < thirdparty.repos --recursive
+# WORKDIR /gestelt_ws/
+# RUN source /opt/ros/jazzy/setup.bash \
+#     && export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/ \
+#     && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree 
 
-# Copy .bashrc file
-COPY .bashrc /root/
+# # Copy .bashrc file
+# COPY .bashrc /root/
 
 # DRONE_ID environment variable can be overriden on docker image startup
 ENV DRONE_ID=0

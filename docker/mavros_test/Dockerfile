@@ -36,32 +36,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 RUN wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh \ 
     && bash ./install_geographiclib_datasets.sh
 
-# Install OSQP and OSQP-eigen for Linear MPC
+# # Install OSQP and OSQP-eigen for Linear MPC
 
-WORKDIR /root/
-RUN git clone https://github.com/osqp/osqp.git \
-    && cd osqp \
-    && mkdir build \
-    && cd build \
-    && cmake -G "Unix Makefiles" .. \
-    && cmake --build . \
-    && cmake --build . --target install
-
-RUN git clone https://github.com/robotology/osqp-eigen.git \
-    && cd osqp-eigen \
-    && mkdir build \
-    && cd build \
-    && cmake ../ \
-    && make \
-    && make install 
-
-# Make directory and clone repository
-WORKDIR /gestelt_ws/src/
-RUN git clone https://github.com/Temasek-Dynamics/gestelt2 -b mavros_interface 
-WORKDIR /gestelt_ws/
-RUN source /opt/ros/jazzy/setup.bash \
-    && export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/ \
-    && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
+# # Make directory and clone repository
+# WORKDIR /ros2_ws/src/
+# RUN git clone https://github.com/JohnTGZ/mavros_docker_test.git -b master 
+# WORKDIR /ros2_ws/
+# RUN source /opt/ros/jazzy/setup.bash \
+#     && colcon build --symlink-install 
 
 # Copy .bashrc file
 COPY .bashrc /root/

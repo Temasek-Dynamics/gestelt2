@@ -108,10 +108,10 @@ export ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
 
 export ROS_DISTRO="jazzy"
 source /opt/ros/$ROS_DISTRO/setup.bash
-source /gestelt_ws/install/setup.bash
+source /ros2_ws/install/setup.bash
 
 # Set DRONE_ID here
 export DRONE_ID=0
 
 # Startup for demo
-alias uav_startup="ros2 launch gestelt_bringup offboard.py"
+alias uav_startup="ros2 launch gestelt_bringup multi_sitl_drones.py"

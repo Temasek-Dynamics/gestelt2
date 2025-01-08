@@ -105,35 +105,6 @@ def generate_launch_description():
       scenario.map + '.pcd'
     )
 
-    """Directory"""
-    px4_dir = os.path.join(
-      os.path.expanduser("~"), 'PX4-Autopilot'
-    )
-
-    px4_gz = os.path.join(
-      px4_dir, "Tools/simulation/gz/simulation-gazebo"
-    )
-
-    """Gazebo"""
-    gazebo = ExecuteProcess(
-        cmd=[
-            'python3', px4_gz,
-            '--world', 'default',
-            # '--headless',
-        ],
-        name='gazebo',
-        shell=False
-    )
-
-    # XRCE Agent that will connect to ALL clients
-    xrce_agent = ExecuteProcess(
-        cmd=[[
-            'MicroXRCEAgent udp4 -p 8888 -v'
-        ]],
-        name='microxrceagent',
-        shell=True
-    )
-
     # Fake map
     fake_map_publisher = Node(
         package='fake_map',
@@ -165,13 +136,13 @@ def generate_launch_description():
     )
 
     # RVIZ Visualization
-    # rviz_node = Node(
-    #     package='rviz2',
-    #     executable='rviz2',
-    #     output='log',
-    #     shell=False,
-    #     arguments=['-d' + rviz_cfg]
-    # )
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        output='log',
+        shell=False,
+        arguments=['-d' + rviz_cfg]
+    )
 
     # Mission node: Sends goals to agents
     mission_node = Node(
@@ -185,13 +156,6 @@ def generate_launch_description():
             {'init_delay': 5},
         ]
     )
-
-    # Generate nodes of SITL drone instances according to scenario
-    sitl_drone_nodes = []
-    for id in range(scenario.num_agents):
-        sitl_drone_nodes.append(generateSITLDrone(
-            id, scenario.spawns_pos[id], fake_map_pcd_filepath, scenario.num_agents))
-
 
     # ROSBag 
     bag_topics = []
@@ -232,17 +196,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # Nodes
         fake_map_publisher,
         # swarm_collision_checker_node,
         rosbag_record,
-        # Visualization
         rviz_node,
-        # Processes
-        # gazebo,
-        # xrce_agent,
-        # Mission
         mission_node,
-        # Simulation instances
-        *sitl_drone_nodes,
     ])
