@@ -9,8 +9,8 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription, LaunchContext
-from launch_ros.actions import Node, PushROSNamespace
-from launch.actions import DeclareLaunchArgument, GroupAction, ExecuteProcess, OpaqueFunction
+from launch_ros.actions import Node
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 
 from launch.substitutions import LaunchConfiguration, PythonExpression
 
@@ -190,7 +190,7 @@ def generate_launch_description():
 
     )
 
-    launch_desc = LaunchDescription([
+    return LaunchDescription([
         # Launch arguments
         drone_id_launch_arg,
         init_x_launch_arg,
@@ -207,10 +207,3 @@ def generate_launch_description():
         # Mavlink to ROS bridge
         mavros_node,
     ])
-
-    return GroupAction(
-      actions=[
-          PushROSNamespace(['d', drone_id]),
-          launch_desc,
-        ]
-    )

@@ -114,4 +114,4 @@ source /gestelt_ws/install/setup.bash
 export DRONE_ID=0
 
 # Startup for demo
-alias uav_startup="ros2 launch gestelt_bringup offboard.py"
+alias uav_startup="ros2 launch gestelt_bringup offboard_uav.py"

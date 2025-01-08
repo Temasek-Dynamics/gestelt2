@@ -1,4 +1,24 @@
 {
+  "sutd_1": {
+    "description": "Physical flight test with no map",
+    "map": "empty_20x20",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        1.0,
+        0.0,
+        1.5
+      ]
+    ]
+  },
   "map_test": {
     "description": "Test for single agent",
     "map": "forest_dense",

@@ -192,7 +192,6 @@ def generate_launch_description():
         sitl_drone_nodes.append(generateSITLDrone(
             id, scenario.spawns_pos[id], fake_map_pcd_filepath, scenario.num_agents))
 
-
     # ROSBag 
     bag_topics = []
     for id in range(scenario.num_agents):
