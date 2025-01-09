@@ -71,7 +71,9 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
             PathJoinSubstitution([
                 FindPackageShare('gestelt_bringup'),
                 'launch',
-                'sitl_drone.py'
+                'offboard',
+                'include',
+                'offboard_nodes.py'
             ])
         ]),
         launch_arguments={
