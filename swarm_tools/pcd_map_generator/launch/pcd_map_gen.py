@@ -10,9 +10,8 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    map_filename = "new_map"
     map_filepath = os.path.join(
-      os.path.expanduser("~"), 'gestelt_ws/src/Gestelt2/gestelt_bringup/pcd_maps',
+      os.path.expanduser("~"), 'gestelt_ws/src/gestelt2/gestelt_bringup/pcd_maps',
     )
 
     ''' Get parameter files '''
@@ -28,7 +27,6 @@ def generate_launch_description():
         shell=False,
         name='pcd_map_generator',
         parameters=[
-            {'map.filename': map_filename},
             {'map.filepath': map_filepath},
             pcd_map_gen_cfg,
         ],

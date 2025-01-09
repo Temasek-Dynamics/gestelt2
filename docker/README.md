@@ -101,6 +101,8 @@ docker run -it --privileged \
 
 - [ROS docker images](https://registry.hub.docker.com/_/ros/)
 
+- [ARM64 ROS images](https://hub.docker.com/r/arm64v8/ros)
+
 # Resources
 
 - [Uploading an image to a Docker Hub repo](https://docs.docker.com/guides/workshop/04_sharing_app/).

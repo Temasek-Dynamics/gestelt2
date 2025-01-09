@@ -164,6 +164,9 @@ class PCDMapGen : public rclcpp::Node
 			AddXYPlaneToMap(map_x_size_, map_y_size_, 0.0); // Add floor
 			// AddXYPlaneToMap(map_x_size_, map_y_size_, map_z_size_); // Add ceiling
 
+			// createSimpleTestMap();
+			createSimpleTestMap2();
+
 			// // Create regions where obstacles cannot be created.
 			// obs_free_radial_.push_back(ObsFreeRadial(0.0, 0.0, 0.1));
 
@@ -179,7 +182,7 @@ class PCDMapGen : public rclcpp::Node
 			// 						-2.95, 2.95, -2.95, 2.95, 3.0);
 
 			/* B) Generate forest map*/
-			createRandomForestMap();
+			// createRandomForestMap();
 
 			/* C) Generate a narrow window (1m x 1m) for benchmarking  */
 			// double win_side_length = 1.0;
@@ -363,59 +366,114 @@ class PCDMapGen : public rclcpp::Node
 
 		// Generate empty vicon test map
 		void createViconMap(){
-			// Create regions where obstacles cannot be created.
-			obs_free_squares_.push_back(ObsFreeSquare(-1.1, 1.1, -1.1, 1.1));
+			// // Create regions where obstacles cannot be created.
+			// obs_free_squares_.push_back(ObsFreeSquare(-1.1, 1.1, -1.1, 1.1));
 
-			double min_x = 0.6;
-			double min_y = 0.6;
-			double max_x = 2.8;
-			double max_y = 2.8;
+			// double min_x = 0.6;
+			// double min_y = 0.6;
+			// double max_x = 2.8;
+			// double max_y = 2.8;
 
-			// Top left
-			obs_free_squares_.push_back(ObsFreeSquare(min_x, max_x, min_y, max_y));	
-			// Top right
-			obs_free_squares_.push_back(ObsFreeSquare(min_x, max_x, -max_y, -min_y));
-			// Bottom left
-			obs_free_squares_.push_back(ObsFreeSquare(-max_x, -min_x, min_y, max_y));
-			// Bottom right
-			obs_free_squares_.push_back(ObsFreeSquare(-max_x, -min_x,  -max_y, -min_y));
+			// // Top left
+			// obs_free_squares_.push_back(ObsFreeSquare(min_x, max_x, min_y, max_y));	
+			// // Top right
+			// obs_free_squares_.push_back(ObsFreeSquare(min_x, max_x, -max_y, -min_y));
+			// // Bottom left
+			// obs_free_squares_.push_back(ObsFreeSquare(-max_x, -min_x, min_y, max_y));
+			// // Bottom right
+			// obs_free_squares_.push_back(ObsFreeSquare(-max_x, -min_x,  -max_y, -min_y));
 
 
+			// std::vector<Cylinder> cylinders;
+
+			// cylinders.push_back(Cylinder(1.25, 0.0, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(0.0, -1.25, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(-1.25, 0.0, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(0.0, 1.25, 0.15, 3.0));
+
+			// for (auto cyl : cylinders){
+			// 	double x_vox = (cyl.x / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder x position 
+			// 	double y_vox = (cyl.y / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder y position 
+			// 	double radius_vox = cyl.radius / map_res_;	// [voxels] Random radius 
+			// 	double height_vox = cyl.height / map_res_;	// [voxels] Random Height 
+
+			// 	addCylinderToMap(x_vox, y_vox, radius_vox, height_vox);
+			// }
+		}
+
+		// Generate antipodal swap map for 6 drones
+		void createSimpleTestMap(){
+			double dist = 3.0; 
+			double radius = 0.5;
+			double height = 5.0;
+			
+			//Cylinder(x, y, radius,, height):
 			std::vector<Cylinder> cylinders;
-
-			cylinders.push_back(Cylinder(1.25, 0.0, 0.15, 3.0));
-			cylinders.push_back(Cylinder(0.0, -1.25, 0.15, 3.0));
-			cylinders.push_back(Cylinder(-1.25, 0.0, 0.15, 3.0));
-			cylinders.push_back(Cylinder(0.0, 1.25, 0.15, 3.0));
+			cylinders.push_back(Cylinder(dist, 0.0, radius, height));
+			cylinders.push_back(Cylinder(0.0, -dist, radius, height));
+			cylinders.push_back(Cylinder(-dist, 0.0, radius, height));
+			cylinders.push_back(Cylinder(0.0, dist, radius, height));
 
 			for (auto cyl : cylinders){
-				addCylinderToMap(cyl.x, cyl.y, cyl.radius, cyl.height);
+				double x_vox = (cyl.x / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder x position 
+				double y_vox = (cyl.y / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder y position 
+				double radius_vox = cyl.radius / map_res_;	// [voxels] Random radius 
+				double height_vox = cyl.height / map_res_;	// [voxels] Random Height 
+
+				addCylinderToMap(x_vox, y_vox, radius_vox, height_vox);
+			}
+		}
+
+		void createSimpleTestMap2(){
+			double dist = 3.0; 
+			double radius = 0.5;
+			double height = 5.0;
+			
+			//Cylinder(x, y, radius,, height):
+			std::vector<Cylinder> cylinders;
+			cylinders.push_back(Cylinder(dist, dist, radius, height));
+			cylinders.push_back(Cylinder(dist, -dist, radius, height));
+			cylinders.push_back(Cylinder(-dist, dist, radius, height));
+			cylinders.push_back(Cylinder(-dist, -dist, radius, height));
+
+			for (auto cyl : cylinders){
+				double x_vox = (cyl.x / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder x position 
+				double y_vox = (cyl.y / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder y position 
+				double radius_vox = cyl.radius / map_res_;	// [voxels] Random radius 
+				double height_vox = cyl.height / map_res_;	// [voxels] Random Height 
+
+				addCylinderToMap(x_vox, y_vox, radius_vox, height_vox);
 			}
 		}
 
 		// Generate antipodal swap map for 6 drones
 		void createViconAntipodalMap(){
-			// No obstacle space
-			double buffer_rad = 0.3;
-			for (size_t i = 0; i < 6; i++){ 
-				Eigen::Matrix3d rot_mat = Eigen::AngleAxisd((M_PI/180.0) * i * 60, Eigen::Vector3d::UnitZ()).matrix();
+			// // No obstacle space
+			// double buffer_rad = 0.3;
+			// for (size_t i = 0; i < 6; i++){ 
+			// 	Eigen::Matrix3d rot_mat = Eigen::AngleAxisd((M_PI/180.0) * i * 60, Eigen::Vector3d::UnitZ()).matrix();
 
-				Eigen::Vector3d drone_pos = rot_mat * Eigen::Vector3d{2.4, 0, 0};
-				obs_free_radial_.push_back(ObsFreeRadial(drone_pos(0), drone_pos(1), buffer_rad));
+			// 	Eigen::Vector3d drone_pos = rot_mat * Eigen::Vector3d{2.4, 0, 0};
+			// 	obs_free_radial_.push_back(ObsFreeRadial(drone_pos(0), drone_pos(1), buffer_rad));
 
-				std::cout << "drone_pos: " << drone_pos.transpose() << std::endl;
-			}
+			// 	std::cout << "drone_pos: " << drone_pos.transpose() << std::endl;
+			// }
 
-			std::vector<Cylinder> cylinders;
+			// std::vector<Cylinder> cylinders;
 
-			cylinders.push_back(Cylinder(1.25, 0.0, 0.15, 3.0));
-			cylinders.push_back(Cylinder(0.0, -1.25, 0.15, 3.0));
-			cylinders.push_back(Cylinder(-1.25, 0.0, 0.15, 3.0));
-			cylinders.push_back(Cylinder(0.0, 1.25, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(1.25, 0.0, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(0.0, -1.25, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(-1.25, 0.0, 0.15, 3.0));
+			// cylinders.push_back(Cylinder(0.0, 1.25, 0.15, 3.0));
 
-			for (auto cyl : cylinders){
-				addCylinderToMap(cyl.x, cyl.y, cyl.radius, cyl.height);
-			}
+			// for (auto cyl : cylinders){
+			// 	double x_vox = (cyl.x / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder x position 
+			// 	double y_vox = (cyl.y / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder y position 
+			// 	double radius_vox = cyl.radius / map_res_;	// [voxels] Random radius 
+			// 	double height_vox = cyl.height / map_res_;	// [voxels] Random Height 
+
+			// 	addCylinderToMap(x_vox, y_vox, radius_vox, height_vox);
+			// }
 		}
 
 		pcl::PointCloud<pcl::PointXYZ> get_pcl() 
@@ -768,7 +826,7 @@ int main(int argc, char *argv[])
 
 	node->createMap();
 	node->savePCDMap();
-	node->saveObstacleJSON();
+	// node->saveObstacleJSON();
 
 	pcl::PointCloud<pcl::PointXYZ> cloud_map = node->get_pcl();
 

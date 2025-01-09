@@ -1,4 +1,4 @@
-FROM ros:jazzy-perception-noble
+FROM --platform=linux/arm64 ros:jazzy-perception-noble
 LABEL maintainer="johntgz@nus.edu.sg"
 
 # Enable the use of `source` keyword
@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     vim \
     wget \
     iproute2 \
-    gcc-snapshot \
     build-essential \
     software-properties-common \
     python3-vcstool \

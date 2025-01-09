@@ -1,4 +1,4 @@
-FROM gestelt/mavoro_arm64:base
+FROM --platform=linux/arm64 gestelt/mavoro_arm64:base
 LABEL maintainer="johntgz@nus.edu.sg"
 
 # Enable the use of `source` keyword
@@ -9,6 +9,7 @@ WORKDIR /gestelt_ws/src/
 RUN git clone https://github.com/Temasek-Dynamics/gestelt2 -b mavros_interface 
 WORKDIR /gestelt_ws/
 RUN source /opt/ros/jazzy/setup.bash \
+    && export ROS_DOMAIN_ID=0 \
     && export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/ \
     && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
 
