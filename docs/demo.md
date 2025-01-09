@@ -1,14 +1,9 @@
 # Visbot
 1. Start up Gestelt container
 ```bash
-docker run -it --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro:latest
+# docker run -it --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro:latest
+start_gestelt
 uav_startup 
-```
-
-# Visbot
-1. Start up 
-```bash
-ros2 launch 
 ```
 
 # GCS

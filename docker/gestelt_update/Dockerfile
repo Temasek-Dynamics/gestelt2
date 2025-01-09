@@ -1,4 +1,4 @@
-FROM gestelt/mavoro:devel
+FROM --platform=linux/arm64 gestelt/mavoro_arm64:devel
 LABEL maintainer="johntgz@nus.edu.sg"
 
 # Enable the use of `source` keyword

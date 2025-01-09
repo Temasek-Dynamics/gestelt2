@@ -162,7 +162,7 @@ def generate_launch_description():
     fcu_addr =  PythonExpression(['14540 +', drone_id])
     # fcu_port =  PythonExpression(['14580 +', drone_id])
     fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
-    fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
+    # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
     tgt_system = PythonExpression(['1 +', drone_id])
 
     mavros_node = Node(
@@ -172,8 +172,8 @@ def generate_launch_description():
       shell=False,
       namespace='mavros',
       parameters=[
-        {'fcu_url': fcu_url},
-        {'gcs_url': ''},
+        {'fcu_url': '/dev/ttyS7:921600'},
+        {'gcs_url': 'udp://:14556@'},
         {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},

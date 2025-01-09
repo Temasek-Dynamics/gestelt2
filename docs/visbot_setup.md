@@ -47,8 +47,6 @@ Drone 6 IP:
     - TELEM3: /dev/ttyS1 (FCU) <->
     - ETHERNET: USB
 
-
-
 # Troubleshooting
 
 1. Unable to communicate ROS2 topics between docker container and host  
