@@ -1,6 +1,6 @@
 {
   "sutd_1": {
-    "description": "Physical flight test with no map",
+    "description": "Do nothing. Test takeoff and landing.",
     "map": "empty_20x20",
     "num_agents": 1,
     "take_off_height": 1.5,
@@ -13,7 +13,67 @@
     ],
     "goals_pos": [
       [
-        1.0,
+        0.0,
+        0.0,
+        1.5
+      ]
+    ]
+  },
+  "sutd_2": {
+    "description": "Go forward 2.5m",
+    "map": "empty_20x20",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        2.5,
+        0.0,
+        1.5
+      ]
+    ]
+  },
+  "sutd_3": {
+    "description": "Go diagonally (4.0, 4.0)",
+    "map": "empty_20x20",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        4.0,
+        4.0,
+        1.5
+      ]
+    ]
+  },
+  "sutd_4": {
+    "description": "Physical flight test with virtual obstacles",
+    "map": "sutd_test_map0",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        7.0,
         0.0,
         1.5
       ]

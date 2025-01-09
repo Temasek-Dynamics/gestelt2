@@ -23,15 +23,15 @@
         # size_x: 50.0  # [m]
         # size_y: 50.0  # [m]
         # size_z: 10.0  # [m]
-        size_x: 150.0  # [m]
-        size_y: 150.0  # [m]
+        size_x: 50.0  # [m]
+        size_y: 50.0  # [m]
         size_z: 10.0  # [m]
 
       local_map:  # Local map used by planner
         size_x: 10.0  # [m]
         size_y: 10.0  # [m]
         size_z: 5.0   # [m]
-        update_local_map_frequency: 40.0 # [Hz] Frequency to update the local map
+        update_local_map_frequency: 30.0 # [Hz] Frequency to update the local map
         viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters

@@ -7,8 +7,10 @@
 # docker build --platform linux/arm64 -t gestelt/mavoro:latest .
 cd docker/gestelt_base
 docker build -t gestelt/mavoro:base --push .
+docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:base --push .
 cd docker/gestelt_overlay
 docker build -t gestelt/mavoro:latest --push .
+docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
 
 # Tag image
 docker tag ORIGINAL_TAG NEW_TAG
@@ -61,7 +63,7 @@ docker pull gestelt/mavoro:latest
 docker run -it --rm --network host --privileged -e "DRONE_ID=$DRONE_ID" gestelt/mavoro:latest
 ```
 
-## Installing docker
+# Installing docker
 ```bash
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 9B98116C9AA302C7
 sudo apt-get update
@@ -72,6 +74,9 @@ sudo usermod -aG docker $USER
 
 # Test the installation
 docker run hello-world 
+
+# For building arm64 images, QEMU is required
+docker run --privileged --rm tonistiigi/binfmt --install all
 ```
 
 
@@ -92,6 +97,7 @@ docker run -it --privileged \
 # Repositories
 
 - [gestelt/mavoro](https://hub.docker.com/repository/docker/gestelt/mavoro/general)
+- [gestelt/mavoro_arm64](https://hub.docker.com/repository/docker/gestelt/mavoro_arm64/general)
 
 - [ROS docker images](https://registry.hub.docker.com/_/ros/)
 
