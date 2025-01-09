@@ -174,9 +174,10 @@ def generate_launch_description():
       parameters=[
         {'fcu_url': '/dev/ttyS7:921600'},
         {'gcs_url': 'udp://:14556@'},
-        {'tgt_system': tgt_system},
+        {'tgt_system': 36},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},
+        {'startup_px4_usb_quirk': 'true'},
         px4_pluginlists_cfg,
         px4_config_cfg,
         {'local_position.frame_id': map_frame},
