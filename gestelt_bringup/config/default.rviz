@@ -4,10 +4,9 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /fake_map1/Status1
         - /TF1/Frames1
+        - /d01
         - /d01/state1
-        - /d01/state1/odom_ax1
         - /d01/state1/odom_ax1/Topic1
         - /d11/front_end1
         - /d21/maps1/occ1
@@ -76,7 +75,7 @@ Visualization Manager:
       Color: 154; 153; 150
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -96,7 +95,7 @@ Visualization Manager:
         Value: /fake_map
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/TF
       Enabled: false
       Filter (blacklist): ""
@@ -236,7 +235,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/fe_plan/viz
               Value: true
-          Enabled: true
+          Enabled: false
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -281,7 +280,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/mpc/traj
               Value: true
-          Enabled: true
+          Enabled: false
           Name: back_end
         - Class: rviz_common/Group
           Displays:
@@ -646,7 +645,7 @@ Visualization Manager:
                     Value: /d0/occ_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: true
+              Enabled: false
               Name: occ
             - Alpha: 0.699999988079071
               Binary representation: false
@@ -4184,25 +4183,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 16.301525115966797
+      Distance: 18.300352096557617
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.3698105812072754
-        Y: -4.045683860778809
-        Z: -1.8985547285410576e-05
+        X: -0.25696802139282227
+        Y: -0.5544066429138184
+        Z: -1.5170850019785576e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5897966027259827
+      Pitch: 0.2847960293292999
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.847409725189209
+      Yaw: 4.762406826019287
     Saved: ~
 Window Geometry:
   Displays:
@@ -4220,5 +4219,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1854
-  X: 214
-  Y: 69
+  X: 66
+  Y: 32

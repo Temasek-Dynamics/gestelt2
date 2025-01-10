@@ -97,6 +97,13 @@ sudo rsync -avxP /var/lib/docker/ /media/john/gestelt/docker
 ```
 
 ## Method A
+2. Create symbolic link 
+```bash
+sudo ln -s /media/visbot/gestelt/docker /var/lib/docker
+```
+
+
+## Method B
 2. Update the daemon
 ```bash
 sudo vim /etc/docker/daemon.json
@@ -114,7 +121,7 @@ docker info -f '{{ .DockerRootDir}}'
 
 [reference](https://www.ibm.com/docs/en/z-logdata-analytics/5.1.0?topic=software-relocating-docker-root-directory)
 
-## Method B
+## Method C
 
 2. As root, update `/lib/systemd/system/docker.service` to include `--data-root /path/to/new/location` parameter in the line starts with `ExecStart=`. 
 ```bash
