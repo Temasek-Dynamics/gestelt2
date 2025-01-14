@@ -10,7 +10,7 @@
       # filepath: 
     tf:
       # If enabled, listen to '/tf' topic else subscribe to odometry
-      listen_to_tf: true
+      listen_to_tf: false
       # [Hz] Frequency to listen to '/tf'
       listen_freq: 60.0
 

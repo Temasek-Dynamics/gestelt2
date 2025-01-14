@@ -119,7 +119,6 @@ FakeSensor::FakeSensor()
 		world_to_map_tf_mat_(1, 3) = tf_world_to_map.transform.translation.y;
 		world_to_map_tf_mat_(2, 3) = tf_world_to_map.transform.translation.z;
 		world_to_map_tf_mat_(3, 3) = 1.0;
-
 	} 
 	catch (const tf2::TransformException & ex) {
 			RCLCPP_ERROR(
