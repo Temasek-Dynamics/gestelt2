@@ -307,7 +307,6 @@ void FakeSensor::sensorUpdateTimerCB()
 	pass_fil_x_-> filter (*sensor_cloud_);
 	pass_fil_y_-> filter (*sensor_cloud_);
 	pass_fil_z_-> filter (*sensor_cloud_);
-	
 
 	// Publish cloud 
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;

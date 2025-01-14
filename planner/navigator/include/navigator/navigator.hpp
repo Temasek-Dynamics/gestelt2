@@ -531,8 +531,8 @@ private:
   std::unique_ptr<sfc::PolytopeSFC> poly_sfc_gen_; // Polytope safe flight corridor generator
 
   /* MINCO */
-  std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_{nullptr}; // Initial minimum jerk trajectory
-  std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
+  // std::unique_ptr<minco::MinJerkOpt> min_jerk_opt_{nullptr}; // Initial minimum jerk trajectory
+  // std::shared_ptr<minco::Trajectory> poly_traj_{nullptr}; // Front-end MINCO Trajectory
   
   /* MPC */
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller

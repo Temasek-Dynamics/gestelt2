@@ -93,7 +93,7 @@ void Navigator::init()
     this->shared_from_this(), map_origin_, num_drones_);
 
   // Initialize minimum jerk optimizer
-	min_jerk_opt_ = std::make_unique<minco::MinJerkOpt>();
+	// min_jerk_opt_ = std::make_unique<minco::MinJerkOpt>();
 
   // Initialize visualization helper
   viz_helper_ = std::make_unique<viz_helper::VizHelper>(this->get_clock());
