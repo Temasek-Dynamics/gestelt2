@@ -158,11 +158,11 @@ def generate_launch_description():
         ],
     )
 
-    # ros2_zenoh_broker = ExecuteProcess(
-    #   cmd=['cd ~/ros_zenoh_exchange && python3 ros_two_broker.py'],
-    #   name=['ros2_zenoh_broker_', drone_id],
-    #   shell=False,
-    # )
+    ros2_zenoh_broker = ExecuteProcess(
+      cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros_two_broker')],
+      name=['ros2_zenoh_broker_', drone_id],
+      shell=False,
+    )
 
     '''Mavlink/Mavros'''
     # fcu_addr =  PythonExpression(['14540 +', drone_id])
