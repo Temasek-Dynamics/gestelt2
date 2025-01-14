@@ -158,37 +158,43 @@ def generate_launch_description():
         ],
     )
 
-    '''Mavlink/Mavros'''
-    fcu_addr =  PythonExpression(['14540 +', drone_id])
-    # fcu_port =  PythonExpression(['14580 +', drone_id])
-    fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
-    # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
-    tgt_system = PythonExpression(['1 +', drone_id])
-
-    mavros_node = Node(
-      package='mavros',
-      executable='mavros_node',
-      output='screen',
-      shell=False,
-      namespace='mavros',
-      parameters=[
-        {'fcu_url': '/dev/ttyS7:921600'},
-        {'gcs_url': 'udp://:14556@'},
-        {'tgt_system': 36},
-        {'tgt_component': 1},
-        {'fcu_protocol': 'v2.0'},
-        {'startup_px4_usb_quirk': 'true'},
-        px4_pluginlists_cfg,
-        px4_config_cfg,
-        {'local_position.frame_id': map_frame},
-        {'local_position.tf.send': 'true'},
-        {'local_position.tf.frame_id': map_frame},
-        {'local_position.tf.child_frame_id': base_link_frame},
-      ],
-      remappings=[
-        ('local_position/odom', ['/d', drone_id, '/odom']),
-      ],
+    ros2_zenoh_broker = ExecuteProcess(
+      cmd=['cd ~/ros_zenoh_exchange && python3 ros_two_broker.py'],
+      name=['ros2_zenoh_broker_', drone_id],
+      shell=True,
     )
+
+    '''Mavlink/Mavros'''
+    # fcu_addr =  PythonExpression(['14540 +', drone_id])
+    # # fcu_port =  PythonExpression(['14580 +', drone_id])
+    # fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
+    # # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
+    # tgt_system = PythonExpression(['1 +', drone_id])
+
+    # mavros_node = Node(
+    #   package='mavros',
+    #   executable='mavros_node',
+    #   output='screen',
+    #   shell=False,
+    #   namespace='mavros',
+    #   parameters=[
+    #     {'fcu_url': '/dev/ttyS7:921600'},
+    #     {'gcs_url': 'udp://:14556@'},
+    #     {'tgt_system': 36},
+    #     {'tgt_component': 1},
+    #     {'fcu_protocol': 'v2.0'},
+    #     {'startup_px4_usb_quirk': 'true'},
+    #     px4_pluginlists_cfg,
+    #     px4_config_cfg,
+    #     {'local_position.frame_id': map_frame},
+    #     {'local_position.tf.send': 'true'},
+    #     {'local_position.tf.frame_id': map_frame},
+    #     {'local_position.tf.child_frame_id': base_link_frame},
+    #   ],
+    #   remappings=[
+    #     ('local_position/odom', ['/d', drone_id, '/odom']),
+    #   ],
+    # )
 
     return LaunchDescription([
         # Launch arguments
@@ -205,5 +211,6 @@ def generate_launch_description():
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge
-        mavros_node,
+        # mavros_node,
+        ros2_zenoh_broker,
     ])

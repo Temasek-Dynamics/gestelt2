@@ -1,3 +1,5 @@
+# docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:base_os --push .
+
 FROM --platform=linux/arm64 ros:jazzy-perception-noble
 LABEL maintainer="johntgz@nus.edu.sg"
 
@@ -7,10 +9,12 @@ SHELL ["/bin/bash", "-c"]
 # install bootstrap tools
 RUN apt-get update && apt-get install --no-install-recommends -y \
     vim \
+    curl \
     wget \
     iproute2 \
     build-essential \
     software-properties-common \
+    python3-pip \
     python3-vcstool \
     nlohmann-json3-dev \
     libasio-dev \

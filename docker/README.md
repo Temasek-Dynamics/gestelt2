@@ -4,14 +4,6 @@
 
 ## Building and Pushing images to Docker Hub repository
 ```bash
-# docker build --platform linux/arm64 -t gestelt/mavoro:latest .
-cd docker/gestelt_base
-docker build -t gestelt/mavoro:base --push .
-docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:base --push .
-cd docker/gestelt_overlay
-docker build -t gestelt/mavoro:latest --push .
-docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
-
 # Tag image
 docker tag ORIGINAL_TAG NEW_TAG
 docker push gestelt/mavoro:latest
@@ -101,7 +93,6 @@ sudo rsync -avxP /var/lib/docker/ /media/john/gestelt/docker
 ```bash
 sudo ln -s /media/visbot/gestelt/docker /var/lib/docker
 ```
-
 
 ## Method B
 2. Update the daemon

@@ -98,20 +98,11 @@ fi
 #    . /etc/bash_completion
 #fi
 
-export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/
-
-# ROS2 
-export RCUTILS_COLORIZED_OUTPUT=1
-export RCUTILS_LOGGING_USE_STDOUT=1
-export ROS_DOMAIN_ID=0
-export ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
-
-export ROS_DISTRO="jazzy"
-source /opt/ros/$ROS_DISTRO/setup.bash
-source /ros2_ws/install/setup.bash
+# RUST
+source $HOME/.cargo/env
 
 # Set DRONE_ID here
 export DRONE_ID=0
 
 # Startup for demo
-alias uav_startup="ros2 launch gestelt_bringup multi_sitl_drones.py"
+alias start_bridge="cd /ros_zenoh_exchange && python3 ros_one_broker.py"

@@ -1,3 +1,6 @@
+# docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:devel --push .
+# docker run -it  --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro_arm64:devel
+
 FROM --platform=linux/arm64 gestelt/mavoro_arm64:base
 LABEL maintainer="johntgz@nus.edu.sg"
 
@@ -12,6 +15,9 @@ RUN source /opt/ros/jazzy/setup.bash \
     && export ROS_DOMAIN_ID=0 \
     && export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/ \
     && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
+
+WORKDIR /root
+RUN git clone https://github.com/JohnTGZ/ros_zenoh_exchange.git -b master 
 
 # Copy .bashrc file
 COPY .bashrc /root/

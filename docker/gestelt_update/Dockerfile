@@ -1,3 +1,6 @@
+# docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
+# docker run -it  --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro_arm64:latest
+
 FROM --platform=linux/arm64 gestelt/mavoro_arm64:devel
 LABEL maintainer="johntgz@nus.edu.sg"
 
@@ -11,6 +14,9 @@ WORKDIR /gestelt_ws/
 RUN source /opt/ros/jazzy/setup.bash \
     && export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/ \
     && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
+
+WORKDIR /ros_zenoh_exchange
+RUN git pull
 
 # Copy .bashrc file
 COPY .bashrc /root/
