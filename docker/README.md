@@ -161,3 +161,18 @@ docker run -it --privileged \
 
 - [Uploading an image to a Docker Hub repo](https://docs.docker.com/guides/workshop/04_sharing_app/).
 - [A Guide to Docker and ROS](https://roboticseabass.com/2021/04/21/docker-and-ros/)
+
+
+
+
+```bash
+apt-get update && apt-get install --no-install-recommends -y  vim  git  wget  curl  iproute2  python3-pip  build-essential  software-properties-common  ros-noetic-mavros*  && rm -rf /var/lib/apt/lists/*
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+
+pip install protobuf
+
+source $HOME/.cargo/env && pip install eclipse-zenoh
+
+git clone https://github.com/JohnTGZ/ros_zenoh_exchange.git -b master 
+```
