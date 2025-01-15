@@ -37,6 +37,8 @@
 
 #include <nav_msgs/msg/odometry.hpp>
 
+#include <std_msgs/msg/bool.hpp>
+
 #include <Eigen/Eigen>
 
 using namespace std::chrono_literals;
@@ -56,6 +58,9 @@ public:
     /* Create publishers */
     mavros_cmd_pub_ = node_->create_publisher<mavros_msgs::msg::PositionTarget>(
       "mavros/setpoint_raw/local", 10);
+
+    set_offb_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
+      "set_offboard", 10);
   }
 
 	void setState(const mavros_msgs::msg::State::UniquePtr& state){
@@ -138,6 +143,7 @@ private:
 
 	/* Publishers */
 	rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr mavros_cmd_pub_;
+	rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr set_offb_pub_;
 
 	/* Service Clients */
 	rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr mavros_arm_client_;
@@ -293,9 +299,13 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 
   int retries = 0;
 
+  set_offb_msg = std_msgs::msg::Bool{};
+  set_offb_msg.data = true;
+
   while (!conditions_fulfilled() && retries < 20){
     srv_loop_rate.sleep();   
     retries++;
+    set_offb_pub_->publish(set_offb_msg);
     RCLCPP_INFO(node_->get_logger(), "Waiting for offboard mode and arming to be set...");
   }
 
