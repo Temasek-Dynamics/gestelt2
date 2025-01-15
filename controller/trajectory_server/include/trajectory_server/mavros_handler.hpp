@@ -291,12 +291,15 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
     return (toggle ? isUAVReady() : isUAVIdle());
   };
 
-  while (!conditions_fulfilled()){
+  int retries = 0;
 
+  while (!conditions_fulfilled() && retries < 20){
     srv_loop_rate.sleep();   
+    retries++;
+    RCLCPP_INFO(node_->get_logger(), "Waiting for offboard mode and arming to be set...");
   }
 
-  return true;
+  return conditions_fulfilled();
 }
 
 /* Execution of controls */

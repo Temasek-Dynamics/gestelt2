@@ -19,17 +19,17 @@ def main(args=None):
             UAVCommand.Request.COMMAND_TAKEOFF, 
             UAVState.IDLE,
             value=mission.scenario.take_off_height)
-        print("All drones switched to HOVER state")
+        mission.get_logger().info("All drones TAKING OFF")
         
         # Mission mode
         mission.cmdAllDronesPub(
             UAVCommand.Request.COMMAND_START_MISSION, 
             UAVState.HOVERING,
             mode=0)
-        print("All drones switched to MISSION state")
+        mission.get_logger().info("All drones swtching switching to MISSION MODE")
 
         mission.pubGoals()
-        print("Published goals to navigator")
+        mission.get_logger().info("Published goals to navigator")
 
         # # Land mode
         # mission.cmdAllDronesPub(UAVState.MISSION ,UAVCommand.Request.COMMAND_LAND)

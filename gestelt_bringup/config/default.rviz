@@ -6,9 +6,9 @@ Panels:
       Expanded:
         - /TF1/Frames1
         - /d01
-        - /d01/state1
-        - /d01/state1/odom_ax1
         - /d01/state1/odom_ax1/Topic1
+        - /d01/state1/odom_ax1/Shape1
+        - /d01/front_end1
         - /d11/front_end1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
@@ -134,7 +134,7 @@ Visualization Manager:
       Displays:
         - Class: rviz_common/Group
           Displays:
-            - Angle Tolerance: 0.10000000149011612
+            - Angle Tolerance: 0.009999999776482582
               Class: rviz_default_plugins/Odometry
               Covariance:
                 Orientation:
@@ -152,9 +152,9 @@ Visualization Manager:
                   Value: true
                 Value: true
               Enabled: true
-              Keep: 1
+              Keep: 3
               Name: odom_ax
-              Position Tolerance: 0.10000000149011612
+              Position Tolerance: 0.009999999776482582
               Shape:
                 Alpha: 1
                 Axes Length: 0.5
@@ -236,7 +236,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/fe_plan/viz
               Value: true
-          Enabled: false
+          Enabled: true
           Name: front_end
         - Class: rviz_common/Group
           Displays:
@@ -4184,25 +4184,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 9.630936622619629
+      Distance: 12.993783950805664
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.25696802139282227
-        Y: -0.5544066429138184
+        X: 4.766409873962402
+        Y: -5.442795753479004
         Z: -1.5170850019785576e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6847959160804749
+      Pitch: 0.49979665875434875
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 5.237411022186279
+      Yaw: 5.707408905029297
     Saved: ~
 Window Geometry:
   Displays:
