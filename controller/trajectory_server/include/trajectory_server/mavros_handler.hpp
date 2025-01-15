@@ -340,7 +340,7 @@ inline void MavrosHandler::execLand()
   rclcpp::Rate srv_loop_rate(1.0);
 
   auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
-  set_mode_req->custom_mode = "LAND"; 
+  set_mode_req->custom_mode = "AUTO.LAND"; 
 
   while (!isLanded()){
     auto result = mavros_set_mode_client_->async_send_request(set_mode_req);
