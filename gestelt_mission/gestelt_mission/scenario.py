@@ -135,12 +135,11 @@ class Mission(Node):
             return False
         
         self.uav_states[id] = msg.state
-        in_req_state = (self.uav_states[id] == req_state)
 
         # if (not in_req_state):
         #     self.get_logger().info(f'Drone{id} is in state {msg.state}. Not in required state {req_state}')
 
-        return in_req_state
+        return (self.uav_states[id] == req_state)
 
     def cmdAllDronesPub(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones using publisher

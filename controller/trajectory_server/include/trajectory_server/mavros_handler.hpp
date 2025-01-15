@@ -35,6 +35,8 @@
 #include <mavros_msgs/srv/command_bool.hpp>
 #include <mavros_msgs/srv/set_mode.hpp>
 
+#include <rclcpp/wait_for_message.hpp>
+
 #include <nav_msgs/msg/odometry.hpp>
 
 #include <std_msgs/msg/bool.hpp>
@@ -293,23 +295,27 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
   // }
   // auto last_request_t = node_->get_clock()->now();
 
-  auto conditions_fulfilled = [&] () {
-    return (toggle ? isUAVReady() : isUAVIdle());
-  };
-
   int retries = 0;
 
   auto set_offb_msg = std_msgs::msg::Bool{};
   set_offb_msg.data = true;
 
   set_offb_pub_->publish(set_offb_msg);
-  while (!conditions_fulfilled() && retries < 20){
-    srv_loop_rate.sleep();   
+
+  bool is_offboard = false;
+  bool is_armed = false;
+
+  mavros_msgs::msg::State state_msg;
+  
+  while (state_msg.mode != "OFFBOARD" && !state_msg.armed && retries < 20){
+    bool got_msg = rclcpp::wait_for_message(state_msg, node_, "mavros/state", 4s);
+
     retries++;
     RCLCPP_INFO(node_->get_logger(), "Waiting for offboard mode and arming to be set...");
+    srv_loop_rate.sleep();   
   }
 
-  return conditions_fulfilled();
+  return retries >= 20;
 }
 
 /* Execution of controls */

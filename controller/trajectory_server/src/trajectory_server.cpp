@@ -413,7 +413,6 @@ void TrajectoryServer::pubCtrlTimerCB()
 
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T)
 		{
-
 			mavros_handler_->execHover(pos_enu_corr, cmd_yaw_yawrate_);
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();

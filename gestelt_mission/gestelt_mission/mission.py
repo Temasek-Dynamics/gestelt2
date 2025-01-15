@@ -27,6 +27,8 @@ def main(args=None):
             mode=0)
         mission.get_logger().info("All drones swtching switching to MISSION MODE")
 
+        # TODO: add wait for mission
+
         mission.pubGoals()
         mission.get_logger().info("Published goals to navigator")
 
