@@ -20,6 +20,10 @@ def main(args=None):
             value=mission.scenario.take_off_height)
         mission.get_logger().info("All drones TAKING OFF")
         
+        # Wait for Hover
+        if not mission.waitForReqState(UAVState.HOVERING):
+            raise Exception("Failed to transition to hover mode")
+
         # Mission mode
         mission.cmdAllDronesPub(
             UAVCommand.Request.COMMAND_START_MISSION, 
@@ -27,7 +31,9 @@ def main(args=None):
             mode=0)
         mission.get_logger().info("All drones swtching switching to MISSION MODE")
 
-        # TODO: add wait for mission
+        # Wait for mission
+        if not mission.waitForReqState(UAVState.MISSION):
+            raise Exception("Failed to transition to mission mode")
 
         mission.pubGoals()
         mission.get_logger().info("Published goals to navigator")

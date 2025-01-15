@@ -300,7 +300,7 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
   set_offb_msg.data = true;
   set_offb_pub_->publish(set_offb_msg);
 
-  while (state_.mode != "OFFBOARD" && !state_.armed && retries < 20){
+  while (state_.mode != "OFFBOARD" || !state_.armed && retries < 20){
 
     retries++;
     RCLCPP_INFO(node_->get_logger(), "Toggling offboard... Current state is %s. Armed? %d", state_.mode.c_str(), state_.armed);

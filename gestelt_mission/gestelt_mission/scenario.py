@@ -141,6 +141,21 @@ class Mission(Node):
 
         return (self.uav_states[id] == req_state)
 
+    def waitForReqState(self, req_state):
+        retry_num = 0
+        self.get_logger().info(f"Waiting for required state: {req_state} ...")
+
+        if req_state != None:
+            for id in range(self.scenario.num_agents):
+                while not self.isInReqState(id, req_state):
+                    time.sleep(1.0)
+                    retry_num += 1
+                    if (retry_num > self.max_retries):
+                        self.get_logger().info(f"Failed to wait for required state: {req_state} ...")
+                        return False
+                    
+        return True
+
     def cmdAllDronesPub(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones using publisher
 
