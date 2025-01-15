@@ -60,7 +60,7 @@ public:
       "mavros/setpoint_raw/local", 10);
 
     set_offb_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-      "set_offboard", 10);
+      "set_offboard", rclcpp::ServicesQoS());
   }
 
 	void setState(const mavros_msgs::msg::State::UniquePtr& state){
@@ -302,10 +302,10 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
   auto set_offb_msg = std_msgs::msg::Bool{};
   set_offb_msg.data = true;
 
+  set_offb_pub_->publish(set_offb_msg);
   while (!conditions_fulfilled() && retries < 20){
     srv_loop_rate.sleep();   
     retries++;
-    set_offb_pub_->publish(set_offb_msg);
     RCLCPP_INFO(node_->get_logger(), "Waiting for offboard mode and arming to be set...");
   }
 
