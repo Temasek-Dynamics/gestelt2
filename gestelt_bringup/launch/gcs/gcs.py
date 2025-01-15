@@ -81,7 +81,20 @@ def generate_launch_description():
         ],
     )
 
-    # # Mission node: Sends goals to agents
+    # Mission node: Sends goals to agents
+    # mission_node = Node(
+    #     package='gestelt_mission',
+    #     executable='mission',
+    #     output='screen',
+    #     shell=False,
+    #     emulate_tty=True,
+    #     name='mission_node',
+    #     parameters = [
+    #         {'scenario': scenario.name},
+    #         {'init_delay': 5},
+    #     ]
+    # )
+
     # swarm_collision_checker_node = Node(
     #     package='swarm_collision_checker',
     #     executable='swarm_collision_checker_node',

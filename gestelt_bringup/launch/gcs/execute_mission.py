@@ -10,7 +10,7 @@ import json
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
+from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
@@ -58,11 +58,12 @@ def generate_launch_description():
 
     # Mission node: Sends goals to agents
     mission_node = Node(
+        name='mission_node',
         package='gestelt_mission',
         executable='mission',
         output='screen',
-        shell=False,
-        name='mission_node',
+        emulate_tty=False,
+        shell=True,
         parameters = [
             {'scenario': scenario.name},
             {'init_delay': 5},
@@ -70,5 +71,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        SetEnvironmentVariable(name='PYTHONUNBUFFERED', value='0'),
         mission_node,
     ])

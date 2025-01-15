@@ -48,8 +48,6 @@ class Mission(Node):
     def __init__(self, no_scenario=False):
         super().__init__('mission_node')
 
-        print(f"Initializing mission...")
-
         """ Parameter Server """
         self.declare_parameter('scenario', '')
         self.declare_parameter('init_delay', 2)
@@ -59,6 +57,8 @@ class Mission(Node):
 
         self.max_retries = 20
 
+        self.get_logger().info(f"Initializing mission with scenario {self.scenario_name}...")
+
         # Sleep for init_delay
         time.sleep(self.init_delay)
 
@@ -67,7 +67,7 @@ class Mission(Node):
             AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
 
         if (no_scenario):
-            print("No scenario required! Only initializing publisher to '/all_uav_command'")
+            self.get_logger().info("No scenario required! Only initializing publisher to '/all_uav_command'")
             return
 
         """ Read scenario JSON to get goal positions """
@@ -109,7 +109,7 @@ class Mission(Node):
             while not self.isInReqState(id, UAVState.IDLE):
                 time.sleep(0.5)
 
-        print(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
+        self.get_logger().info(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
 
     # def UAVStateSub(self, msg):
     #     self.uav_states[msg.agent_id] = msg.state

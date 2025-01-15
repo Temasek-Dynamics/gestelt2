@@ -12,6 +12,10 @@ docker pull gestelt/ros_one_broker:latest
 start_gestelt
 uav_startup 
 ```
+2. Start up ros one broker
+```bash
+start_ros_one_broker
+```
 
 # GCS
 1. Start ground visualization station and mission node
@@ -21,7 +25,7 @@ ros2 launch gestelt_bringup gcs.py
 2. Execute commands or mission
 ```bash
 # Execute a mission according to a given scenario
-ros2 launch gestelt_bringup execute_mission.py
+ros2 run gestelt_bringup execute_mission.py
 # Landing
 ros2 run gestelt_mission land
 # Takeoff

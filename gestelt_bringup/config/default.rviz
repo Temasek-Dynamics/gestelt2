@@ -7,6 +7,7 @@ Panels:
         - /TF1/Frames1
         - /d01
         - /d01/state1
+        - /d01/state1/odom_ax1
         - /d01/state1/odom_ax1/Topic1
         - /d11/front_end1
         - /d21/maps1/occ1
@@ -34,7 +35,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: fake_map
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -4183,7 +4184,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 18.300352096557617
+      Distance: 9.630936622619629
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -4198,10 +4199,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2847960293292999
+      Pitch: 0.6847959160804749
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.762406826019287
+      Yaw: 5.237411022186279
     Saved: ~
 Window Geometry:
   Displays:
