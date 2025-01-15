@@ -10,7 +10,6 @@ def main(args=None):
     # else:
     #     print("User has aborted mission! Exiting...")
     #     return
-
     mission = Mission()
 
     try: 

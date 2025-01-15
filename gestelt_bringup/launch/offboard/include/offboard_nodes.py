@@ -162,7 +162,7 @@ def generate_launch_description():
       cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros_two_broker')],
       name=['ros2_zenoh_broker_', drone_id],
       shell=False,
-      # emulate_tty=True,
+      emulate_tty=True,
     )
 
     '''Mavlink/Mavros'''
