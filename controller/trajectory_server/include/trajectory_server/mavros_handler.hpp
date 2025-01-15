@@ -299,7 +299,7 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 
   int retries = 0;
 
-  set_offb_msg = std_msgs::msg::Bool{};
+  auto set_offb_msg = std_msgs::msg::Bool{};
   set_offb_msg.data = true;
 
   while (!conditions_fulfilled() && retries < 20){
