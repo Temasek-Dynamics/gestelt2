@@ -158,12 +158,26 @@ def generate_launch_description():
         ],
     )
 
-    # ros2_zenoh_broker = ExecuteProcess(
-    #   cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros_two_broker')],
-    #   name=['ros2_zenoh_broker_', drone_id],
-    #   shell=False,
-    #   emulate_tty=True,
-    # )
+    ros2_offboard_broker = ExecuteProcess(
+      cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_offboard_broker')],
+      name=['ros2_offboard_broker_', drone_id],
+      shell=False,
+      emulate_tty=True,
+    )
+
+    ros2_setpoint_broker = ExecuteProcess(
+      cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_setpoint_broker')],
+      name=['ros2_setpoint_broker_', drone_id],
+      shell=False,
+      emulate_tty=True,
+    )
+
+    ros2_state_broker = ExecuteProcess(
+      cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_state_broker')],
+      name=['ros2_state_broker_', drone_id],
+      shell=False,
+      emulate_tty=True,
+    )
 
     '''Mavlink/Mavros'''
     # fcu_addr =  PythonExpression(['14540 +', drone_id])
@@ -213,5 +227,7 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         # mavros_node,
-        # ros2_zenoh_broker,
+        ros2_offboard_broker,
+        ros2_setpoint_broker,
+        ros2_state_broker,
     ])
