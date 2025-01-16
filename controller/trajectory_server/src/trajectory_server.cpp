@@ -234,7 +234,6 @@ void TrajectoryServer::initSrv()
 void TrajectoryServer::mavrosStateSubCB(const mavros_msgs::msg::State::UniquePtr msg)
 {
 	mavros_handler_->setState(msg);
-	logger_->logErrorThrottle("mavros_handler_->setState!", 1.0);
 }
 
 void TrajectoryServer::mavrosOdomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)

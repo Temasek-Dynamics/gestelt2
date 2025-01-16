@@ -105,6 +105,7 @@ class Mission(Node):
         """Timers"""
         # self.plan_req_timer_ = self.create_timer(1.0, self.planReqTimerCB, autostart=True)
 
+        self.get_logger().info(f"Waiting for /dX/uav_state topics...")
         for id in range(self.scenario.num_agents):
             while not self.isInReqState(id, UAVState.IDLE):
                 time.sleep(0.5)
@@ -141,7 +142,7 @@ class Mission(Node):
 
         return (self.uav_states[id] == req_state)
 
-    def waitForReqState(self, req_state):
+    def waitForReqState(self, req_state, max_retries=20):
         retry_num = 0
         self.get_logger().info(f"Waiting for required state: {req_state} ...")
 
@@ -150,9 +151,11 @@ class Mission(Node):
                 while not self.isInReqState(id, req_state):
                     time.sleep(1.0)
                     retry_num += 1
-                    if (retry_num > self.max_retries):
+                    if (retry_num > max_retries):
                         self.get_logger().info(f"Failed to wait for required state: {req_state} ...")
                         return False
+                    
+        self.get_logger().info(f"Waiting for required state: {req_state} ...")
                     
         return True
 

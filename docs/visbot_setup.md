@@ -30,6 +30,23 @@ ros2 launch gestelt_bringup offboard.py
 4. `/visbot_itof/depth`: Only for OWL3. Ensure the depth image is being published around 10 Hz.
   - Update `visbot_itof.launch` to make sure that it is setup. The IP address should be manually configured to match the drone's IP address defined in wifi_cfg.sh, and should be reset to 192.168.2.3${drone_id}. The IP address is hardcoded for each drone to expose various messages, especially the depth rostopic /visbot_itof/depth."
 
+## Restore image on Visbot
+- Get a live OS image from (Ubuntu 20.04.3 LTS (Focal Fossa) Daily Build)[https://ftpmirror.your.org/pub/ubuntu/cdimage/focal/daily-live/20211219/HEADER.html]
+  - Mount it onto a portable disk
+
+- Identify the partition, an example being `/dev/mmcblk0p7`
+
+- To back-up partition to image
+```bash
+# Make sure partition is un-mounted first! 
+dd if=/dev/mmcblk0p7 of=./IMAGE_NAME.image
+```
+
+- To restore image to partition
+```bash
+dd if=./IMAGE_NAME.image of=/dev/mmcblk0p7
+```
+
 ## Communications
 
 Drone 6 IP: 

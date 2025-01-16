@@ -21,7 +21,7 @@ def main(args=None):
         mission.get_logger().info("All drones TAKING OFF")
         
         # Wait for Hover
-        if not mission.waitForReqState(UAVState.HOVERING):
+        if not mission.waitForReqState(UAVState.HOVERING, max_retries=20):
             raise Exception("Failed to transition to hover mode")
 
         # Mission mode
@@ -32,7 +32,7 @@ def main(args=None):
         mission.get_logger().info("All drones swtching switching to MISSION MODE")
 
         # Wait for mission
-        if not mission.waitForReqState(UAVState.MISSION):
+        if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
             raise Exception("Failed to transition to mission mode")
 
         mission.pubGoals()

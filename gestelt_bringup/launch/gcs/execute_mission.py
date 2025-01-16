@@ -66,7 +66,7 @@ def generate_launch_description():
         shell=True,
         parameters = [
             {'scenario': scenario.name},
-            {'init_delay': 5},
+            {'init_delay': 2},
         ]
     )
 
