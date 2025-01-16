@@ -17,7 +17,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
-SCENARIO_NAME = "sutd_1"
+SCENARIO_NAME = "vicon_1"
 # SCENARIO_NAME = "sutd_2"
 
 class Scenario:
@@ -159,7 +159,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         fake_map_publisher,
-        rosbag_record,
+        # rosbag_record,
         rviz_node,
         # swarm_collision_checker_node,
     ])
