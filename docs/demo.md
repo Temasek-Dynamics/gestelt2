@@ -4,16 +4,18 @@ docker pull gestelt/mavoro_arm64:latest
 docker pull gestelt/ros_one_broker:latest
 ```
 
-
 # Visbot
 1. Start up Gestelt container
 ```bash
-# docker run -it --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro:latest
+sudo service docker start
 start_gestelt
 uav_startup 
 ```
 2. Start up ros one broker
 ```bash
+start_ros_one_broker
+source /ros_entrypoint
+cd ~/ros_zenoh_exchange 
 start_ros_one_broker
 ```
 
