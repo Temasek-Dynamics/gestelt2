@@ -162,10 +162,10 @@ class PCDMapGen : public rclcpp::Node
 		{
 			// Map initial setup
 			AddXYPlaneToMap(map_x_size_, map_y_size_, 0.0); // Add floor
-			// AddXYPlaneToMap(map_x_size_, map_y_size_, map_z_size_); // Add ceiling
+			AddXYPlaneToMap(map_x_size_, map_y_size_, map_z_size_); // Add ceiling
 
 			// createSimpleTestMap();
-			createSimpleTestMap2();
+			// createSimpleTestMap2();
 
 			// // Create regions where obstacles cannot be created.
 			// obs_free_radial_.push_back(ObsFreeRadial(0.0, 0.0, 0.1));
@@ -173,8 +173,9 @@ class PCDMapGen : public rclcpp::Node
 			// We can either:
 			// A1) Generate a test map for the vicon room
 			// createViconMap();
-			// addRoomBoundsToMap(5.6, 5.6, 3.0, 
-			// 	-2.8, 2.8, -2.8, 2.8);
+			addSingleCylinder(0.0, 0.0, 0.3, map_z_size_);
+			addRoomBoundsToMap(map_x_size_, map_y_size_, map_z_size_,  //x_size, y_size, z_size
+								-map_x_size_/2.0, map_x_size_/2.0, -map_y_size_/2.0, map_y_size_/2.0, map_z_size_); //rm_min_x, rm_max_x, rm_min_y, rm_max_y, rm_height
 
 			// A2) Generate a antipodal map for the vicon room
 			// createViconAntipodalMap();
@@ -422,6 +423,17 @@ class PCDMapGen : public rclcpp::Node
 
 				addCylinderToMap(x_vox, y_vox, radius_vox, height_vox);
 			}
+		}
+
+		void addSingleCylinder(const double& x, const double& y, 
+							const double& radius, const double& height)
+		{
+			double x_vox = (x / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder x position 
+			double y_vox = (y / map_res_) * map_res_ + map_res_ / 2.0; // [voxels] Random cylinder y position 
+			double radius_vox = radius / map_res_;	// [voxels] Random radius 
+			double height_vox = height / map_res_;	// [voxels] Random Height 
+
+			addCylinderToMap(x_vox, y_vox, radius_vox, height_vox);
 		}
 
 		void createSimpleTestMap2(){

@@ -33,3 +33,8 @@ ros2 run gestelt_mission land
 # Takeoff
 ros2 run gestelt_mission takeoff
 ```
+
+# Vicon tests
+Size: 5m x 5m
+
+

@@ -1,4 +1,64 @@
 {
+  "vicon_1": {
+    "description": "Autonomous takeoff and landing in obstacle free map",
+    "map": "vicon_room_no_obs",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        -1.5,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        0.0,
+        0.0,
+        1.5
+      ]
+    ]
+  },
+  "vicon_2": {
+    "description": "Go forward 1.5m in obstacle free map",
+    "map": "vicon_room_no_obs",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        -1.5,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        1.5,
+        0.0,
+        1.5
+      ]
+    ]
+  },
+  "vicon_3": {
+    "description": "Go forward 2m in obstacle free map",
+    "map": "vicon_room_w_obs1",
+    "num_agents": 1,
+    "take_off_height": 1.5,
+    "spawns_pos": [
+      [
+        -1.5,
+        0.0,
+        0.0
+      ]
+    ],
+    "goals_pos": [
+      [
+        1.5,
+        0.0,
+        1.5
+      ]
+    ]
+  },
   "sutd_1": {
     "description": "Do nothing. Test takeoff and landing.",
     "map": "empty_15x15",
@@ -20,7 +80,7 @@
     ]
   },
   "sutd_2": {
-    "description": "Go forward 2.5m",
+    "description": "Go forward 2.0m",
     "map": "empty_15x15",
     "num_agents": 1,
     "take_off_height": 1.5,
@@ -33,7 +93,7 @@
     ],
     "goals_pos": [
       [
-        1.0,
+        2.0,
         0.0,
         1.5
       ]
