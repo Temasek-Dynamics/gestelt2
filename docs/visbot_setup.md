@@ -15,13 +15,23 @@ sudo apt-get remove thunderbird
 ```bash
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
+
+# Stop docker and update daemon
+sudo systemctl stop docker
+sudo rm -rf /var/lib/docker
+sudo ln -s /media/visbot/gestelt/docker /var/lib/docker
+sudo vim /etc/docker/daemon.json
+# Add the following information
+{
+  "data-root": "/media/john/gestelt/docker"
+}
+sudo systemctl start docker
 ```
 
 # Add to ~/.bashrc
 ```bash
-alias start_gestelt=""
-alias start_ros_one_broker=""
-
+alias start_gestelt="docker run -it  --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro_arm64:base"
+alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/ros_one_broker:latest"
 ```
 
 3. configuration for auto-connect to wifi 

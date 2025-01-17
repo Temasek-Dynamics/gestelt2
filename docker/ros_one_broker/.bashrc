@@ -105,4 +105,4 @@ source $HOME/.cargo/env
 export DRONE_ID=0
 
 # Startup for demo
-alias start_bridge="cd /ros_zenoh_exchange && python3 ros_one_broker.py"
+alias start_bridge="cd ~/ros_zenoh_exchange && python3 ros1_1_broker.py"
