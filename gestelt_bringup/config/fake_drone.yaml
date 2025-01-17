@@ -1,5 +1,4 @@
 /**: 
   ros__parameters:
     fake_drone:
-
       state_update_frequency: 50.0  # [Hz] Frequency at which state is published

@@ -1,22 +1,46 @@
 # vistbot_setup (OWL 3)
 
-## Quick start
-1. Start visbot scripts
-2. Start Gestelt container
+# Install dependencies
+1. Install packages
 ```bash
-docker run -it --privileged --network host -e "DRONE_ID=0" gestelt/mavoro:latest
-ros2 launch gestelt_bringup offboard.py
+sudo apt-get install curl
 ```
+
+2. Uninstall irrelevant packages
+```bash
+sudo apt-get remove thunderbird 
+```
+
+3. Install docker
+```bash
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+```
+
+# Add to ~/.bashrc
+```bash
+alias start_gestelt=""
+alias start_ros_one_broker=""
+
+```
+
 3. configuration for auto-connect to wifi 
+
 ```bash
 /config/etc/wifi_cfg.sh
 ```
 
 ## Scripts to modify
 1. Startup script: /home/visbot/bin/visquad.sh
+  - Remove unnecessary nodes like ego_planner and geometric_controller
 2. /config/etc/wifi_cfg.sh
+  - Configure auto-connect to WIFI
 3. ~/ros_ws/install/share/visbot_itof/launch/visbot_itof.launch
-4. ~/.bashrc
+  - Update `visbot_itof.launch` to make sure that it is setup. The IP address should be manually configured to match the drone's IP address defined in wifi_cfg.sh, and should be reset to 192.168.2.3${drone_id}. The IP address is hardcoded for each drone to expose various messages, especially the depth rostopic /visbot_itof/depth."
+4. To `~/.bashrc`, add the following
+```bash
+
+```
 
 ## Topics of interest
 
@@ -28,7 +52,6 @@ ros2 launch gestelt_bringup offboard.py
 ### Sensor
 1. `/vins_estimator/point_cloud`
 4. `/visbot_itof/depth`: Only for OWL3. Ensure the depth image is being published around 10 Hz.
-  - Update `visbot_itof.launch` to make sure that it is setup. The IP address should be manually configured to match the drone's IP address defined in wifi_cfg.sh, and should be reset to 192.168.2.3${drone_id}. The IP address is hardcoded for each drone to expose various messages, especially the depth rostopic /visbot_itof/depth."
 
 ## Restore image on Visbot
 - Get a live OS image from (Ubuntu 20.04.3 LTS (Focal Fossa) Daily Build)[https://ftpmirror.your.org/pub/ubuntu/cdimage/focal/daily-live/20211219/HEADER.html]

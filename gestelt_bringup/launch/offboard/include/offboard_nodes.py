@@ -51,8 +51,8 @@ def generate_launch_description():
     )
 
     '''Frames'''
-    map_frame = 'map'
-    # map_frame = ['d', drone_id, '_origin']
+    global_frame = 'map'
+    map_frame = ['d', drone_id, '_origin']
     local_map_frame = ['d', drone_id, '_lcl_map']
     base_link_frame = 'base_link'
     # base_link_frame = ['d', drone_id, '_base_link']
@@ -100,14 +100,14 @@ def generate_launch_description():
                        executable = "static_transform_publisher",
                        output="log",
                       arguments = [init_x, init_y, "0", "0", "0", "0", 
-                              "world", map_frame])
+                                  global_frame, map_frame])
 
     # drone base_link to sensor fixed TF
     camera_link_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        output="log",
                       arguments = ["0", "0", "0", "0", "0", "0", 
-                              base_link_frame, camera_frame])
+                                  base_link_frame, camera_frame])
 
     ''' Navigator: Planner module '''
     navigator_node = Node(
