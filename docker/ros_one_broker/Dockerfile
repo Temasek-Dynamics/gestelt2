@@ -14,20 +14,18 @@ SHELL ["/bin/bash", "-c"]
 
 # install bootstrap tools
 RUN apt-get update && apt-get install --no-install-recommends -y \
-    vim \
     git \
-    wget \
     curl \
-    python3-pip \
     build-essential \
     software-properties-common \
     ros-noetic-mavros* \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
 
-RUN pip install protobuf
-RUN source $HOME/.cargo/env && pip install eclipse-zenoh
+# RUN pip install protobuf
+# RUN source $HOME/.cargo/env && pip install eclipse-zenoh
 
 WORKDIR /root
 RUN git clone https://github.com/JohnTGZ/ros_zenoh_exchange.git -b master 

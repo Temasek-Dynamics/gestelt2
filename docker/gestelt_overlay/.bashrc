@@ -98,11 +98,23 @@ fi
 #    . /etc/bash_completion
 #fi
 
-# RUST
-source $HOME/.cargo/env
+export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/
+
+# ROS2 
+export RCUTILS_COLORIZED_OUTPUT=1
+export RCUTILS_LOGGING_USE_STDOUT=1
+export ROS_DOMAIN_ID=0
+export ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
+
+export ROS_DISTRO="jazzy"
+source /opt/ros/$ROS_DISTRO/setup.bash
+source /gestelt_ws/install/setup.bash
+
+# Shortcuts
+alias ez_build="cd /gestelt_ws && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils"
 
 # Set DRONE_ID here
 export DRONE_ID=0
 
 # Startup for demo
-alias start_bridge="cd ~/ros_zenoh_exchange && python3 ros1_broker.py"
+alias uav_startup="ros2 launch gestelt_bringup offboard_uav.py"

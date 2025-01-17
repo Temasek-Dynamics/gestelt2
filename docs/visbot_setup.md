@@ -63,6 +63,14 @@ alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privile
 1. `/vins_estimator/point_cloud`
 4. `/visbot_itof/depth`: Only for OWL3. Ensure the depth image is being published around 10 Hz.
 
+# Restart NTP 
+```bash
+sudo service ntp stop
+sudo ntpd -gq
+sudo service ntp start
+```
+
+
 ## Restore image on Visbot
 - Get a live OS image from (Ubuntu 20.04.3 LTS (Focal Fossa) Daily Build)[https://ftpmirror.your.org/pub/ubuntu/cdimage/focal/daily-live/20211219/HEADER.html]
   - Mount it onto a portable disk
