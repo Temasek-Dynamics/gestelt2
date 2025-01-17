@@ -60,12 +60,6 @@ public:
     /* Create publishers */
     mavros_cmd_pub_ = node_->create_publisher<mavros_msgs::msg::PositionTarget>(
       "mavros/setpoint_raw/local", 10);
-
-    set_offb_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-      "set_offboard", rclcpp::ServicesQoS());
-
-    set_land_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-      "set_land", rclcpp::ServicesQoS());
   }
 
 	void setState(const mavros_msgs::msg::State::UniquePtr& state){
@@ -148,8 +142,6 @@ private:
 
 	/* Publishers */
 	rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr mavros_cmd_pub_;
-	rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr set_offb_pub_;
-	rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr set_land_pub_;
 
 	/* Service Clients */
 	rclcpp::Client<mavros_msgs::srv::CommandBool>::SharedPtr mavros_arm_client_;
@@ -192,119 +184,96 @@ inline bool MavrosHandler::isTakenOff(const double& takeoff_h)
 
 /* Changing of states */
 
-// inline bool MavrosHandler::toggleOffboardMode(bool toggle)
-// {
-
-//   auto arm_cmd_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
-//   arm_cmd_req->value = toggle ?  true : false;
-
-//   auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
-//   set_mode_req->custom_mode = toggle ? "OFFBOARD" : "AUTO.LOITER"; 
-
-//   rclcpp::Rate srv_loop_rate(2.0);
-//   rclcpp::Rate cmd_loop_rate(15.0);
-
-//   // send a few setpoints before starting
-//   for (int i = 0; i < 10 && rclcpp::ok(); i++)
-//   {
-//     execTakeOff(Eigen::Vector3d::Zero(), Eigen::Vector2d::Zero());
-//     cmd_loop_rate.sleep();
-//   }
-//   // auto last_request_t = node_->get_clock()->now();
-
-//   auto conditions_fulfilled = [&] () {
-//     return (toggle ? isUAVReady() : isUAVIdle());
-//   };
-
-//   while (!conditions_fulfilled()){
-//     // Set mode
-//     if (state_.mode != set_mode_req->custom_mode)
-//     {
-//       auto result = mavros_set_mode_client_->async_send_request(set_mode_req);
-
-//       // Refer to https://github.com/ros2/rclcpp/issues/206 to find out why 
-//       // we don't use spin_until_future_complete()
-//       std::future_status status;
-
-//       switch (status = result.wait_for(7s); status)
-//       {
-//         case std::future_status::deferred:
-//           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client deferred");
-//           break;
-//         case std::future_status::timeout:
-//           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client timeout");
-//           break;
-//         case std::future_status::ready:
-//           auto response = result.get();
-
-//           if (response->mode_sent){
-//             RCLCPP_INFO(node_->get_logger(), "Setting %s mode successful", 
-//               set_mode_req->custom_mode.c_str());
-//           }
-//           else {
-//             RCLCPP_ERROR(node_->get_logger(), "Setting %s mode failed", 
-//               set_mode_req->custom_mode.c_str());
-//           }
-//           break;
-//       }
-//     }
-
-//     // Arm/disarm
-//     if (state_.armed != arm_cmd_req->value) 
-//     {
-//       auto result = mavros_arm_client_->async_send_request(arm_cmd_req);
-
-//       std::future_status status;
-
-//       switch (status = result.wait_for(7s); status)
-//       {
-//         case std::future_status::deferred:
-//           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client deferred");
-//           break;
-//         case std::future_status::timeout:
-//           RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client timeout");
-//           break;
-//         case std::future_status::ready:
-//           auto response = result.get();
-
-//           if (response->success){
-//             RCLCPP_INFO(node_->get_logger(), "Setting arm to %d successful", 
-//               arm_cmd_req->value );
-//           }
-//           else {
-//             RCLCPP_ERROR(node_->get_logger(), "Setting arm to %d failed", 
-//               arm_cmd_req->value );
-//           }
-//           break;
-//       }
-//     }
-
-//     srv_loop_rate.sleep();   
-//   }
-
-//   return true;
-// }
-
-
 inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 {
-  rclcpp::Rate srv_loop_rate(0.25);
-  
-  int retries = 0;
-  int max_retries = 3;
+  auto arm_cmd_req = std::make_shared<mavros_msgs::srv::CommandBool::Request>();
+  arm_cmd_req->value = toggle ?  true : false;
 
-  auto bool_msg = std_msgs::msg::Bool{};
-  bool_msg.data = true;
-  set_offb_pub_->publish(bool_msg);
+  auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+  set_mode_req->custom_mode = toggle ? "OFFBOARD" : "AUTO.LOITER"; 
 
-  while (state_.mode != "OFFBOARD" || !state_.armed && retries < max_retries){
+  rclcpp::Rate srv_loop_rate(2.0);
+  rclcpp::Rate cmd_loop_rate(15.0);
 
-    retries++;
-    RCLCPP_INFO(node_->get_logger(), "Toggling offboard... Current state is %s. Armed? %d", state_.mode.c_str(), state_.armed);
+  // send a few setpoints before starting
+  for (int i = 0; i < 10 && rclcpp::ok(); i++)
+  {
+    execTakeOff(Eigen::Vector3d::Zero(), Eigen::Vector2d::Zero());
+    cmd_loop_rate.sleep();
+  }
+  // auto last_request_t = node_->get_clock()->now();
+
+  auto conditions_fulfilled = [&] () {
+    return (toggle ? isUAVReady() : isUAVIdle());
+  };
+
+  while (!conditions_fulfilled()){
+    // Set mode
+    if (state_.mode != set_mode_req->custom_mode)
+    {
+      auto result = mavros_set_mode_client_->async_send_request(set_mode_req);
+
+      // Refer to https://github.com/ros2/rclcpp/issues/206 to find out why 
+      // we don't use spin_until_future_complete()
+      std::future_status status;
+
+      switch (status = result.wait_for(7s); status)
+      {
+        case std::future_status::deferred:
+          RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client deferred");
+          break;
+        case std::future_status::timeout:
+          RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client timeout");
+          break;
+        case std::future_status::ready:
+          auto response = result.get();
+
+          if (response->mode_sent){
+            RCLCPP_INFO(node_->get_logger(), "Setting %s mode successful", 
+              set_mode_req->custom_mode.c_str());
+          }
+          else {
+            RCLCPP_ERROR(node_->get_logger(), "Setting %s mode failed", 
+              set_mode_req->custom_mode.c_str());
+          }
+          break;
+      }
+    }
+
+    // Arm/disarm
+    if (state_.armed != arm_cmd_req->value) 
+    {
+      auto result = mavros_arm_client_->async_send_request(arm_cmd_req);
+
+      std::future_status status;
+
+      switch (status = result.wait_for(7s); status)
+      {
+        case std::future_status::deferred:
+          RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client deferred");
+          break;
+        case std::future_status::timeout:
+          RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 arming_client timeout");
+          break;
+        case std::future_status::ready:
+          auto response = result.get();
+
+          if (response->success){
+            RCLCPP_INFO(node_->get_logger(), "Setting arm to %d successful", 
+              arm_cmd_req->value );
+          }
+          else {
+            RCLCPP_ERROR(node_->get_logger(), "Setting arm to %d failed", 
+              arm_cmd_req->value );
+          }
+          break;
+      }
+    }
+
     srv_loop_rate.sleep();   
   }
 
-  return state_.mode == "OFFBOARD" && state_.armed;
+  return true;
 }
 
 /* Execution of controls */
@@ -334,23 +303,38 @@ inline void MavrosHandler::execMission(const Eigen::Vector3d& p, const Eigen::Ve
 
 inline bool MavrosHandler::execLand()
 {
-  rclcpp::Rate srv_loop_rate(0.25);
-  
-  int retries = 0;
-  int max_retries = 3;
+  rclcpp::Rate srv_loop_rate(1.0);
 
-  auto bool_msg = std_msgs::msg::Bool{};
-  bool_msg.data = true;
-  set_land_pub_->publish(bool_msg);
+  auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
+  set_mode_req->custom_mode = "AUTO.LAND"; 
 
-  while (state_.mode != "AUTO.LAND" && retries < max_retries)
-  {
-    retries++;
-    RCLCPP_INFO(node_->get_logger(), "Toggling landing... Current state is %s. Armed? %d", state_.mode.c_str(), state_.armed);
+  while (!isLanded()){
+    auto result = mavros_set_mode_client_->async_send_request(set_mode_req);
+
+    std::future_status status;
+
+    switch (status = result.wait_for(7s); status)
+    {
+      case std::future_status::deferred:
+        RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client deferred");
+        break;
+      case std::future_status::timeout:
+        RCLCPP_ERROR(node_->get_logger(), "Service call to PX4 set_mode_client timeout");
+        break;
+      case std::future_status::ready:
+        auto response = result.get();
+
+        if (response->mode_sent){
+          RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting %s mode successful", set_mode_req->custom_mode.c_str());
+        }
+        else {
+          RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting %s mode failed", set_mode_req->custom_mode.c_str());
+        }
+        break;
+    }
+
     srv_loop_rate.sleep();   
   }
-
-  return state_.mode == "AUTO.LAND";
 }
 
 inline void MavrosHandler::publishCmd(const Eigen::Vector3d& p, 

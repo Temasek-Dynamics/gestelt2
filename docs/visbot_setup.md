@@ -23,7 +23,7 @@ sudo ln -s /media/visbot/gestelt/docker /var/lib/docker
 sudo vim /etc/docker/daemon.json
 # Add the following information
 {
-  "data-root": "/media/john/gestelt/docker"
+  "data-root": "/mnt/gestelt"
 }
 sudo systemctl start docker
 ```

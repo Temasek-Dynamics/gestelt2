@@ -1,7 +1,7 @@
-# docker build --platform linux/arm64 -t gestelt/mavoro_arm64:base --push .
+# docker buildx build --platform linux/arm64 -t gestelt/mavoro_arm64:base --push .
 # docker run -it  --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro_arm64:latest
 
-FROM --platform=$BUILDPLATFORM ros:jazzy-perception-noble
+FROM --platform=$TARGETPLATFORM ros:jazzy-perception-noble
 LABEL maintainer="johntgz@nus.edu.sg"
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
