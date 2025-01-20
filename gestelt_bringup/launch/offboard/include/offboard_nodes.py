@@ -164,12 +164,12 @@ def generate_launch_description():
         ],
     )
 
-    # ros2_offboard_broker = ExecuteProcess(
-    #   cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_offboard_broker')],
-    #   name=['ros2_offboard_broker_', drone_id],
-    #   shell=False,
-    #   emulate_tty=True,
-    # )
+    ros2_broker = ExecuteProcess(
+      cmd=[os.path.join('ros_zenoh_exchange', 'ros2_broker')],
+      name=['ros2_offboard_broker_', drone_id],
+      shell=False,
+      emulate_tty=True,
+    )
 
     # ros2_setpoint_broker = ExecuteProcess(
     #   cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_setpoint_broker')],
@@ -234,7 +234,6 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         mavros_node,
-        # ros2_offboard_broker,
-        # ros2_setpoint_broker,
-        # ros2_state_broker,
+
+        ros2_broker,
     ])
