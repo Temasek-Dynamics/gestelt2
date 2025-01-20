@@ -234,5 +234,5 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         mavros_node,
-        # ros2_broker,
+        ros2_broker,
     ])
