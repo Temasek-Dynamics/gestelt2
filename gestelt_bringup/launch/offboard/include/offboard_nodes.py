@@ -165,7 +165,7 @@ def generate_launch_description():
     )
 
     ros2_broker = ExecuteProcess(
-      cmd=[os.path.join('ros_zenoh_exchange', 'ros2_broker')],
+      cmd=[os.path.join('/ros_zenoh_exchange', 'ros2_broker')],
       name=['ros2_offboard_broker_', drone_id],
       shell=False,
       emulate_tty=True,
