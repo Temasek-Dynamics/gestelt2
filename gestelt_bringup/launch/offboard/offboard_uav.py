@@ -88,7 +88,7 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
 
     return GroupAction(
       actions=[
-          PushROSNamespace('d' + str(id)),
+        #   PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
         ]
     )

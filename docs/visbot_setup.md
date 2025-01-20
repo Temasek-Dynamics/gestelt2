@@ -3,12 +3,12 @@
 # Install dependencies
 1. Install packages
 ```bash
-sudo apt-get install curl
+sudo apt-get install curl gnome-disk-utility
 ```
 
 2. Uninstall irrelevant packages
 ```bash
-sudo apt-get remove thunderbird 
+sudo apt-get remove -y thunderbird libreoffice*
 ```
 
 3. Install docker
@@ -16,10 +16,12 @@ sudo apt-get remove thunderbird
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
+# Mount disk using gnome-disk
+
 # Stop docker and update daemon
 sudo systemctl stop docker
 sudo rm -rf /var/lib/docker
-sudo ln -s /media/visbot/gestelt/docker /var/lib/docker
+sudo ln -s /mnt/gestelt/docker /var/lib/docker
 sudo vim /etc/docker/daemon.json
 # Add the following information
 {
@@ -40,7 +42,7 @@ alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privile
 /config/etc/wifi_cfg.sh
 ```
 
-## Scripts to modify
+4. Scripts to modify
 1. Startup script: /home/visbot/bin/visquad.sh
   - Remove unnecessary nodes like ego_planner and geometric_controller
 2. /config/etc/wifi_cfg.sh

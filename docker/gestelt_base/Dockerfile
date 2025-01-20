@@ -62,9 +62,8 @@ RUN pip install protobuf --break-system-packages
 # RUN git clone https://github.com/Temasek-Dynamics/gestelt2 -b mavros_interface 
 # WORKDIR /gestelt_ws/
 # RUN source /opt/ros/jazzy/setup.bash \
-#     && export ROS_DOMAIN_ID=0 \
 #     && export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/ \
-#     && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
+#     && colcon build --parallel-workers 3 --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils
 
 # WORKDIR /root
 # RUN git clone https://github.com/JohnTGZ/ros_zenoh_exchange.git -b master 
