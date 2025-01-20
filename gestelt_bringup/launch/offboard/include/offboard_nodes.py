@@ -94,6 +94,12 @@ def generate_launch_description():
 
 
     """Nodes"""
+    world_to_map_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                       output="log",
+                      arguments = [init_x, init_y, "0", "0", "0", "0", 
+                                  'world', 'map'])
+
     # Publish TF for map to fixed drone origin
     # This is necessary because PX4 SITL is not able to change it's initial starting position
     drone_origin_tf = Node(package = "tf2_ros", 
@@ -219,6 +225,7 @@ def generate_launch_description():
         fake_map_pcd_filepath_launch_arg,
         num_drones_arg,
         # Static transforms
+        world_to_map_tf,
         drone_origin_tf,
         camera_link_tf,
         # Nodes
