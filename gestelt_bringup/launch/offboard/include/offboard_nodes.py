@@ -199,7 +199,7 @@ def generate_launch_description():
         {'local_position.tf.child_frame_id': base_link_frame},
       ],
       remappings=[
-        ('local_position/odom', ['/d', drone_id, '/odom']),
+        ('local_position/odom', ['/odom']),
       ],
     )
 
@@ -208,12 +208,12 @@ def generate_launch_description():
     # rosrun mavros mavcmd long 511 105 3000 0 0 0 0 0
     # rosrun mavros mavcmd long 511 32 33333 0 0 0 0 0
 
-    # ros2 service call /d0/mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
+    # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
     set_imu_stream = ExecuteProcess(
         cmd=[[
             FindExecutable(name='ros2'),
             " service call",
-            "/d0/mavros/set_stream_rate",
+            "/mavros/set_stream_rate",
             "mavros_msgs/srv/StreamRate",
             '"{stream_id: 0, message_rate: 15, on_off: true}"',
         ]],
@@ -226,14 +226,25 @@ def generate_launch_description():
             FindExecutable(name='ros2'),
             "run",
             "mavros",
-            "mavcmd",
-            "long 511 32 33333 0 0 0 0 0",
+            "mav",
+            "cmd",
+            "long 511 105 3000 0 0 0 0 0",
         ]],
         shell=True
     )
 
     # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-
+    mavcmd2 = ExecuteProcess(
+        cmd=[[
+            FindExecutable(name='ros2'),
+            "run",
+            "mavros",
+            "mav",
+            "cmd",
+            "long 511 32 33333 0 0 0 0 0",
+        ]],
+        shell=True
+    )
 
     return LaunchDescription([
         # Launch arguments
@@ -253,4 +264,7 @@ def generate_launch_description():
         # Mavlink to ROS bridge
         mavros_node,
         ros2_broker,
+        set_imu_stream,
+        mavcmd1,
+        mavcmd2
     ])
