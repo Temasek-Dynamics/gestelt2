@@ -13,7 +13,7 @@
     ],
     "goals_pos": [
       [
-        0.0,
+        1.0,
         0.0,
         1.5
       ]
@@ -43,7 +43,7 @@
     "description": "Go forward 2m in obstacle free map",
     "map": "vicon_room_w_obs1",
     "num_agents": 1,
-    "take_off_height": 1.5,
+    "take_off_height": 1.0,
     "spawns_pos": [
       [
         -1.5,
@@ -53,9 +53,9 @@
     ],
     "goals_pos": [
       [
-        1.5,
+        1.0,
         0.0,
-        1.5
+        1.0
       ]
     ]
   },

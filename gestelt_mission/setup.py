@@ -22,8 +22,10 @@ setup(
     entry_points={
         'console_scripts': [
             'mission = gestelt_mission.mission:main',
+            'mission_single = gestelt_mission.mission_single:main',
             'land = gestelt_mission.land:main',
             'takeoff = gestelt_mission.takeoff:main',
+            'go_to_goal = gestelt_mission.go_to_goal:main',
         ],
     },
 )
