@@ -313,6 +313,10 @@ void FakeSensor::sensorUpdateTimerCB()
 	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
 	if (sensor_cloud_->points.empty()){
 		RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Publish empty /cloud");
+		
+		sensor_cloud_msg.header.frame_id = sensor_frame_;
+		sensor_cloud_msg.header.stamp = this->get_clock()->now();
+
 		sensor_pc_pub_->publish(sensor_cloud_msg);
 		return;
 	}
