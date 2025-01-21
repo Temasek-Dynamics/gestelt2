@@ -303,7 +303,7 @@ inline void MavrosHandler::execMission(const Eigen::Vector3d& p, const Eigen::Ve
 
 inline bool MavrosHandler::execLand()
 {
-  rclcpp::Rate srv_loop_rate(1.0);
+  rclcpp::Rate srv_loop_rate(2.0);
 
   auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
   set_mode_req->custom_mode = "AUTO.LAND"; 
@@ -325,16 +325,20 @@ inline bool MavrosHandler::execLand()
         auto response = result.get();
 
         if (response->mode_sent){
-          RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting %s mode successful", set_mode_req->custom_mode.c_str());
+          RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting %s mode successful", 
+            set_mode_req->custom_mode.c_str());
         }
         else {
-          RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting %s mode failed", set_mode_req->custom_mode.c_str());
+          RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Setting %s mode failed", 
+            set_mode_req->custom_mode.c_str());
         }
         break;
     }
 
     srv_loop_rate.sleep();   
   }
+
+  return true;
 }
 
 inline void MavrosHandler::publishCmd(const Eigen::Vector3d& p, 

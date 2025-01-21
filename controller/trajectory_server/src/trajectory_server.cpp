@@ -352,6 +352,7 @@ void TrajectoryServer::setOffboardTimerCB()
 	}
 	else if (UAV::is_in_state<Landing>())
 	{
+		mavros_handler_->execLand();
 	}
 	else if (UAV::is_in_state<TakingOff>())
 	{
@@ -391,7 +392,6 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<Landing>())
 	{
-		mavros_handler_->execLand();
 	}
 	else if (UAV::is_in_state<TakingOff>())
 	{

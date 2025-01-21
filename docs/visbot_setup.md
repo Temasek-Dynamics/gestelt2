@@ -52,6 +52,11 @@ alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privile
     - Update `visbot_itof.launch` to make sure that it is setup. The IP address should be manually configured to match the drone's IP address defined in wifi_cfg.sh, and should be reset to 192.168.2.3${drone_id}. The IP address is hardcoded for each drone to expose various messages, especially the depth rostopic /visbot_itof/depth."
   4. ~/ros_ws/src/
 
+5. Install bridge
+```bash
+
+```
+
 ## Topics of interest
 
 ### Odometry
