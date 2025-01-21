@@ -259,15 +259,15 @@
 /**/vision_pose:
   ros__parameters:
     tf.listen: false           # enable tf listener (disable topic subscribers)
-    tf.frame_id: "odom"
-    tf.child_frame_id: "vision_estimate"
-    tf.rate_limit: 10.0
+    tf.frame_id: "map"
+    tf.child_frame_id: "base_link"
+    tf.rate_limit: 30.0
 
 # vision_speed_estimate
 /**/vision_speed:
   ros__parameters:
     listen_twist: true    # enable listen to twist topic, else listen to vec3d topic
-    twist_cov: true       # enable listen to twist with covariance topic
+    twist_cov: false       # enable listen to twist with covariance topic
 
 # vibration
 /**/vibration:
