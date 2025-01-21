@@ -212,9 +212,9 @@ def generate_launch_description():
     set_imu_stream = ExecuteProcess(
         cmd=[[
             FindExecutable(name='ros2'),
-            " service call",
-            "/mavros/set_stream_rate",
-            "mavros_msgs/srv/StreamRate",
+            " service call ",
+            "/mavros/set_stream_rate ",
+            "mavros_msgs/srv/StreamRate ",
             '"{stream_id: 0, message_rate: 15, on_off: true}"',
         ]],
         shell=True
@@ -224,10 +224,10 @@ def generate_launch_description():
     mavcmd1 = ExecuteProcess(
         cmd=[[
             FindExecutable(name='ros2'),
-            "run",
-            "mavros",
-            "mav",
-            "cmd",
+            " run ",
+            "mavros ",
+            "mav ",
+            "cmd ",
             "long 511 105 3000 0 0 0 0 0",
         ]],
         shell=True
@@ -237,10 +237,10 @@ def generate_launch_description():
     mavcmd2 = ExecuteProcess(
         cmd=[[
             FindExecutable(name='ros2'),
-            "run",
-            "mavros",
-            "mav",
-            "cmd",
+            " run ",
+            "mavros ",
+            "mav ",
+            "cmd ",
             "long 511 32 33333 0 0 0 0 0",
         ]],
         shell=True
