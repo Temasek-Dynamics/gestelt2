@@ -312,12 +312,13 @@ void FakeSensor::sensorUpdateTimerCB()
 	// printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
 	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
 	if (sensor_cloud_->points.empty()){
-		RCLCPP_ERROR(this->get_logger(), "Skip publishing /cloud");
+		RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Publish empty /cloud");
+		sensor_pc_pub_->publish(sensor_cloud_msg);
 		return;
 	}
 
 	sensor_cloud_->width = sensor_cloud_->points.size();
-	sensor_cloud_->height = 0;
+	sensor_cloud_->height = 1;
 
 	pcl::toROSMsg(*sensor_cloud_, sensor_cloud_msg);
 

@@ -675,8 +675,6 @@ void VoxelMap::cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_p
 {
   setCamToMapPose(msg_odom->pose.pose);
   pcd2MsgToMap(*msg_pc);
-  std::cout << "odom timestamp: " << msg_odom->header.stamp.sec << std::endl;
-  std::cout << "pcd timestamp: " << msg_pc->header.stamp.sec << std::endl;
   md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
 }
 
