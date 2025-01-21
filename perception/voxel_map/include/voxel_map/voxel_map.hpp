@@ -539,8 +539,8 @@ inline bool VoxelMap::isPoseValid() {
 
   if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
   {
-    logger_->logError(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
-       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)));
+    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
+       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
     return false;
   }
 
