@@ -41,7 +41,7 @@
   },
   "vicon_3": {
     "description": "Go forward 2m in obstacle free map",
-    "map": "vicon_room_w_obs1",
+    "map": "vicon_room_obs1",
     "num_agents": 1,
     "take_off_height": 1.0,
     "spawns_pos": [
