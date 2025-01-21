@@ -12,7 +12,7 @@ from launch import LaunchDescription, LaunchContext
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
 
 # def render_launch_config(context: LaunchContext, launch_config):
 #   launch_config_str = context.perform_substitution(launch_config)
@@ -166,24 +166,10 @@ def generate_launch_description():
 
     ros2_broker = ExecuteProcess(
       cmd=[os.path.join('/ros_zenoh_exchange', 'ros2_broker')],
-      name=['ros2_offboard_broker_', drone_id],
+      name=['ros2_broker_', drone_id],
       shell=False,
       emulate_tty=True,
     )
-
-    # ros2_setpoint_broker = ExecuteProcess(
-    #   cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_setpoint_broker')],
-    #   name=['ros2_setpoint_broker_', drone_id],
-    #   shell=False,
-    #   emulate_tty=True,
-    # )
-
-    # ros2_state_broker = ExecuteProcess(
-    #   cmd=[os.path.join(os.path.expanduser("~"), 'ros_zenoh_exchange', 'ros2_state_broker')],
-    #   name=['ros2_state_broker_', drone_id],
-    #   shell=False,
-    #   emulate_tty=True,
-    # )
 
     '''Mavlink/Mavros'''
     # fcu_addr =  PythonExpression(['14540 +', drone_id])
@@ -216,6 +202,38 @@ def generate_launch_description():
         ('local_position/odom', ['/d', drone_id, '/odom']),
       ],
     )
+
+
+    # rosservice call /mavros/set_stream_rate 0 15 1
+    # rosrun mavros mavcmd long 511 105 3000 0 0 0 0 0
+    # rosrun mavros mavcmd long 511 32 33333 0 0 0 0 0
+
+    # ros2 service call /d0/mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
+    set_imu_stream = ExecuteProcess(
+        cmd=[[
+            FindExecutable(name='ros2'),
+            " service call",
+            "/d0/mavros/set_stream_rate",
+            "mavros_msgs/srv/StreamRate",
+            '"{stream_id: 0, message_rate: 15, on_off: true}"',
+        ]],
+        shell=True
+    )
+
+    # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
+    mavcmd1 = ExecuteProcess(
+        cmd=[[
+            FindExecutable(name='ros2'),
+            "run",
+            "mavros",
+            "mavcmd",
+            "long 511 32 33333 0 0 0 0 0",
+        ]],
+        shell=True
+    )
+
+    # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
+
 
     return LaunchDescription([
         # Launch arguments

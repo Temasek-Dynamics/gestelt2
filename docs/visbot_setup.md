@@ -43,16 +43,14 @@ alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privile
 ```
 
 4. Scripts to modify
-1. Startup script: /home/visbot/bin/visquad.sh
-  - Remove unnecessary nodes like ego_planner and geometric_controller
-2. /config/etc/wifi_cfg.sh
-  - Configure auto-connect to WIFI
-3. ~/ros_ws/install/share/visbot_itof/launch/visbot_itof.launch
-  - Update `visbot_itof.launch` to make sure that it is setup. The IP address should be manually configured to match the drone's IP address defined in wifi_cfg.sh, and should be reset to 192.168.2.3${drone_id}. The IP address is hardcoded for each drone to expose various messages, especially the depth rostopic /visbot_itof/depth."
-4. To `~/.bashrc`, add the following
-```bash
 
-```
+  1. Startup script: /home/visbot/bin/visquad.sh
+    - Remove unnecessary nodes like ego_planner and geometric_controller
+  2. /config/etc/wifi_cfg.sh
+    - Configure auto-connect to WIFI
+  3. ~/ros_ws/install/share/visbot_itof/launch/visbot_itof.launch
+    - Update `visbot_itof.launch` to make sure that it is setup. The IP address should be manually configured to match the drone's IP address defined in wifi_cfg.sh, and should be reset to 192.168.2.3${drone_id}. The IP address is hardcoded for each drone to expose various messages, especially the depth rostopic /visbot_itof/depth."
+  4. 
 
 ## Topics of interest
 
