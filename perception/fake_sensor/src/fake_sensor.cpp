@@ -313,7 +313,7 @@ void FakeSensor::sensorUpdateTimerCB()
 	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
 	if (sensor_cloud_->points.empty()){
 		RCLCPP_ERROR(this->get_logger(), "Skip publishing /cloud");
-		continue;
+		return;
 	}
 
 	sensor_cloud_->width = sensor_cloud_->points.size();
