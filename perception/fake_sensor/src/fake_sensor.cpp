@@ -311,6 +311,9 @@ void FakeSensor::sensorUpdateTimerCB()
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;
 	// printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
 	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
+	sensor_cloud_->width = sensor_cloud_->points.size();
+	sensor_cloud_->height = 0;
+
 	pcl::toROSMsg(*sensor_cloud_, sensor_cloud_msg);
 
 	sensor_cloud_msg.header.frame_id = sensor_frame_;
