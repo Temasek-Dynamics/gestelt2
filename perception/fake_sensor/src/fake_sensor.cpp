@@ -311,6 +311,11 @@ void FakeSensor::sensorUpdateTimerCB()
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;
 	// printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
 	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
+	if (sensor_cloud_->points.empty()){
+		RCLCPP_ERROR(this->get_logger(), "Skip publishing /cloud");
+		continue;
+	}
+
 	sensor_cloud_->width = sensor_cloud_->points.size();
 	sensor_cloud_->height = 0;
 
