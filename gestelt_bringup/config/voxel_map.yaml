@@ -32,14 +32,14 @@
         size_y: 10.0  # [m]
         size_z: 5.0   # [m]
         update_local_map_frequency: 30.0 # [Hz] Frequency to update the local map
-        viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
+        # viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel
         dynamic_inflation: 0.6    # [m] Dynamic obstacle inflation
         static_inflation: 0.2    # [m] Static obstacle inflation
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
-        max_range: 5.0   # [m] Maximum range of sensor
+        max_range: 7.0   # [m] Maximum range of sensor
 
       collision_check: # For visualizing collision with static obstacles
         enable: false    # Enable checking of collisions
@@ -48,12 +48,12 @@
         check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
 
       camera_to_body: # camera extrinsic parameters 
-        roll: 90.0
-        pitch: 180.0
-        yaw: 90.0
-        # roll: -110.8407936
-        # pitch: 0.0732963
-        # yaw: -89.5375581
-        t_x: 0.07535705  # x translation
-        t_y: 0.05172403  # y translation
-        t_z: -0.03221506  # z translationz
+        # roll: 90.0
+        # pitch: 180.0
+        # yaw: 90.0
+        roll: 89.53755807
+        pitch: -0.07329627
+        yaw: 110.84079452
+        t_x: -0.07535705  # x translation
+        t_y: -0.05172403  # y translation
+        t_z: 0.03221506  # z translationz

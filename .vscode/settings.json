@@ -98,6 +98,7 @@
         "valarray": "cpp",
         "regex": "cpp",
         "hash_map": "cpp",
-        "hash_set": "cpp"
+        "hash_set": "cpp",
+        "numericaldiff": "cpp"
     }
 }

@@ -117,8 +117,8 @@ void VoxelMap::initPubSubTimer()
     "reset_map", 10, std::bind(&VoxelMap::resetMapCB, this, _1) );
 
   /* Initialize ROS Timers */
-	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
-    std::bind(&VoxelMap::vizMapTimerCB, this), reentrant_group_);
+	// viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
+  //   std::bind(&VoxelMap::vizMapTimerCB, this), reentrant_group_);
 	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
     std::bind(&VoxelMap::updateLocalMapTimerCB, this), reentrant_group_);
 	pub_lcl_map_tf_timer_ = node_->create_wall_timer((1.0/100.0) *1000ms, 
@@ -355,8 +355,6 @@ void VoxelMap::updateLocalMap(){
   // FREE VALUE: 0
   // UNKNOWN VALUE: -1
 
-
-
   // Update local map origin, which is the location of the local map origin IN the map frame
   mp_.local_map_origin_ = Eigen::Vector3d(
     md_.body_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
@@ -425,7 +423,6 @@ void VoxelMap::updateLocalMap(){
     lcl_pcd_fixedmapframe_->width = lcl_pcd_fixedmapframe_->points.size();
     lcl_pcd_fixedmapframe_->height = 1;
     lcl_pcd_fixedmapframe_->is_dense = true; 
-
 
   }
 
@@ -501,13 +498,15 @@ void VoxelMap::getMapSlice(const double& slice_z_cm,
 
 void VoxelMap::vizMapTimerCB()
 {
-  publishOccMap(lcl_pcd_lclmapframe_); // publish point cloud within local map
+  // publishOccMap(lcl_pcd_lclmapframe_); // publish point cloud within local map
   // publishLocalMapBounds(); // publish boundaries of local map volume
 }
 
 void VoxelMap::updateLocalMapTimerCB()
 {
   updateLocalMap(); // Update local map voxels
+
+  publishOccMap(lcl_pcd_lclmapframe_);
 
   // Create horizontal map slices
   tm_slice_map_.start();
