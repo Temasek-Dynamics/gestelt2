@@ -531,8 +531,8 @@ inline bool VoxelMap::isPoseValid() {
     return false;
   }
 
-  if (isTimeout(md_.last_sensor_msg_time, 0.25)){
-    logger_->logErrorThrottle(strFmt("Sensor message timeout exceeded 0.25s: (%f, %f)",  
+  if (isTimeout(md_.last_sensor_msg_time, 0.5)){
+    logger_->logErrorThrottle(strFmt("Sensor message timeout exceeded 0.5s: (%f, %f)",  
                                       md_.last_sensor_msg_time, node_->get_clock()->now().seconds()), 1.0);
     return false;
   }
