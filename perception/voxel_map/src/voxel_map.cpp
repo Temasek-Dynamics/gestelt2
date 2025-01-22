@@ -262,9 +262,10 @@ void VoxelMap::reset(const double& resolution){
   md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
 
   // Camera to body transform
-  md_.cam_to_body.block<3, 3>(0, 0) =  (Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(2), Eigen::Vector3d::UnitZ())
-                                      * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(1), Eigen::Vector3d::UnitY())
-                                      * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(0), Eigen::Vector3d::UnitX())).toRotationMatrix();
+  md_.cam_to_body.block<3, 3>(0, 0) =  
+    (Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(2), Eigen::Vector3d::UnitZ())
+    * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(1), Eigen::Vector3d::UnitY())
+    * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(0), Eigen::Vector3d::UnitX())).toRotationMatrix();
 
   // Global map origin is FIXED at a corner of the global map i.e. (-W/2, -L/2, 0)
   mp_.global_map_origin_ = Eigen::Vector3d(
@@ -294,10 +295,11 @@ void VoxelMap::reset(const double& resolution){
 
 void VoxelMap::setCamToMapPose(const geometry_msgs::msg::Pose &pose)
 {
-  Eigen::Quaterniond map_to_body_q = Eigen::Quaterniond(pose.orientation.w,
-                                                pose.orientation.x,
-                                                pose.orientation.y,
-                                                pose.orientation.z);
+  Eigen::Quaterniond map_to_body_q = 
+    Eigen::Quaterniond(pose.orientation.w,
+                        pose.orientation.x,
+                        pose.orientation.y,
+                        pose.orientation.z);
   // UAV body to map frame
   md_.body_to_map.block<3, 3>(0, 0) = map_to_body_q.toRotationMatrix();
   md_.body_to_map.block<3,1>(0,3) << pose.position.x, pose.position.y, pose.position.z;

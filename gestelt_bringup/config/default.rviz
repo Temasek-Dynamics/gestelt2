@@ -71,13 +71,15 @@ Visualization Manager:
       Frames:
         All Enabled: false
         base_link:
-          Value: true
+          Value: false
         base_link_frd:
           Value: false
+        d0_base_link:
+          Value: true
         d0_camera_link:
           Value: true
         d0_lcl_map:
-          Value: true
+          Value: false
         d0_origin:
           Value: true
         map:
@@ -85,25 +87,23 @@ Visualization Manager:
         map_ned:
           Value: false
         odom:
-          Value: true
+          Value: false
         odom_ned:
           Value: false
         world:
           Value: false
       Marker Scale: 0.5
       Name: TF
-      Show Arrows: true
+      Show Arrows: false
       Show Axes: true
       Show Names: true
       Tree:
         world:
           map:
-            base_link:
-              base_link_frd:
-                {}
-              d0_camera_link:
-                {}
             d0_origin:
+              d0_base_link:
+                d0_camera_link:
+                  {}
               d0_lcl_map:
                 {}
             map_ned:
@@ -4214,25 +4214,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 2.8065853118896484
+      Distance: 1.5725598335266113
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.03514432907104492
-        Y: 0.003590106964111328
-        Z: -3.993511199951172e-06
+        X: -1.378402829170227
+        Y: -0.03289461135864258
+        Z: -1.0848045349121094e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.40130338072776794
+      Pitch: 0.5947979092597961
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 5.847009658813477
+      Yaw: 3.5521340370178223
     Saved: ~
 Window Geometry:
   Displays:
