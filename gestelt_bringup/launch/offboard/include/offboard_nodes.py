@@ -10,8 +10,7 @@ from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription, LaunchContext
 from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
-
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction, LogInfo
 from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
 
 # def render_launch_config(context: LaunchContext, launch_config):
@@ -204,46 +203,79 @@ def generate_launch_description():
     )
 
 
-    # rosservice call /mavros/set_stream_rate 0 15 1
-    # rosrun mavros mavcmd long 511 105 3000 0 0 0 0 0
-    # rosrun mavros mavcmd long 511 32 33333 0 0 0 0 0
+    # # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
+    # set_imu_stream = ExecuteProcess(
+    #     cmd=[[
+    #         FindExecutable(name='ros2'),
+    #         " service call ",
+    #         "/mavros/set_stream_rate ",
+    #         "mavros_msgs/srv/StreamRate ",
+    #         '"{stream_id: 0, message_rate: 15, on_off: true}"',
+    #     ]],
+    #     shell=True
+    # )
+
+    # # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
+    # mavcmd1 = ExecuteProcess(
+    #     cmd=[[
+    #         FindExecutable(name='ros2'),
+    #         " run ",
+    #         "mavros ",
+    #         "mav ",
+    #         "cmd ",
+    #         "long 511 105 3000 0 0 0 0 0",
+    #     ]],
+    #     shell=True
+    # )
+
+    # # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
+    # mavcmd2 = ExecuteProcess(
+    #     cmd=[[
+    #         FindExecutable(name='ros2'),
+    #         " run ",
+    #         "mavros ",
+    #         "mav ",
+    #         "cmd ",
+    #         "long 511 32 33333 0 0 0 0 0",
+    #     ]],
+    #     shell=True
+    # )
 
     # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
-    set_imu_stream = ExecuteProcess(
-        cmd=[[
-            FindExecutable(name='ros2'),
-            " service call ",
-            "/mavros/set_stream_rate ",
-            "mavros_msgs/srv/StreamRate ",
-            '"{stream_id: 0, message_rate: 15, on_off: true}"',
-        ]],
-        shell=True
-    )
-
     # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
-    mavcmd1 = ExecuteProcess(
-        cmd=[[
-            FindExecutable(name='ros2'),
-            " run ",
-            "mavros ",
-            "mav ",
-            "cmd ",
-            "long 511 105 3000 0 0 0 0 0",
-        ]],
-        shell=True
-    )
-
     # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-    mavcmd2 = ExecuteProcess(
-        cmd=[[
-            FindExecutable(name='ros2'),
-            " run ",
-            "mavros ",
-            "mav ",
-            "cmd ",
-            "long 511 32 33333 0 0 0 0 0",
-        ]],
-        shell=True
+    fcu_setup_service_calls = ExecuteProcess(
+        cmd=['sleep', '8'],
+        log_cmd=True,
+        on_exit=[
+          ExecuteProcess(
+              cmd=[[
+                FindExecutable(name='ros2'),
+                " service call ",
+                "/mavros/set_stream_rate ",
+                "mavros_msgs/srv/StreamRate ",
+                '"{stream_id: 0, message_rate: 15, on_off: true}"',
+            ]],
+            shell=True
+          ),
+          LogInfo(msg='Setting IMU rate to 200'),
+          ExecuteProcess(
+            cmd=[[
+              FindExecutable(name='ros2'),
+              " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
+            ]],
+            shell=True
+          ),
+          LogInfo(msg='Setting mavros mav cmd 1'),
+          ExecuteProcess(
+            cmd=[[
+              FindExecutable(name='ros2'),
+              " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
+            ]],
+            shell=True
+          ),
+          LogInfo(msg='Setting mavros mav cmd 2'),
+        ]
     )
 
     return LaunchDescription([
@@ -263,8 +295,6 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         mavros_node,
-        ros2_broker,
-        set_imu_stream,
-        mavcmd1,
-        mavcmd2
+        fcu_setup_service_calls,
+        # ros2_broker,
     ])

@@ -54,6 +54,13 @@ alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privile
 
 5. Install bridge
 ```bash
+sudo apt install libzmqpp4 libzmqpp-dev
+
+https://bitbucket.org/nusuav/ros_zmq/src/master/
+https://bitbucket.org/nusuav/depth2octomap/src/master/
+
+ROS2
+https://bitbucket.org/nusuav/ros2_zmq/src/master/
 
 ```
 
