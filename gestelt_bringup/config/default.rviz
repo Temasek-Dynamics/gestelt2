@@ -4,8 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /fake_map1
-        - /TF1
         - /TF1/Frames1
         - /d01
         - /d01/state1
@@ -66,39 +64,6 @@ Visualization Manager:
       Name: world
       Radius: 0.07000000029802322
       Reference Frame: map
-      Value: false
-    - Alpha: 0.009999999776482582
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz_default_plugins/PointCloud2
-      Color: 154; 153; 150
-      Color Transformer: FlatColor
-      Decay Time: 0
-      Enabled: false
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 4096
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: fake_map
-      Position Transformer: XYZ
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.15000000596046448
-      Style: Spheres
-      Topic:
-        Depth: 5
-        Durability Policy: System Default
-        History Policy: System Default
-        Reliability Policy: Best Effort
-        Value: /fake_map
-      Use Fixed Frame: true
-      Use rainbow: true
       Value: false
     - Class: rviz_default_plugins/TF
       Enabled: true
@@ -162,6 +127,39 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /swarm_collision_checker/collisions
           Value: true
+        - Alpha: 0.009999999776482582
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz_default_plugins/PointCloud2
+          Color: 154; 153; 150
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: false
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: fake_map
+          Position Transformer: XYZ
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.15000000596046448
+          Style: Spheres
+          Topic:
+            Depth: 5
+            Durability Policy: System Default
+            History Policy: System Default
+            Reliability Policy: Best Effort
+            Value: /fake_map
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: false
       Enabled: false
       Name: central
     - Class: rviz_common/Group
@@ -4218,25 +4216,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 1.0735925436019897
+      Distance: 1.9313806295394897
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.4244723320007324
-        Y: -0.07233572006225586
-        Z: -2.3323709683609195e-05
+        X: -1.6220803260803223
+        Y: -0.34487777948379517
+        Z: -2.1654779629898258e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5897961258888245
+      Pitch: 0.5497967004776001
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 6.065578937530518
+      Yaw: 5.37557315826416
     Saved: ~
 Window Geometry:
   Displays:
