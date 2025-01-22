@@ -71,10 +71,10 @@
 # local_position
 /**/local_position:
   ros__parameters:
-    frame_id: "map"
+    frame_id: "d0_origin"
     tf.send: true
-    tf.frame_id: "map"
-    tf.child_frame_id: "base_link"
+    tf.frame_id: "d0_origin"
+    tf.child_frame_id: "d0_base_link"
     tf.send_fcu: false
 
 # param

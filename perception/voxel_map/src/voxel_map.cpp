@@ -332,7 +332,7 @@ void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
 
 void VoxelMap::pcdToVoxelMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_cam_frame)
 {
-  // Transform point cloud from camera frame to uav origin frame (the global reference frame)
+  // Transform point cloud from camera frame to map_frame (the global reference frame)
   pcl::transformPointCloud(*pcd_in_cam_frame, *pcd_in_map_frame_, md_.cam_to_map);
   pcd_in_map_frame_->header.frame_id = mp_.map_frame;
 
@@ -375,6 +375,7 @@ void VoxelMap::updateLocalMap(){
   std::vector<Bonxai::CoordT> occ_coords;
   bonxai_map_->getOccupiedVoxels(occ_coords);
   if (occ_coords.size() <= 1){ // Empty map
+    logger_->logWarnThrottle("Bonxai map is empty!", 1.0);
     return;
   }
 
@@ -384,7 +385,6 @@ void VoxelMap::updateLocalMap(){
     // Clear existing local map
     lcl_pcd_lclmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
     lcl_pcd_fixedmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    lcl_pts_fixedmapframe_.clear();
 
     for (auto& coord : occ_coords) // For each occupied coordinate
     {
