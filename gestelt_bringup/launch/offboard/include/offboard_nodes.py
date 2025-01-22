@@ -96,7 +96,7 @@ def generate_launch_description():
     world_to_map_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        output="log",
-                      arguments = [init_x, init_y, "0", "0", "0", "0", 
+                      arguments = ["0", "0", "0", "0", "0", "0", 
                                   'world', 'map'])
 
     # Publish TF for map to fixed drone origin
@@ -106,6 +106,8 @@ def generate_launch_description():
                        output="log",
                       arguments = [init_x, init_y, "0", "0", "0", "0", 
                                   global_frame, map_frame])
+    
+    # map_frame to base_link_frame tf provided by Mavros
 
     # drone base_link to sensor fixed TF
     camera_link_tf = Node(package = "tf2_ros", 

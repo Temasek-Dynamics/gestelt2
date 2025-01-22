@@ -28,8 +28,8 @@
         size_z: 10.0  # [m]
 
       local_map:  # Local map used by planner
-        size_x: 20.0  # [m]
-        size_y: 20.0  # [m]
+        size_x: 10.0  # [m]
+        size_y: 10.0  # [m]
         size_z: 5.0   # [m]
         update_local_map_frequency: 30.0 # [Hz] Frequency to update the local map
         # viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
