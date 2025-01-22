@@ -41,6 +41,7 @@
 #include <rclcpp/wait_for_message.hpp>
 
 #include <nav_msgs/msg/odometry.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 
@@ -219,6 +220,8 @@ public:
 
   /*Subscriber Callbacks*/
 
+  void resetMapCB(const std_msgs::msg::Empty::SharedPtr msg);
+
   // Subscriber callback to point cloud and odom
   void cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_pc, 
                     const nav_msgs::msg::Odometry::SharedPtr msg_odom);
@@ -348,6 +351,8 @@ private:
   std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> cloud_sub_;
   std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> odom_sub_;
 
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_map_sub_;
+  
   /* Publishers  */
 	rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr occ_map_pub_;
   

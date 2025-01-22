@@ -106,9 +106,15 @@ void VoxelMap::initPubSubTimer()
   }
 
   /* Initialize Publishers */
-	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("occ_map", 10);
+	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
+    "occ_map", 10);
 	// slice_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("slice", rclcpp::SensorDataQoS());
-	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>("local_map/bounds", 10);
+	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>(
+    "local_map/bounds", 10);
+  
+  /* Initialize Subscribers */
+	reset_map_sub_ = node_->create_subscription<std_msgs::msg::Empty>(
+    "reset_map", 10, std::bind(&VoxelMap::resetMapCB, this, _1) );
 
   /* Initialize ROS Timers */
 	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
@@ -244,6 +250,7 @@ void VoxelMap::reset(const double& resolution){
   // Set up Bonxai data structure
   bonxai_map_ = std::make_unique<BonxaiT>(resolution);
 
+  
   // Set up KDTree for collision checks
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
   // kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
@@ -669,6 +676,12 @@ void VoxelMap::checkCollisionsTimerCB()
 }
 
 /** Subscriber callbacks */
+
+void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr msg)
+{
+  bonxai_map_ = std::make_unique<BonxaiT>(mp_.resolution_);
+  logger_->logWarn("Reset map as requested by user!");
+}
 
 void VoxelMap::cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_pc, 
                             const nav_msgs::msg::Odometry::SharedPtr msg_odom)
