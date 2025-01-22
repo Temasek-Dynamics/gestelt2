@@ -48,12 +48,12 @@
         check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
 
       camera_to_body: # camera extrinsic parameters 
-        # roll: 90.0
-        # pitch: 180.0
-        # yaw: 90.0
-        roll: -110.8407936
-        pitch: 0.0732963
-        yaw: -89.5375581
+        roll: 90.0
+        pitch: 180.0
+        yaw: 90.0
+        # roll: -110.8407936
+        # pitch: 0.0732963
+        # yaw: -89.5375581
         t_x: 0.07535705  # x translation
         t_y: 0.05172403  # y translation
         t_z: -0.03221506  # z translationz
