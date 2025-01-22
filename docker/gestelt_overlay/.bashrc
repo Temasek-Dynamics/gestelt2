@@ -111,7 +111,7 @@ source /opt/ros/$ROS_DISTRO/setup.bash
 source /gestelt_ws/install/setup.bash
 
 # Shortcuts
-alias ez_build="cd /gestelt_ws && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils"
+alias ez_build="cd ~/gestelt_ws && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils"
 
 # Set DRONE_ID here
 export DRONE_ID=0

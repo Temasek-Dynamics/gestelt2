@@ -65,11 +65,11 @@ def generate_launch_description():
       'trajectory_server.yaml'
     )
 
-    fake_sensor_config = os.path.join(
-      get_package_share_directory('fake_sensor'),
-      'config',
-      'fake_sensor.yaml'
-    )
+    # fake_sensor_config = os.path.join(
+    #   get_package_share_directory('fake_sensor'),
+    #   'config',
+    #   'fake_sensor.yaml'
+    # )
 
     navigator_cfg = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'config',
@@ -129,6 +129,9 @@ def generate_launch_description():
             navigator_cfg,
             voxel_map_cfg,
         ],
+      remappings=[
+        ('cloud', ['/visbot_itof/point_cloud']),
+      ],
     )
 
     ''' Trajectory server for executing trajectories '''
@@ -147,28 +150,28 @@ def generate_launch_description():
     )
 
     ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
-    fake_sensor = Node(
-        package='fake_sensor',
-        executable='fake_sensor_node',
-        output='screen',
-        shell=False,
-        name=['fake_sensor_', drone_id],
-        parameters=[
-          {'drone_id': drone_id},
-          {'map_frame': map_frame},
-          {'local_map_frame': local_map_frame},
-          {'sensor_frame': camera_frame},
-          {'pcd_map.filepath': fake_map_pcd_filepath},
-          fake_sensor_config,
-        ],
-    )
+    # fake_sensor = Node(
+    #     package='fake_sensor',
+    #     executable='fake_sensor_node',
+    #     output='screen',
+    #     shell=False,
+    #     name=['fake_sensor_', drone_id],
+    #     parameters=[
+    #       {'drone_id': drone_id},
+    #       {'map_frame': map_frame},
+    #       {'local_map_frame': local_map_frame},
+    #       {'sensor_frame': camera_frame},
+    #       {'pcd_map.filepath': fake_map_pcd_filepath},
+    #       fake_sensor_config,
+    #     ],
+    # )
 
-    ros2_broker = ExecuteProcess(
-      cmd=[os.path.join('/ros_zenoh_exchange', 'ros2_broker')],
-      name=['ros2_broker_', drone_id],
-      shell=False,
-      emulate_tty=True,
-    )
+    # ros2_broker = ExecuteProcess(
+    #   cmd=[os.path.join('/ros_zenoh_exchange', 'ros2_broker')],
+    #   name=['ros2_broker_', drone_id],
+    #   shell=False,
+    #   emulate_tty=True,
+    # )
 
     '''Mavlink/Mavros'''
     # fcu_addr =  PythonExpression(['14540 +', drone_id])
@@ -290,7 +293,7 @@ def generate_launch_description():
         drone_origin_tf,
         camera_link_tf,
         # Nodes
-        fake_sensor,
+        # fake_sensor,
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge
