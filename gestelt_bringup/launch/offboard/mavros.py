@@ -20,33 +20,10 @@ from launch.substitutions import LaunchConfiguration, PythonExpression, FindExec
 def generate_launch_description():
     ''' Get launch argument values '''
     drone_id = LaunchConfiguration('drone_id')
-    init_x = LaunchConfiguration('init_x')
-    init_y = LaunchConfiguration('init_y')
-    fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
-    num_drones = LaunchConfiguration('num_drones')
 
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
       default_value='0'
-    )
-
-    init_x_launch_arg = DeclareLaunchArgument(
-      'init_x',
-      default_value='0.0'
-    )
-    init_y_launch_arg = DeclareLaunchArgument(
-      'init_y',
-      default_value='0.0'
-    )
-
-    fake_map_pcd_filepath_launch_arg = DeclareLaunchArgument(
-      'fake_map_pcd_filepath',
-      default_value=''
-    )
-
-    num_drones_arg = DeclareLaunchArgument(
-      'num_drones',
-      default_value='4'
     )
 
     '''Frames'''
@@ -139,6 +116,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        drone_id_launch_arg,
         mavros_node,
         fcu_setup_service_calls,
         # ros2_broker,
