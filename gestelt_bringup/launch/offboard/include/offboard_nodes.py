@@ -299,7 +299,7 @@ def generate_launch_description():
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge
-        mavros_node,
+        # mavros_node,
         fcu_setup_service_calls,
         # ros2_broker,
     ])

@@ -6,8 +6,10 @@ Panels:
       Expanded:
         - /TF1
         - /TF1/Frames1
+        - /d01
         - /d01/maps1
         - /d01/cloud1
+        - /d01/cloud1/Status1
         - /d11/front_end1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
@@ -69,29 +71,29 @@ Visualization Manager:
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
-        All Enabled: false
+        All Enabled: true
         base_link:
-          Value: false
+          Value: true
         base_link_frd:
-          Value: false
+          Value: true
         d0_base_link:
           Value: true
         d0_camera_link:
           Value: true
         d0_lcl_map:
-          Value: false
+          Value: true
         d0_origin:
           Value: true
         map:
           Value: true
         map_ned:
-          Value: false
+          Value: true
         odom:
-          Value: false
+          Value: true
         odom_ned:
-          Value: false
+          Value: true
         world:
-          Value: false
+          Value: true
       Marker Scale: 0.5
       Name: TF
       Show Arrows: false
@@ -725,7 +727,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.10000000149011612
+          Size (m): 0.009999999776482582
           Style: Boxes
           Topic:
             Depth: 1
@@ -4214,25 +4216,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 1.5725598335266113
+      Distance: 4.161065578460693
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.378402829170227
-        Y: -0.03289461135864258
-        Z: -1.0848045349121094e-05
+        X: -1.7040975093841553
+        Y: -0.2516058683395386
+        Z: -1.7881393432617188e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5947979092597961
+      Pitch: 0.9297985434532166
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.5521340370178223
+      Yaw: 3.4721391201019287
     Saved: ~
 Window Geometry:
   Displays:
