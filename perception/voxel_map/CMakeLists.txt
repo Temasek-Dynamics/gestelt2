@@ -31,6 +31,7 @@ set(ROS_LIBRABRIES
   message_filters
   logger_wrapper
   bonxai
+  tf2_eigen
   # ikd_tree
 )
 
@@ -38,6 +39,7 @@ set(EXPORTED_DEPENDENCIES
   PCL
   pcl_conversions
   bonxai
+  tf2_eigen
   # ikd_tree
 )
 

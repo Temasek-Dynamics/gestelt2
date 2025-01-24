@@ -53,6 +53,10 @@
 #include <message_filters/sync_policies/approximate_time.h>
 
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <tf2/exceptions.h>
 
 #include <bonxai/bonxai.hpp>
 #include <bonxai/pcl_utils.hpp>
@@ -88,7 +92,6 @@ namespace voxel_map
     int inf_dyn_vox_; // Inflation in number of voxels
 
     double pose_timeout_; // Timeout for pose update before emergency stop is activated
-
     double max_range; // Max sensor range
 
     /* visualization and computation time display */
@@ -96,29 +99,28 @@ namespace voxel_map
 
     std::string map_frame; // frame id of map reference 
     std::string local_map_frame; // frame id of UAV origin
+    std::string camera_frame; // frame id of camera link
+    std::string base_link_frame; // frame id of base_link
   };
 
   /* Dynamic data used during mapping */
   struct MappingData
   {
-    bool has_pose_{false}; // Indicates if pose has been received
-
     // [FIXED]: Camera to body (roll pitch yaw) in degrees
     Eigen::Vector3d cam_to_body_rpy_deg{0.0, 0.0, 0.0};
 
-    // [FIXED]: Homogenous Transformation matrix of fixed map origin to world origin
-    Eigen::Matrix4d world_to_map{Eigen::Matrix4d::Identity(4, 4)};
-
     // [FIXED]: Homogenous Transformation matrix of camera to body frame
     Eigen::Matrix4d cam_to_body{Eigen::Matrix4d::Identity(4, 4)};
-    // DYNAMIC: Homogenous Transformation matrix of body to fixed map
+    
+    // [DYNAMIC]: Homogenous Transformation matrix of body to fixed map
     // NOTE: USE `body_to_map.block<3,1>(0,3)` FOR UAV POSE!
     Eigen::Matrix4d body_to_map{Eigen::Matrix4d::Identity(4, 4)};
-    // DYNAMIC: Homogenous Transformation matrix of camera to fixed map
+    
+    // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map
     //  cam_to_map = cam_to_body * body_to_map
     Eigen::Matrix4d cam_to_map{Eigen::Matrix4d::Identity(4, 4)};
 
-    double last_sensor_msg_time{-1.0}; // True if cloud and odom has timed out
+    double last_cloud_cb_time{-1.0}; // True if cloud and odom has timed out
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -171,16 +173,10 @@ public:
   void initPubSubTimer();
 
   /* Core methods */
-
-  // Get camera-to-global frame transformation
-  void setCamToMapPose(const geometry_msgs::msg::Pose &pose);
   
   // Convert point cloud message to point cloud map, transform it from camera-to-global frame and save it. 
   void pcd2MsgToMap(const sensor_msgs::msg::PointCloud2& msg);
   
-  /* Receives pcd in camera_frame and transforms it to map_frame*/
-  void pcdToVoxelMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_cam_frame);
-
   // Called by planners to update the local map
   void updateLocalMap();
 
@@ -220,11 +216,10 @@ public:
 
   /*Subscriber Callbacks*/
 
-  void resetMapCB(const std_msgs::msg::Empty::SharedPtr msg);
+  void resetMapCB(const std_msgs::msg::Empty::SharedPtr );
 
   // Subscriber callback to point cloud and odom
-  void cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_pc, 
-                    const nav_msgs::msg::Odometry::SharedPtr msg_odom);
+  void cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
   /*Timer Callbacks*/
 
@@ -297,8 +292,6 @@ private:
   // Checks if time elapsed has exceeded a given threshold
   bool isTimeout(const double& last_state_time, const double& threshold);
 
-  // Checks if camera pose is valid
-  bool isPoseValid();
 
   // Takes in position [map_frame] and check if within global map
   bool isInGlobalMap(const Eigen::Vector3d &pos);
@@ -348,8 +341,9 @@ private:
 
   SynchronizerCloudOdom sync_cloud_odom_; // Synchronization policy for cloud and odom topic
   
-  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> cloud_sub_;
-  std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> odom_sub_;
+  // std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> cloud_sub_;
+  // std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> odom_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_map_sub_;
   
@@ -368,7 +362,9 @@ private:
 
   // TF transformation 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; // broadcast tf link from global map frame to local map origin 
- 
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+
   /* Data structures for maps */
   MappingData md_;  // Mapping data
 
@@ -519,37 +515,6 @@ inline bool VoxelMap::isOccupied(const Eigen::Vector3d &pos)
     Bonxai::CoordT coord = bonxai_map_->grid().posToCoord(pos(0), pos(1), pos(2));
 
     return bonxai_map_->isOccupied(coord);
-}
-
-inline bool VoxelMap::isPoseValid() {
-  if (dbg_input_entire_map_){ // If in debug mode, no need to check for valid camera pose
-    return true;
-  }
-
-  if (!md_.has_pose_){
-    logger_->logErrorThrottle(strFmt("No pose/odom received"), 1.0);
-    return false;
-  }
-
-  if (isTimeout(md_.last_sensor_msg_time, 0.5)){
-    logger_->logErrorThrottle(strFmt("Sensor message timeout exceeded 0.5s: (%f, %f)",  
-                                      md_.last_sensor_msg_time, node_->get_clock()->now().seconds()), 1.0);
-    return false;
-  }
-
-	if (md_.cam_to_map.array().isNaN().any()){
-    logger_->logError(strFmt("Camera pose has NAN value"));
-    return false;
-	}
-
-  if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
-  {
-    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
-       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
-    return false;
-  }
-
-  return true;
 }
 
 }  // namespace voxel_map

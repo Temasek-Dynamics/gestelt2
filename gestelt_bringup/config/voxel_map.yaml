@@ -46,14 +46,3 @@
         warn_radius: 0.25  # [m]  Distance to collision to display warning sphere
         fatal_radius: 0.14  # [m] Distance to collision to display fatal sphere
         check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
-
-      camera_to_body: # camera extrinsic parameters 
-        # roll: 90.0
-        # pitch: 180.0
-        # yaw: 90.0
-        roll: 89.53755807
-        pitch: -0.07329627
-        yaw: 110.84079452
-        t_x: -0.07535705  # x translation
-        t_y: -0.05172403  # y translation
-        t_z: 0.03221506  # z translationz

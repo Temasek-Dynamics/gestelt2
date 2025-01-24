@@ -35,8 +35,6 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
                     const int& num_drones) 
 : node_(node)
 {
-  md_.world_to_map.block<3,1>(0,3) = map_origin;
-
 	// Create callback groups
   reentrant_group_ = node_->create_callback_group(
     rclcpp::CallbackGroupType::Reentrant);
@@ -44,6 +42,10 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(node_->get_logger(), node_->get_clock());
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_);
+  tf_buffer_ =
+    std::make_unique<tf2_ros::Buffer>(node_->get_clock());
+  tf_listener_ =
+    std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   initParams();
 
@@ -51,17 +53,13 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
 
   initPubSubTimer();
 
-  tm_update_local_map_.updateID(drone_id_);
-  tm_bonxai_insert_.updateID(drone_id_);
-  tm_slice_map_.updateID(drone_id_);
-
   for (int i = 0; i < num_drones; i++){
     swarm_poses_.push_back(Eigen::Vector3d::Constant(999.9));
     swarm_vels_.push_back(Eigen::Vector3d::Constant(0.0));
   }
 
   if (dbg_input_entire_map_){
-    md_.cam_to_map = md_.world_to_map;
+    md_.cam_to_map.block<3,1>(0,3) = map_origin;
 
     logger_->logInfo(strFmt("DEBUG: INPUT ENTIRE MAP. Waiting for point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
 
@@ -76,6 +74,35 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
     }
     pcd2MsgToMap(pcd_map_msg);
   }
+
+  // Get camera to map frame TF
+  try {
+    auto tf_cam_to_map = tf_buffer_->lookupTransform(
+      mp_.map_frame, mp_.camera_frame,
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+
+      md_.cam_to_map = tf2::transformToEigen(
+        tf_cam_to_map.transform).matrix().cast<double>();
+  } 
+  catch (const tf2::TransformException & ex) {
+		RCLCPP_ERROR(
+			node_->get_logger(), "Could not get transform from camera frame '%s' to map frame '%s': %s",
+			mp_.camera_frame.c_str(), mp_.map_frame.c_str(), ex.what());
+
+    RCLCPP_ERROR(node_->get_logger(), "Shutting down.");
+    rclcpp::shutdown();
+  }
+  if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
+  {
+    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
+       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
+  }
+
+  // initialize timer with drone_id
+  tm_update_local_map_.updateID(drone_id_);
+  tm_bonxai_insert_.updateID(drone_id_);
+  tm_slice_map_.updateID(drone_id_);
 
   // logger_->logInfo(strFmt("Map origin (%f, %f, %f)",  
   //   mp_.global_map_origin_(0), mp_.global_map_origin_(1), mp_.global_map_origin_(2)));
@@ -94,16 +121,18 @@ void VoxelMap::initPubSubTimer()
 {
   /* Initialize Subscribers */
   if (!dbg_input_entire_map_){
-    cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
-      node_, "cloud", rmw_qos_profile_sensor_data);
-    odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(
-      node_, "odom", rmw_qos_profile_sensor_data);
+    // cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
+    //   node_, "cloud", rmw_qos_profile_sensor_data);
+    // odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(
+    //   node_, "odom", rmw_qos_profile_sensor_data);
 
-    sync_cloud_odom_ = std::make_shared<message_filters::Synchronizer<SyncPolicyCloudOdom>>(
-        SyncPolicyCloudOdom(5), *cloud_sub_, *odom_sub_);
-    sync_cloud_odom_->registerCallback(&VoxelMap::cloudOdomCB, this);
-    sync_cloud_odom_->setAgePenalty(0.50);
+    // sync_cloud_odom_ = std::make_shared<message_filters::Synchronizer<SyncPolicyCloudOdom>>(
+    //     SyncPolicyCloudOdom(5), *cloud_sub_, *odom_sub_);
+    // sync_cloud_odom_->registerCallback(&VoxelMap::cloudOdomCB, this);
+    // sync_cloud_odom_->setAgePenalty(0.50);
   }
+  cloud_sub_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+    "cloud", rclcpp::SensorDataQoS(), std::bind(&VoxelMap::cloudCB, this, _1) );
 
   /* Initialize Publishers */
 	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -165,14 +194,6 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".occ_map.max_range", -1.0);
   node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
 
-  /* Camera extrinsic parameters  */
-  node_->declare_parameter(param_ns+".camera_to_body.roll",  0.0);
-  node_->declare_parameter(param_ns+".camera_to_body.pitch", 0.0);
-  node_->declare_parameter(param_ns+".camera_to_body.yaw",   0.0);
-  node_->declare_parameter(param_ns+".camera_to_body.t_x", 0.0);
-  node_->declare_parameter(param_ns+".camera_to_body.t_y", 0.0);
-  node_->declare_parameter(param_ns+".camera_to_body.t_z", 0.0);
-
   /* Collision checking*/
   node_->declare_parameter(param_ns+".collision_check.enable",  false);
   node_->declare_parameter(param_ns+".collision_check.warn_radius",  -1.0); 
@@ -228,14 +249,8 @@ void VoxelMap::initParams()
   /* Frame IDs */
   mp_.map_frame = node_->get_parameter("map_frame").as_string();
   mp_.local_map_frame = node_->get_parameter("local_map_frame").as_string();
-
-  /* Camera extrinsic parameters  */
-  md_.cam_to_body_rpy_deg(0) = node_->get_parameter(param_ns+".camera_to_body.roll").as_double();
-  md_.cam_to_body_rpy_deg(1) = node_->get_parameter(param_ns+".camera_to_body.pitch").as_double();
-  md_.cam_to_body_rpy_deg(2) = node_->get_parameter(param_ns+".camera_to_body.yaw").as_double();
-  md_.cam_to_body.col(3)(0) = node_->get_parameter(param_ns+".camera_to_body.t_x").as_double();
-  md_.cam_to_body.col(3)(1) = node_->get_parameter(param_ns+".camera_to_body.t_y").as_double();
-  md_.cam_to_body.col(3)(2) = node_->get_parameter(param_ns+".camera_to_body.t_z").as_double();
+  mp_.camera_frame = node_->get_parameter("camera_frame").as_string();
+  mp_.base_link_frame = node_->get_parameter("base_link_frame").as_string();
 
   /* Collision checking*/
   check_collisions_ = node_->get_parameter(param_ns+".collision_check.enable").as_bool();
@@ -249,7 +264,6 @@ void VoxelMap::reset(const double& resolution){
 
   // Set up Bonxai data structure
   bonxai_map_ = std::make_unique<BonxaiT>(resolution);
-
   
   // Set up KDTree for collision checks
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
@@ -259,13 +273,6 @@ void VoxelMap::reset(const double& resolution){
   lcl_pcd_fixedmapframe_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcd_in_map_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
-  md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
-
-  // Camera to body transform
-  md_.cam_to_body.block<3, 3>(0, 0) =  
-    (Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(2), Eigen::Vector3d::UnitZ())
-    * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(1), Eigen::Vector3d::UnitY())
-    * Eigen::AngleAxisd((M_PI/180.0) * md_.cam_to_body_rpy_deg(0), Eigen::Vector3d::UnitX())).toRotationMatrix();
 
   // Global map origin is FIXED at a corner of the global map i.e. (-W/2, -L/2, 0)
   mp_.global_map_origin_ = Eigen::Vector3d(
@@ -289,69 +296,38 @@ void VoxelMap::reset(const double& resolution){
   mp_.global_map_num_voxels_ = (mp_.global_map_size_.cwiseProduct(Eigen::Vector3d::Constant(1/mp_.resolution_))).cast<int>();
   mp_.local_map_num_voxels_ = (mp_.local_map_size_.cwiseProduct(Eigen::Vector3d::Constant(1/mp_.resolution_))).cast<int>();
 
+  md_.last_cloud_cb_time = node_->get_clock()->now().seconds();
 }
 
 /* Core methods */
 
-void VoxelMap::setCamToMapPose(const geometry_msgs::msg::Pose &pose)
-{
-  Eigen::Quaterniond map_to_body_q = 
-    Eigen::Quaterniond(pose.orientation.w,
-                        pose.orientation.x,
-                        pose.orientation.y,
-                        pose.orientation.z);
-  // UAV body to map frame
-  md_.body_to_map.block<3, 3>(0, 0) = map_to_body_q.toRotationMatrix();
-  md_.body_to_map.block<3,1>(0,3) << pose.position.x, pose.position.y, pose.position.z;
-
-  // Converts camera to UAV origin frame
-  md_.cam_to_map = md_.cam_to_body * md_.body_to_map;
-
-  md_.has_pose_ = true;
-}
-
 void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
 {
-  /* Bonxai*/
+  // // Input Point cloud is assumed to be in frame id of the sensor
+  // if (msg.data.empty()){
+  //   logger_->logWarnThrottle("Empty point cloud received!", 1.0);
+  //   return;
+  // }
 
-  // Input Point cloud is assumed to be in frame id of the sensor
-  if (!isPoseValid()){
-    return;
-  }
+  // // Get point cloud from ROS message
+  // pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  // pcl::fromROSMsg(msg, *pcd);
 
-  if (msg.data.empty()){
-    // logger_->logWarnThrottle("Empty point cloud received!", 1.0);
-    return;
-  }
+  // // Transform point cloud from camera frame to map_frame (the global reference frame)
+  // pcl::transformPointCloud(*pcd, *pcd_in_map_frame_, md_.cam_to_map);
+  // pcd_in_map_frame_->header.frame_id = mp_.map_frame;
 
-  // Get point cloud from ROS message
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcl::fromROSMsg(msg, *pcd);
+  // // Getting the Translation from the sensor to the Global Reference Frame
+  // const pcl::PointXYZ sensor_origin(
+  //   md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
 
-  // Add point cloud to bonxai_maps_
-  pcdToVoxelMap(pcd);
-}
-
-void VoxelMap::pcdToVoxelMap(const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_cam_frame)
-{
-  // Transform point cloud from camera frame to map_frame (the global reference frame)
-  pcl::transformPointCloud(*pcd_in_cam_frame, *pcd_in_map_frame_, md_.cam_to_map);
-  pcd_in_map_frame_->header.frame_id = mp_.map_frame;
-
-  // Getting the Translation from the sensor to the Global Reference Frame
-  const pcl::PointXYZ sensor_origin(
-    md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
-
-  tm_bonxai_insert_.start();
-  bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
-  tm_bonxai_insert_.stop(false);
+  // tm_bonxai_insert_.start();
+  // // Add point cloud to bonxai_maps_
+  // bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
+  // tm_bonxai_insert_.stop(false);
 }
 
 void VoxelMap::updateLocalMap(){
-
-  if (!isPoseValid()){
-    return;
-  }
 
   // OCCUPIED VALUE: 100
   // FREE VALUE: 0
@@ -506,6 +482,11 @@ void VoxelMap::vizMapTimerCB()
 
 void VoxelMap::updateLocalMapTimerCB()
 {
+  if (isTimeout(md_.last_cloud_cb_time, 0.5)){
+    logger_->logWarnThrottle(strFmt("cloud message timeout exceeded 0.5s: (%f, %f)",  
+                                      md_.last_cloud_cb_time, node_->get_clock()->now().seconds()), 1.0);
+  }
+
   updateLocalMap(); // Update local map voxels
 
   publishOccMap(lcl_pcd_lclmapframe_);
@@ -657,15 +638,10 @@ void VoxelMap::pubLocalMapTFTimerCB()
 
 void VoxelMap::checkCollisionsTimerCB()
 {
-  if (!isPoseValid()){
-    return;
-  }
-  Eigen::Vector3d query_pos = md_.body_to_map.block<3,1>(0,3);
-
   // Get nearest obstacle position
   Eigen::Vector3d occ_nearest;
   double dist_to_obs;
-  // if (!getNearestOccupiedCell(query_pos, occ_nearest, dist_to_obs)){
+  // if (!getNearestOccupiedCell(md_.body_to_map.block<3,1>(0,3), occ_nearest, dist_to_obs)){
   //   return;
   // }
 
@@ -678,18 +654,75 @@ void VoxelMap::checkCollisionsTimerCB()
 
 /** Subscriber callbacks */
 
-void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr msg)
+void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 {
   bonxai_map_ = std::make_unique<BonxaiT>(mp_.resolution_);
   logger_->logWarn("Reset map as requested by user!");
 }
 
-void VoxelMap::cloudOdomCB( const sensor_msgs::msg::PointCloud2::SharedPtr msg_pc, 
-                            const nav_msgs::msg::Odometry::SharedPtr msg_odom)
+void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-  setCamToMapPose(msg_odom->pose.pose);
-  pcd2MsgToMap(*msg_pc);
-  md_.last_sensor_msg_time = node_->get_clock()->now().seconds();
+  logger_->logInfoThrottle("Point cloud received!", 1.0);
+
+  md_.last_cloud_cb_time = node_->get_clock()->now().seconds();
+
+  // Input Point cloud is assumed to be in frame id of the sensor
+  if (msg->data.empty()){
+    logger_->logWarnThrottle("Empty point cloud received!", 1.0);
+    return;
+  }
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  // Get point cloud from ROS message
+  pcl::fromROSMsg(*msg, *pcd);
+
+  // Some code here taken from bonxai_ros/bonxai_server.cpp
+
+  // remove NaN and Inf values
+  size_t filtered_index = 0;
+  for (const auto& point : (*pcd).points) {
+    if (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) {
+      (*pcd).points[filtered_index++] = point;
+    }
+  }
+  (*pcd).resize(filtered_index);
+
+  // Get camera to map frame TF
+  try {
+    auto tf_cam_to_map = tf_buffer_->lookupTransform(
+      mp_.map_frame, mp_.camera_frame,
+      msg->header.stamp,
+      rclcpp::Duration::from_seconds(1.0));
+
+      md_.cam_to_map = tf2::transformToEigen(
+        tf_cam_to_map.transform).matrix().cast<double>();
+  } 
+  catch (const tf2::TransformException & ex) {
+		RCLCPP_ERROR(
+			node_->get_logger(), "Could not get transform from camera frame '%s' to map frame '%s': %s",
+			mp_.camera_frame.c_str(), mp_.map_frame.c_str(), ex.what());
+    return;
+  }
+
+  if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
+  {
+    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary. Skip insertion of point clouds.", 
+       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
+    return;
+  }
+
+  // Transform point cloud from camera frame to map_frame (the global reference frame)
+  pcl::transformPointCloud(*pcd, *pcd_in_map_frame_, md_.cam_to_map);
+  pcd_in_map_frame_->header.frame_id = mp_.map_frame;
+
+  // Getting the Translation from the sensor to the Global Reference Frame
+  const pcl::PointXYZ sensor_origin(
+    md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
+
+  tm_bonxai_insert_.start();
+  // Add point cloud to bonxai_maps_
+  bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
+  tm_bonxai_insert_.stop(false);
 }
 
 /** Publishers */

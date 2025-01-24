@@ -454,6 +454,7 @@ private:
 
   PlanMethod plan_method_; // Enum indicating the planning method
 
+  std::string global_frame_;  // Fixed inertial frame of reference
   std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
 

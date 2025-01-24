@@ -55,7 +55,6 @@ def generate_launch_description():
     base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
     local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
     camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
-    
 
     ''' Get parameter files '''
     traj_server_config = os.path.join(
@@ -125,10 +124,13 @@ def generate_launch_description():
         name=['navigator_', drone_id],
         parameters=[
             {'drone_id': drone_id},
+            {'global_frame': global_frame},
             {'map_frame': map_frame},
             {'local_map_frame': local_map_frame},
-            {'navigator.num_drones': num_drones},
+            {'base_link_frame': base_link_frame},
+            {'camera_frame': camera_frame},
             navigator_cfg,
+            {'navigator.num_drones': num_drones},
             voxel_map_cfg,
         ],
       remappings=[
@@ -300,6 +302,6 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         # mavros_node,
-        fcu_setup_service_calls,
+        # fcu_setup_service_calls,
         # ros2_broker,
     ])

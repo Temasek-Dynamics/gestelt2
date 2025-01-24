@@ -60,10 +60,10 @@ void Navigator::init()
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-  // Get world to map fixed TF
+  // Get global to map frame fixed TF
   try {
     auto tf_world_to_map = tf_buffer_->lookupTransform(
-      map_frame_, "world",
+      map_frame_, global_frame_,
       tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
     // Set fixed map origin
@@ -73,8 +73,8 @@ void Navigator::init()
   } 
   catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(
-			this->get_logger(), "Could not get transform from world_frame('world') to map_frame_(%s): %s",
-			map_frame_.c_str(), ex.what());
+			this->get_logger(), "Could not get transform from global frame '%s' to map frame '%s': %s",
+			global_frame_.c_str(), map_frame_.c_str(), ex.what());
     rclcpp::shutdown();
     return;
   }
@@ -226,13 +226,14 @@ void Navigator::initParams()
 
   this->declare_parameter(param_ns+".planner_recovery_timeout", 5.0);
 
-
   /* Frame ids */
+  this->declare_parameter("global_frame", "world");
   this->declare_parameter("map_frame", "map");
   this->declare_parameter("local_map_frame", "local_map_frame");
+  this->declare_parameter("camera_frame", "camera_frame");
+  this->declare_parameter("base_link_frame", "base_link_frame");
 
   /* Space time A* planner */
-
   this->declare_parameter(param_ns+".planner.goal_tolerance", 0.1);
   this->declare_parameter(param_ns+".planner.verbose_print", false);
   this->declare_parameter(param_ns+".planner.plan_once", false);
@@ -306,6 +307,7 @@ void Navigator::initParams()
   plan_method_ = getPlanMethod(this->get_parameter(param_ns+".plan_method").as_int());
 
   /* Frame ids */
+  global_frame_ = this->get_parameter("global_frame").as_string();
   map_frame_ = this->get_parameter("map_frame").as_string();
   local_map_frame_ = this->get_parameter("local_map_frame").as_string();
 
@@ -985,11 +987,10 @@ void Navigator::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int i
     // Set fixed map origin
     pose(0) += tf.transform.translation.x;
     pose(1) += tf.transform.translation.y;
-    
   } 
   catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(
-			this->get_logger(), "Could not get transform from agent(%s) to map_frame_(%s): %s",
+			this->get_logger(), "Could not get transform from map frame '%s' to agent frame '%s': %s",
 			msg->header.frame_id.c_str(), map_frame_.c_str(), ex.what());
     return;
   }
