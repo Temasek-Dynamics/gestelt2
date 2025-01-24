@@ -75,29 +75,29 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
     pcd2MsgToMap(pcd_map_msg);
   }
 
-  // Get camera to map frame TF
-  try {
-    auto tf_cam_to_map = tf_buffer_->lookupTransform(
-      mp_.map_frame, mp_.camera_frame,
-      tf2::TimePointZero,
-      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+  // // Get camera to map frame TF
+  // try {
+  //   auto tf_cam_to_map = tf_buffer_->lookupTransform(
+  //     mp_.map_frame, mp_.camera_frame,
+  //     tf2::TimePointZero,
+  //     tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
 
-      md_.cam_to_map = tf2::transformToEigen(
-        tf_cam_to_map.transform).matrix().cast<double>();
-  } 
-  catch (const tf2::TransformException & ex) {
-		RCLCPP_ERROR(
-			node_->get_logger(), "Could not get transform from camera frame '%s' to map frame '%s': %s",
-			mp_.camera_frame.c_str(), mp_.map_frame.c_str(), ex.what());
+  //     md_.cam_to_map = tf2::transformToEigen(
+  //       tf_cam_to_map.transform).matrix().cast<double>();
+  // } 
+  // catch (const tf2::TransformException & ex) {
+	// 	RCLCPP_ERROR(
+	// 		node_->get_logger(), "Could not get transform from camera frame '%s' to map frame '%s': %s",
+	// 		mp_.camera_frame.c_str(), mp_.map_frame.c_str(), ex.what());
 
-    RCLCPP_ERROR(node_->get_logger(), "Shutting down.");
-    rclcpp::shutdown();
-  }
-  if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
-  {
-    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
-       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
-  }
+  //   RCLCPP_ERROR(node_->get_logger(), "Shutting down.");
+  //   rclcpp::shutdown();
+  // }
+  // if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
+  // {
+  //   logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary", 
+  //      md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
+  // }
 
   // initialize timer with drone_id
   tm_update_local_map_.updateID(drone_id_);
@@ -353,7 +353,7 @@ void VoxelMap::updateLocalMap(){
   std::vector<Bonxai::CoordT> occ_coords;
   bonxai_map_->getOccupiedVoxels(occ_coords);
   if (occ_coords.size() <= 1){ // Empty map
-    logger_->logWarnThrottle("Bonxai map is empty!", 1.0);
+    logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
     return;
   }
 
@@ -662,8 +662,6 @@ void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 
 void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-  logger_->logInfoThrottle("Point cloud received!", 1.0);
-
   md_.last_cloud_cb_time = node_->get_clock()->now().seconds();
 
   // Input Point cloud is assumed to be in frame id of the sensor
