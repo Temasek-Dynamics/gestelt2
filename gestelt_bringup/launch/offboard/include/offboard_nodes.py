@@ -170,13 +170,6 @@ def generate_launch_description():
     #     ],
     # )
 
-    # ros2_broker = ExecuteProcess(
-    #   cmd=[os.path.join('/ros_zenoh_exchange', 'ros2_broker')],
-    #   name=['ros2_broker_', drone_id],
-    #   shell=False,
-    #   emulate_tty=True,
-    # )
-
     '''Mavlink/Mavros'''
     # fcu_addr =  PythonExpression(['14540 +', drone_id])
     # # fcu_port =  PythonExpression(['14580 +', drone_id])
@@ -209,44 +202,6 @@ def generate_launch_description():
       ],
     )
 
-
-    # # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
-    # set_imu_stream = ExecuteProcess(
-    #     cmd=[[
-    #         FindExecutable(name='ros2'),
-    #         " service call ",
-    #         "/mavros/set_stream_rate ",
-    #         "mavros_msgs/srv/StreamRate ",
-    #         '"{stream_id: 0, message_rate: 15, on_off: true}"',
-    #     ]],
-    #     shell=True
-    # )
-
-    # # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
-    # mavcmd1 = ExecuteProcess(
-    #     cmd=[[
-    #         FindExecutable(name='ros2'),
-    #         " run ",
-    #         "mavros ",
-    #         "mav ",
-    #         "cmd ",
-    #         "long 511 105 3000 0 0 0 0 0",
-    #     ]],
-    #     shell=True
-    # )
-
-    # # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-    # mavcmd2 = ExecuteProcess(
-    #     cmd=[[
-    #         FindExecutable(name='ros2'),
-    #         " run ",
-    #         "mavros ",
-    #         "mav ",
-    #         "cmd ",
-    #         "long 511 32 33333 0 0 0 0 0",
-    #     ]],
-    #     shell=True
-    # )
 
     # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
     # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
@@ -301,7 +256,6 @@ def generate_launch_description():
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge
-        # mavros_node,
-        # fcu_setup_service_calls,
-        # ros2_broker,
+        mavros_node,
+        fcu_setup_service_calls,
     ])
