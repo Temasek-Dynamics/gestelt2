@@ -95,7 +95,7 @@ def generate_launch_description():
                        executable = "static_transform_publisher",
                        output="log",
                       arguments = ["0", "0", "0", "0", "0", "0", 
-                                  'world', 'map'])
+                                  'world', global_frame])
 
     # Publish TF for map to fixed drone origin
     # This is necessary because PX4 SITL is not able to change it's initial starting position

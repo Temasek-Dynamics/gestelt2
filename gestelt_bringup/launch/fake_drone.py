@@ -58,13 +58,11 @@ def generate_launch_description():
     )
 
     '''Frames'''
-    # map_frame = ["d", drone_id, "_origin"]
-    map_frame = "world"
-    local_map_frame = ["d", drone_id, "_lcl_map"]
-    base_link_frame = ["d", drone_id, "_base_link"]
-    camera_frame = ["d", drone_id, "_camera_link"]
-
-    cloud_topic = ["/d", drone_id, "/cloud"]
+    global_frame = 'map' # Fixed
+    map_frame = ['d', drone_id, '_origin'] # Fixed
+    base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
+    local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
+    camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
 
     ''' Get parameter files '''
     traj_server_config = os.path.join(
@@ -97,16 +95,26 @@ def generate_launch_description():
     """Nodes"""
     # Publish TF for map to fixed drone origin
     # This is necessary because PX4 SITL is not able to change it's initial starting position
-    # drone_origin_tf = Node(package = "tf2_ros", 
-    #                    executable = "static_transform_publisher",
-    #                   arguments = [init_x, init_y, "0", "0", "0", "0", 
-    #                           "world", map_frame])
+    world_to_map_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                       output="log",
+                      arguments = ["0", "0", "0", "0", "0", "0", 
+                                  'world', global_frame])
+    
+    # Publish TF for map to fixed drone origin
+    # This is necessary because PX4 SITL is not able to change it's initial starting position
+    drone_origin_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                       output="log",
+                      arguments = [init_x, init_y, "0", "0", "0", "0", 
+                                  global_frame, map_frame])
 
     # drone base_link to sensor fixed TF
     camera_link_tf = Node(package = "tf2_ros", 
                           executable = "static_transform_publisher",
                           output = "log",
-                          arguments = ["0", "0", "0", "0", "0", "0", base_link_frame, camera_frame])
+                          arguments = ["0", "0", "0", "0", "0", "0", 
+                                       base_link_frame, camera_frame])
 
     ''' Fake drone without dynamics '''
     fake_drone_node = Node(
@@ -118,10 +126,15 @@ def generate_launch_description():
         parameters = [
             fake_drone_cfg,
             {'fake_drone.drone_id': drone_id},
-            {'fake_drone.init_x': init_x},
-            {'fake_drone.init_y': init_y},
+            {'fake_drone.map_frame': map_frame},
+            {'fake_drone.base_link_frame': base_link_frame},
+            {'fake_drone.init_x': 0.0},
+            {'fake_drone.init_y': 0.0},
             {'fake_drone.init_yaw': init_yaw},
-        ]
+        ],
+        remappings=[
+          ('mavros/local_position/odom', ['odom']),
+        ],
     )
 
     ''' Planner module '''
@@ -133,30 +146,16 @@ def generate_launch_description():
         name='navigator',
         parameters=[
             {'drone_id': drone_id},
+            {'global_frame': global_frame},
             {'map_frame': map_frame},
             {'local_map_frame': local_map_frame},
-            {'navigator.num_drones': num_drones},
+            {'base_link_frame': base_link_frame},
+            {'camera_frame': camera_frame},
             navigator_cfg,
+            {'navigator.num_drones': num_drones},
             voxel_map_cfg,
         ],
     )
-
-    # ''' Octomap mapping module '''
-    # octomap_mapping_node = Node(
-    #     package='octomap_server',
-    #     executable='octomap_server_node',
-    #     name='octomap_server',
-    #     output='log',
-    #     shell=False,
-    #     parameters=[
-    #         {'resolution': 0.1},
-    #         {'frame_id': map_frame},
-    #         {'sensor_model.max_range': 5.0},
-    #     ],
-    #     remappings=[
-    #         ('cloud_in', cloud_topic),
-    #     ],
-    # )
 
     ''' Trajectory server for executing trajectories '''
     trajectory_server = Node(
@@ -199,13 +198,13 @@ def generate_launch_description():
         fake_map_pcd_filepath_launch_arg,
         num_drones_arg,
         # Static transforms
-        # drone_origin_tf,
+        world_to_map_tf,
+        drone_origin_tf,
         camera_link_tf,
         # Nodes
         fake_sensor,
         navigator_node,
         trajectory_server,
-        # octomap_mapping_node,
         # Drone simulation instance
         fake_drone_node,
     ])

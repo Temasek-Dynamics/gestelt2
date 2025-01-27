@@ -38,8 +38,6 @@ TrajectoryServer::TrajectoryServer()
 
 	geofence_ = std::make_unique<Geofence>(logger_);
 
-	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
-
 	initParams();
 
 	// start UAV state machine

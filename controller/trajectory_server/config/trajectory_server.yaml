@@ -10,12 +10,18 @@
     safety:
       navigator_state_timeout: 0.5  # [s] Timeout for navigator heartbeat
       geofence: # [m] Geofence around world origin
-        min_x: -18.0
-        min_y: -18.0
+        # min_x: -18.0
+        # min_y: -18.0
+        # min_z: 0.45
+        # max_x: 18.0
+        # max_y: 18.0
+        # max_z: 4.5
+        min_x: -100.0
+        min_y: -100.0
         min_z: 0.45
-        max_x: 18.0
-        max_y: 18.0
-        max_z: 4.5
+        max_x: 100.0
+        max_y: 100.0
+        max_z: 6.0
 
     # Frequency for timers
     set_offb_ctrl_freq: 5.0  #[ Hz] Offboard control mode publish frequency

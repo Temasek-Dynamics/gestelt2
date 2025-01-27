@@ -13,7 +13,9 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend> rclcpp </depend>
-  <depend> px4_msgs </depend>
+  <depend> mavros_msgs </depend>
+  <depend> nav_msgs </depend>
+  <depend> tf2_ros </depend>
 
   <export>
     <build_type>ament_cmake</build_type>

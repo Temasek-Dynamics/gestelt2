@@ -34,8 +34,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <tf2_ros/transform_broadcaster.h>
-
 #include <std_msgs/msg/empty.hpp>
 #include <std_msgs/msg/float32.hpp>
 
@@ -193,9 +191,6 @@ private:
 
 	/* Service Server */
 	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
-
-	/* TF */
-	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; 
 
 	/* Params */
 	int drone_id_{0};

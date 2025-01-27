@@ -21,7 +21,6 @@ set(ROS_LIBRABRIES
 	# builtin_interfaces
 	rclcpp
 	rclpy
-	tf2_ros
 	geometry_msgs
 	mavros_msgs
 	nav_msgs
@@ -66,7 +65,6 @@ target_include_directories(frame_transforms PUBLIC
 add_executable(trajectory_server_node src/trajectory_server.cpp src/uavsm.cpp)
 ament_target_dependencies(trajectory_server_node 
 	rclcpp 
-	tf2_ros
 	Eigen3
 	geometry_msgs
 	nav_msgs

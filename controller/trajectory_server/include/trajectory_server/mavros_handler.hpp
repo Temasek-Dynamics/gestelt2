@@ -26,8 +26,6 @@
 #ifndef MAVROS_HANDLER_HPP_
 #define MAVROS_HANDLER_HPP_
 
-#include <chrono>
-
 #include <rclcpp/rclcpp.hpp>
 
 #include <mavros_msgs/msg/position_target.hpp>
@@ -38,8 +36,6 @@
 #include <rclcpp/wait_for_message.hpp>
 
 #include <nav_msgs/msg/odometry.hpp>
-
-#include <std_msgs/msg/bool.hpp>
 
 #include <Eigen/Eigen>
 

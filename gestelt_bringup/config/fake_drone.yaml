@@ -1,4 +1,5 @@
 /**: 
   ros__parameters:
     fake_drone:
-      state_update_frequency: 50.0  # [Hz] Frequency at which state is published
+      state_update_frequency: 2.0  # [Hz] Frequency at which state is published
+      odom_update_frequency: 30.0  # [Hz] Frequency at which odometry is published

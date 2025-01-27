@@ -169,7 +169,7 @@ class ScenarioGenerator:
 
         filepath = os.path.join(
             os.path.expanduser("~"), 
-            'gestelt_ws/src/Gestelt2/gestelt_mission/scenarios',
+            'gestelt_ws/src/gestelt2/gestelt_mission/scenarios',
             filename
         )
 
@@ -180,22 +180,22 @@ class ScenarioGenerator:
 def main():
     scene_gen = ScenarioGenerator(take_off_height=1.5, visualize=True)
 
-    # scene_gen.antipodalSwap(
-    #     radius = 8.0, 
-    #     num_agents = 4,
-    #     goal_z = 1.5,
-    #     name = "antipodal_swap_8", 
-    #     map_name = "forest_dense", 
-    # )
-
-    scene_gen.forwardFlight(
-        m_size_x = 25.0, 
-        m_size_y = 50.0,
-        num_agents = 16,
+    scene_gen.antipodalSwap(
+        radius = 8.0, 
+        num_agents = 10,
         goal_z = 1.5,
-        name = "forward_flight_16", 
-        map_name = "long_forest_sparse_50x25", 
+        name = "antipodal_swap_10", 
+        map_name = "forest_sparse_10x10", 
     )
+
+    # scene_gen.forwardFlight(
+    #     m_size_x = 25.0, 
+    #     m_size_y = 50.0,
+    #     num_agents = 10,
+    #     goal_z = 1.5,
+    #     name = "forward_flight_10", 
+    #     map_name = "long_forest_sparse_50x25", 
+    # )
 
     scene_gen.saveJSON(
         filename="new_scenarios.json"

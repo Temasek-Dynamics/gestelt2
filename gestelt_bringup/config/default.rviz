@@ -4,18 +4,24 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /TF1
         - /TF1/Frames1
         - /d01
         - /d01/maps1
-        - /d01/cloud1
+        - /d01/maps1/3d_occ_map1
+        - /d11
         - /d11/front_end1
+        - /d21
         - /d21/maps1/occ1
+        - /d31
         - /d31/maps1/voro1/voro_map_1501
+        - /d41
+        - /d51
+        - /d61
+        - /d71
         - /d71/state1/odom1
         - /d71/state1/odom_ax1
-        - /d71/front_end1
-        - /d71/back_end1
+        - /d81
+        - /d91
       Splitter Ratio: 0.4913151264190674
     Tree Height: 707
   - Class: rviz_common/Selection
@@ -35,7 +41,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: fake_map
 Visualization Manager:
   Class: ""
   Displays:
@@ -65,48 +71,21 @@ Visualization Manager:
       Reference Frame: map
       Value: false
     - Class: rviz_default_plugins/TF
-      Enabled: true
+      Enabled: false
       Filter (blacklist): ""
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_link:
-          Value: false
-        base_link_frd:
-          Value: false
-        d0_base_link:
-          Value: true
-        d0_camera_link:
-          Value: true
-        d0_origin:
-          Value: false
-        map:
-          Value: false
-        map_ned:
-          Value: false
-        odom:
-          Value: false
-        odom_ned:
-          Value: false
-        world:
-          Value: false
       Marker Scale: 0.5
       Name: TF
       Show Arrows: false
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          map:
-            d0_origin:
-              d0_base_link:
-                d0_camera_link:
-                  {}
-            map_ned:
-              {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Class: rviz_common/Group
       Displays:
         - Class: rviz_default_plugins/Marker
@@ -134,7 +113,7 @@ Visualization Manager:
           Color: 154; 153; 150
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -154,8 +133,8 @@ Visualization Manager:
             Value: /fake_map
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
-      Enabled: false
+          Value: true
+      Enabled: true
       Name: central
     - Class: rviz_common/Group
       Displays:
@@ -178,7 +157,7 @@ Visualization Manager:
                   Scale: 1
                   Value: true
                 Value: true
-              Enabled: false
+              Enabled: true
               Keep: 1
               Name: odom_ax
               Position Tolerance: 0.009999999776482582
@@ -198,8 +177,8 @@ Visualization Manager:
                 Filter size: 10
                 History Policy: System Default
                 Reliability Policy: Best Effort
-                Value: /odom
-              Value: false
+                Value: /d0/odom
+              Value: true
             - Alpha: 1
               Axes Length: 1
               Axes Radius: 0.10000000149011612
@@ -221,10 +200,10 @@ Visualization Manager:
                 Value: /d0/pose
               Value: false
             - Class: rviz_default_plugins/Marker
-              Enabled: false
+              Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -232,7 +211,7 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /d0/agent_id_text
-              Value: false
+              Value: true
           Enabled: true
           Name: state
         - Class: rviz_common/Group
@@ -241,7 +220,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                {}
+                plan_req_viz: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -254,7 +233,9 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                {}
+                fe_path_lines: true
+                fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -308,7 +289,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /d0/mpc/traj
               Value: true
-          Enabled: false
+          Enabled: true
           Name: back_end
         - Class: rviz_common/Group
           Displays:
@@ -341,7 +322,7 @@ Visualization Manager:
                 Durability Policy: Volatile
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /occ_map
+                Value: /d0/occ_map
               Use Fixed Frame: true
               Use rainbow: true
               Value: true
@@ -712,7 +693,7 @@ Visualization Manager:
           Color: 26; 95; 180
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -732,9 +713,9 @@ Visualization Manager:
             Value: /visbot_itof/point_cloud
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -745,11 +726,11 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d0/static_collisions
-          Value: true
+          Value: false
         - Alpha: 0.10000000149011612
           BoundColor: 153; 193; 241
           Class: decomp_rviz_plugins/PolyhedronArray
-          Enabled: true
+          Enabled: false
           MeshColor: 0; 170; 255
           Name: sfc
           Scale: 0.10000000149011612
@@ -761,7 +742,7 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d0/sfc
-          Value: true
+          Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
       Enabled: true
@@ -1374,7 +1355,7 @@ Visualization Manager:
                 Value: /d1/voro_planning_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
         - Alpha: 1
           Autocompute Intensity Bounds: true
@@ -1410,7 +1391,7 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -1421,8 +1402,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d1/static_collisions
-          Value: true
-      Enabled: false
+          Value: false
+      Enabled: true
       Name: d1
     - Class: rviz_common/Group
       Displays:
@@ -2027,7 +2008,7 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -2038,8 +2019,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d2/static_collisions
-          Value: true
-      Enabled: false
+          Value: false
+      Enabled: true
       Name: d2
     - Class: rviz_common/Group
       Displays:
@@ -2608,7 +2589,7 @@ Visualization Manager:
                 Value: /d3/voro_planning_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
         - Alpha: 1
           Autocompute Intensity Bounds: true
@@ -2644,7 +2625,7 @@ Visualization Manager:
           Use rainbow: true
           Value: false
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -2655,8 +2636,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d3/static_collisions
-          Value: true
-      Enabled: false
+          Value: false
+      Enabled: true
       Name: d3
     - Class: rviz_common/Group
       Displays:
@@ -2918,10 +2899,10 @@ Visualization Manager:
                 Value: /d4/voro_map_150_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -2932,8 +2913,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d4/static_collisions
-          Value: true
-      Enabled: false
+          Value: false
+      Enabled: true
       Name: d4
     - Class: rviz_common/Group
       Displays:
@@ -3195,10 +3176,10 @@ Visualization Manager:
                 Value: /d5/voro/occ_map_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -3209,11 +3190,11 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d5/static_collisions
-          Value: true
+          Value: false
         - Alpha: 0.10000000149011612
           BoundColor: 153; 193; 241
           Class: decomp_rviz_plugins/PolyhedronArray
-          Enabled: true
+          Enabled: false
           MeshColor: 0; 170; 255
           Name: sfc
           Scale: 0.10000000149011612
@@ -3225,10 +3206,10 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d5/sfc
-          Value: true
+          Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: false
+      Enabled: true
       Name: d5
     - Class: rviz_common/Group
       Displays:
@@ -3506,7 +3487,7 @@ Visualization Manager:
           Enabled: false
           Name: maps
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -3517,8 +3498,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d6/static_collisions
-          Value: true
-      Enabled: false
+          Value: false
+      Enabled: true
       Name: d6
     - Class: rviz_common/Group
       Displays:
@@ -3783,7 +3764,7 @@ Visualization Manager:
           Enabled: false
           Name: maps
         - Class: rviz_default_plugins/Marker
-          Enabled: true
+          Enabled: false
           Name: static_collisions
           Namespaces:
             {}
@@ -3794,8 +3775,8 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Reliable
             Value: /d7/static_collisions
-          Value: true
-      Enabled: false
+          Value: false
+      Enabled: true
       Name: d7
     - Class: rviz_common/Group
       Displays:
@@ -3977,9 +3958,9 @@ Visualization Manager:
                 Value: /d8/voro/occ_map_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
-      Enabled: false
+      Enabled: true
       Name: d8
     - Class: rviz_common/Group
       Displays:
@@ -4161,9 +4142,9 @@ Visualization Manager:
                 Value: /d9/voro/occ_map_updates
               Use Timestamp: false
               Value: false
-          Enabled: true
+          Enabled: false
           Name: maps
-      Enabled: false
+      Enabled: true
       Name: d9
   Enabled: true
   Global Options:
@@ -4211,25 +4192,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 15.876510620117188
+      Distance: 17.901498794555664
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.7040975093841553
-        Y: -0.2516058683395386
-        Z: -1.7881393432617188e-06
+        X: 6.111302852630615
+        Y: -0.440549373626709
+        Z: 4.3489024392329156e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9297985434532166
+      Pitch: 0.2197972685098648
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.4721391201019287
+      Yaw: 5.167148590087891
     Saved: ~
 Window Geometry:
   Displays:
