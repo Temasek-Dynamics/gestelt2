@@ -76,14 +76,11 @@ namespace voxel_map
   {
     // Local and global map are bounded 3d boxes
     Eigen::Vector3d global_map_origin_; // Origin of map (Set to be the corner of the map)
-    Eigen::Vector3d local_map_origin_; // Origin of local map (Set to be the corner of the map)
+    Eigen::Vector3d local_map_origin_; // Origin of local map (Set to be the corner of the map) w.r.t map frame
     Eigen::Vector3d local_map_max_; // max position of local map (Set to be the corner of the map)
     
     Eigen::Vector3d global_map_size_; //  Size of global occupancy map  (m)
     Eigen::Vector3d local_map_size_; //  Size of local occupancy map (m)
-
-    Eigen::Vector3i global_map_num_voxels_; //  Size of global occupancy grid (no. of voxels)
-    Eigen::Vector3i local_map_num_voxels_; //  Size of local occupancy grid (no. of voxels)
 
     double resolution_;   // Also defined as the size of each individual voxel                 
     double agent_inflation_;    // [Comm-less] Dynamic obstacle Inflation in units of meters
@@ -97,8 +94,8 @@ namespace voxel_map
     /* visualization and computation time display */
     double ground_height_; // Lowest possible height (z-axis)
 
-    std::string map_frame; // frame id of map reference 
-    std::string local_map_frame; // frame id of UAV origin
+    std::string global_map_frame; // frame id of global map reference 
+    std::string local_map_frame; // frame id of UAV origin 
     std::string camera_frame; // frame id of camera link
     std::string base_link_frame; // frame id of base_link
   };
@@ -112,13 +109,15 @@ namespace voxel_map
     // [FIXED]: Homogenous Transformation matrix of camera to body frame
     Eigen::Matrix4d cam_to_body{Eigen::Matrix4d::Identity(4, 4)};
     
-    // [DYNAMIC]: Homogenous Transformation matrix of body to fixed map
+    // [DYNAMIC]: Homogenous Transformation matrix of body to fixed map frame
     // NOTE: USE `body_to_map.block<3,1>(0,3)` FOR UAV POSE!
     Eigen::Matrix4d body_to_map{Eigen::Matrix4d::Identity(4, 4)};
     
-    // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map
+    // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map frame
     //  cam_to_map = cam_to_body * body_to_map
     Eigen::Matrix4d cam_to_map{Eigen::Matrix4d::Identity(4, 4)};
+
+    Eigen::Matrix4d map_to_cam{Eigen::Matrix4d::Identity(4, 4)};
 
     double last_cloud_cb_time{-1.0}; // True if cloud and odom has timed out
 
@@ -269,11 +268,6 @@ public:
   Eigen::Vector3d getLocalMapOrigin(const double& offset) const;
   Eigen::Vector3d getLocalMapMax(const double& offset) const;
 
-  // Get number of voxels in global map
-  Eigen::Vector3i getGlobalMapNumVoxels() const;
-
-  // Get number of voxels in local map
-  Eigen::Vector3i getLocalMapNumVoxels() const;
 
   // Get points in local map (in fixed map frame). Used by safe flight corridor generation
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLclObsPts();
@@ -283,7 +277,7 @@ public:
 
   bool getBoolMap3D(BoolMap3D& bool_map_3d);
 
-  // Takes in position [map_frame] and check if occupied
+  // Takes in position in [global_map_frame] and check if occupied
   bool isOccupied(const Eigen::Vector3d &pos);
 
 /* Checks */
@@ -293,10 +287,10 @@ private:
   bool isTimeout(const double& last_state_time, const double& threshold);
 
 
-  // Takes in position [map_frame] and check if within global map
+  // Takes in position [global_map_frame] and check if within global map
   bool isInGlobalMap(const Eigen::Vector3d &pos);
 
-  // Takes in position [map_frame] and check if within local map
+  // Takes in position [global_map_frame] and check if within local map
   bool isInLocalMap(const Eigen::Vector3d &pos);
 
 
@@ -428,11 +422,6 @@ inline Eigen::Vector3d VoxelMap::getLocalMapOrigin(const double& offset) const{
 inline Eigen::Vector3d VoxelMap::getLocalMapMax(const double& offset) const{ 
   return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); }
 
-inline Eigen::Vector3i VoxelMap::getGlobalMapNumVoxels() const { 
-  return mp_.global_map_num_voxels_; }
-
-inline Eigen::Vector3i VoxelMap::getLocalMapNumVoxels() const { 
-  return mp_.local_map_num_voxels_; }
 
 inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VoxelMap::getLclObsPts(){
   std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
