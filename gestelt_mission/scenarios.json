@@ -358,7 +358,7 @@
         1.5
       ]
     ]
-  },
+  }, 
   "forward_flight_10_sparse": {
     "description": "",
     "map": "long_forest_sparse_50x25",

@@ -15,7 +15,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace
+from launch_ros.actions import Node, PushROSNamespace, SetParameter
 
 SCENARIO_NAME = "vicon_3"
 
@@ -90,13 +90,22 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
       actions=[
         #   PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
+          SetParameter("use_sim_time", "true"),
         ]
     )
+
+
+
 
 def generate_launch_description():
     
     scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
       SCENARIO_NAME
+    )
+
+    rviz_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'default.rviz'
     )
 
     '''ROS parameters'''
@@ -109,29 +118,34 @@ def generate_launch_description():
     offboard_nodes = generateSITLDrone(
             0, scenario.spawns_pos[0], fake_map_pcd_filepath, scenario.num_agents)
         
+
+    # RVIZ Visualization
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        output='log',
+        shell=False,
+        arguments=['-d' + rviz_cfg]
+    )
+
     # ROSBag 
-    bag_topics = []
-    bag_topics.append("/odom")
-    # Subscription to 3d occupancy voxel map
-    bag_topics.append("/occ_map")
-    # Subscription to point clouds
-    bag_topics.append("/visbot_itof/point_cloud")
-    bag_topics.append("/rosout")
-    bag_topics.append("/tf")
+    name = "antipodal_8"
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
-        'bag_' + datetime.now().strftime("%d%m%Y_%H_%M_%S"),
+        name + '/' + name + '_0.mcap',
     )
 
-    rosbag_record = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', 
-            '--use-sim-time', 
-            '-o', bag_file, *bag_topics],
-        output='log'
+    rosbag_player = ExecuteProcess(
+        cmd=['ros2', 'bag', 'play',
+             bag_file],
+        output='screen'
     )
 
     return LaunchDescription([
         offboard_nodes,
-        rosbag_record,
+        # Visualization
+        rviz_node,
+        # rosbag 
+        rosbag_player,
     ])
