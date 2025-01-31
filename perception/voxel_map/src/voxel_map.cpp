@@ -675,6 +675,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
   }
   
   cloud_msg.header.stamp = node_->get_clock()->now();
+  cloud_msg.header.frame_id = mp_.local_map_frame;
 
   occ_map_pub_->publish(cloud_msg);
 }
