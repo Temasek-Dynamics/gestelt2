@@ -117,7 +117,6 @@ def generate_launch_description():
 
     rosbag_record = ExecuteProcess(
         cmd=['ros2', 'bag', 'record', 
-            '--use-sim-time', 
             '-o', bag_file, *bag_topics],
         output='log'
     )

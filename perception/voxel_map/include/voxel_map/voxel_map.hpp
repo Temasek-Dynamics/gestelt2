@@ -105,21 +105,14 @@ namespace voxel_map
   /* Dynamic data used during mapping */
   struct MappingData
   {
-    // [FIXED]: Camera to body (roll pitch yaw) in degrees
-    Eigen::Vector3d cam_to_body_rpy_deg{0.0, 0.0, 0.0};
-
-    // [FIXED]: Homogenous Transformation matrix of camera to body frame
-    Eigen::Matrix4d cam_to_body{Eigen::Matrix4d::Identity(4, 4)};
-    
-    // [DYNAMIC]: Homogenous Transformation matrix of body to fixed map frame
-    // NOTE: USE `body_to_map.block<3,1>(0,3)` FOR UAV POSE!
-    Eigen::Matrix4d body_to_map{Eigen::Matrix4d::Identity(4, 4)};
-    
     // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map frame
-    //  cam_to_map = cam_to_body * body_to_map
     Eigen::Matrix4d cam_to_map{Eigen::Matrix4d::Identity(4, 4)};
 
+    // Inverse of cam_to_map
     Eigen::Matrix4d map_to_cam{Eigen::Matrix4d::Identity(4, 4)};
+
+    // [DYNAMIC]: Homogenous Transformation matrix of fixed map to base_link
+    Eigen::Matrix4d map_to_bl{Eigen::Matrix4d::Identity(4, 4)};
 
     double last_cloud_cb_time{-1.0}; // True if cloud and odom has timed out
 
@@ -312,7 +305,8 @@ private:
   rclcpp::Node::SharedPtr node_;
 
 	/* Callback groups */
-	rclcpp::CallbackGroup::SharedPtr reentrant_group_;
+	rclcpp::CallbackGroup::SharedPtr mapping_group_;
+	rclcpp::CallbackGroup::SharedPtr tf_broadcast_group_;
 
   /* Params */
   int drone_id_{0}; //Drone ID

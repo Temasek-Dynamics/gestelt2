@@ -36,8 +36,12 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
 : node_(node)
 {
 	// Create callback groups
-  reentrant_group_ = node_->create_callback_group(
-    rclcpp::CallbackGroupType::Reentrant);
+
+  mapping_group_ = node_->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+
+  tf_broadcast_group_ = node_->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
 
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(node_->get_logger(), node_->get_clock());
 
@@ -76,9 +80,9 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
   }
 
   // initialize timer with drone_id
-  tm_update_local_map_.updateID(drone_id_);
-  tm_bonxai_insert_.updateID(drone_id_);
-  tm_slice_map_.updateID(drone_id_);
+  // tm_update_local_map_.updateID(drone_id_);
+  // tm_bonxai_insert_.updateID(drone_id_);
+  // tm_slice_map_.updateID(drone_id_);
 
 }
 
@@ -117,9 +121,9 @@ void VoxelMap::initPubSubTimer()
 	// viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
   //   std::bind(&VoxelMap::vizMapTimerCB, this), reentrant_group_);
 	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
-    std::bind(&VoxelMap::updateLocalMapTimerCB, this), reentrant_group_);
+    std::bind(&VoxelMap::updateLocalMapTimerCB, this), mapping_group_);
 	pub_lcl_map_tf_timer_ = node_->create_wall_timer((1.0/100.0) *1000ms, 
-    std::bind(&VoxelMap::pubLocalMapTFTimerCB, this), reentrant_group_);
+    std::bind(&VoxelMap::pubLocalMapTFTimerCB, this), tf_broadcast_group_);
 
   if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
     // Publisher for collision visualizations
@@ -272,21 +276,35 @@ void VoxelMap::reset(const double& resolution){
 
 void VoxelMap::updateLocalMap(){
 
-  // OCCUPIED VALUE: 100
-  // FREE VALUE: 0
-  // UNKNOWN VALUE: -1
+  try {
+    // map to base_link
+    auto tf_map_to_bl = tf_buffer_->lookupTransform(
+      mp_.base_link_frame, mp_.global_map_frame,
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
 
-  // Update local map origin, which is the location of the local map origin IN the map frame
+    md_.map_to_bl = tf2::transformToEigen(
+      tf_map_to_bl.transform).matrix().cast<double>();
+
+  } 
+  catch (const tf2::TransformException & ex) {
+		RCLCPP_ERROR(
+			node_->get_logger(), "Could not get transform from camera frame '%s' to map frame '%s': %s",
+			mp_.camera_frame.c_str(), mp_.global_map_frame.c_str(), ex.what());
+    return;
+  }
+
+  // Update local map origin, which is the location of the local map origin IN the global map frame
   mp_.local_map_origin_ = Eigen::Vector3d(
-    md_.map_to_cam.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
-    md_.map_to_cam.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
-    md_.map_to_cam.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
+    md_.map_to_bl.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
+    md_.map_to_bl.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
+    md_.map_to_bl.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
 
   // Update local map max position based on current UAV position
   mp_.local_map_max_ = Eigen::Vector3d(
-    md_.map_to_cam.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
-    md_.map_to_cam.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
-    md_.map_to_cam.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
+    md_.map_to_bl.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
+    md_.map_to_bl.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
+    md_.map_to_bl.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
   
   // Get all occupied coordinates 
   std::vector<Bonxai::CoordT> occ_coords;
@@ -329,8 +347,10 @@ void VoxelMap::updateLocalMap(){
       Eigen::Vector3d obs_lcl_pos = obs_gbl_pos - mp_.local_map_origin_;
       
       // Add pts in local map to local_map and fixed_map frame
-      lcl_pcd_lclmapframe_->push_back(pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2)));
-      lcl_pcd_fixedmapframe_->push_back(pcl::PointXYZ(obs_gbl_pos_pt3d.x, obs_gbl_pos_pt3d.y, obs_gbl_pos_pt3d.z));
+      lcl_pcd_lclmapframe_->push_back(
+        pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2)));
+      lcl_pcd_fixedmapframe_->push_back(
+        pcl::PointXYZ(obs_gbl_pos_pt3d.x, obs_gbl_pos_pt3d.y, obs_gbl_pos_pt3d.z));
     }
 
     lcl_pcd_lclmapframe_->width = lcl_pcd_lclmapframe_->points.size();
@@ -428,10 +448,10 @@ void VoxelMap::updateLocalMapTimerCB()
 
   updateLocalMap(); // Update local map voxels
 
-  publishOccMap(lcl_pcd_lclmapframe_);
+  publishOccMap(lcl_pcd_fixedmapframe_);
 
   // Create horizontal map slices
-  tm_slice_map_.start();
+  // tm_slice_map_.start();
 
   std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
 
@@ -549,7 +569,7 @@ void VoxelMap::updateLocalMapTimerCB()
 
   }
 
-  tm_slice_map_.stop(verbose_print_);
+  // tm_slice_map_.stop(verbose_print_);
 
   local_map_updated_ = true;
 }
@@ -658,10 +678,10 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   const pcl::PointXYZ sensor_origin(
     md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
 
-  tm_bonxai_insert_.start();
+  // tm_bonxai_insert_.start();
   // Add point cloud to bonxai_maps_
   bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
-  tm_bonxai_insert_.stop(false);
+  // tm_bonxai_insert_.stop(false);
 }
 
 /** Publishers */
@@ -675,7 +695,7 @@ void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_
   }
   
   cloud_msg.header.stamp = node_->get_clock()->now();
-  cloud_msg.header.frame_id = mp_.local_map_frame;
+  cloud_msg.header.frame_id = mp_.global_map_frame;
 
   occ_map_pub_->publish(cloud_msg);
 }
