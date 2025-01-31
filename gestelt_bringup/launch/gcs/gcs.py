@@ -126,5 +126,5 @@ def generate_launch_description():
         # rosbag_record,
         rviz_node,
         # swarm_collision_checker_node,
-        rosbag_record,
+        # rosbag_record,
     ])
