@@ -108,13 +108,30 @@ def generate_launch_description():
     # map_frame to base_link_frame tf provided by Mavros
 
     # drone base_link to sensor fixed TF
+    # camera_link_tf = Node(package = "tf2_ros", 
+    #                    executable = "static_transform_publisher",
+    #                    output="log",
+    #                   arguments = ["0.07535705", 
+    #                                "0.05172403", 
+    #                                "-0.03221506", 
+    #                                "0.5842771492883054", 
+    #                                "-0.5800916313355842", 
+    #                                "0.39932214971236324", 
+    #                                "-0.40330600395115485", 
+    #                               base_link_frame, camera_frame])
+
     camera_link_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        output="log",
-                      arguments = ["0.07535705", "0.05172403", "-0.03221506", 
-                                   "0.5842771492883054", "-0.5800916313355842", "0.39932214971236324", "-0.40330600395115485", 
+                      arguments = ["0.07535705", 
+                                   "0.05172403", 
+                                   "-0.03221506", 
+                                   "0.0", 
+                                   "0.0", 
+                                   "0.0", 
+                                   "1.0", 
                                   base_link_frame, camera_frame])
-
+    
     ''' Navigator: Planner module '''
     navigator_node = Node(
         package='navigator',
