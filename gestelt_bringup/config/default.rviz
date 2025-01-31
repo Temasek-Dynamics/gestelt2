@@ -7,24 +7,23 @@ Panels:
         - /TF1/Frames1
         - /central1
         - /d01
-        - /d01/state1
-        - /d01/maps1
-        - /d01/maps1/3d_occ_map1
-        - /d01/maps1/3d_occ_map1/Status1
+        - /d01/front_end1
+        - /d01/back_end1
         - /d01/maps1/3d_occ_map1/Topic1
-        - /d01/cloud1
+        - /d01/maps1/occ1/occ_map_501/Topic1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
         - /d71/state1/odom1
         - /d71/state1/odom_ax1
       Splitter Ratio: 0.4913151264190674
-    Tree Height: 707
+    Tree Height: 469
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
     Expanded:
+      - /2D Pose Estimate1
       - /2D Goal Pose1
-      - /Publish Point1
+      - /2D Goal Pose1/Topic1
     Name: Tool Properties
     Splitter Ratio: 0.5886790156364441
   - Class: rviz_common/Views
@@ -36,7 +35,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: cloud
+    SyncSource: 3d_occ_map
 Visualization Manager:
   Class: ""
   Displays:
@@ -215,34 +214,36 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                {}
+                plan_req_viz: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
                 Filter size: 10
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d0/fe_plan_req
+                Value: /fe_plan_req
               Value: true
             - Class: rviz_default_plugins/Marker
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                {}
+                fe_path_lines: true
+                fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
                 Filter size: 10
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d0/fe_plan/viz
+                Value: /fe_plan/viz
               Value: true
           Enabled: true
           Name: front_end
         - Class: rviz_common/Group
           Displays:
             - Class: rviz_default_plugins/Marker
-              Enabled: true
+              Enabled: false
               Name: minco_traj_viz
               Namespaces:
                 {}
@@ -252,8 +253,8 @@ Visualization Manager:
                 Filter size: 10
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d0/minco_traj_viz
-              Value: true
+                Value: /minco_traj_viz
+              Value: false
             - Alpha: 1
               Buffer Length: 1
               Class: rviz_default_plugins/Path
@@ -280,13 +281,13 @@ Visualization Manager:
                 Filter size: 10
                 History Policy: Keep Last
                 Reliability Policy: Reliable
-                Value: /d0/mpc/traj
+                Value: /mpc/traj
               Value: true
           Enabled: true
           Name: back_end
         - Class: rviz_common/Group
           Displays:
-            - Alpha: 0.20000000298023224
+            - Alpha: 0.15000000596046448
               Autocompute Intensity Bounds: true
               Autocompute Value Bounds:
                 Max Value: 10
@@ -373,7 +374,7 @@ Visualization Manager:
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: true
+                  Enabled: false
                   Name: voro_map_150
                   Topic:
                     Depth: 5
@@ -381,15 +382,15 @@ Visualization Manager:
                     Filter size: 10
                     History Policy: Keep Last
                     Reliability Policy: Reliable
-                    Value: /d0/voro_map_150
+                    Value: /occ_map_150
                   Update Topic:
                     Depth: 5
                     Durability Policy: Volatile
                     History Policy: Keep Last
                     Reliability Policy: Reliable
-                    Value: /d0/voro_map_150_updates
+                    Value: /occ_map_150_updates
                   Use Timestamp: false
-                  Value: true
+                  Value: false
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
@@ -482,7 +483,7 @@ Visualization Manager:
                     Value: /d0/voro_map_350_updates
                   Use Timestamp: false
                   Value: false
-              Enabled: false
+              Enabled: true
               Name: voro
             - Class: rviz_common/Group
               Displays:
@@ -499,14 +500,14 @@ Visualization Manager:
                     Durability Policy: Volatile
                     Filter size: 10
                     History Policy: Keep Last
-                    Reliability Policy: Reliable
-                    Value: /d0/occ_map_50
+                    Reliability Policy: Best Effort
+                    Value: /occ_map_50
                   Update Topic:
                     Depth: 5
                     Durability Policy: Volatile
                     History Policy: Keep Last
                     Reliability Policy: Reliable
-                    Value: /d0/occ_map_50_updates
+                    Value: /occ_map_50_updates
                   Use Timestamp: false
                   Value: false
                 - Alpha: 0.10000000149011612
@@ -515,7 +516,7 @@ Visualization Manager:
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: false
+                  Enabled: true
                   Name: occ_map_100
                   Topic:
                     Depth: 5
@@ -531,14 +532,14 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/occ_map_100_updates
                   Use Timestamp: false
-                  Value: false
+                  Value: true
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
                   Class: rviz_default_plugins/Map
                   Color Scheme: map
                   Draw Behind: false
-                  Enabled: true
+                  Enabled: false
                   Name: occ_map_150
                   Topic:
                     Depth: 5
@@ -554,7 +555,7 @@ Visualization Manager:
                     Reliability Policy: Reliable
                     Value: /d0/occ_map_150_updates
                   Use Timestamp: false
-                  Value: true
+                  Value: false
                 - Alpha: 0.10000000149011612
                   Binary representation: false
                   Binary threshold: 100
@@ -674,7 +675,7 @@ Visualization Manager:
               Value: false
           Enabled: true
           Name: maps
-        - Alpha: 0.30000001192092896
+        - Alpha: 0.15000000596046448
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
@@ -734,7 +735,7 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Reliable
-            Value: /d0/sfc
+            Value: /sfc
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
@@ -4169,7 +4170,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /d0/point_goal
+        Value: /point_goal
     - Class: rviz_default_plugins/PublishPoint
       Single click: true
       Topic:
@@ -4185,33 +4186,33 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 11.128915786743164
+      Distance: 31.807403564453125
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -2.7117631435394287
-        Y: -0.32791829109191895
+        X: -1.552133560180664
+        Y: 0.4793853759765625
         Z: 4.268316479283385e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8497961759567261
+      Pitch: 0.6097968816757202
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 5.893991947174072
+      Yaw: 4.743983268737793
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1011
+  Height: 773
   Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd00000004000000000000019600000351fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000351000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000351fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f00000351000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073e0000003efc0100000002fb0000000800540069006d006501000000000000073e0000026f00fffffffb0000000800540069006d00650100000000000004500000000000000000000005a20000035100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000019600000263fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df000002c700000179fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000263000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000351fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f00000351000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000005a00000003efc0100000002fb0000000800540069006d00650100000000000005a00000026f00fffffffb0000000800540069006d00650100000000000004500000000000000000000004040000026300000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -4220,6 +4221,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 1854
-  X: 66
-  Y: 32
+  Width: 1440
+  X: 203
+  Y: 78

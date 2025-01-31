@@ -469,6 +469,7 @@ private:
   double sqr_goal_tol_{0.1}; // [m] Distance to goal before it is considered fulfilled.
   
   double planner_recovery_timeout_{3.0}; // Recovery timeout for planner
+  double point_goal_height_{1.5}; // Height used for point goal topic
   
   bool plan_once_{false}; // Used for testing, only runs the planner once
   bool verbose_print_{false};  // enables printing of planning time

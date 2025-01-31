@@ -226,6 +226,8 @@ void Navigator::initParams()
 
   this->declare_parameter(param_ns+".planner_recovery_timeout", 5.0);
 
+  this->declare_parameter(param_ns+".point_goal_height", 1.5);
+
   /* Frame ids */
   this->declare_parameter("global_frame", "world");
   this->declare_parameter("map_frame", "map");
@@ -239,6 +241,8 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".planner.plan_once", false);
   this->declare_parameter(param_ns+".planner.t_unit", 0.1);
   this->declare_parameter(param_ns+".planner.output_json_filepath", "");
+
+
 
   this->declare_parameter(param_ns+".reservation_table.inflation", 0.3);
   this->declare_parameter(param_ns+".reservation_table.time_buffer", 0.5);
@@ -272,6 +276,7 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".mpc.u_min", -50.0);
   this->declare_parameter(param_ns+".mpc.u_max", 50.0);
 
+
   /* MINCO */
   this->declare_parameter(param_ns+".min_jerk_trajectory.front_end_stride", 3);
 
@@ -286,6 +291,8 @@ void Navigator::initParams()
   gen_voro_map_freq_ = this->get_parameter(param_ns+".generate_voronoi_frequency").as_double();
 
   planner_recovery_timeout_ = this->get_parameter(param_ns+".planner_recovery_timeout").as_double();
+
+  point_goal_height_ = this->get_parameter(param_ns+".point_goal_height").as_double();
 
 	auto getPlanMethod = [=](const int& method) -> PlanMethod
 	{
@@ -305,6 +312,9 @@ void Navigator::initParams()
     }
 	};
   plan_method_ = getPlanMethod(this->get_parameter(param_ns+".plan_method").as_int());
+
+
+
 
   /* Frame ids */
   global_frame_ = this->get_parameter("global_frame").as_string();
@@ -1071,17 +1081,17 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
 {
     std::vector<Eigen::Vector3d> wp_vec;
 
-    if (msg->header.frame_id == "world")
+    if (msg->header.frame_id == global_frame_)
     {
-      // Transform from world to fixed map frame
+      // Transform from global to map frame
       wp_vec.push_back(worldToMap(Eigen::Vector3d(
-        msg->pose.position.x, msg->pose.position.y, 1.5)));
+        msg->pose.position.x, msg->pose.position.y, point_goal_height_)));
     }
     else if (msg->header.frame_id == map_frame_)
     {
       // Keep in map frame
       wp_vec.push_back(Eigen::Vector3d(
-        msg->pose.position.x, msg->pose.position.y, 1.5));
+        msg->pose.position.x, msg->pose.position.y, point_goal_height_));
     }
     else {
       logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
