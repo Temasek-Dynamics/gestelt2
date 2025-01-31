@@ -263,6 +263,8 @@ void VoxelMap::reset(const double& resolution){
     mp_.local_map_size_(1) / 2.0, 
     mp_.local_map_size_(2) / 2.0);
 
+  mp_.local_map_num_voxels_ = (mp_.local_map_size_.cwiseProduct(Eigen::Vector3d::Constant(1/mp_.resolution_))).cast<int>();
+
   md_.last_cloud_cb_time = node_->get_clock()->now().seconds();
 }
 
@@ -575,17 +577,17 @@ void VoxelMap::pubLocalMapTFTimerCB()
 
 void VoxelMap::checkCollisionsTimerCB()
 {
-  // Get nearest obstacle position
-  Eigen::Vector3d occ_nearest;
-  double dist_to_obs;
-  // if (!getNearestOccupiedCell(md_.map_to_cam.block<3,1>(0,3), occ_nearest, dist_to_obs)){
-  //   return;
-  // }
+  // // Get nearest obstacle position
+  // Eigen::Vector3d occ_nearest;
+  // double dist_to_obs;
+  // // if (!getNearestOccupiedCell(md_.map_to_cam.block<3,1>(0,3), occ_nearest, dist_to_obs)){
+  // //   return;
+  // // }
 
-  // Publish collision sphere visualizations.
-  if (dist_to_obs <= col_warn_radius_){
-    publishCollisionSphere(occ_nearest, dist_to_obs, col_fatal_radius_, col_warn_radius_);
-  }
+  // // Publish collision sphere visualizations.
+  // if (dist_to_obs <= col_warn_radius_){
+  //   publishCollisionSphere(occ_nearest, dist_to_obs, col_fatal_radius_, col_warn_radius_);
+  // }
   
 }
 
@@ -643,7 +645,7 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
   if (!isInGlobalMap(md_.map_to_cam.block<3,1>(0,3)))
   {
-    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not 
+    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not \
         within global map boundary. Skip PCD insertion.", 
        md_.map_to_cam.col(3)(0), md_.map_to_cam.col(3)(1), md_.map_to_cam.col(3)(2)), 1.0);
     return;

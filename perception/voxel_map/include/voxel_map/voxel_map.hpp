@@ -82,6 +82,8 @@ namespace voxel_map
     Eigen::Vector3d global_map_size_; //  Size of global occupancy map  (m)
     Eigen::Vector3d local_map_size_; //  Size of local occupancy map (m)
 
+    Eigen::Vector3i local_map_num_voxels_; //  Size of local occupancy grid (no. of voxels)
+
     double resolution_;   // Also defined as the size of each individual voxel                 
     double agent_inflation_;    // [Comm-less] Dynamic obstacle Inflation in units of meters
     double static_inflation_;    // Static obstacle inflation in units of meters
