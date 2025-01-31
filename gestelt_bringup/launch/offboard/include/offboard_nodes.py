@@ -126,10 +126,10 @@ def generate_launch_description():
                       arguments = ["0.07535705", 
                                    "0.05172403", 
                                    "-0.03221506", 
-                                   "0.0", 
-                                   "0.0", 
-                                   "0.0", 
-                                   "1.0", 
+                                   "-0.5", 
+                                   "0.5", 
+                                   "-0.5", 
+                                   "0.5", 
                                   base_link_frame, camera_frame])
     
     ''' Navigator: Planner module '''
