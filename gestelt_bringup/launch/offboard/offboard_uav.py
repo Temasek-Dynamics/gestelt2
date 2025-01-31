@@ -15,7 +15,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace
+from launch_ros.actions import Node, PushROSNamespace, SetParameter
 
 SCENARIO_NAME = "vicon_3"
 
@@ -90,6 +90,7 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
       actions=[
         #   PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
+        #   SetParameter("use_sim_time", "true"),
         ]
     )
 
@@ -109,29 +110,7 @@ def generate_launch_description():
     offboard_nodes = generateSITLDrone(
             0, scenario.spawns_pos[0], fake_map_pcd_filepath, scenario.num_agents)
         
-    # ROSBag 
-    bag_topics = []
-    bag_topics.append("/odom")
-    # Subscription to 3d occupancy voxel map
-    bag_topics.append("/occ_map")
-    # Subscription to point clouds
-    bag_topics.append("/visbot_itof/point_cloud")
-    bag_topics.append("/rosout")
-    bag_topics.append("/tf")
-
-    bag_file = os.path.join(
-        os.path.expanduser("~"), 'bag_files',
-        'bag_' + datetime.now().strftime("%d%m%Y_%H_%M_%S"),
-    )
-
-    rosbag_record = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', 
-            '--use-sim-time', 
-            '-o', bag_file, *bag_topics],
-        output='log'
-    )
 
     return LaunchDescription([
         offboard_nodes,
-        rosbag_record,
     ])

@@ -73,7 +73,7 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
                 'launch',
                 'offboard',
                 'include',
-                'offboard_nodes.py'
+                'offboard_nodes_test.py'
             ])
         ]),
         launch_arguments={
@@ -95,8 +95,6 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
     )
 
 
-
-
 def generate_launch_description():
     
     scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
@@ -116,7 +114,9 @@ def generate_launch_description():
 
      # Generate nodes of SITL drone instances according to scenario
     offboard_nodes = generateSITLDrone(
-            0, scenario.spawns_pos[0], fake_map_pcd_filepath, scenario.num_agents)
+            0, scenario.spawns_pos[0], 
+            fake_map_pcd_filepath, 
+            scenario.num_agents)
         
 
     # RVIZ Visualization

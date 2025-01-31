@@ -62,25 +62,6 @@ def generate_launch_description():
       'default.rviz'
     )
 
-    fake_map_pcd_filepath = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
-      scenario.map + '.pcd'
-    )
-
-    # Fake map
-    fake_map_publisher = Node(
-        package='fake_map',
-        executable='fake_map_publisher_node',
-        output='screen',
-        shell=False,
-        name='fake_map_publisher_node',
-        parameters=[
-            {'fake_map.pcd_filepath': fake_map_pcd_filepath},
-            {'fake_map.frame_id': "world"},
-            {'fake_map.publishing_frequency': 1.0},
-        ],
-    )
-
     # Mission node: Sends goals to agents
     # mission_node = Node(
     #     package='gestelt_mission',
@@ -121,29 +102,13 @@ def generate_launch_description():
 
     # ROSBag 
     bag_topics = []
-    for id in range(scenario.num_agents):
-        prefix = "/d" + str(id) + "/"
-        bag_topics.append(prefix + "odom")
-        bag_topics.append(prefix + "static_collisions")
-        # Subscription to paths
-        bag_topics.append(prefix + "fe_plan/viz")
-        bag_topics.append(prefix + "minco_traj_viz")
-        bag_topics.append(prefix + "mpc/traj")
-        # Subscription to 3d occupancy voxel map
-        bag_topics.append(prefix + "occ_map")
-        # Subscription to maps
-        bag_topics.append(prefix + "voro_planning")
-        bag_topics.append(prefix + "occ_map_100")
-        bag_topics.append(prefix + "occ_map_150")
-        bag_topics.append(prefix + "occ_map_200")
-        bag_topics.append(prefix + "voro_map_100")
-        bag_topics.append(prefix + "voro_map_150")
-        bag_topics.append(prefix + "voro_map_200")
-    bag_topics.append("/swarm_collision_checker/collisions")
+    bag_topics.append("/odom")
+    # Subscription to 3d occupancy voxel map
+    bag_topics.append("/occ_map")
+    # Subscription to point clouds
+    bag_topics.append("/visbot_itof/point_cloud")
     bag_topics.append("/rosout")
     bag_topics.append("/tf")
-    bag_topics.append("/tf_static")
-    bag_topics.append("/fake_map")
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
@@ -151,15 +116,16 @@ def generate_launch_description():
     )
 
     rosbag_record = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '-o',
-             bag_file,
-             *bag_topics],
+        cmd=['ros2', 'bag', 'record', 
+            '--use-sim-time', 
+            '-o', bag_file, *bag_topics],
         output='log'
     )
 
     return LaunchDescription([
-        fake_map_publisher,
+        # fake_map_publisher,
         # rosbag_record,
         rviz_node,
         # swarm_collision_checker_node,
+        rosbag_record,
     ])
