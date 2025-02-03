@@ -51,6 +51,7 @@ Navigator::Navigator()
   // tm_sfc_.updateID(drone_id_);
   // tm_mpc_.updateID(drone_id_);
   // tm_voro_gen_.updateID(drone_id_);
+  tm_plan_pipeline_.updateID(drone_id_);
 }
 
 void Navigator::init()
@@ -471,6 +472,7 @@ void Navigator::planFETimerCB()
 
   // Plan from current position to next waypoint
   if (!planCommlessMPC(goal)){
+    tm_plan_pipeline_.stop(true);
     return;
   }
   
@@ -540,6 +542,9 @@ void Navigator::genVoroMapTimerCB()
 /* Core methods */
 
 bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
+  logger_->logInfo(strFmt(" Drone %d: Before planner", drone_id_));
+
+
   if (plan_once_ && plan_complete_){
     return true;
   }
@@ -548,7 +553,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return false;
   }
 
-  // tm_voro_gen_.start();
+  tm_plan_pipeline_.start();
 
   // Initialize dynamic voronoi 
 
@@ -653,12 +658,10 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   // tm_front_end_plan_.start();
 
-  logger_->logInfo(strFmt("   Drone %d: Before front-end planner", drone_id_));
 
   bool fe_plan_success = 
     fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
 
-  logger_->logInfo(strFmt("   Drone %d: After front-end planner", drone_id_));
 
   // Notify the voronoi map generation thread that plan is complete
   // map_ready_for_cons_ = false;
@@ -731,10 +734,14 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 6) Generate Polyhedron safe flight corridor */
   /*****/
 
+  logger_->logInfo(strFmt("   Drone %d: before generateSFC", drone_id_));
+
   // tm_sfc_.start();
   bool gen_sfc_success = poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
   // tm_sfc_.stop(false);
   // tm_sfc_.getWallAvg(verbose_print_);
+
+  logger_->logInfo(strFmt("   Drone %d: After generateSFC", drone_id_));
 
   // Generate SFC based on smoothed front-end path
   if (!gen_sfc_success)
@@ -791,7 +798,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     }
 
   };
-
 
   // 7a) Set Safe Flight corridor for each MPC reference point
 
@@ -990,6 +996,10 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 
   plan_complete_ = true;
+
+  tm_plan_pipeline_.stop(true);
+
+  logger_->logInfo(strFmt(" Drone %d: After planner", drone_id_));
 
   return true;
 }

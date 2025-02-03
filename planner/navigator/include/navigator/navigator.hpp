@@ -546,6 +546,9 @@ private:
   // logger_wrapper::Timer tm_mpc_{"mpc_trajectory"}; // MPC trajectory generation
   // logger_wrapper::Timer tm_voro_gen_{"3d_voro_gen"}; // 3D Voronoi roadmap generation
 
+  logger_wrapper::Timer tm_plan_pipeline_{"plan_pipeline"}; // Total planning time
+
+
   /* Visualization */
   std::unique_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization
 

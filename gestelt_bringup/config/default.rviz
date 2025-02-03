@@ -11,8 +11,6 @@ Panels:
         - /d01/state1/agent_id_text1/Topic1
         - /d01/front_end1//fe_plan/viz1/Status1
         - /d01/maps1/occ1/occ_map_501/Topic1
-        - /d01/sfc1
-        - /d01/sfc1/Topic1
         - /d21/maps1/occ1
         - /d31/maps1/voro1/voro_map_1501
         - /d71/state1/odom1
@@ -216,7 +214,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -229,9 +227,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -633,7 +629,7 @@ Visualization Manager:
           Color: 26; 95; 180
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -653,7 +649,7 @@ Visualization Manager:
             Value: /visbot_itof/point_cloud
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Alpha: 0.15000000596046448
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -666,7 +662,7 @@ Visualization Manager:
           Color: 165; 29; 45
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -686,7 +682,7 @@ Visualization Manager:
             Value: /occ_map
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Class: rviz_default_plugins/Marker
           Enabled: false
           Name: static_collisions
@@ -703,7 +699,7 @@ Visualization Manager:
         - Alpha: 0.10000000149011612
           BoundColor: 153; 193; 241
           Class: decomp_rviz_plugins/PolyhedronArray
-          Enabled: true
+          Enabled: false
           MeshColor: 0; 170; 255
           Name: sfc
           Scale: 0.10000000149011612
@@ -715,7 +711,7 @@ Visualization Manager:
             History Policy: Keep Last
             Reliability Policy: Best Effort
             Value: /sfc
-          Value: true
+          Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
       Enabled: true
@@ -4164,26 +4160,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 9.870622634887695
+      Angle: 3.095003366470337
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: -1.590860366821289
-        Y: -0.15507268905639648
-        Z: 1.430511474609375e-06
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0547964572906494
+      Scale: -106.04186248779297
       Target Frame: <Fixed Frame>
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.61238956451416
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: -0.4520684480667114
+      Y: 1.7523874044418335
     Saved: ~
 Window Geometry:
   Displays:
