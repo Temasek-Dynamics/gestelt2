@@ -607,6 +607,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 1) Assign voronoi map and reservation table to planner */
   /*****/
 
+  logger_->logInfo(strFmt("   Drone %d: setVoroMap", drone_id_));
+
   // Assign reservation table
   // {
     // std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
@@ -648,6 +650,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 3) Get Receding Horizon Planning goal */
   /*****/
 
+  logger_->logInfo(strFmt("   Drone %d: RHP", drone_id_));
+
   // Get RHP goal
   Eigen::Vector3d rhp_goal_pos = getRHPGoal(
     start_pos, goal_pos, 
@@ -661,16 +665,16 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 4) Plan HCA* path */
   /*****/
 
+  logger_->logInfo(strFmt("   Drone %d: Front-end", drone_id_));
+
   tm_front_end_plan_.start();
 
   bool fe_plan_success = 
     fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
 
-
   // Notify the voronoi map generation thread that plan is complete
   // map_ready_for_cons_ = false;
   // prod_map_cv_.notify_one();
-
 
   tm_front_end_plan_.stop(true);
   // tm_front_end_plan_.getWallAvg(verbose_print_);
@@ -698,11 +702,15 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 5) Retrieve and transform HCA* path to map frame, publish visualization of path */
   /*****/
 
+  logger_->logInfo(strFmt("   Drone %d: Transform path", drone_id_));
+
   // Current pose must converted from fixed map frame to local map frame 
   // before passing to planner
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime(mapToLclMap(cur_pos_));
-  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = fe_planner_->getPathWithTime();
-  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getPathWithTimeSampled(10);
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = 
+    fe_planner_->getPathWithTime();
+  std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = 
+    fe_planner_->getPathWithTimeSampled(10);
   // fe_sfc_segment_idx: Index of sampled original path. Indexed by polygon number. 
   //    The value is the front-end index at that polygon's starting segment
   std::vector<int> fe_sfc_segment_idx = fe_planner_->getPathIdxSampled(10);
