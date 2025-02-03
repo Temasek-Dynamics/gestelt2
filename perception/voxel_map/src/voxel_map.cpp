@@ -308,7 +308,10 @@ void VoxelMap::updateLocalMap(){
   
   // Get all occupied coordinates 
   std::vector<Bonxai::CoordT> occ_coords;
-  bonxai_map_->getOccupiedVoxels(occ_coords);
+  {
+    std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
+    bonxai_map_->getOccupiedVoxels(occ_coords);
+  }
   if (occ_coords.size() <= 1){ // Empty map
     logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
     return;
@@ -370,10 +373,10 @@ void VoxelMap::updateLocalMap(){
 void VoxelMap::getMapSlice(const double& slice_z_cm, 
   const double& thickness, std::vector<bool>& bool_map) 
 {
-  // if (lcl_pcd_lclmapframe_->points.empty()){
-  //   logger_->logWarnThrottle("Local map is empty!", 1.0);
-  //   return;
-  // }
+  if (lcl_pcd_lclmapframe_->points.empty()){
+    logger_->logWarnThrottle("Local map is empty!", 1.0);
+    // return;
+  }
 
   double slice_z = ((double) slice_z_cm)/100.0;
 
@@ -435,7 +438,10 @@ void VoxelMap::getMapSlice(const double& slice_z_cm,
 
 void VoxelMap::vizMapTimerCB()
 {
-  publishOccMap(lcl_pcd_fixedmapframe_);
+  {
+    std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
+    publishOccMap(lcl_pcd_fixedmapframe_);
+  }
   publishLocalMapBounds(); // publish boundaries of local map volume
 }
 
@@ -613,6 +619,8 @@ void VoxelMap::checkCollisionsTimerCB()
 
 void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 {
+  std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
+
   bonxai_map_ = std::make_unique<BonxaiT>(mp_.resolution_);
   logger_->logWarn("Reset map as requested by user!");
 }
@@ -677,19 +685,30 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
   // tm_bonxai_insert_.start();
   // Add point cloud to bonxai_maps_
+  std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
   bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
   // tm_bonxai_insert_.stop(false);
 }
 
 /** Publishers */
 
-void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_pts)
+void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd)
 {
-  sensor_msgs::msg::PointCloud2 cloud_msg;
-  {
-    std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
-    pcl::toROSMsg(*occ_map_pts, cloud_msg);
+  bool publish_point_cloud =
+      (occ_map_pub_->get_subscription_count() +
+       occ_map_pub_->get_intra_process_subscription_count() > 0);
+
+  if (!publish_point_cloud ){
+    return;
   }
+
+  if (pcd->points.empty()){
+    logger_->logErrorThrottle("local map is empty. Not publishing occupancy grid.", 1.0);
+    return;
+  }
+
+  sensor_msgs::msg::PointCloud2 cloud_msg;
+  pcl::toROSMsg(*pcd, cloud_msg);
   
   cloud_msg.header.stamp = node_->get_clock()->now();
   cloud_msg.header.frame_id = mp_.global_map_frame;

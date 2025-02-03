@@ -290,8 +290,6 @@ private:
   std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> occ_map_pubs_;        // Publishes original occupancy grid
   std::unordered_map<int, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> voro_occ_grid_pubs_;  // Publishes voronoi map occupancy grid
 
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr voro_planning_pub_;  // Publishes voronoi map as modified for planning
-
   rclcpp::Publisher<gestelt_interfaces::msg::NavState>::SharedPtr nav_state_pub_; // Publish Navigator state
 
   // Planning publishers

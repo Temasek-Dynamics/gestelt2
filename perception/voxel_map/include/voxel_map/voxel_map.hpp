@@ -191,7 +191,7 @@ public:
    * @brief Publish map for visualization
    * 
    */
-  void publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& occ_map_pts);
+  void publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd);
 
   /**
    * @brief Publish a z slice of the map for visualization
@@ -376,6 +376,7 @@ private:
   bool local_map_updated_{false}; // Indicates if first local map update is done 
 
   /* Mutexes */
+  std::mutex bonxai_map_mtx_;  // Mutex lock for bonxai map
   std::mutex bool_map_3d_mtx_;  // Mutex lock for bool map 3d
   std::mutex lcl_occ_map_mtx_;  // Mutex lock for lcl_pcd_lclmapframe_
 

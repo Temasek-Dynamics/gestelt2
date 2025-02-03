@@ -40,10 +40,10 @@ Navigator::Navigator()
     rclcpp::CallbackGroupType::MutuallyExclusive); // for planning
   mapping_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive); // for generating voronoi maps
-  swarm_plan_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::Reentrant); 
+  // swarm_plan_cb_group_ = this->create_callback_group(
+  //   rclcpp::CallbackGroupType::Reentrant); 
   others_cb_group_ = this->create_callback_group(
-    rclcpp::CallbackGroupType::Reentrant);
+    rclcpp::CallbackGroupType::MutuallyExclusive);
 
   initPubSubTimer();
 
@@ -109,8 +109,8 @@ void Navigator::initPubSubTimer()
   auto others_sub_opt = rclcpp::SubscriptionOptions();
   others_sub_opt.callback_group = others_cb_group_;
 
-  auto swarm_plan_sub_opt = rclcpp::SubscriptionOptions();
-  swarm_plan_sub_opt.callback_group = swarm_plan_cb_group_;
+  // auto swarm_plan_sub_opt = rclcpp::SubscriptionOptions();
+  // swarm_plan_sub_opt.callback_group = swarm_plan_cb_group_;
 
   /* Publishers */
 
@@ -122,9 +122,9 @@ void Navigator::initPubSubTimer()
         z_cm += 50)
   {
     occ_map_pubs_[z_cm] = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      "occ_map_" + std::to_string(z_cm), 10);
+      "occ_map_" + std::to_string(z_cm), rclcpp::SensorDataQoS());
     voro_occ_grid_pubs_[z_cm] = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      "voro_map_" + std::to_string(z_cm), 10);
+      "voro_map_" + std::to_string(z_cm), rclcpp::SensorDataQoS());
   }
 
   /* Planner publishers */
@@ -143,27 +143,25 @@ void Navigator::initPubSubTimer()
   //   "minco_traj/broadcast", rclcpp::SensorDataQoS());
 
   /* Visualization Publishers */
-  voro_planning_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-    "voro_planning", 10);
   // voronoi_graph_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("voronoi_graph", 10);
 
   agent_id_text_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-    "agent_id_text", 10);
+    "agent_id_text", rclcpp::SensorDataQoS());
   plan_req_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-    "fe_plan_req", 10);
+    "fe_plan_req", rclcpp::SensorDataQoS());
   fe_closed_list_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-    "fe_plan/closed_list", 10);
+    "fe_plan/closed_list", rclcpp::SensorDataQoS());
   fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-    "fe_plan/viz", 10);
+    "fe_plan/viz", rclcpp::SensorDataQoS());
 
 	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-    "minco_traj_viz", 10);
+    "minco_traj_viz", rclcpp::SensorDataQoS());
 
   mpc_pred_pos_pub_ = this->create_publisher<nav_msgs::msg::Path>(
-    "mpc/traj", 10);
+    "mpc/traj", rclcpp::SensorDataQoS());
 
   poly_sfc_pub_ = this->create_publisher<decomp_ros_msgs::msg::PolyhedronArray>(
-    "sfc", 10);
+    "sfc", rclcpp::SensorDataQoS());
 
   /* Subscribers */
   odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -177,23 +175,23 @@ void Navigator::initPubSubTimer()
     "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&Navigator::pointGoalSubCB, this, _1));
 
   // Subscribe to odometry individually from each agent
-  for (int i = 0; i < num_drones_; i++){
+  // for (int i = 0; i < num_drones_; i++){
 
-    if (i == drone_id_){
-      continue;
-    }
+  //   if (i == drone_id_){
+  //     continue;
+  //   }
 
-    std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
-      std::bind(&Navigator::swarmOdomCB, this, _1, i);
+  //   std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
+  //     std::bind(&Navigator::swarmOdomCB, this, _1, i);
 
-    swarm_odom_subs_.push_back(
-      this->create_subscription<nav_msgs::msg::Odometry>(
-        "/d"+ std::to_string(i) + "/" + "odom", 
-        rclcpp::SensorDataQoS(), 
-        bound_callback_func, 
-        swarm_plan_sub_opt)
-    );
-  }
+  //   swarm_odom_subs_.push_back(
+  //     this->create_subscription<nav_msgs::msg::Odometry>(
+  //       "/d"+ std::to_string(i) + "/" + "odom", 
+  //       rclcpp::SensorDataQoS(), 
+  //       bound_callback_func, 
+  //       swarm_plan_sub_opt)
+  //   );
+  // }
 
   /* Timers */
 	pub_state_timer_ = this->create_wall_timer((1.0/pub_state_freq_) *1000ms, 
@@ -491,8 +489,6 @@ void Navigator::genVoroMapTimerCB()
   std::unique_lock<std::mutex> map_lk(roadmap_mtx_);
   prod_map_cv_.wait(map_lk, [&]{return !map_ready_for_cons_;}); // wait for voronoi map to be consumed
 
-  // std::vector<Eigen::Vector3d> voro_verts;
-
   tm_voro_gen_.start();
 
   // Initialize dynamic voronoi 
@@ -535,26 +531,6 @@ void Navigator::genVoroMapTimerCB()
     voro_occ_grid_pubs_[z_cm]->publish(voro_occ_grid);
     occ_map_pubs_[z_cm]->publish(occ_grid);
 
-    // // Get all voronoi vertices (voronoi cells that have at least 3 voronoi neighbours)
-    // auto getVoronoiVertices = [&](std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro){
-    //   std::vector<Eigen::Vector3d> voronoi_vertices;
-    //   if (dyn_voro->getData() != nullptr){  
-    //     for (int x=0; x < dyn_voro->getSizeX(); x++) {
-    //       for (int y=0; y < dyn_voro->getSizeY(); y++) {
-    //         if (dyn_voro->isVoronoiVertex(x, y)){
-    //           voronoi_vertices.push_back(Eigen::Vector3d{ x * dyn_voro->getRes(), 
-    //                                                       y * dyn_voro->getRes(), 
-    //                                                       dyn_voro->getOriginZ()});
-    //         }
-    //       }
-    //     }
-    //   }
-
-    //   return voronoi_vertices;
-    // };
-    // voro_verts_cur_layer: voronoi vertices at current layer
-    // std::vector<Eigen::Vector3d> voro_verts_cur_layer = getVoronoiVertices(dyn_voro_arr_[z_cm]);
-    // voro_verts.insert(voro_verts.end(), voro_verts_cur_layer.begin(), voro_verts_cur_layer.end());
   }
 
   tm_voro_gen_.stop(false);
