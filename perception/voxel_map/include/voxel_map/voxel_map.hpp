@@ -44,6 +44,7 @@
 #include <std_msgs/msg/empty.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <geometry_msgs/msg/point32.hpp>
 
 /* Debugging */
 #include <visualization_msgs/msg/marker.hpp>

@@ -436,7 +436,6 @@ void VoxelMap::getMapSlice(const double& slice_z_cm,
 void VoxelMap::vizMapTimerCB()
 {
   // publishOccMap(lcl_pcd_lclmapframe_); // publish point cloud within local map
-  // publishLocalMapBounds(); // publish boundaries of local map volume
 }
 
 void VoxelMap::updateLocalMapTimerCB()
@@ -449,6 +448,7 @@ void VoxelMap::updateLocalMapTimerCB()
   updateLocalMap(); // Update local map voxels
 
   publishOccMap(lcl_pcd_fixedmapframe_);
+  publishLocalMapBounds(); // publish boundaries of local map volume
 
   // Create horizontal map slices
   // tm_slice_map_.start();
@@ -760,34 +760,34 @@ void VoxelMap::publishCollisionSphere(
   
 // }
 
-// void VoxelMap::publishLocalMapBounds()
-// {
-//   geometry_msgs::PolygonStamped local_map_poly;
-//   local_map_poly.header.frame_id = mp_.local_map_frame_;
-//   local_map_poly.header.stamp = node_->get_clock()->now();
+void VoxelMap::publishLocalMapBounds()
+{
+  geometry_msgs::msg::PolygonStamped local_map_poly;
+  local_map_poly.header.frame_id = mp_.global_map_frame;
+  local_map_poly.header.stamp = node_->get_clock()->now();
 
-//   geometry_msgs::Point32 min_corner, corner_0, corner_1, max_corner;
-//   min_corner.x = mp_.local_map_origin_(0);
-//   min_corner.y = mp_.local_map_origin_(1);
+  geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;
+  min_corner.x = mp_.local_map_origin_(0);
+  min_corner.y = mp_.local_map_origin_(1);
 
-//   corner_0.x = mp_.local_map_max_(0);
-//   corner_0.y = mp_.local_map_origin_(1);
+  corner_0.x = mp_.local_map_max_(0);
+  corner_0.y = mp_.local_map_origin_(1);
 
-//   corner_1.x = mp_.local_map_origin_(0);
-//   corner_1.y = mp_.local_map_max_(1);
+  corner_1.x = mp_.local_map_origin_(0);
+  corner_1.y = mp_.local_map_max_(1);
 
-//   max_corner.x = mp_.local_map_max_(0);
-//   max_corner.y = mp_.local_map_max_(1);
+  max_corner.x = mp_.local_map_max_(0);
+  max_corner.y = mp_.local_map_max_(1);
 
-//   min_corner.z = corner_0.z = corner_1.z = max_corner.z = mp_.local_map_origin_(2);;
+  min_corner.z = corner_0.z = corner_1.z = max_corner.z = mp_.local_map_origin_(2);
 
-//   local_map_poly.polygon.points.push_back(min_corner);
-//   local_map_poly.polygon.points.push_back(corner_0);
-//   local_map_poly.polygon.points.push_back(max_corner);
-//   local_map_poly.polygon.points.push_back(corner_1);
+  local_map_poly.polygon.points.push_back(min_corner);
+  local_map_poly.polygon.points.push_back(corner_0);
+  local_map_poly.polygon.points.push_back(max_corner);
+  local_map_poly.polygon.points.push_back(corner_1);
 
-//   local_map_bounds_pub_->publish(local_map_poly);
-// }
+  local_map_bounds_pub_->publish(local_map_poly);
+}
 
 void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
 {

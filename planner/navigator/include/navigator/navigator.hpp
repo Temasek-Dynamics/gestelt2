@@ -799,7 +799,7 @@ inline Eigen::Vector3d Navigator::getRHPGoal(
   // The subroutine below has been adapted from the RHP function in FASTER by MIT-ACL
   //    https://github.com/mit-acl/faster
 
-  if ((P2(0) > local_map_min(0) && P2(0) < local_map_max(0) ) 
+  if (  (P2(0) > local_map_min(0) && P2(0) < local_map_max(0) ) 
       && (P2(1) > local_map_min(1) && P2(1) < local_map_max(1) ) 
       && (P2(2) > local_map_min(2) && P2(2) < local_map_max(2)))
   {
