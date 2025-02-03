@@ -112,8 +112,8 @@ namespace voxel_map
     // Inverse of cam_to_map
     Eigen::Matrix4d map_to_cam{Eigen::Matrix4d::Identity(4, 4)};
 
-    // [DYNAMIC]: Homogenous Transformation matrix of fixed map to base_link
-    Eigen::Matrix4d map_to_bl{Eigen::Matrix4d::Identity(4, 4)};
+    // [DYNAMIC]: Homogenous Transformation matrix of fbase_link to map frame
+    Eigen::Matrix4d bl_to_map{Eigen::Matrix4d::Identity(4, 4)};
 
     double last_cloud_cb_time{-1.0}; // True if cloud and odom has timed out
 

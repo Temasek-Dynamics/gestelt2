@@ -278,33 +278,33 @@ void VoxelMap::updateLocalMap(){
 
   try {
     // map to base_link
-    auto tf_map_to_bl = tf_buffer_->lookupTransform(
-      mp_.base_link_frame, mp_.global_map_frame,
+    auto tf_bl_to_map = tf_buffer_->lookupTransform(
+      mp_.global_map_frame, mp_.base_link_frame,
       tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
 
-    md_.map_to_bl = tf2::transformToEigen(
-      tf_map_to_bl.transform).matrix().cast<double>();
+    md_.bl_to_map = tf2::transformToEigen(
+      tf_bl_to_map.transform).matrix().cast<double>();
 
   } 
   catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(
-			node_->get_logger(), "Could not get transform from camera frame '%s' to map frame '%s': %s",
-			mp_.camera_frame.c_str(), mp_.global_map_frame.c_str(), ex.what());
+			node_->get_logger(), "Could not get transform from base link frame '%s' to map frame '%s': %s",
+			mp_.base_link_frame.c_str(), mp_.global_map_frame.c_str(), ex.what());
     return;
   }
 
   // Update local map origin, which is the location of the local map origin IN the global map frame
   mp_.local_map_origin_ = Eigen::Vector3d(
-    md_.map_to_bl.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
-    md_.map_to_bl.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
-    md_.map_to_bl.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
+    md_.bl_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
+    md_.bl_to_map.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
+    md_.bl_to_map.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
 
   // Update local map max position based on current UAV position
   mp_.local_map_max_ = Eigen::Vector3d(
-    md_.map_to_bl.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
-    md_.map_to_bl.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
-    md_.map_to_bl.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
+    md_.bl_to_map.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
+    md_.bl_to_map.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
+    md_.bl_to_map.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
   
   // Get all occupied coordinates 
   std::vector<Bonxai::CoordT> occ_coords;
