@@ -41,18 +41,18 @@ void PolytopeSFC::reset()
 bool PolytopeSFC::generateSFC(const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &obs_pts,
                               const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d)
 {
-    EllipsoidDecomp3D ellip_decomp_util_; // Decomposition util for Liu's method
+    EllipsoidDecomp3D ellip_decomp_util; // Decomposition util for Liu's method
     
     //Using ellipsoid decomposition
-    ellip_decomp_util_.set_obs(obs_pts);
-    ellip_decomp_util_.set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z)); 
-    ellip_decomp_util_.dilate(path_3d); // Set max iteration number of 10, do fix the path
+    ellip_decomp_util.set_obs(obs_pts);
+    ellip_decomp_util.set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z)); 
+    ellip_decomp_util.dilate(path_3d); // Set max iteration number of 10, do fix the path
 
     //Publish visualization msgs
-    // decomp_ros_msgs::msg::EllipsoidArray es_msg = ellipsoid_array_to_ros(ellip_decomp_util_.get_ellipsoids());
+    // decomp_ros_msgs::msg::EllipsoidArray es_msg = ellipsoid_array_to_ros(ellip_decomp_util.get_ellipsoids());
     // es_msg.header.frame_id = params_.map_frame;
 
-    poly_vec_ = ellip_decomp_util_.get_polyhedrons();
+    poly_vec_ = ellip_decomp_util.get_polyhedrons();
 
     // std::vector<LinearConstraint3D> poly_constr_vec_new;
 

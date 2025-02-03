@@ -677,7 +677,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   if (!fe_plan_success)
   {
-    logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) to (%f, %f, %f) with closed_list of size %ld", 
+    logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) \
+                              to (%f, %f, %f) with closed_list of size %ld", 
                               drone_id_, 
                               start_pos(0), start_pos(1), start_pos(2), 
                               rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
@@ -742,7 +743,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   logger_->logInfo(strFmt("   Drone %d: before generateSFC", drone_id_));
 
   tm_sfc_.start();
-  bool gen_sfc_success = poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
+  bool gen_sfc_success = 
+    poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
   tm_sfc_.stop(true);
   // tm_sfc_.getWallAvg(verbose_print_);
 
