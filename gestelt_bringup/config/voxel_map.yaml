@@ -6,7 +6,7 @@
       entire_pcd_map_topic: "/fake_map"
 
       dyn_obs:
-        mark_in_occ_map: true
+        mark_in_occ_map: false
         time_vel: 0.75
 
       verbose_print: false       # If enabled, print debug information such as timing information

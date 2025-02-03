@@ -421,7 +421,8 @@ inline Eigen::Vector3d VoxelMap::getLocalMapMax(const double& offset) const{
   return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); }
 
 
-inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VoxelMap::getLclObsPts(){
+inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VoxelMap::getLclObsPts()
+{
   std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
   return lcl_pts_fixedmapframe_;
 }
@@ -434,10 +435,8 @@ inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
     return false;
   }
   
-  {
-    std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
-    bool_map_3d = bool_map_3d_;
-  }
+  std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
+  bool_map_3d = bool_map_3d_;
 
   return true;
 }
