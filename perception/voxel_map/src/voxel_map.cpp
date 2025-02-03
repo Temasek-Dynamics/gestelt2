@@ -323,7 +323,7 @@ void VoxelMap::updateLocalMap(){
     // Clear existing local map
     lcl_pcd_lclmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
     lcl_pcd_fixedmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    lcl_pts_fixedmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    lcl_pts_fixedmapframe_.clear();
 
     for (auto& coord : occ_coords) // For each occupied coordinate
     {
