@@ -294,18 +294,30 @@ void VoxelMap::updateLocalMap(){
     return;
   }
 
+  // // Update local map origin, which is the location of the local map origin IN the global map frame
+  // mp_.local_map_origin_ = Eigen::Vector3d(
+  //   md_.bl_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
+  //   md_.bl_to_map.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
+  //   md_.bl_to_map.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
+
+  // // Update local map max position based on current UAV position
+  // mp_.local_map_max_ = Eigen::Vector3d(
+  //   md_.bl_to_map.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
+  //   md_.bl_to_map.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
+  //   md_.bl_to_map.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
+  
   // Update local map origin, which is the location of the local map origin IN the global map frame
   mp_.local_map_origin_ = Eigen::Vector3d(
     md_.bl_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
     md_.bl_to_map.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
-    md_.bl_to_map.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
+    0.0);
 
   // Update local map max position based on current UAV position
   mp_.local_map_max_ = Eigen::Vector3d(
     md_.bl_to_map.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
     md_.bl_to_map.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
-    md_.bl_to_map.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
-  
+    mp_.local_map_size_(2));
+
   // Get all occupied coordinates 
   std::vector<Bonxai::CoordT> occ_coords;
   {
@@ -347,12 +359,26 @@ void VoxelMap::updateLocalMap(){
       lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, mp_.static_inflation_}); 
       lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, -mp_.static_inflation_}); 
 
-      // obs_lcl_pos: With respect to local origin
+      // obs_lcl_pos: With respect to local origins
       Eigen::Vector3d obs_lcl_pos = obs_gbl_pos - mp_.local_map_origin_;
       
       // Add pts in local map to local_map and fixed_map frame
       lcl_pcd_lclmapframe_->push_back(
         pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2)));
+
+      // lcl_pcd_lclmapframe_->push_back(
+      //   pcl::PointXYZ(obs_lcl_pos(0) + mp_.static_inflation_, obs_lcl_pos(1), obs_lcl_pos(2)));
+      // lcl_pcd_lclmapframe_->push_back(
+      //   pcl::PointXYZ(obs_lcl_pos(0) - mp_.static_inflation_, obs_lcl_pos(1), obs_lcl_pos(2)));
+      // lcl_pcd_lclmapframe_->push_back(
+      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1) + mp_.static_inflation_, obs_lcl_pos(2)));
+      // lcl_pcd_lclmapframe_->push_back(
+      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1) - mp_.static_inflation_, obs_lcl_pos(2)));
+      // lcl_pcd_lclmapframe_->push_back(
+      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2)  + mp_.static_inflation_));
+      // lcl_pcd_lclmapframe_->push_back(
+      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2) - mp_.static_inflation_));
+
       lcl_pcd_fixedmapframe_->push_back(
         pcl::PointXYZ(obs_gbl_pos_pt3d.x, obs_gbl_pos_pt3d.y, obs_gbl_pos_pt3d.z));
     }
