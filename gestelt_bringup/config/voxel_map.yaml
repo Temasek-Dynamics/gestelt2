@@ -32,7 +32,7 @@
         size_y: 10.0  # [m]
         size_z: 10.0   # [m]
         update_local_map_frequency: 7.5 # [Hz] Frequency to update the local map
-        # viz_map_frequency: 10.0   # [Hz] Frequency to visualize the local map
+        viz_map_frequency: 1.0   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters
         resolution: 0.1   # [m] Resolution of voxel

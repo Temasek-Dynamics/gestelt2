@@ -108,18 +108,18 @@ void VoxelMap::initPubSubTimer()
 
   /* Initialize Publishers */
 	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
-    "occ_map", 10);
-	// slice_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("slice", rclcpp::SensorDataQoS());
+    "occ_map", rclcpp::SensorDataQoS());
 	local_map_bounds_pub_ = node_->create_publisher<geometry_msgs::msg::PolygonStamped>(
-    "local_map/bounds", 10);
+    "local_map/bounds", rclcpp::SensorDataQoS());
+	// slice_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>("slice", rclcpp::SensorDataQoS());
   
   /* Initialize Subscribers */
 	reset_map_sub_ = node_->create_subscription<std_msgs::msg::Empty>(
     "reset_map", 10, std::bind(&VoxelMap::resetMapCB, this, _1) );
 
   /* Initialize ROS Timers */
-	// viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
-  //   std::bind(&VoxelMap::vizMapTimerCB, this), reentrant_group_);
+	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
+    std::bind(&VoxelMap::vizMapTimerCB, this), mapping_group_);
 	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
     std::bind(&VoxelMap::updateLocalMapTimerCB, this), mapping_group_);
 	pub_lcl_map_tf_timer_ = node_->create_wall_timer((1.0/100.0) *1000ms, 
@@ -435,7 +435,8 @@ void VoxelMap::getMapSlice(const double& slice_z_cm,
 
 void VoxelMap::vizMapTimerCB()
 {
-  // publishOccMap(lcl_pcd_lclmapframe_); // publish point cloud within local map
+  publishOccMap(lcl_pcd_fixedmapframe_);
+  publishLocalMapBounds(); // publish boundaries of local map volume
 }
 
 void VoxelMap::updateLocalMapTimerCB()
@@ -446,9 +447,6 @@ void VoxelMap::updateLocalMapTimerCB()
   }
 
   updateLocalMap(); // Update local map voxels
-
-  publishOccMap(lcl_pcd_fixedmapframe_);
-  publishLocalMapBounds(); // publish boundaries of local map volume
 
   // Create horizontal map slices
   // tm_slice_map_.start();
@@ -654,7 +652,7 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
       md_.cam_to_map = tf2::transformToEigen(
         tf_cam_to_map.transform).matrix().cast<double>();
 
-      md_.map_to_cam = md_.cam_to_map.inverse();
+      // md_.map_to_cam = md_.cam_to_map.inverse();
   } 
   catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(
@@ -663,11 +661,10 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     return;
   }
 
-  if (!isInGlobalMap(md_.map_to_cam.block<3,1>(0,3)))
+  if (!isInGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
   {
-    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not \
-        within global map boundary. Skip PCD insertion.", 
-       md_.map_to_cam.col(3)(0), md_.map_to_cam.col(3)(1), md_.map_to_cam.col(3)(2)), 1.0);
+    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary. Skip PCD insertion.", 
+       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
     return;
   }
 
