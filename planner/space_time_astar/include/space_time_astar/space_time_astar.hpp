@@ -134,12 +134,6 @@ private:
 
 /* Getter methods */
 public:
-
-  std::shared_ptr<dynamic_voronoi::DynamicVoronoi> getDynVoro()
-  {
-    return dyn_voro_pln_;
-  }
-
   /**
    * @brief Get successful plan in terms of space i,e. (x,y,z)
    *
@@ -212,7 +206,6 @@ private:
 
   /* Path planner data structures */
   std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>> dyn_voro_arr_; // map of {key: height, value: dynamic voronoi object}
-  std::shared_ptr<dynamic_voronoi::DynamicVoronoi> dyn_voro_pln_{nullptr}; 
 
   // General voronoi params
   std::map<int, std::unordered_set<IntPoint>> marked_bubble_cells_; // Cells that are marked as part of the voronoi bubble with key of height(cm)

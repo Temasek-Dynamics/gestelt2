@@ -44,7 +44,6 @@ void SpaceTimeAStar::reset()
     came_from_vt_.clear();
     open_list_vt_.clear();
     closed_list_vt_.clear();
-
 }
 
 void SpaceTimeAStar::setVoroMap(const std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
@@ -172,7 +171,8 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             << "[HCA*] Start position (" << start_pos_3d.transpose() 
             << "), Start Node (" << start_node_2d.x << ", " << start_node_2d.y 
             << ") is not within map bounds (" 
-            << dyn_voro_arr_[start_z_cm]->getSizeX() << "," << dyn_voro_arr_[start_z_cm]->getSizeY() << ")" << std::endl;
+            << dyn_voro_arr_[start_z_cm]->getSizeX() << "," 
+            << dyn_voro_arr_[start_z_cm]->getSizeY() << ")" << std::endl;
         return false;
     }
     if (!dyn_voro_arr_[goal_z_cm]->posToIdx(
@@ -182,7 +182,8 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             << "[HCA*] Goal position (" << goal_pos_3d.transpose() 
             << "), Goal Node (" << goal_node_2d.x << ", " << goal_node_2d.y 
             << ") is not within map bounds (" 
-            << dyn_voro_arr_[goal_z_cm]->getSizeX() << "," << dyn_voro_arr_[goal_z_cm]->getSizeY() << ")" << std::endl;
+            << dyn_voro_arr_[goal_z_cm]->getSizeX() << "," 
+            << dyn_voro_arr_[goal_z_cm]->getSizeY() << ")" << std::endl;
 
         return false;
     }
@@ -219,19 +220,16 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
     dyn_voro_arr_[start_node.z_cm]->removeObstacle(start_node.x, start_node.y);
     dyn_voro_arr_[goal_node.z_cm]->removeObstacle(goal_node.x, goal_node.y);
 
-    // Set dynamic voronoi used for planning
-    dyn_voro_pln_ = dyn_voro_arr_[start_node.z_cm];
+    came_from_vt_[start_node] = start_node; // keep track of parents
+    VCell start_node_3d(start_node_2d.x, start_node_2d.y, start_z_cm); 
+    g_cost_v_[start_node_3d] = 0; // cost to come
 
-    came_from_vt_[start_node] = start_node;
-    VCell start_node_3d(start_node_2d.x, start_node_2d.y, start_z_cm);
-    g_cost_v_[start_node_3d] = 0;
-
-    open_list_vt_.put(start_node, 0); // start_node has 0 f cost
+    open_list_vt_.put(start_node, 0); // start_node has 0 f-cost
 
     int num_iter = 0;
     std::vector<Eigen::Vector4i> neighbours; // 3d indices of neighbors
 
-    double t_now = clock_->now().seconds();
+    // double t_now = clock_->now().seconds();
 
     while (!open_list_vt_.empty() && num_iter < astar_params_.max_iterations)
     {
@@ -242,8 +240,9 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
 
         VCell_T cur_node = open_list_vt_.get();
 
-        VCell cur_node_3d = VCell(cur_node.x, cur_node.y, cur_node.z_cm);
         closed_list_vt_.insert(cur_node);
+
+        VCell cur_node_3d = VCell(cur_node.x, cur_node.y, cur_node.z_cm);
 
         if (cur_node.isSamePositionAs(goal_node))
         {
@@ -336,11 +335,9 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             }
         };
 
-        
 
         // Get neighbours that are within the map
         getVoroNeighbors(
-            dyn_voro_arr_,
             Eigen::Vector4i(cur_node.x, cur_node.y, cur_node.z_cm, cur_node.t), 
             neighbours, 
             marked_bubble_cells_);
@@ -352,45 +349,43 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             VCell_T nb_node(nb_grid_4d(0), nb_grid_4d(1), nb_grid_4d(2), nb_grid_4d(3));
             VCell nb_node_3d(nb_grid_4d(0), nb_grid_4d(1), nb_grid_4d(2));
 
-            // Synchronize current planning time to that of reservation table entries
-            auto isInReservationTable = [this](const Eigen::Vector4i& grid_4d, const double &t_now) -> bool {
-                for (auto const& tbl : rsvn_tbl_){ // for each agent's reservation table
-                    // e_t_plan_start: space time units since plan started
-                    int e_t_plan_start =  (int) tToSpaceTimeUnits(t_now - tbl.second.t_plan_start);
-                    Eigen::Vector4i grid_4d_sync = grid_4d;
-                    grid_4d_sync(3) += e_t_plan_start;
-                    if (tbl.second.isReserved(grid_4d_sync)){
-                        // std::cout << "  grid(" << grid_4d_sync.transpose() << ") is reserved " << std::endl;
-                        return true;
-                    }
-                }
-                return false;
-            };
+            // // Synchronize current planning time to that of reservation table entries
+            // auto isInReservationTable = [this](const Eigen::Vector4i& grid_4d, const double &t_now) -> bool {
+            //     for (auto const& tbl : rsvn_tbl_){ // for each agent's reservation table
+            //         // e_t_plan_start: space time units since plan started
+            //         int e_t_plan_start =  (int) tToSpaceTimeUnits(t_now - tbl.second.t_plan_start);
+            //         Eigen::Vector4i grid_4d_sync = grid_4d;
+            //         grid_4d_sync(3) += e_t_plan_start;
+            //         if (tbl.second.isReserved(grid_4d_sync)){
+            //             // std::cout << "  grid(" << grid_4d_sync.transpose() << ") is reserved " << std::endl;
+            //             return true;
+            //         }
+            //     }
+            //     return false;
+            // };
 
-            if (isInReservationTable(nb_grid_4d, t_now))
-            {
-                continue;
-            }
+            // if (isInReservationTable(nb_grid_4d, t_now))
+            // {
+            //     continue;
+            // }
 
             double tent_g_cost = g_cost_v_[cur_node_3d] + cost_function(cur_node, nb_node);
 
             // If g_cost is not found or tentative cost is better than previously computed cost, then update costs
-            if (g_cost_v_.find(nb_node_3d) == g_cost_v_.end() || tent_g_cost < g_cost_v_[nb_node_3d])
+            if (g_cost_v_.find(nb_node_3d) == g_cost_v_.end() 
+                || tent_g_cost < g_cost_v_[nb_node_3d])
             {
                 g_cost_v_[nb_node_3d] = tent_g_cost;
                 // The tie_breaker is used to assign a larger weight to the h_cost and favour expanding nodes closer towards the goal
                 // f_cost = g_cost (cost to come) + h_cost (cost to go)
-                double f_cost = g_cost_v_[nb_node_3d] + astar_params_.tie_breaker * cost_function(nb_node, goal_node);
+                double f_cost = tent_g_cost + astar_params_.tie_breaker * cost_function(nb_node, goal_node);
 
                 // If not in closed list: set parent and add to open list
-                if (closed_list_vt_.find(nb_node) == closed_list_vt_.end()) 
-                {
-                    came_from_vt_[nb_node] = cur_node;
-                    open_list_vt_.put(nb_node, f_cost);
-                }
-                // No need to update parents for nodes already in closed list, paths leading up to current node is alr the most optimal
+                came_from_vt_[nb_node] = cur_node;
+                open_list_vt_.put(nb_node, f_cost);
             }
         }
+
         num_iter++;
     }
 

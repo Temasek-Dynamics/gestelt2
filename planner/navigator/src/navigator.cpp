@@ -332,7 +332,7 @@ void Navigator::initParams()
 
   /* A* parameters */
   astar_params_.drone_id = drone_id_;
-  astar_params_.max_iterations = 9999;
+  astar_params_.max_iterations = 50000;
   astar_params_.debug_viz = true;
   astar_params_.tie_breaker = 1.001;
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
@@ -653,12 +653,12 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   // tm_front_end_plan_.start();
 
-  logger_->logError(strFmt("Drone %d: Before front-end planner", drone_id_);
+  logger_->logInfo(strFmt("   Drone %d: Before front-end planner", drone_id_));
 
   bool fe_plan_success = 
     fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
 
-  logger_->logError(strFmt("Drone %d: After front-end planner", drone_id_);
+  logger_->logInfo(strFmt("   Drone %d: After front-end planner", drone_id_));
 
   // Notify the voronoi map generation thread that plan is complete
   // map_ready_for_cons_ = false;
