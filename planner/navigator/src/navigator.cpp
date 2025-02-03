@@ -47,10 +47,10 @@ Navigator::Navigator()
 
   initPubSubTimer();
 
-  // tm_front_end_plan_.updateID(drone_id_);
-  // tm_sfc_.updateID(drone_id_);
-  // tm_mpc_.updateID(drone_id_);
-  // tm_voro_gen_.updateID(drone_id_);
+  tm_front_end_plan_.updateID(drone_id_);
+  tm_sfc_.updateID(drone_id_);
+  tm_mpc_.updateID(drone_id_);
+  tm_voro_gen_.updateID(drone_id_);
   tm_plan_pipeline_.updateID(drone_id_);
 }
 
@@ -472,6 +472,10 @@ void Navigator::planFETimerCB()
 
   // Plan from current position to next waypoint
   if (!planCommlessMPC(goal)){
+    tm_voro_gen_.stop(true);
+    tm_front_end_plan_.stop(true);
+    tm_sfc_.stop(true);
+    tm_mpc_.stop(true);
     tm_plan_pipeline_.stop(true);
     return;
   }
@@ -544,10 +548,11 @@ void Navigator::genVoroMapTimerCB()
 bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   logger_->logInfo(strFmt(" Drone %d: Before planner", drone_id_));
 
-
   if (plan_once_ && plan_complete_){
     return true;
   }
+
+  tm_voro_gen_.start();
 
   if (!voxel_map_->getBoolMap3D(bool_map_3d_)){
     return false;
@@ -596,8 +601,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   }
 
-  // tm_voro_gen_.stop(false);
-
+  tm_voro_gen_.stop(true);
 
   /*****/
   /* 1) Assign voronoi map and reservation table to planner */
@@ -631,13 +635,14 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
 
-  if (!sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
-                          start_pos, start_vel, start_acc))
-  {
+  // if (!sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
+  //                         start_pos, start_vel, start_acc))
+  // {
     start_pos = cur_pos_;
     start_vel = cur_vel_;
     start_acc.setZero();
-  }
+  // }
+
 
   /*****/
   /* 3) Get Receding Horizon Planning goal */
@@ -656,8 +661,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 4) Plan HCA* path */
   /*****/
 
-  // tm_front_end_plan_.start();
-
+  tm_front_end_plan_.start();
 
   bool fe_plan_success = 
     fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
@@ -667,7 +671,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // map_ready_for_cons_ = false;
   // prod_map_cv_.notify_one();
 
-  // tm_front_end_plan_.stop(false);
+
+  tm_front_end_plan_.stop(true);
   // tm_front_end_plan_.getWallAvg(verbose_print_);
 
   if (!fe_plan_success)
@@ -736,10 +741,11 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   logger_->logInfo(strFmt("   Drone %d: before generateSFC", drone_id_));
 
-  // tm_sfc_.start();
+  tm_sfc_.start();
   bool gen_sfc_success = poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
-  // tm_sfc_.stop(false);
+  tm_sfc_.stop(true);
   // tm_sfc_.getWallAvg(verbose_print_);
+
 
   logger_->logInfo(strFmt("   Drone %d: After generateSFC", drone_id_));
 
@@ -847,6 +853,10 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   //   mpc_controller_->setFSC(planes, i); 
   // }
 
+  tm_mpc_.start();
+
+  mpc_controller_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params_);
+
   int final_fe_idx = (int) fe_path_.size(); // last index of front end path that lies in SFC
   for (int i = 0, poly_idx = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC point
   {
@@ -918,9 +928,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // Set initial condition
   mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
 
-  // tm_mpc_.start();
   bool mpc_success = mpc_controller_->run();
-  // tm_mpc_.stop(false);
+  tm_mpc_.stop(true);
   // tm_mpc_.getWallAvg(verbose_print_);
 
   last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;

@@ -541,10 +541,10 @@ private:
   double last_mpc_solve_{-1.0}; // Time that MPC was last solved
 
   /* Timers to measure computation time */
-  // logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Front end plan generation
-  // logger_wrapper::Timer tm_sfc_{"sfc_generation"}; // Safe flight corridors generation
-  // logger_wrapper::Timer tm_mpc_{"mpc_trajectory"}; // MPC trajectory generation
-  // logger_wrapper::Timer tm_voro_gen_{"3d_voro_gen"}; // 3D Voronoi roadmap generation
+  logger_wrapper::Timer tm_front_end_plan_{"front_end"}; // Front end plan generation
+  logger_wrapper::Timer tm_sfc_{"sfc_gen"}; // Safe flight corridors generation
+  logger_wrapper::Timer tm_mpc_{"mpc_gen"}; // MPC trajectory generation
+  logger_wrapper::Timer tm_voro_gen_{"3d_voro_gen"}; // 3D Voronoi roadmap generation
 
   logger_wrapper::Timer tm_plan_pipeline_{"plan_pipeline"}; // Total planning time
 
