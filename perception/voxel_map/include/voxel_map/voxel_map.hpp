@@ -381,9 +381,9 @@ private:
   std::mutex lcl_occ_map_mtx_;  // Mutex lock for lcl_pcd_lclmapframe_
 
   /* Stopwatch for profiling performance */
-  logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
-  logger_wrapper::Timer tm_bonxai_insert_{"bonxai::insertPointCloud"};  // Time required for map construction
-  logger_wrapper::Timer tm_slice_map_{"VoxelMap::getMapSlice"};   // Time required to slice map
+  // logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
+  // logger_wrapper::Timer tm_bonxai_insert_{"bonxai::insertPointCloud"};  // Time required for map construction
+  // logger_wrapper::Timer tm_slice_map_{"VoxelMap::getMapSlice"};   // Time required to slice map
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;

@@ -47,10 +47,10 @@ Navigator::Navigator()
 
   initPubSubTimer();
 
-  tm_front_end_plan_.updateID(drone_id_);
-  tm_sfc_.updateID(drone_id_);
-  tm_mpc_.updateID(drone_id_);
-  tm_voro_gen_.updateID(drone_id_);
+  // tm_front_end_plan_.updateID(drone_id_);
+  // tm_sfc_.updateID(drone_id_);
+  // tm_mpc_.updateID(drone_id_);
+  // tm_voro_gen_.updateID(drone_id_);
 }
 
 void Navigator::init()
@@ -154,9 +154,6 @@ void Navigator::initPubSubTimer()
   fe_plan_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
     "fe_plan/viz", rclcpp::SensorDataQoS());
 
-	minco_traj_viz_pub_ = this->create_publisher<visualization_msgs::msg::Marker>(
-    "minco_traj_viz", rclcpp::SensorDataQoS());
-
   mpc_pred_pos_pub_ = this->create_publisher<nav_msgs::msg::Path>(
     "mpc/traj", rclcpp::SensorDataQoS());
 
@@ -202,9 +199,9 @@ void Navigator::initPubSubTimer()
                                             std::bind(&Navigator::planFETimerCB, this), 
                                             planning_cb_group_);
 
-	gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
-                                                  std::bind(&Navigator::genVoroMapTimerCB, this),
-                                                  mapping_cb_group_);
+	// gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
+  //                                                 std::bind(&Navigator::genVoroMapTimerCB, this),
+  //                                                 mapping_cb_group_);
 
 	send_mpc_cmd_timer_ = this->create_wall_timer((1.0/ctrl_samp_freq_) *1000ms, 
                                                   std::bind(&Navigator::sendMPCCmdTimerCB, this),
@@ -335,7 +332,7 @@ void Navigator::initParams()
 
   /* A* parameters */
   astar_params_.drone_id = drone_id_;
-  astar_params_.max_iterations = 99999;
+  astar_params_.max_iterations = 9999;
   astar_params_.debug_viz = true;
   astar_params_.tie_breaker = 1.001;
   astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
@@ -482,14 +479,76 @@ void Navigator::planFETimerCB()
 
 void Navigator::genVoroMapTimerCB()
 {
-  if (!voxel_map_->getBoolMap3D(bool_map_3d_)){
-    return;
+  // if (!voxel_map_->getBoolMap3D(bool_map_3d_)){
+  //   return;
+  // }
+
+  // std::unique_lock<std::mutex> map_lk(roadmap_mtx_);
+  // prod_map_cv_.wait(map_lk, [&]{return !map_ready_for_cons_;}); // wait for voronoi map to be consumed
+
+  // tm_voro_gen_.start();
+
+  // // Initialize dynamic voronoi 
+
+  // for (auto const& bool_map : bool_map_3d_.bool_maps) // For each boolean map
+  // {
+  //   int z_cm = bool_map.first;
+  //   double z_m = cmToM(bool_map.first);
+
+  //   // Create DynamicVoronoi object if it does not exist
+  //   dynamic_voronoi::DynamicVoronoiParams dyn_voro_params;
+  //   dyn_voro_params.res = bool_map_3d_.resolution;
+  //   dyn_voro_params.origin_z = z_m;
+  //   dyn_voro_params.origin_z_cm = z_cm;
+  //   // dyn_voro_params.origin_x = 0.0;
+  //   // dyn_voro_params.origin_y = 0.0;
+
+  //   dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>();
+  //   dyn_voro_arr_[z_cm]->setParams(dyn_voro_params);
+  //   // Map is received in local_map_frame_
+  //   dyn_voro_arr_[z_cm]->initializeMap( bool_map_3d_.width, 
+  //                                       bool_map_3d_.height, 
+  //                                       bool_map.second);
+
+  //   dyn_voro_arr_[z_cm]->update(); // update distance map and Voronoi diagram
+  //   dyn_voro_arr_[z_cm]->updateAlternativePrunedDiagram();
+  //   // dyn_voro_arr_[z_cm]->prune();  // prune the Voronoi
+
+  //   nav_msgs::msg::OccupancyGrid occ_grid, voro_occ_grid;
+
+  //   occmapToOccGrid(*dyn_voro_arr_[z_cm], 
+  //                   bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
+  //                   occ_grid); // Occupancy map
+
+  //   voronoimapToOccGrid(*dyn_voro_arr_[z_cm], 
+  //                       bool_map_3d_.origin(0), bool_map_3d_.origin(1), 
+  //                       voro_occ_grid); // Voronoi map
+
+  //   voro_occ_grid_pubs_[z_cm]->publish(voro_occ_grid);
+  //   occ_map_pubs_[z_cm]->publish(occ_grid);
+
+  // }
+
+  // tm_voro_gen_.stop(false);
+  // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
+
+  // Notify the planning thread that the voronoi map is ready for consumption
+  // map_ready_for_cons_ = true;
+  // cons_map_cv_.notify_one();
+}
+
+/* Core methods */
+
+bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
+  if (plan_once_ && plan_complete_){
+    return true;
   }
 
-  std::unique_lock<std::mutex> map_lk(roadmap_mtx_);
-  prod_map_cv_.wait(map_lk, [&]{return !map_ready_for_cons_;}); // wait for voronoi map to be consumed
+  if (!voxel_map_->getBoolMap3D(bool_map_3d_)){
+    return false;
+  }
 
-  tm_voro_gen_.start();
+  // tm_voro_gen_.start();
 
   // Initialize dynamic voronoi 
 
@@ -506,7 +565,6 @@ void Navigator::genVoroMapTimerCB()
     // dyn_voro_params.origin_x = 0.0;
     // dyn_voro_params.origin_y = 0.0;
 
-    dyn_voro_arr_[z_cm].reset();
     dyn_voro_arr_[z_cm] = std::make_shared<dynamic_voronoi::DynamicVoronoi>();
     dyn_voro_arr_[z_cm]->setParams(dyn_voro_params);
     // Map is received in local_map_frame_
@@ -533,34 +591,22 @@ void Navigator::genVoroMapTimerCB()
 
   }
 
-  tm_voro_gen_.stop(false);
-  // viz_helper_->pubVoroVertices(voro_verts, voronoi_graph_pub_, local_map_frame_);
+  // tm_voro_gen_.stop(false);
 
-  // Notify the planning thread that the voronoi map is ready for consumption
-  map_ready_for_cons_ = true;
-  cons_map_cv_.notify_one();
-}
-
-/* Core methods */
-
-bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
-  if (plan_once_ && plan_complete_){
-    return true;
-  }
 
   /*****/
   /* 1) Assign voronoi map and reservation table to planner */
   /*****/
 
   // Assign reservation table
-  {
+  // {
     // std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
     // fe_planner_->setReservationTable(rsvn_tbl_);
-  }
+  // }
 
   // Wait for condition variable notification
-  std::unique_lock<std::mutex> map_lk(roadmap_mtx_);
-  cons_map_cv_.wait(map_lk, [&]{return map_ready_for_cons_;});
+  // std::unique_lock<std::mutex> map_lk(roadmap_mtx_);
+  // cons_map_cv_.wait(map_lk, [&]{return map_ready_for_cons_;});
 
   // Assign voronoi map
   voro_params_.z_sep_cm = bool_map_3d_.z_sep_cm;
@@ -598,22 +644,28 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     voxel_map_->getLocalMapOrigin(0.15), voxel_map_->getLocalMapMax(0.15));
 
   // Publish start and goal visualization
-  viz_helper_->pubPlanRequestViz(start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
+  viz_helper_->pubPlanRequestViz(
+    start_pos, rhp_goal_pos, goal_pos, plan_req_pub_, map_frame_);
 
   /*****/
   /* 4) Plan HCA* path */
   /*****/
 
-  tm_front_end_plan_.start();
+  // tm_front_end_plan_.start();
 
-  bool fe_plan_success = fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
+  logger_->logError(strFmt("Drone %d: Before front-end planner", drone_id_);
+
+  bool fe_plan_success = 
+    fe_planner_->generatePlan(mapToLclMap(start_pos), mapToLclMap(rhp_goal_pos));
+
+  logger_->logError(strFmt("Drone %d: After front-end planner", drone_id_);
 
   // Notify the voronoi map generation thread that plan is complete
-  map_ready_for_cons_ = false;
-  prod_map_cv_.notify_one();
+  // map_ready_for_cons_ = false;
+  // prod_map_cv_.notify_one();
 
-  tm_front_end_plan_.stop(false);
-  tm_front_end_plan_.getWallAvg(verbose_print_);
+  // tm_front_end_plan_.stop(false);
+  // tm_front_end_plan_.getWallAvg(verbose_print_);
 
   if (!fe_plan_success)
   {
@@ -679,10 +731,10 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 6) Generate Polyhedron safe flight corridor */
   /*****/
 
-  tm_sfc_.start();
+  // tm_sfc_.start();
   bool gen_sfc_success = poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
-  tm_sfc_.stop(false);
-  tm_sfc_.getWallAvg(verbose_print_);
+  // tm_sfc_.stop(false);
+  // tm_sfc_.getWallAvg(verbose_print_);
 
   // Generate SFC based on smoothed front-end path
   if (!gen_sfc_success)
@@ -860,10 +912,10 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // Set initial condition
   mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
 
-  tm_mpc_.start();
+  // tm_mpc_.start();
   bool mpc_success = mpc_controller_->run();
-  tm_mpc_.stop(false);
-  tm_mpc_.getWallAvg(verbose_print_);
+  // tm_mpc_.stop(false);
+  // tm_mpc_.getWallAvg(verbose_print_);
 
   last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
 

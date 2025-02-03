@@ -309,9 +309,6 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_closed_list_viz_pub_; // Closed list publishers
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fe_plan_viz_pub_; // Publish front-end plan visualization
 
-  // MINCO
-  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr minco_traj_viz_pub_; // Visualize minco trajectory
-
   // MPC
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr mpc_pred_pos_pub_; // Visualize MPC trajectory
 
@@ -544,10 +541,10 @@ private:
   double last_mpc_solve_{-1.0}; // Time that MPC was last solved
 
   /* Timers to measure computation time */
-  logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Front end plan generation
-  logger_wrapper::Timer tm_sfc_{"sfc_generation"}; // Safe flight corridors generation
-  logger_wrapper::Timer tm_mpc_{"mpc_trajectory"}; // MPC trajectory generation
-  logger_wrapper::Timer tm_voro_gen_{"3d_voro_gen"}; // 3D Voronoi roadmap generation
+  // logger_wrapper::Timer tm_front_end_plan_{"front_end_plan"}; // Front end plan generation
+  // logger_wrapper::Timer tm_sfc_{"sfc_generation"}; // Safe flight corridors generation
+  // logger_wrapper::Timer tm_mpc_{"mpc_trajectory"}; // MPC trajectory generation
+  // logger_wrapper::Timer tm_voro_gen_{"3d_voro_gen"}; // 3D Voronoi roadmap generation
 
   /* Visualization */
   std::unique_ptr<viz_helper::VizHelper> viz_helper_; // Class to aid visualization

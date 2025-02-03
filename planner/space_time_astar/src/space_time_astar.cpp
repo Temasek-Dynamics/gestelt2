@@ -253,8 +253,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             return true;
         }
         
-        auto getVoroNeighbors = [&](std::map<int, std::shared_ptr<dynamic_voronoi::DynamicVoronoi>>& dyn_voro_arr,
-                                    const Eigen::Vector4i& grid_pos, 
+        auto getVoroNeighbors = [&](const Eigen::Vector4i& grid_pos, 
                                     std::vector<Eigen::Vector4i>& neighbours,
                                     std::map<int, std::unordered_set<IntPoint>>& marked_bubble_cells)
         {
@@ -274,12 +273,12 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                     int nx = grid_pos(0) + dx;
                     int ny = grid_pos(1) + dy;
 
-                    if (!dyn_voro_arr[z_cm]->isInMap(nx, ny) 
-                        || dyn_voro_arr[z_cm]->isOccupied(nx, ny)){
+                    if (!dyn_voro_arr_[z_cm]->isInMap(nx, ny) 
+                        || dyn_voro_arr_[z_cm]->isOccupied(nx, ny)){
                         continue;
                     }
                     
-                    if (!(dyn_voro_arr[z_cm]->isVoronoiAlternative(nx, ny) 
+                    if (!(dyn_voro_arr_[z_cm]->isVoronoiAlternative(nx, ny) 
                         || (marked_bubble_cells.find(z_cm) != marked_bubble_cells.end()
                             && marked_bubble_cells[z_cm].find(IntPoint(nx, ny)) != marked_bubble_cells[z_cm].end())))
                     {
@@ -297,13 +296,13 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             // Check if current cell is voronoi vertex. 
             // IF so, then add neighbors that go up and down
             if (dyn_voro_arr_[z_cm]->getSqrDistToObs(grid_pos(0), grid_pos(1)) > 2) {
-            // if (dyn_voro_arr[z_cm]->isVoronoiAlternative(grid_pos(0), grid_pos(1))){
+            // if (dyn_voro_arr_[z_cm]->isVoronoiAlternative(grid_pos(0), grid_pos(1))){
                 int z_cm_top = z_cm + voro_params_.z_sep_cm;
                 int z_cm_btm = z_cm - voro_params_.z_sep_cm;
 
                 if (z_cm == voro_params_.min_height_cm){
                     // Check Top layer only
-                    if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
+                    if (!dyn_voro_arr_[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
                                                                 z_cm_top, 
@@ -312,7 +311,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 else if (z_cm == voro_params_.max_height_cm){
                     // Check Bottom layer only
-                    if (!dyn_voro_arr[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
+                    if (!dyn_voro_arr_[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
                                                                 z_cm_btm, 
@@ -321,13 +320,13 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                 }
                 else {
                     // Check both Top and Bottom layer 
-                    if (!dyn_voro_arr[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
+                    if (!dyn_voro_arr_[z_cm_top]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
                                                                 z_cm_top, 
                                                                 cur_t + 1 });
                     }
-                    if (!dyn_voro_arr[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
+                    if (!dyn_voro_arr_[z_cm_btm]->isOccupied(grid_pos(0), grid_pos(1))){
                         neighbours.push_back(Eigen::Vector4i{   grid_pos(0), 
                                                                 grid_pos(1), 
                                                                 z_cm_btm, 

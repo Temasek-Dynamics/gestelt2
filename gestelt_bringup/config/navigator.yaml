@@ -12,7 +12,7 @@
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
       planner_frequency: 5.0  # [Hz] Frequency at which plan is generated
-      generate_voronoi_frequency: 7.5  # [Hz] Frequency at which voronoi is generated
+      generate_voronoi_frequency: 5.0  # [Hz] Frequency at which voronoi is generated
 
       planner_recovery_timeout: 3.0 # [s] UNIMPLEMENTED Timeout before planner recovery behaviour is executed
 
