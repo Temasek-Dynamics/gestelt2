@@ -17,7 +17,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
-SCENARIO_NAME = "vicon_3"
+SCENARIO_NAME = "empty"
 # SCENARIO_NAME = "sutd_2"
 
 class Scenario:
@@ -62,6 +62,12 @@ def generate_launch_description():
       'default.rviz'
     )
 
+    fake_map_pcd_filepath = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
+      scenario.map + '.pcd'
+    )
+
+
     # Mission node: Sends goals to agents
     # mission_node = Node(
     #     package='gestelt_mission',
@@ -90,6 +96,20 @@ def generate_launch_description():
     #         {'collision_check.fatal_radius': 0.14},
     #     ]
     # )
+
+    # Fake map
+    fake_map_publisher = Node(
+        package='fake_map',
+        executable='fake_map_publisher_node',
+        output='screen',
+        shell=False,
+        name='fake_map_publisher_node',
+        parameters=[
+            {'fake_map.pcd_filepath': fake_map_pcd_filepath},
+            {'fake_map.frame_id': "world"},
+            {'fake_map.publishing_frequency': 1.0},
+        ],
+    )
 
     # RVIZ Visualization
     rviz_node = Node(
@@ -122,7 +142,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # fake_map_publisher,
+        fake_map_publisher,
         # rosbag_record,
         rviz_node,
         # swarm_collision_checker_node,

@@ -50,8 +50,15 @@ def generate_launch_description():
     )
 
     '''Frames'''
-    global_frame = 'map' # Fixed
-    map_frame = ['d', drone_id, '_origin'] # Fixed
+    # global_frame = 'map' # Fixed
+    # map_frame = ['d', drone_id, '_origin'] # Fixed
+    # base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
+    # local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
+    # camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
+
+
+    global_frame = 'world' # Fixed
+    map_frame = 'world' # Fixed
     base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
     local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
     camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
@@ -63,11 +70,11 @@ def generate_launch_description():
       'trajectory_server.yaml'
     )
 
-    # fake_sensor_config = os.path.join(
-    #   get_package_share_directory('fake_sensor'),
-    #   'config',
-    #   'fake_sensor.yaml'
-    # )
+    fake_sensor_config = os.path.join(
+      get_package_share_directory('fake_sensor'),
+      'config',
+      'fake_sensor.yaml'
+    )
 
     navigator_cfg = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'config',
@@ -171,28 +178,37 @@ def generate_launch_description():
     )
 
     ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
-    # fake_sensor = Node(
-    #     package='fake_sensor',
-    #     executable='fake_sensor_node',
-    #     output='screen',
-    #     shell=False,
-    #     name=['fake_sensor_', drone_id],
-    #     parameters=[
-    #       {'drone_id': drone_id},
-    #       {'map_frame': map_frame},
-    #       {'local_map_frame': local_map_frame},
-    #       {'sensor_frame': camera_frame},
-    #       {'pcd_map.filepath': fake_map_pcd_filepath},
-    #       fake_sensor_config,
-    #     ],
-    # )
+    fake_sensor = Node(
+        package='fake_sensor',
+        executable='fake_sensor_node',
+        output='screen',
+        shell=False,
+        name=['fake_sensor_', drone_id],
+        parameters=[
+          {'drone_id': drone_id},
+          {'map_frame': map_frame},
+          {'local_map_frame': local_map_frame},
+          {'sensor_frame': camera_frame},
+          {'pcd_map.filepath': fake_map_pcd_filepath},
+          fake_sensor_config,
+        ],
+        remappings=[
+          ('cloud', ['/visbot_itof/point_cloud']),
+        ],
+    )
 
     '''Mavlink/Mavros'''
-    # fcu_addr =  PythonExpression(['14540 +', drone_id])
-    # # fcu_port =  PythonExpression(['14580 +', drone_id])
-    # fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
-    # # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
-    # tgt_system = PythonExpression(['1 +', drone_id])
+    # Simulation
+    fcu_addr =  PythonExpression(['14540 +', drone_id])
+    fcu_port =  PythonExpression(['14580 +', drone_id])
+    fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
+    fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
+    tgt_system = PythonExpression(['1 +', drone_id])
+    # Actual
+    # fcu_url =  '/dev/ttyS7:921600'
+    # tgt_system = 36
+
+    gcs_url =  'udp://:14556'
 
     mavros_node = Node(
       package='mavros',
@@ -201,18 +217,18 @@ def generate_launch_description():
       shell=False,
       namespace='mavros',
       parameters=[
-        {'fcu_url': '/dev/ttyS7:921600'},
-        {'gcs_url': 'udp://:14556@'},
-        {'tgt_system': 36},
+        {'fcu_url': fcu_url},
+        {'gcs_url': gcs_url},
+        {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},
         {'startup_px4_usb_quirk': 'true'},
         px4_pluginlists_cfg,
         px4_config_cfg,
-        {'local_position.frame_id': map_frame},
-        {'local_position.tf.send': 'true'},
-        {'local_position.tf.frame_id': map_frame},
-        {'local_position.tf.child_frame_id': base_link_frame},
+        # {'local_position.frame_id': map_frame},
+        # {'local_position.tf.send': 'true'},
+        # {'local_position.tf.frame_id': map_frame},
+        # {'local_position.tf.child_frame_id': base_link_frame},
       ],
       remappings=[
         ('local_position/odom', ['/odom']),
@@ -269,7 +285,7 @@ def generate_launch_description():
         drone_origin_tf,
         camera_link_tf,
         # Nodes
-        # fake_sensor,
+        fake_sensor,
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge

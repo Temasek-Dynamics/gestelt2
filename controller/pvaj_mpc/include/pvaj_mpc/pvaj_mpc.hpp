@@ -128,6 +128,11 @@ namespace pvaj_mpc
 	{
 		int drone_id{-1};
 
+		// Yaw control
+		bool yaw_ctrl_flag{true};
+		double yaw_lookahead_dist{0.5};
+		double yaw_gain{0.1};
+
 		// Controller params
 		int MPC_HORIZON{15};	// Planning horizon
 		double MPC_STEP{0.1}; // [s] MPC time step
@@ -177,6 +182,11 @@ namespace pvaj_mpc
 		void initParams(const MPCControllerParams &params)
 		{
 			drone_id_ = params.drone_id;
+
+			// Yaw control
+			yaw_ctrl_flag_ = params.yaw_ctrl_flag;
+			yaw_lookahead_dist_ = params.yaw_lookahead_dist;
+			yaw_gain_ = params.yaw_gain;
 
 			// MPC parameters
 			MPC_HORIZON = params.MPC_HORIZON;
@@ -810,6 +820,11 @@ namespace pvaj_mpc
 		mpc_osqp_t mpc_; // MPC data
 		// int fps_;
 
+		// Yaw control params
+		bool yaw_ctrl_flag_{true};
+		double yaw_lookahead_dist_{0.5};
+		double yaw_gain_{0.1};
+
 		// Controller params
 		int MPC_HORIZON{5};
 		double MPC_STEP{0.1}; // [s] time step for dynamics
@@ -818,6 +833,8 @@ namespace pvaj_mpc
 
 	private:
 		int drone_id_{-1};
+
+
 
 		// Vector of set of hyper planes, (n, 4) sized matrix with each row 
 		// containing hyperplane coefficients. Each element is a different step 

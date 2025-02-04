@@ -487,9 +487,13 @@ private:
 
   pvaj_mpc::MPCControllerParams mpc_params_; // Linear MPC parameters
 
+  const double YAW_DOT_MAX_PER_SEC{ 2 * M_PI};
+  const double YAW_DOT_DOT_MAX_PER_SEC{ 5 * M_PI};
+
 private:
   /* Stored Odometry data */
   Eigen::Vector3d cur_pos_{0.0, 0.0, 0.0}, cur_vel_{0.0, 0.0, 0.0}, cur_acc_{0.0, 0.0, 0.0};   // [MAP FRAME] current state
+  double cur_yaw_{0.0};
   Eigen::Vector3d map_origin_{0.0, 0.0, 0.0}; // Fixed Map origin relative to world
 
   /* Mutexes and condition variables*/
@@ -534,7 +538,9 @@ private:
   /* MPC */
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller
 
-  std::vector<Eigen::Vector3d> mpc_pred_u_; // Predicted MPC control trajectory
+  Eigen::Vector2d mpc_yaw_yawrate_; // Predicted MPC control trajectory
+
+  std::vector<Eigen::Vector3d> mpc_pred_u_; // Predicted MPC control trajectory (JERK)
   std::vector<Eigen::Vector3d> mpc_pred_pos_; // Predicted MPC position trajectory
   std::vector<Eigen::Vector3d> mpc_pred_vel_; // Predicted MPC velocity trajectory
   std::vector<Eigen::Vector3d> mpc_pred_acc_; // Predicted MPC acceleration trajectory

@@ -94,11 +94,14 @@ public:
 	void execHover(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate);
 
 	// Execute mission
-	void execMission(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
+	void execMission(
+    const Eigen::Vector3d& p, 
+    const Eigen::Vector3d& v, 
+    const Eigen::Vector3d& a, 
     const Eigen::Vector2d& yaw_yawrate);
 
   void publishCmd(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
-    const Eigen::Vector2d& yaw_yawrate, uint16_t type_mask);
+    const Eigen::Vector2d& yaw_yawrate, const uint16_t& type_mask);
 
 	/* Checks */
 
@@ -276,7 +279,7 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
 
 inline void MavrosHandler::execTakeOff(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate)
 { 
-  int type_mask = IGNORE_VEL | IGNORE_ACC | IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
+  uint16_t type_mask = IGNORE_VEL | IGNORE_ACC | IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
 
   publishCmd( p, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
               yaw_yawrate, type_mask);
@@ -284,16 +287,19 @@ inline void MavrosHandler::execTakeOff(const Eigen::Vector3d& p, const Eigen::Ve
 
 inline void MavrosHandler::execHover(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate)
 {
-  int type_mask = IGNORE_VEL | IGNORE_ACC | IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
+  uint16_t type_mask = IGNORE_VEL | IGNORE_ACC | IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
 
   publishCmd( p, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
               yaw_yawrate, type_mask);
 }
 
-inline void MavrosHandler::execMission(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
+inline void MavrosHandler::execMission(
+  const Eigen::Vector3d& p, 
+  const Eigen::Vector3d& v, 
+  const Eigen::Vector3d& a, 
   const Eigen::Vector2d& yaw_yawrate)
 {
-  int type_mask = IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
+  uint16_t type_mask = IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
 	publishCmd(p, v, a, yaw_yawrate, type_mask);
 }
 
@@ -337,9 +343,12 @@ inline bool MavrosHandler::execLand()
   return true;
 }
 
-inline void MavrosHandler::publishCmd(const Eigen::Vector3d& p, 
-  const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
-  const Eigen::Vector2d& yaw_yawrate, uint16_t type_mask)
+inline void MavrosHandler::publishCmd(
+  const Eigen::Vector3d& p, 
+  const Eigen::Vector3d& v, 
+  const Eigen::Vector3d& a, 
+  const Eigen::Vector2d& yaw_yawrate, 
+  const uint16_t& type_mask)
 {
   mavros_msgs::msg::PositionTarget cmd_msg;
 

@@ -50,6 +50,8 @@ struct PolytopeSFCParams{
   double bbox_y{2.0}; // Bounding box y
   double bbox_z{1.0}; // Bounding box z
 
+  int sfc_samp_intv{10}; // SFC sampling interval of front-end path
+
 }; // struct PolytopeSFCParams
 
 class PolytopeSFC 

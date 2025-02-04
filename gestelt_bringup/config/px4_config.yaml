@@ -68,12 +68,21 @@
     orientation_stdev: 1.0
     magnetic_stdev: 0.0
 
+# # local_position
+# /**/local_position:
+#   ros__parameters:
+#     frame_id: "d0_origin"
+#     tf.send: true
+#     tf.frame_id: "d0_origin"
+#     tf.child_frame_id: "d0_base_link"
+#     tf.send_fcu: false
+
 # local_position
 /**/local_position:
   ros__parameters:
-    frame_id: "d0_origin"
+    frame_id: "world"
     tf.send: true
-    tf.frame_id: "d0_origin"
+    tf.frame_id: "world"
     tf.child_frame_id: "d0_base_link"
     tf.send_fcu: false
 

@@ -280,11 +280,17 @@ void TrajectoryServer::linMPCCmdSubCB(const mavros_msgs::msg::PositionTarget::Un
 	if (UAV::is_in_state<Mission>())
 	{
 		cmd_pos_enu_ = Eigen::Vector3d(
-			msg->position.x, msg->position.y, msg->position.z);
+			msg->position.x, 
+			msg->position.y, 
+			msg->position.z);
 		cmd_vel_enu_ = Eigen::Vector3d(
-			msg->velocity.x, msg->velocity.y, msg->velocity.z);
+			msg->velocity.x, 
+			msg->velocity.y, 
+			msg->velocity.z);
 		cmd_acc_enu_ = Eigen::Vector3d(
-			msg->acceleration_or_force.x, msg->acceleration_or_force.y, msg->acceleration_or_force.z);
+			msg->acceleration_or_force.x, 
+			msg->acceleration_or_force.y, 
+			msg->acceleration_or_force.z);
 
 		cmd_yaw_yawrate_(0) = msg->yaw;
 		cmd_yaw_yawrate_(1) = msg->yaw_rate;
@@ -377,7 +383,6 @@ void TrajectoryServer::pubCtrlTimerCB()
 {
 	static double take_off_hover_T = 1.0 / 5.0; // Take off and landing period
 	static double estop_T = 1.0 / 50.0;			// EStop period
-	cmd_yaw_yawrate_(1) = NAN;					// set yaw rate to 0
 
 	// Check all states
 	if (UAV::is_in_state<Unconnected>())
@@ -395,7 +400,8 @@ void TrajectoryServer::pubCtrlTimerCB()
 	{
 		cmd_pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
 		// Adjust for ground height
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+			cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T)
 		{
@@ -407,7 +413,8 @@ void TrajectoryServer::pubCtrlTimerCB()
 	else if (UAV::is_in_state<Hovering>())
 	{
 		// Adjust for ground height
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+			cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
 		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T)
 		{
@@ -418,7 +425,8 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<Mission>())
 	{
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+			cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
 		if (!geofence_->withinLimits(pos_enu_corr))
 		{
@@ -460,11 +468,12 @@ void TrajectoryServer::SMTickTimerCB()
 	{
 		logger_->logInfoThrottle("[Idle]", 1.0);
 
-		ground_height_ = cur_pos_(2); // Set ground height to last z value
+		// ground_height_ = cur_pos_(2); // Set ground height to last z value
+		ground_height_ = 0.0; // Set ground height to last z value
 		cmd_pos_enu_ = cur_pos_corr_; // Set last commanded position as current position
-		cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_);
+		// cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_);
 
-		mavros_handler_->setGroundheight(ground_height_);
+		// mavros_handler_->setGroundheight(ground_height_);
 	}
 	else if (UAV::is_in_state<Landing>())
 	{

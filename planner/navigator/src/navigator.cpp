@@ -238,8 +238,6 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".planner.t_unit", 0.1);
   this->declare_parameter(param_ns+".planner.output_json_filepath", "");
 
-
-
   this->declare_parameter(param_ns+".reservation_table.inflation", 0.3);
   this->declare_parameter(param_ns+".reservation_table.time_buffer", 0.5);
   this->declare_parameter(param_ns+".reservation_table.window_size", -1);
@@ -248,10 +246,15 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".sfc.poly.bbox_x", 1.0);
   this->declare_parameter(param_ns+".sfc.poly.bbox_y", 1.0);
   this->declare_parameter(param_ns+".sfc.poly.bbox_z", 1.0);
+  this->declare_parameter(param_ns+".sfc.poly.sfc_sampling_interval", 10);
 
   /* MPC */
   this->declare_parameter(param_ns+".mpc.ctrl_samp_freq", 30.0);
   this->declare_parameter(param_ns+".mpc.ref_path_samp_interval", 1);
+
+  this->declare_parameter(param_ns+".mpc.yaw_ctrl_flag", false);
+  this->declare_parameter(param_ns+".mpc.yaw_lookahead_dist", 0.5);
+  this->declare_parameter(param_ns+".mpc.yaw_gain", 0.1);
 
   this->declare_parameter(param_ns+".mpc.horizon", 15);
   this->declare_parameter(param_ns+".mpc.time_step", 0.1);
@@ -309,9 +312,6 @@ void Navigator::initParams()
 	};
   plan_method_ = getPlanMethod(this->get_parameter(param_ns+".plan_method").as_int());
 
-
-
-
   /* Frame ids */
   global_frame_ = this->get_parameter("global_frame").as_string();
   map_frame_ = this->get_parameter("map_frame").as_string();
@@ -324,7 +324,6 @@ void Navigator::initParams()
   plan_once_ = this->get_parameter(param_ns+".planner.plan_once").as_bool();
   t_unit_ = this->get_parameter(param_ns+".planner.t_unit").as_double();
   output_json_filepath_ = this->get_parameter(param_ns+".planner.output_json_filepath").as_string();
-
 
   rsvn_tbl_inflation_ = this->get_parameter(param_ns+".reservation_table.inflation").as_double();
   rsvn_tbl_window_size_ = this->get_parameter(param_ns+".reservation_table.window_size").as_int();
@@ -344,6 +343,8 @@ void Navigator::initParams()
   sfc_params_.bbox_x = this->get_parameter(param_ns+".sfc.poly.bbox_x").as_double();
   sfc_params_.bbox_y = this->get_parameter(param_ns+".sfc.poly.bbox_y").as_double();
   sfc_params_.bbox_z = this->get_parameter(param_ns+".sfc.poly.bbox_z").as_double();
+  sfc_params_.sfc_samp_intv = 
+    this->get_parameter(param_ns+".sfc.poly.sfc_sampling_interval").as_int();
 
   /* MINCO */
   fe_stride_ = this->get_parameter(param_ns+".min_jerk_trajectory.front_end_stride").as_int();
@@ -351,6 +352,11 @@ void Navigator::initParams()
   /* MPC */
   ctrl_samp_freq_ = this->get_parameter(param_ns+".mpc.ctrl_samp_freq").as_double();
   ref_samp_intv_  = this->get_parameter(param_ns+".mpc.ref_path_samp_interval").as_int();
+
+  mpc_params_.yaw_ctrl_flag  = this->get_parameter(param_ns+".mpc.yaw_ctrl_flag").as_bool();
+  mpc_params_.yaw_lookahead_dist  = 
+    this->get_parameter(param_ns+".mpc.yaw_lookahead_dist").as_double();
+  mpc_params_.yaw_gain  = this->get_parameter(param_ns+".mpc.yaw_gain").as_double();
 
   mpc_params_.MPC_HORIZON  = this->get_parameter(param_ns+".mpc.horizon").as_int();
   mpc_params_.MPC_STEP = this->get_parameter(param_ns+".mpc.time_step").as_double();
@@ -440,9 +446,15 @@ void Navigator::sendMPCCmdTimerCB()
     return;
   }
 
+  // logger_->logError(strFmt("MPC Pos(%f, %f, %f), cur_pos(%f, %f, %f)",
+  //                           mpc_pred_pos_[idx](0), 
+  //                           mpc_pred_pos_[idx](1), 
+  //                           mpc_pred_pos_[idx](2),
+  //                           cur_pos_(0), cur_pos_(1), cur_pos_(2)));
+
   // Publish PVA command
   pubPVAJCmd(mpc_pred_pos_[idx], 
-            Eigen::Vector2d(0.0, NAN), 
+            mpc_yaw_yawrate_, 
             mpc_pred_vel_[idx], 
             mpc_pred_acc_[idx], 
             mpc_pred_u_[idx]);
@@ -472,11 +484,11 @@ void Navigator::planFETimerCB()
 
   // Plan from current position to next waypoint
   if (!planCommlessMPC(goal)){
-    tm_voro_gen_.stop(true);
-    tm_front_end_plan_.stop(true);
-    tm_sfc_.stop(true);
-    tm_mpc_.stop(true);
-    tm_plan_pipeline_.stop(true);
+    tm_voro_gen_.stop(false);
+    tm_front_end_plan_.stop(false);
+    tm_sfc_.stop(false);
+    tm_mpc_.stop(false);
+    tm_plan_pipeline_.stop(false);
     return;
   }
   
@@ -546,7 +558,7 @@ void Navigator::genVoroMapTimerCB()
 /* Core methods */
 
 bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
-  logger_->logInfo(strFmt(" Drone %d: Before planner", drone_id_));
+  // logger_->logInfo(strFmt(" Drone %d: Before planner", drone_id_));
 
   if (plan_once_ && plan_complete_){
     return true;
@@ -601,13 +613,13 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   }
 
-  tm_voro_gen_.stop(true);
+  tm_voro_gen_.stop(false);
 
   /*****/
   /* 1) Assign voronoi map and reservation table to planner */
   /*****/
 
-  logger_->logInfo(strFmt("   Drone %d: setVoroMap", drone_id_));
+  // logger_->logInfo(strFmt("   Drone %d: setVoroMap", drone_id_));
 
   // Assign reservation table
   // {
@@ -650,7 +662,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 3) Get Receding Horizon Planning goal */
   /*****/
 
-  logger_->logInfo(strFmt("   Drone %d: RHP", drone_id_));
+  // logger_->logInfo(strFmt("   Drone %d: RHP", drone_id_));
 
   // Get RHP goal
   Eigen::Vector3d rhp_goal_pos = getRHPGoal(
@@ -665,7 +677,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 4) Plan HCA* path */
   /*****/
 
-  logger_->logInfo(strFmt("   Drone %d: Front-end", drone_id_));
+  // logger_->logInfo(strFmt("   Drone %d: Front-end", drone_id_));
 
   tm_front_end_plan_.start();
 
@@ -676,17 +688,16 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // map_ready_for_cons_ = false;
   // prod_map_cv_.notify_one();
 
-  tm_front_end_plan_.stop(true);
+  tm_front_end_plan_.stop(false);
   // tm_front_end_plan_.getWallAvg(verbose_print_);
 
   if (!fe_plan_success)
   {
     logger_->logError(strFmt("Drone %d: Failed to generate FE plan from (%f, %f, %f) \
-                              to (%f, %f, %f) with closed_list of size %ld", 
+                              to (%f, %f, %f)", 
                               drone_id_, 
                               start_pos(0), start_pos(1), start_pos(2), 
-                              rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2),
-                              fe_planner_->getClosedList().size()));
+                              rhp_goal_pos(0), rhp_goal_pos(1), rhp_goal_pos(2)));
     // logger_->logError(strFmt("  Drone %d: local_map origin (%f, %f)", 
     //                           drone_id_, 
     //                           bool_map_3d_.origin(0), 
@@ -698,11 +709,12 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return false;
   }
 
+
   /*****/
   /* 5) Retrieve and transform HCA* path to map frame, publish visualization of path */
   /*****/
 
-  logger_->logInfo(strFmt("   Drone %d: Transform path", drone_id_));
+  // logger_->logInfo(strFmt("   Drone %d: Transform path", drone_id_));
 
   // Current pose must converted from fixed map frame to local map frame 
   // before passing to planner
@@ -710,10 +722,10 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe = 
     fe_planner_->getPathWithTime();
   std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = 
-    fe_planner_->getPathWithTimeSampled(10);
+    fe_planner_->getPathWithTimeSampled(sfc_params_.sfc_samp_intv);
   // fe_sfc_segment_idx: Index of sampled original path. Indexed by polygon number. 
   //    The value is the front-end index at that polygon's starting segment
-  std::vector<int> fe_sfc_segment_idx = fe_planner_->getPathIdxSampled(10);
+  std::vector<int> fe_sfc_segment_idx = fe_planner_->getPathIdxSampled(sfc_params_.sfc_samp_intv);
 
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
   // std::vector<int> fe_sfc_segment_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
@@ -741,6 +753,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
                               fe_path_with_t_, fe_path_);
   transformPathFromLclMapToMap(fe_path_with_t_lclmapframe_smoothed, 
                               fe_path_with_t_smoothed_, fe_path_smoothed_);
+
   // Visualize front-end path
   viz_helper_->pubFrontEndPath(fe_path_, fe_plan_viz_pub_, map_frame_);
 
@@ -748,16 +761,16 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /* 6) Generate Polyhedron safe flight corridor */
   /*****/
 
-  logger_->logInfo(strFmt("   Drone %d: before generateSFC", drone_id_));
+  // logger_->logInfo(strFmt("   Drone %d: before generateSFC", drone_id_));
 
   tm_sfc_.start();
   bool gen_sfc_success = 
     poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
-  tm_sfc_.stop(true);
+  tm_sfc_.stop(false);
   // tm_sfc_.getWallAvg(verbose_print_);
 
 
-  logger_->logInfo(strFmt("   Drone %d: After generateSFC", drone_id_));
+  // logger_->logInfo(strFmt("   Drone %d: After generateSFC", drone_id_));
 
   // Generate SFC based on smoothed front-end path
   if (!gen_sfc_success)
@@ -780,7 +793,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   /*****/
 
   // Find the nearest AStar path point to initial condition
-  int fe_start_idx = 0;
+  int fe_start_idx = 0; // A* index nearest to initial condition (current odom of drone)
   double min_dis = std::numeric_limits<double>::max();
 
   // TODO: improve this routine using KDTree
@@ -790,10 +803,72 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         min_dis = dis;
         fe_start_idx = i;
     }
+  }
 
-    if (i >= 10){
-      break;
+  auto constrainPi = [](const double& x) -> double
+  {
+    double x_out = x;
+    if (x_out > M_PI)
+      x_out -= 2 * M_PI;
+
+    if (x_out < -M_PI)
+      x_out += 2 * M_PI;
+
+    return x_out;
+  };
+
+
+  double cmd_yaw = 0.0;
+  double dt = 0.1;
+
+  if (mpc_controller_->yaw_ctrl_flag_){
+    // Calculate commanded yaw
+    int lookahead_idx = mpc_controller_->yaw_lookahead_dist_ / voxel_map_->getRes();
+
+    Eigen::Vector2d dir_vec(
+        fe_path_[fe_start_idx + lookahead_idx](1) - cur_pos_(1),
+        fe_path_[fe_start_idx + lookahead_idx](0) - cur_pos_(0)
+      );
+    
+    if (fe_start_idx < fe_path_.size() - lookahead_idx - 1) 
+    {
+      cmd_yaw = std::atan2(dir_vec(1), dir_vec(0));
+      std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
     }
+    double yawdot = 0;
+    double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
+
+    d_yaw = constrainPi(d_yaw);
+
+    const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
+    const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
+    double d_yaw_max;
+
+    if (fabs(mpc_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
+    {
+      d_yaw_max = (mpc_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
+    }
+    else { // exceed yaw_dot limits
+      double t1 = (YDM - mpc_yaw_yawrate_(1)) / YDDM;
+      d_yaw_max = ((dt - t1) + dt) * (YDM - mpc_yaw_yawrate_(1)) / 2.0;
+    }
+
+    if (fabs(d_yaw) > fabs(d_yaw_max))
+    {
+      d_yaw = d_yaw_max;
+    }
+    yawdot = d_yaw / dt;
+
+    double yaw = mpc_yaw_yawrate_(0) + d_yaw;
+    yaw = constrainPi(yaw);
+
+    mpc_yaw_yawrate_(0) = cmd_yaw;
+    mpc_yaw_yawrate_(1) = yawdot;
+
+  }
+  else {
+    mpc_yaw_yawrate_(0) = cmd_yaw;
+    mpc_yaw_yawrate_(1) = 0.0;
   }
 
   auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
@@ -939,7 +1014,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
 
   bool mpc_success = mpc_controller_->run();
-  tm_mpc_.stop(true);
+  tm_mpc_.stop(false);
   // tm_mpc_.getWallAvg(verbose_print_);
 
   last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
@@ -948,15 +1023,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     logger_->logError("MPC Solve failure!");
     return false;
   }
-
-  // Set yaw
-  // TODO: figure out a better way
-  // int lk_ahd = 5; // Look ahead distance
-  // int lk_ahd_idx = (fe_start_idx + lk_ahd) < fe_path_.size() ? fe_start_idx + lk_ahd : fe_start_idx;
-  // yaw_yawrate(0) = std::atan2(fe_path_[lk_ahd_idx](1) - cur_pos_(1), 
-  //                             fe_path_[lk_ahd_idx](0) - cur_pos_(0));
-
-  // yaw_yawrate = calculateYaw(fe_path_, plan_start_clock.nanoseconds()/1e9, ...);
 
   // Check if MPC command values are valid
   auto checkValidCmd = [&](const Eigen::Vector3d& vec, const int& min_val, const int& max_val){
@@ -968,13 +1034,12 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return true;
   };
 
+  Eigen::MatrixXd A1, B1; // system transition matrix
+
+  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->MPC_STEP);
+  Eigen::VectorXd x_optimal = mpc_controller_->X_0_;
+
   {
-    Eigen::Vector2d yaw_yawrate{0.0, NAN};
-    Eigen::MatrixXd A1, B1; // system transition matrix
-
-    mpc_controller_->getSystemModel(A1, B1, mpc_controller_->MPC_STEP);
-    Eigen::VectorXd x_optimal = mpc_controller_->X_0_;
-
     std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
     mpc_pred_u_.clear();
@@ -989,7 +1054,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         x_optimal = A1 * x_optimal + B1 * u_optimal;
 
         // Check if position, velocity and acceleration at valid values
-        if (!checkValidCmd(x_optimal.segment<3>(0), -50.0, 50.0) ){
+        if (!checkValidCmd(x_optimal.segment<3>(0), -100.0, 100.0) ){
           logger_->logInfo(strFmt("Invalid MPC commanded position: (%f, %f, %f)"
             ,x_optimal.segment<3>(0)(0), x_optimal.segment<3>(0)(1), x_optimal.segment<3>(0)(2))) ;
           return false;
@@ -1014,12 +1079,11 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 
+  tm_plan_pipeline_.stop(false);
+
+  // logger_->logInfo(strFmt(" Drone %d: After planner", drone_id_));
+
   plan_complete_ = true;
-
-  tm_plan_pipeline_.stop(true);
-
-  logger_->logInfo(strFmt(" Drone %d: After planner", drone_id_));
-
   return true;
 }
 
@@ -1131,6 +1195,15 @@ void Navigator::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
                             msg->twist.twist.linear.y, 
                             msg->twist.twist.linear.z};
 
+  Eigen::Quaterniond q(msg->pose.pose.orientation.w,
+                        msg->pose.pose.orientation.x,
+                        msg->pose.pose.orientation.y,
+                        msg->pose.pose.orientation.z);
+
+  Eigen::Vector3d euler = q.toRotationMatrix().eulerAngles(2, 1, 0); // In yaw, pitch, roll
+
+  cur_yaw_ = euler(0);
+
   viz_helper_->pubText(cur_pos_, agent_id_text_pub_, drone_id_, map_frame_);
 }
 
@@ -1154,6 +1227,7 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
       logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
       return;
     }
+    waypoints_.reset();
 
     waypoints_.addMultipleWP(wp_vec);
 }

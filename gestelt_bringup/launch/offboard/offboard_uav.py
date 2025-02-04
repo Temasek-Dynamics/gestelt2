@@ -17,7 +17,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace, SetParameter
 
-SCENARIO_NAME = "vicon_3"
+SCENARIO_NAME = "empty"
 
 # SCENARIO_NAME = "forest_dense_1"
 # SCENARIO_NAME = "forest_sparse_1"

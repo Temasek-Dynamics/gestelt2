@@ -16,9 +16,9 @@
         # max_x: 18.0
         # max_y: 18.0
         # max_z: 4.5
-        min_x: -100.0
-        min_y: -100.0
-        min_z: 0.45
+        min_x: -50.0
+        min_y: -50.0
+        min_z: 0.3
         max_x: 100.0
         max_y: 100.0
         max_z: 6.0

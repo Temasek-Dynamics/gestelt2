@@ -12,6 +12,8 @@ docker push gestelt/mavoro:latest
 docker build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
 ```
 
+docker run -it --rm --privileged --network host  gestelt/px4_sitl_gz
+
 ## Running containers
 ```bash
 # To use host USB devices, add "--privileged" flag or "--device=/dev/ttyAML1"
