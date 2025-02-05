@@ -817,7 +817,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return x_out;
   };
 
-
   double cmd_yaw = 0.0;
   double dt = 0.1;
 
@@ -833,7 +832,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     if (fe_start_idx < fe_path_.size() - lookahead_idx - 1) 
     {
       cmd_yaw = std::atan2(dir_vec(1), dir_vec(0));
-      std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
     }
     double yawdot = 0;
     double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
@@ -1224,7 +1222,8 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
         msg->pose.position.x, msg->pose.position.y, point_goal_height_));
     }
     else {
-      logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
+      logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
+        global_frame_.c_str(), map_frame_.c_str()));
       return;
     }
     waypoints_.reset();
@@ -1260,7 +1259,8 @@ void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
       }
     }
     else {
-      logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
+      logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
+        global_frame_.c_str(), map_frame_.c_str()));
       return;
     }
 
@@ -1294,7 +1294,8 @@ void Navigator::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::Uniq
       msg->goal.position.x, msg->goal.position.y, msg->goal.position.z);
   }
   else {
-    logger_->logError(strFmt("Only accepting goals in 'world' or '%s' frame, ignoring goals.", map_frame_));
+    logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
+      global_frame_.c_str(), map_frame_.c_str()));
     return;
   }
 

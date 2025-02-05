@@ -9,8 +9,8 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription, LaunchContext
-from launch_ros.actions import Node
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction, LogInfo
+from launch_ros.actions import Node, SetParameter
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, OpaqueFunction, LogInfo
 from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
 
 # def render_launch_config(context: LaunchContext, launch_config):
@@ -50,18 +50,18 @@ def generate_launch_description():
     )
 
     '''Frames'''
-    # global_frame = 'map' # Fixed
-    # map_frame = ['d', drone_id, '_origin'] # Fixed
-    # base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
-    # local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
-    # camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
-
-
-    global_frame = 'world' # Fixed
-    map_frame = 'world' # Fixed
+    global_frame = 'map' # Fixed
+    map_frame = ['d', drone_id, '_origin'] # Fixed
     base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
     local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
     camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
+
+
+    # global_frame = 'world' # Fixed
+    # map_frame = 'world' # Fixed
+    # base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
+    # local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
+    # camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
 
     ''' Get parameter files '''
     traj_server_config = os.path.join(
@@ -112,21 +112,7 @@ def generate_launch_description():
                       arguments = [init_x, init_y, "0", "0", "0", "0", 
                                   global_frame, map_frame])
     
-    # map_frame to base_link_frame tf provided by Mavros
-
-    # drone base_link to sensor fixed TF
-    # camera_link_tf = Node(package = "tf2_ros", 
-    #                    executable = "static_transform_publisher",
-    #                    output="log",
-    #                   arguments = ["0.07535705", 
-    #                                "0.05172403", 
-    #                                "-0.03221506", 
-    #                                "0.5842771492883054", 
-    #                                "-0.5800916313355842", 
-    #                                "0.39932214971236324", 
-    #                                "-0.40330600395115485", 
-    #                               base_link_frame, camera_frame])
-
+    # drone base_link to sensor fixed TFx
     camera_link_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        output="log",
@@ -172,7 +158,6 @@ def generate_launch_description():
         parameters=[
           {'drone_id': drone_id},
           {'map_frame': map_frame},
-          {'base_link_frame': base_link_frame},
           traj_server_config
         ],
     )
@@ -225,16 +210,15 @@ def generate_launch_description():
         {'startup_px4_usb_quirk': 'true'},
         px4_pluginlists_cfg,
         px4_config_cfg,
-        # {'local_position.frame_id': map_frame},
-        # {'local_position.tf.send': 'true'},
-        # {'local_position.tf.frame_id': map_frame},
-        # {'local_position.tf.child_frame_id': base_link_frame},
+        # {'mavros.local_position.frame_id': map_frame},
+        # {'mavros.local_position.tf.send': 'true'},
+        # {'mavros.local_position.tf.frame_id': map_frame},
+        # {'mavros.local_position.tf.child_frame_id': base_link_frame},
       ],
       remappings=[
         ('local_position/odom', ['/odom']),
       ],
     )
-
 
     # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
     # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
@@ -291,4 +275,6 @@ def generate_launch_description():
         # Mavlink to ROS bridge
         mavros_node,
         fcu_setup_service_calls,
+        # Set parameters
+        # set_mavros_params
     ])

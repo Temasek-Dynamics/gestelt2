@@ -14,6 +14,12 @@ docker build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
 
 docker run -it --rm --privileged --network host  gestelt/px4_sitl_gz
 
+ros2 launch gestelt_bringup offboard_uav.py
+
+ros2 launch gestelt_bringup execute_mission_single.py
+
+ros2 launch gestelt_bringup gcs.py
+
 ## Running containers
 ```bash
 # To use host USB devices, add "--privileged" flag or "--device=/dev/ttyAML1"

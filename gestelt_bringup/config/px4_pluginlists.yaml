@@ -2,7 +2,7 @@
   ros__parameters:
     plugin_denylist:
       # common
-
+      - safety_area
       # extras
       - image_pub
       - vibration

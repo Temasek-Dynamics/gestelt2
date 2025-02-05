@@ -66,7 +66,8 @@ void TrajectoryServer::init()
 	// poly_traj_cmd_ = std::make_unique<PolyTrajCmd>(this->shared_from_this());
 
 	// Initialize mavros handler
-	mavros_handler_ = std::make_unique<MavrosHandler>(this->shared_from_this(), map_frame_);
+	mavros_handler_ = std::make_unique<MavrosHandler>(
+		this->shared_from_this(), map_frame_);
 
 	logger_->logInfo("Initialized");
 }
@@ -80,7 +81,6 @@ void TrajectoryServer::initParams()
 	this->declare_parameter("drone_id", 0);
 
 	this->declare_parameter("map_frame", "map");
-	this->declare_parameter("base_link_frame", "base_link");
 
 	this->declare_parameter("trajectory_type", "");
 
@@ -107,7 +107,6 @@ void TrajectoryServer::initParams()
 	drone_id_ = this->get_parameter("drone_id").as_int();
 
 	map_frame_ = this->get_parameter("map_frame").as_string();
-	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 
 	/* Frequencies for timers and periodic publishers*/
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();

@@ -55,7 +55,7 @@ public:
 
     /* Create publishers */
     mavros_cmd_pub_ = node_->create_publisher<mavros_msgs::msg::PositionTarget>(
-      "mavros/setpoint_raw/local", 10);
+      "mavros/setpoint_raw/local", rclcpp::SensorDataQoS());
   }
 
 	void setState(const mavros_msgs::msg::State::UniquePtr& state){
@@ -299,7 +299,7 @@ inline void MavrosHandler::execMission(
   const Eigen::Vector3d& a, 
   const Eigen::Vector2d& yaw_yawrate)
 {
-  uint16_t type_mask = IGNORE_YAW_RATE ; // Ignore Velocity, Acceleration and yaw rate
+  uint16_t type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE; // Ignore Velocity, Acceleration and yaw rate
 	publishCmd(p, v, a, yaw_yawrate, type_mask);
 }
 
@@ -353,20 +353,22 @@ inline void MavrosHandler::publishCmd(
   mavros_msgs::msg::PositionTarget cmd_msg;
 
   cmd_msg.header.stamp = node_->get_clock()->now();
-  cmd_msg.header.frame_id = map_frame_;
   cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
   cmd_msg.type_mask = type_mask;
 
   cmd_msg.position.x = p(0);
   cmd_msg.position.y = p(1);
   cmd_msg.position.z = p(2);
+
   cmd_msg.velocity.x = v(0);
   cmd_msg.velocity.y = v(1);
   cmd_msg.velocity.z = v(2);
+  
   cmd_msg.acceleration_or_force.x = a(0);
   cmd_msg.acceleration_or_force.y = a(1);
   cmd_msg.acceleration_or_force.z = a(2);
   cmd_msg.yaw = yaw_yawrate(0);
+  // cmd_msg.yaw = M_PI;
   cmd_msg.yaw_rate = yaw_yawrate(1);
   // ROS_INFO("Velocity for final command: %f, %f, %f", v(0), v(1), v(2));
   // ROS_INFO("Acceleration for final command: %f, %f, %f", a(0), a(1), a(2));

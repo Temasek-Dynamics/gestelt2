@@ -152,6 +152,14 @@ public:
 public:
 
   /** Initialization methods */
+
+  /**
+   * @brief Construct a new Voxel Map object
+   * 
+   * @param node 
+   * @param map_origin Only used for debugging with full point cloud map
+   * @param num_drones 
+   */
   VoxelMap(rclcpp::Node::SharedPtr node, 
             const Eigen::Vector3d& map_origin,
             const int& num_drones);

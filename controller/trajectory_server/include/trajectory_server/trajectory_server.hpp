@@ -196,7 +196,6 @@ private:
 	int drone_id_{0};
 
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
-	std::string base_link_frame_; // base link frame of uav
 
 	double take_off_landing_tol_{0.15}; // [m] Take off and landing tolerance for execution to be completed
 

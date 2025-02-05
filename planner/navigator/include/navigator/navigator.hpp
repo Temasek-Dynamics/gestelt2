@@ -1001,7 +1001,6 @@ inline void Navigator::pubPVAJCmd(	const Eigen::Vector3d& p,
   mavros_msgs::msg::PositionTarget cmd_msg;
 
   cmd_msg.header.stamp = this->get_clock()->now();
-  cmd_msg.header.frame_id = map_frame_;
   cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
   cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;
 

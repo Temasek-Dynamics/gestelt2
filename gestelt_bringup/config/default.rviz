@@ -5,13 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /TF1
-        - /TF1/Frames1
         - /TF1/Tree1
         - /central1
         - /d01
         - /d01/state1/odom_ax1
-        - /d01/state1/odom_ax1/Status1
         - /d01/state1/agent_id_text1/Topic1
         - /d01/maps1/voro1/voro_map_1001/Topic1
         - /d01/maps1/voro1/voro_map_1501/Topic1
@@ -23,7 +20,6 @@ Panels:
         - /d31/maps1/voro1/voro_map_1501
         - /d71/state1/odom1
         - /d71/state1/odom_ax1
-        - /Pose1/Status1
         - /Pose1/Topic1
       Splitter Ratio: 0.5569307208061218
     Tree Height: 707
@@ -45,7 +41,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: fake_map
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -94,7 +90,7 @@ Visualization Manager:
         d0_origin:
           Value: true
         map:
-          Value: false
+          Value: true
         map_ned:
           Value: false
         odom:
@@ -105,7 +101,7 @@ Visualization Manager:
           Value: false
       Marker Scale: 1
       Name: TF
-      Show Arrows: false
+      Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
@@ -169,7 +165,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-      Enabled: true
+      Enabled: false
       Name: central
     - Class: rviz_common/Group
       Displays:
@@ -238,7 +234,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -247,7 +243,7 @@ Visualization Manager:
                 Reliability Policy: Best Effort
                 Value: /agent_id_text
               Value: true
-          Enabled: true
+          Enabled: false
           Name: state
         - Class: rviz_common/Group
           Displays:
@@ -255,7 +251,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -268,8 +264,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4180,7 +4175,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: world
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
@@ -4223,25 +4218,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 14.466344833374023
+      Distance: 9.686511039733887
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.12169599533081055
-        Y: -0.25747108459472656
-        Z: 6.67572021484375e-06
+        X: 0.1024479866027832
+        Y: -0.2993626594543457
+        Z: 5.245208740234375e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2697973251342773
+      Pitch: 1.2697970867156982
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.1773924827575684
+      Yaw: 3.4573862552642822
     Saved: ~
 Window Geometry:
   Displays:
