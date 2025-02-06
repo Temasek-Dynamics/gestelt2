@@ -860,7 +860,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     double yaw = mpc_yaw_yawrate_(0) + d_yaw;
     yaw = constrainPi(yaw);
 
-    mpc_yaw_yawrate_(0) = cmd_yaw;
+    mpc_yaw_yawrate_(0) = yaw;
     mpc_yaw_yawrate_(1) = yawdot;
 
   }
