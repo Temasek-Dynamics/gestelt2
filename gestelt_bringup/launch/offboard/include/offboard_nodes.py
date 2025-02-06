@@ -201,7 +201,7 @@ def generate_launch_description():
       namespace='mavros',
       parameters=[
         {'fcu_url': fcu_url},
-        {'gcs_url': 'udp://:14556'},
+        {'gcs_url': 'udp://:14556@'},
         {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},
