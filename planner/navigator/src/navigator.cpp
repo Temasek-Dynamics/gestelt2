@@ -831,7 +831,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     
     if (fe_start_idx < fe_path_.size() - lookahead_idx - 1) 
     {
-      cmd_yaw = std::atan2(dir_vec(1), dir_vec(0));
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
     double yawdot = 0;
     double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
