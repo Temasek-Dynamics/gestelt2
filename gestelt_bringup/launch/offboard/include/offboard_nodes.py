@@ -184,14 +184,14 @@ def generate_launch_description():
 
     '''Mavlink/Mavros'''
     # Simulation
-    fcu_addr =  PythonExpression(['14540 +', drone_id])
-    fcu_port =  PythonExpression(['14580 +', drone_id])
-    fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
-    fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
-    tgt_system = PythonExpression(['1 +', drone_id])
+    # fcu_addr =  PythonExpression(['14540 +', drone_id])
+    # fcu_port =  PythonExpression(['14580 +', drone_id])
+    # fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
+    # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
+    # tgt_system = PythonExpression(['1 +', drone_id])
     # Actual
-    # fcu_url =  '/dev/ttyS7:921600'
-    # tgt_system = 36
+    fcu_url =  '/dev/ttyS7:921600'
+    tgt_system = 36
 
     gcs_url =  'udp://:14556'
 
@@ -276,5 +276,4 @@ def generate_launch_description():
         mavros_node,
         fcu_setup_service_calls,
         # Set parameters
-        # set_mavros_params
     ])
