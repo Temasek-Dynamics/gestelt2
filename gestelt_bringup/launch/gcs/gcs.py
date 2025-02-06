@@ -157,7 +157,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         # fake_map_publisher,
-        rosbag_record,
+        # rosbag_record,
         rviz_node,
         # swarm_collision_checker_node,
     ])

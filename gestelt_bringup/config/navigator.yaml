@@ -51,8 +51,8 @@
         # u_max: 60.0
         
         # # State bounds
-        v_min: -1.5
-        v_max: 1.5
+        v_min: -0.5
+        v_max: 0.5
         a_min: -20.0
         a_max: 20.0
         # Control bounds

@@ -144,4 +144,7 @@ start_bridge
 
 # Restart VINS (Immediately after starting bridge)
 vins_restart
+
+# Reset occupancy map
+ros2 topic pub /reset_map std_msgs/msg/Empty {} -1
 ```
