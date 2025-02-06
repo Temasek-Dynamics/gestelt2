@@ -180,11 +180,10 @@ def generate_launch_description():
     for id in range(scenario.num_agents):
         prefix = "/d" + str(id) + "/"
         bag_topics.append(prefix + "odom")
-        bag_topics.append(prefix + "static_collisions")
+        # bag_topics.append(prefix + "static_collisions")
         bag_topics.append(prefix + "agent_id_text")
         # Subscription to paths
         bag_topics.append(prefix + "fe_plan/viz")
-        bag_topics.append(prefix + "minco_traj_viz")
         bag_topics.append(prefix + "mpc/traj")
         # Subscription to 3d occupancy voxel map
         bag_topics.append(prefix + "occ_map")
