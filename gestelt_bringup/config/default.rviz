@@ -71,52 +71,21 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: false
     - Class: rviz_default_plugins/TF
-      Enabled: true
+      Enabled: false
       Filter (blacklist): ""
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_link:
-          Value: false
-        base_link_frd:
-          Value: false
-        d0_base_link:
-          Value: true
-        d0_camera_link:
-          Value: false
-        d0_lcl_map:
-          Value: false
-        d0_origin:
-          Value: true
-        map:
-          Value: true
-        map_ned:
-          Value: false
-        odom:
-          Value: false
-        odom_ned:
-          Value: false
-        world:
-          Value: false
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          map:
-            d0_origin:
-              d0_base_link:
-                d0_camera_link:
-                  {}
-              d0_lcl_map:
-                {}
-            map_ned:
-              {}
+        {}
       Update Interval: 0
-      Value: true
+      Value: false
     - Class: rviz_common/Group
       Displays:
         - Class: rviz_default_plugins/Marker
@@ -234,7 +203,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -243,7 +212,7 @@ Visualization Manager:
                 Reliability Policy: Best Effort
                 Value: /agent_id_text
               Value: true
-          Enabled: false
+          Enabled: true
           Name: state
         - Class: rviz_common/Group
           Displays:
@@ -4218,7 +4187,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 9.686511039733887
+      Distance: 18.79422378540039
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -4233,10 +4202,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2697970867156982
+      Pitch: 0.9247972965240479
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.4573862552642822
+      Yaw: 4.752383708953857
     Saved: ~
 Window Geometry:
   Displays:

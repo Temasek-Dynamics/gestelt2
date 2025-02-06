@@ -124,3 +124,24 @@ Drone 6 IP:
   - Using --net=host implies both DDS participants believe they are in the same machine and they try to communicate using SharedMemory instead of UDP".
  - [reference](https://robotics.stackexchange.com/questions/98161/ros2-foxy-nodes-cant-communicate-through-docker-container-border)
 
+
+
+
+# startup sequence
+```bash
+# Start stereocam nodes
+visbot_restart
+
+# Start ROS1 Bridge
+start_bridge
+
+# Start gestelt
+dbg_gestelt
+
+# IN GESTELT CONTAINER
+start_gestelt
+start_bridge
+
+# Restart VINS (Immediately after starting bridge)
+vins_restart
+```

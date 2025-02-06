@@ -163,24 +163,24 @@ def generate_launch_description():
     )
 
     ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
-    fake_sensor = Node(
-        package='fake_sensor',
-        executable='fake_sensor_node',
-        output='screen',
-        shell=False,
-        name=['fake_sensor_', drone_id],
-        parameters=[
-          {'drone_id': drone_id},
-          {'map_frame': map_frame},
-          {'local_map_frame': local_map_frame},
-          {'sensor_frame': camera_frame},
-          {'pcd_map.filepath': fake_map_pcd_filepath},
-          fake_sensor_config,
-        ],
-        remappings=[
-          ('cloud', ['/visbot_itof/point_cloud']),
-        ],
-    )
+    # fake_sensor = Node(
+    #     package='fake_sensor',
+    #     executable='fake_sensor_node',
+    #     output='screen',
+    #     shell=False,
+    #     name=['fake_sensor_', drone_id],
+    #     parameters=[
+    #       {'drone_id': drone_id},
+    #       {'map_frame': map_frame},
+    #       {'local_map_frame': local_map_frame},
+    #       {'sensor_frame': camera_frame},
+    #       {'pcd_map.filepath': fake_map_pcd_filepath},
+    #       fake_sensor_config,
+    #     ],
+    #     remappings=[
+    #       ('cloud', ['/visbot_itof/point_cloud']),
+    #     ],
+    # )
 
     '''Mavlink/Mavros'''
     # Simulation
@@ -267,7 +267,7 @@ def generate_launch_description():
         drone_origin_tf,
         camera_link_tf,
         # Nodes
-        fake_sensor,
+        # fake_sensor,
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge
