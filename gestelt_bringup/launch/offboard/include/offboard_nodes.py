@@ -193,8 +193,6 @@ def generate_launch_description():
     fcu_url =  '/dev/ttyS7:921600'
     tgt_system = 36
 
-    gcs_url =  'udp://:14556'
-
     mavros_node = Node(
       package='mavros',
       executable='mavros_node',
@@ -203,7 +201,7 @@ def generate_launch_description():
       namespace='mavros',
       parameters=[
         {'fcu_url': fcu_url},
-        {'gcs_url': gcs_url},
+        {'gcs_url': 'udp://:14556'},
         {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},
