@@ -2,7 +2,7 @@
 #
 /**:
   ros__parameters:
-    startup_px4_usb_quirk: false
+    startup_px4_usb_quirk: true
 
 # --- system plugins ---
 
