@@ -227,9 +227,9 @@ void Navigator::initParams()
   /* Frame ids */
   this->declare_parameter("global_frame", "world");
   this->declare_parameter("map_frame", "map");
-  this->declare_parameter("local_map_frame", "local_map_frame");
+  this->declare_parameter("local_map_frame", "lcl_map");
   this->declare_parameter("camera_frame", "camera_frame");
-  this->declare_parameter("base_link_frame", "base_link_frame");
+  this->declare_parameter("base_link_frame", "base_link");
 
   /* Space time A* planner */
   this->declare_parameter(param_ns+".planner.goal_tolerance", 0.1);
@@ -429,7 +429,7 @@ void Navigator::sendMPCCmdTimerCB()
   double t_start = this->get_clock()->now().nanoseconds()/1e9;
   // // Get time t relative to start of MPC trajectory
   double e_t_start = t_start - last_mpc_solve_; 
-  double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_controller_->MPC_STEP;
+  double total_traj_duration = (int)mpc_pred_pos_.size() * mpc_controller_->MPC_STEP;
   
   if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
   {
@@ -453,11 +453,27 @@ void Navigator::sendMPCCmdTimerCB()
   //                           cur_pos_(0), cur_pos_(1), cur_pos_(2)));
 
   // Publish PVA command
-  pubPVAJCmd(mpc_pred_pos_[idx], 
-            mpc_yaw_yawrate_, 
-            mpc_pred_vel_[idx], 
-            mpc_pred_acc_[idx], 
-            mpc_pred_u_[idx]);
+  // Send msg in ENU frame
+  mavros_msgs::msg::PositionTarget cmd_msg;
+
+  cmd_msg.header.stamp = this->get_clock()->now();
+  cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+  cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;
+
+  cmd_msg.position.x = mpc_pred_pos_[idx](0);
+  cmd_msg.position.y = mpc_pred_pos_[idx](1);
+  cmd_msg.position.z = mpc_pred_pos_[idx](2);
+  cmd_msg.velocity.x = mpc_pred_vel_[idx](0);
+  cmd_msg.velocity.y = mpc_pred_vel_[idx](1);
+  cmd_msg.velocity.z = mpc_pred_vel_[idx](2);
+  cmd_msg.acceleration_or_force.x = mpc_pred_acc_[idx](0);
+  cmd_msg.acceleration_or_force.y = mpc_pred_acc_[idx](1);
+  cmd_msg.acceleration_or_force.z = mpc_pred_acc_[idx](2);
+
+  cmd_msg.yaw = mpc_yaw_yawrate_(0);
+  cmd_msg.yaw_rate = mpc_yaw_yawrate_(1);
+
+	lin_mpc_cmd_pub_->publish(cmd_msg);
 }
 
 void Navigator::planFETimerCB()
@@ -675,6 +691,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   /*****/
   /* 4) Plan HCA* path */
+  /* Planning is performed in local map frame*/
   /*****/
 
   // logger_->logInfo(strFmt("   Drone %d: Front-end", drone_id_));
@@ -817,57 +834,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     return x_out;
   };
 
-  double cmd_yaw = 0.0;
-  double dt = 0.1;
-
-  if (mpc_controller_->yaw_ctrl_flag_){
-    // Calculate commanded yaw
-    int lookahead_idx = mpc_controller_->yaw_lookahead_dist_ / voxel_map_->getRes();
-
-    Eigen::Vector2d dir_vec(
-        fe_path_[fe_start_idx + lookahead_idx](1) - cur_pos_(1),
-        fe_path_[fe_start_idx + lookahead_idx](0) - cur_pos_(0)
-      );
-    
-    if (fe_start_idx < fe_path_.size() - lookahead_idx - 1) 
-    {
-      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
-    }
-    double yawdot = 0;
-    double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
-
-    d_yaw = constrainPi(d_yaw);
-
-    const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
-    const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
-    double d_yaw_max;
-
-    if (fabs(mpc_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
-    {
-      d_yaw_max = (mpc_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
-    }
-    else { // exceed yaw_dot limits
-      double t1 = (YDM - mpc_yaw_yawrate_(1)) / YDDM;
-      d_yaw_max = ((dt - t1) + dt) * (YDM - mpc_yaw_yawrate_(1)) / 2.0;
-    }
-
-    if (fabs(d_yaw) > fabs(d_yaw_max))
-    {
-      d_yaw = d_yaw_max;
-    }
-    yawdot = d_yaw / dt;
-
-    double yaw = mpc_yaw_yawrate_(0) + d_yaw;
-    yaw = constrainPi(yaw);
-
-    mpc_yaw_yawrate_(0) = yaw;
-    mpc_yaw_yawrate_(1) = yawdot;
-
-  }
-  else {
-    mpc_yaw_yawrate_(0) = cmd_yaw;
-    mpc_yaw_yawrate_(1) = 0.0;
-  }
 
   auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
                                 Eigen::MatrixX4d& planes) {
@@ -975,6 +941,19 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     mpc_controller_->setFSC(planes, i); 
   }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
   // 7b) Set reference path for MPC 
   Eigen::Vector3d last_p_ref; // last position reference
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) 
@@ -1005,6 +984,21 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
     last_p_ref = p_ref;
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // 7c) Solve MPC and visualize path
 
@@ -1074,6 +1068,63 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         mpc_pred_acc_.push_back(x_optimal.segment<3>(6));
     }
   }
+
+  if (mpc_controller_->yaw_ctrl_flag_){
+    double cmd_yaw = 0.0;
+    double dt = 0.1;
+
+    // Calculate commanded yaw
+    // int lookahead_idx = mpc_controller_->yaw_lookahead_dist_ / voxel_map_->getRes();
+    int lookahead_idx = (int)mpc_controller_->yaw_lookahead_dist_;
+
+    if (0 < mpc_pred_pos_.size() - lookahead_idx - 1) 
+    {
+
+      Eigen::Vector2d dir_vec(
+        mpc_pred_pos_[lookahead_idx](1) - cur_pos_(1),
+        mpc_pred_pos_[lookahead_idx](0) - cur_pos_(0)
+      );
+
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+    }
+
+
+    double yawdot = 0;
+    double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
+
+    d_yaw = constrainPi(d_yaw);
+
+    const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
+    const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
+    double d_yaw_max;
+
+    if (fabs(mpc_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
+    {
+      d_yaw_max = (mpc_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
+    }
+    else { // exceed yaw_dot limits
+      double t1 = (YDM - mpc_yaw_yawrate_(1)) / YDDM;
+      d_yaw_max = ((dt - t1) + dt) * (YDM - mpc_yaw_yawrate_(1)) / 2.0;
+    }
+
+    if (fabs(d_yaw) > fabs(d_yaw_max))
+    {
+      d_yaw = d_yaw_max;
+    }
+    yawdot = d_yaw / dt;
+
+    double yaw = mpc_yaw_yawrate_(0) + d_yaw;
+    yaw = constrainPi(yaw);
+
+    mpc_yaw_yawrate_(0) = yaw;
+    mpc_yaw_yawrate_(1) = yawdot;
+
+  }
+  else {
+    mpc_yaw_yawrate_(0) = 0.0;
+    mpc_yaw_yawrate_(1) = 0.0;
+  }
+
 
   pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 

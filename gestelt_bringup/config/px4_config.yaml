@@ -53,7 +53,7 @@
     rot_covariance: 99999.0       # covariance for attitude?
     gps_uere: 1.0                 # User Equivalent Range Error (UERE) of GPS sensor (m)
     use_relative_alt: true        # use relative altitude for local coordinates
-    tf.send: true                # send TF?
+    tf.send: false                # send TF?
     tf.frame_id: "map"            # TF frame_id
     tf.global_frame_id: "earth"   # TF earth frame_id
     tf.child_frame_id: "base_link"  # TF child_frame_id
@@ -68,13 +68,22 @@
     orientation_stdev: 1.0
     magnetic_stdev: 0.0
 
+# # local_position
+# /**/local_position:
+#   ros__parameters:
+#     frame_id: "d0_origin"
+#     tf.send: true
+#     tf.frame_id: "d0_origin"
+#     tf.child_frame_id: "d0_base_link"
+#     tf.send_fcu: false
+
 # local_position
 /**/local_position:
   ros__parameters:
-    frame_id: "d0_origin"
+    frame_id: "map"
     tf.send: true
-    tf.frame_id: "d0_origin"
-    tf.child_frame_id: "d0_base_link"
+    tf.frame_id: "map"
+    tf.child_frame_id: "base_link"
     tf.send_fcu: false
 
 # param

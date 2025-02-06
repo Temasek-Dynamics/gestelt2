@@ -63,7 +63,7 @@ def generate_launch_description():
     base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
     local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
     camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
-
+    
     ''' Get parameter files '''
     traj_server_config = os.path.join(
       get_package_share_directory('trajectory_server'),
@@ -167,7 +167,6 @@ def generate_launch_description():
         parameters=[
           {'drone_id': drone_id},
           {'map_frame': map_frame},
-          {'base_link_frame': base_link_frame},
           traj_server_config
         ],
     )

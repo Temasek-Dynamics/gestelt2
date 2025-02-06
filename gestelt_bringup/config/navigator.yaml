@@ -27,20 +27,20 @@
         ref_path_samp_interval: 1
         # Yaw control
         yaw_ctrl_flag: true # Control the yaw
-        yaw_lookahead_dist: 0.3 # [m] Lookahead distance for calculating yaw
-        yaw_gain:      0.05 # Gain for incorporating yaw error in calculating commanded yaw
+        yaw_lookahead_dist: 5 # [m] Lookahead distance for calculating yaw
+        # yaw_gain:      0.05 # Gain for incorporating yaw error in calculating commanded yaw
         # MPC parameters
         horizon: 15
         time_step: 0.1 #[s]
         # Objective Weights
         R_p: 1000.0
-        R_v: 0.0
+        R_v: 100.0 
         R_a: 0.0
         R_u: 0.0 
         R_u_con: 0.2
-        R_pN: 1000.0
-        R_vN: 1000.0
-        R_aN: 1000.0
+        R_pN: 1000.0 # Terminal
+        R_vN: 1000.0 # Terminal
+        R_aN: 1000.0 # Terminal
         # State bounds
         # v_min: -1.5
         # v_max: 1.5

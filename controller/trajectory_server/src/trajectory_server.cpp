@@ -424,18 +424,26 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<Mission>())
 	{
-		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
-			cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
+		// Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
+		// 	cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
-		if (!geofence_->withinLimits(pos_enu_corr))
+		// if (!geofence_->withinLimits(pos_enu_corr))
+		// {
+		// 	// skip if command is not within limits
+		// 	logger_->logError("OUT OF GEOFENCE: SKIP COMMAND EXECUTION!");
+		// 	return;
+		// }
+
+		// mavros_handler_->execMission(cmd_pos_enu_, cmd_vel_enu_, cmd_acc_enu_, cmd_yaw_yawrate_);
+		
+		if (!geofence_->withinLimits(cmd_pos_enu_))
 		{
 			// skip if command is not within limits
 			logger_->logError("OUT OF GEOFENCE: SKIP COMMAND EXECUTION!");
 			return;
 		}
 
-		mavros_handler_->execMission(pos_enu_corr, cmd_vel_enu_, cmd_acc_enu_, cmd_yaw_yawrate_);
-
+		mavros_handler_->execMission();
 	}
 	else if (UAV::is_in_state<EmergencyStop>())
 	{

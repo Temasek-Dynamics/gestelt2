@@ -258,12 +258,6 @@ private:
   /* Subscription callback to swarm odometry */
   void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int drone_id);
 
-  void pubPVAJCmd(	const Eigen::Vector3d& pos, 
-                    const Eigen::Vector2d& yaw_yawrate,
-                    const Eigen::Vector3d& vel,
-                    const Eigen::Vector3d& acc,
-                    const Eigen::Vector3d& jerk);
-
   void pubMPCPath(std::vector<Eigen::Vector3d> &path);
 
 private:
@@ -991,34 +985,6 @@ inline Eigen::Vector3d Navigator::getRHPGoal(
 // 		return yaw_yawrate;
 // 	}
 
-inline void Navigator::pubPVAJCmd(	const Eigen::Vector3d& p, 
-                                    const Eigen::Vector2d& yaw_yawrate,
-                                    const Eigen::Vector3d& v,
-                                    const Eigen::Vector3d& a,
-                                    const Eigen::Vector3d& jerk)
-{
-  // Send msg in ENU frame
-  mavros_msgs::msg::PositionTarget cmd_msg;
-
-  cmd_msg.header.stamp = this->get_clock()->now();
-  cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
-  cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;
-
-  cmd_msg.position.x = p(0);
-  cmd_msg.position.y = p(1);
-  cmd_msg.position.z = p(2);
-  cmd_msg.velocity.x = v(0);
-  cmd_msg.velocity.y = v(1);
-  cmd_msg.velocity.z = v(2);
-  cmd_msg.acceleration_or_force.x = a(0);
-  cmd_msg.acceleration_or_force.y = a(1);
-  cmd_msg.acceleration_or_force.z = a(2);
-
-  cmd_msg.yaw = yaw_yawrate(0);
-  cmd_msg.yaw_rate = yaw_yawrate(1);
-
-	lin_mpc_cmd_pub_->publish(cmd_msg);
-}
 
 inline void Navigator::pubMPCPath(std::vector<Eigen::Vector3d> &path) {
     nav_msgs::msg::Path msg;

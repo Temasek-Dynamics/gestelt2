@@ -40,6 +40,7 @@
 #include <Eigen/Eigen>
 
 using namespace std::chrono_literals;
+using namespace std::placeholders;
 
 class MavrosHandler 
 {
@@ -53,9 +54,19 @@ public:
     mavros_set_mode_client_ = 
       node_->create_client<mavros_msgs::srv::SetMode>("mavros/set_mode");
 
+
+    /* Create subscribers */
+    lin_mpc_cmd_sub_ = node_->create_subscription<mavros_msgs::msg::PositionTarget>(
+      "navigator/intmd_cmd", rclcpp::SensorDataQoS(),
+      std::bind(&MavrosHandler::linMPCCmdSubCB, this, _1));
+
     /* Create publishers */
     mavros_cmd_pub_ = node_->create_publisher<mavros_msgs::msg::PositionTarget>(
       "mavros/setpoint_raw/local", rclcpp::SensorDataQoS());
+  }
+
+	void linMPCCmdSubCB(const mavros_msgs::msg::PositionTarget::UniquePtr msg){
+    mission_cmd_msg_ = *msg;
   }
 
 	void setState(const mavros_msgs::msg::State::UniquePtr& state){
@@ -94,11 +105,13 @@ public:
 	void execHover(const Eigen::Vector3d& p, const Eigen::Vector2d& yaw_yawrate);
 
 	// Execute mission
-	void execMission(
-    const Eigen::Vector3d& p, 
-    const Eigen::Vector3d& v, 
-    const Eigen::Vector3d& a, 
-    const Eigen::Vector2d& yaw_yawrate);
+	// void execMission(
+  //   const Eigen::Vector3d& p, 
+  //   const Eigen::Vector3d& v, 
+  //   const Eigen::Vector3d& a, 
+  //   const Eigen::Vector2d& yaw_yawrate);
+
+	void execMission();
 
   void publishCmd(const Eigen::Vector3d& p, const Eigen::Vector3d& v, const Eigen::Vector3d& a, 
     const Eigen::Vector2d& yaw_yawrate, const uint16_t& type_mask);
@@ -138,6 +151,11 @@ private:
 
 	mavros_msgs::msg::State state_; // (Mavros) UAV state
   nav_msgs::msg::Odometry odom_; // Vehicle odometry
+
+  mavros_msgs::msg::PositionTarget mission_cmd_msg_;
+
+  /* Subscribers */
+  rclcpp::Subscription<mavros_msgs::msg::PositionTarget>::SharedPtr lin_mpc_cmd_sub_;
 
 	/* Publishers */
 	rclcpp::Publisher<mavros_msgs::msg::PositionTarget>::SharedPtr mavros_cmd_pub_;
@@ -293,14 +311,19 @@ inline void MavrosHandler::execHover(const Eigen::Vector3d& p, const Eigen::Vect
               yaw_yawrate, type_mask);
 }
 
-inline void MavrosHandler::execMission(
-  const Eigen::Vector3d& p, 
-  const Eigen::Vector3d& v, 
-  const Eigen::Vector3d& a, 
-  const Eigen::Vector2d& yaw_yawrate)
+// inline void MavrosHandler::execMission(
+//   const Eigen::Vector3d& p, 
+//   const Eigen::Vector3d& v, 
+//   const Eigen::Vector3d& a, 
+//   const Eigen::Vector2d& yaw_yawrate)
+// {
+//   uint16_t type_mask = IGNORE_YAW_RATE; // Ignore Velocity, Acceleration and yaw rate
+// 	publishCmd(p, v, a, yaw_yawrate, type_mask);
+// }
+
+inline void MavrosHandler::execMission()
 {
-  uint16_t type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE; // Ignore Velocity, Acceleration and yaw rate
-	publishCmd(p, v, a, yaw_yawrate, type_mask);
+  mavros_cmd_pub_->publish(mission_cmd_msg_);
 }
 
 inline bool MavrosHandler::execLand()

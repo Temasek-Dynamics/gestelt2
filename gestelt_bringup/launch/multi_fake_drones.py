@@ -18,8 +18,10 @@ from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
+SCENARIO_NAME = "empty"
+
 # SCENARIO_NAME = "forest_dense_1"
-SCENARIO_NAME = "forest_sparse_1"
+# SCENARIO_NAME = "forest_sparse_1"
 
 # SCENARIO_NAME = "forward_flight_8"
 # SCENARIO_NAME = "forward_flight_10_dense"
@@ -131,21 +133,21 @@ def generate_launch_description():
     )
 
 
-    # Mission node: Sends goals to agents
-    swarm_collision_checker_node = Node(
-        package='swarm_collision_checker',
-        executable='swarm_collision_checker_node',
-        output='screen',
-        shell=False,
-        name='swarm_collision_checker_node',
-        parameters = [
-            {'num_drones': scenario.num_agents},
-            {'odom_topic': "odom"},
-            {'collision_check.frequency': 20.0},
-            {'collision_check.warn_radius': 0.225},
-            {'collision_check.fatal_radius': 0.14},
-        ]
-    )
+    # # Mission node: Sends goals to agents
+    # swarm_collision_checker_node = Node(
+    #     package='swarm_collision_checker',
+    #     executable='swarm_collision_checker_node',
+    #     output='screen',
+    #     shell=False,
+    #     name='swarm_collision_checker_node',
+    #     parameters = [
+    #         {'num_drones': scenario.num_agents},
+    #         {'odom_topic': "odom"},
+    #         {'collision_check.frequency': 20.0},
+    #         {'collision_check.warn_radius': 0.225},
+    #         {'collision_check.fatal_radius': 0.14},
+    #     ]
+    # )
 
     # RVIZ Visualization
     rviz_node = Node(
@@ -220,11 +222,9 @@ def generate_launch_description():
         # Central nodes
         world_to_map_tf,
         fake_map,
-        swarm_collision_checker_node,
-        rosbag_record,
-        # Visualization
+        # swarm_collision_checker_node,
+        # rosbag_record,
         rviz_node,
-        # mission
         mission_node,
         # Simulation instances
         *fake_drone_nodes
