@@ -216,6 +216,8 @@ private:
 	// std::unique_ptr<PolyTrajCmd> poly_traj_cmd_; // MINCO trajectory command reader
 
 	/* Stored Data */
+    mavros_msgs::msg::PositionTarget lin_mpc_cmd_; // saved linear mpc command from callback
+
 	Eigen::Vector3d cur_pos_{0.0, 0.0, 0.0};		// Current position
 	Eigen::Vector3d cur_pos_corr_{0.0, 0.0, 0.0};		// Current position with corrected ground height
 	

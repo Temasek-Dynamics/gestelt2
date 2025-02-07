@@ -9,6 +9,7 @@
       - distance_sensor
       - rangefinder
       - wheel_odometry
+      - guided_target
 
     # plugin_allowlist:
     #   - 'sys_*'

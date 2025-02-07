@@ -432,6 +432,13 @@ private:
   bool isGoalReached(const Eigen::Vector3d& pos, const Eigen::Vector3d& goal);
 
 private:
+  double dbg_fixed_yaw_{0.0};
+  double dbg_fixed_yaw_rate_{0.0};
+  bool enable_dbg_cmds_{false};
+  Eigen::Vector3d dbg_cmd_p_;
+  Eigen::Vector3d dbg_cmd_v_;
+  Eigen::Vector3d dbg_cmd_a_;
+
   /* MPC Params */
   double ctrl_samp_freq_{-1.0};
   int ref_samp_intv_{1}; // FE reference path sampling interval
@@ -465,8 +472,6 @@ private:
   
   std::string output_json_filepath_;  // Output filepath for JSON file
   bool json_output_{false};  // output path to json file
-
-  int fe_stride_;     // stride to sample front-end path for minimum jerk trajectory generation
 
   // For use when populating reservation table 
   double rsvn_tbl_inflation_{-1.0}; // [m] Inflation of cells in the reservation table
@@ -532,8 +537,13 @@ private:
   /* MPC */
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller
 
-  Eigen::Vector2d mpc_yaw_yawrate_; // Predicted MPC control trajectory
 
+  std::vector<Eigen::Vector3d> mpc_pred_u_prev_; // Predicted MPC control trajectory (JERK)
+  std::vector<Eigen::Vector3d> mpc_pred_pos_prev_; // Predicted MPC position trajectory
+  std::vector<Eigen::Vector3d> mpc_pred_vel_prev_; // Predicted MPC velocity trajectory
+  std::vector<Eigen::Vector3d> mpc_pred_acc_prev_; // Predicted MPC acceleration trajectory
+
+  Eigen::Vector2d mpc_yaw_yawrate_; // Predicted MPC control trajectory
   std::vector<Eigen::Vector3d> mpc_pred_u_; // Predicted MPC control trajectory (JERK)
   std::vector<Eigen::Vector3d> mpc_pred_pos_; // Predicted MPC position trajectory
   std::vector<Eigen::Vector3d> mpc_pred_vel_; // Predicted MPC velocity trajectory

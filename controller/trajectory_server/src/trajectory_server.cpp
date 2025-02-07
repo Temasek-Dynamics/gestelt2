@@ -278,6 +278,7 @@ void TrajectoryServer::linMPCCmdSubCB(const mavros_msgs::msg::PositionTarget::Un
 	// Message received in ENU frame
 	if (UAV::is_in_state<Mission>())
 	{
+		lin_mpc_cmd_ = *msg;
 		cmd_pos_enu_ = Eigen::Vector3d(
 			msg->position.x, 
 			msg->position.y, 
@@ -427,15 +428,6 @@ void TrajectoryServer::pubCtrlTimerCB()
 		// Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
 		// 	cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
-		// if (!geofence_->withinLimits(pos_enu_corr))
-		// {
-		// 	// skip if command is not within limits
-		// 	logger_->logError("OUT OF GEOFENCE: SKIP COMMAND EXECUTION!");
-		// 	return;
-		// }
-
-		// mavros_handler_->execMission(cmd_pos_enu_, cmd_vel_enu_, cmd_acc_enu_, cmd_yaw_yawrate_);
-		
 		if (!geofence_->withinLimits(cmd_pos_enu_))
 		{
 			// skip if command is not within limits
@@ -443,7 +435,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 			return;
 		}
 
-		mavros_handler_->execMission();
+		mavros_handler_->execMission(lin_mpc_cmd_);
 	}
 	else if (UAV::is_in_state<EmergencyStop>())
 	{

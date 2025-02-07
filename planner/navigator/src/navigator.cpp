@@ -248,13 +248,25 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".sfc.poly.bbox_z", 1.0);
   this->declare_parameter(param_ns+".sfc.poly.sfc_sampling_interval", 10);
 
+  this->declare_parameter(param_ns+".enable_dbg_cmds", false);
+  this->declare_parameter(param_ns+".dbg_fixed_yaw", 0.0);
+  this->declare_parameter(param_ns+".dbg_fixed_yaw_rate", 0.0);
+  this->declare_parameter(param_ns+".p_x", 0.0);
+  this->declare_parameter(param_ns+".p_y", 0.0);
+  this->declare_parameter(param_ns+".p_z", 0.0);
+  this->declare_parameter(param_ns+".v_x", 0.0);
+  this->declare_parameter(param_ns+".v_y", 0.0);
+  this->declare_parameter(param_ns+".v_z", 0.0);
+  this->declare_parameter(param_ns+".a_x", 0.0);
+  this->declare_parameter(param_ns+".a_y", 0.0);
+  this->declare_parameter(param_ns+".a_z", 0.0);
+
   /* MPC */
   this->declare_parameter(param_ns+".mpc.ctrl_samp_freq", 30.0);
   this->declare_parameter(param_ns+".mpc.ref_path_samp_interval", 1);
 
   this->declare_parameter(param_ns+".mpc.yaw_ctrl_flag", false);
-  this->declare_parameter(param_ns+".mpc.yaw_lookahead_dist", 0.5);
-  this->declare_parameter(param_ns+".mpc.yaw_gain", 0.1);
+  this->declare_parameter(param_ns+".mpc.yaw_lookahead_dist", 5);
 
   this->declare_parameter(param_ns+".mpc.horizon", 15);
   this->declare_parameter(param_ns+".mpc.time_step", 0.1);
@@ -268,16 +280,24 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".mpc.R_vN", 1000.0);
   this->declare_parameter(param_ns+".mpc.R_aN", 1000.0);
 
-  this->declare_parameter(param_ns+".mpc.v_min", -10.0);
-  this->declare_parameter(param_ns+".mpc.v_max", 10.0);
-  this->declare_parameter(param_ns+".mpc.a_min", -20.0);
-  this->declare_parameter(param_ns+".mpc.a_max", 20.0);
-  this->declare_parameter(param_ns+".mpc.u_min", -50.0);
-  this->declare_parameter(param_ns+".mpc.u_max", 50.0);
-
-
-  /* MINCO */
-  this->declare_parameter(param_ns+".min_jerk_trajectory.front_end_stride", 3);
+  mpc_params_.v_min(0) = this->declare_parameter(param_ns+".mpc.vx_min", -10.0);
+  mpc_params_.v_min(1) = this->declare_parameter(param_ns+".mpc.vy_min", -10.0);
+  mpc_params_.v_min(2) = this->declare_parameter(param_ns+".mpc.vz_min", -10.0);
+  mpc_params_.v_max(0) = this->declare_parameter(param_ns+".mpc.vx_max", 10.0);
+  mpc_params_.v_max(1) = this->declare_parameter(param_ns+".mpc.vy_max", 10.0);
+  mpc_params_.v_max(2) = this->declare_parameter(param_ns+".mpc.vz_max", 10.0);
+  mpc_params_.a_min(0) = this->declare_parameter(param_ns+".mpc.ax_min", -20.0);
+  mpc_params_.a_min(1) = this->declare_parameter(param_ns+".mpc.ay_min", -20.0);
+  mpc_params_.a_min(2) = this->declare_parameter(param_ns+".mpc.az_min", -10.0);
+  mpc_params_.a_max(0) = this->declare_parameter(param_ns+".mpc.ax_max", 20.0);
+  mpc_params_.a_max(1) = this->declare_parameter(param_ns+".mpc.ay_max", 20.0);
+  mpc_params_.a_max(2) = this->declare_parameter(param_ns+".mpc.az_max", 20.0);
+  mpc_params_.u_min(0) = this->declare_parameter(param_ns+".mpc.ux_min", -50.0);
+  mpc_params_.u_min(1) = this->declare_parameter(param_ns+".mpc.uy_min", -50.0);
+  mpc_params_.u_min(2) = this->declare_parameter(param_ns+".mpc.uz_min", -50.0);
+  mpc_params_.u_max(0) = this->declare_parameter(param_ns+".mpc.ux_max", 50.0);
+  mpc_params_.u_max(1) = this->declare_parameter(param_ns+".mpc.uy_max", 50.0);
+  mpc_params_.u_max(2) = this->declare_parameter(param_ns+".mpc.uz_max", 50.0);
 
 	/**
 	 * Get params
@@ -346,17 +366,33 @@ void Navigator::initParams()
   sfc_params_.sfc_samp_intv = 
     this->get_parameter(param_ns+".sfc.poly.sfc_sampling_interval").as_int();
 
-  /* MINCO */
-  fe_stride_ = this->get_parameter(param_ns+".min_jerk_trajectory.front_end_stride").as_int();
+  /* Debug commands */
+  enable_dbg_cmds_  = this->get_parameter(param_ns+".enable_dbg_cmds").as_bool();
+
+  dbg_fixed_yaw_ = this->get_parameter(param_ns+".dbg_fixed_yaw").as_double();
+  dbg_fixed_yaw_rate_ = this->get_parameter(param_ns+".dbg_fixed_yaw_rate").as_double();
+
+  dbg_cmd_p_(0)  = this->get_parameter(param_ns+".p_x").as_double();
+  dbg_cmd_p_(1)  = this->get_parameter(param_ns+".p_y").as_double();
+  dbg_cmd_p_(2)  = this->get_parameter(param_ns+".p_z").as_double();
+
+  dbg_cmd_v_(0)  = this->get_parameter(param_ns+".v_x").as_double();
+  dbg_cmd_v_(1)  = this->get_parameter(param_ns+".v_y").as_double();
+  dbg_cmd_v_(2)  = this->get_parameter(param_ns+".v_z").as_double();
+
+  dbg_cmd_a_(0)  = this->get_parameter(param_ns+".a_x").as_double();
+  dbg_cmd_a_(1)  = this->get_parameter(param_ns+".a_y").as_double();
+  dbg_cmd_a_(2)  = this->get_parameter(param_ns+".a_z").as_double();
 
   /* MPC */
   ctrl_samp_freq_ = this->get_parameter(param_ns+".mpc.ctrl_samp_freq").as_double();
   ref_samp_intv_  = this->get_parameter(param_ns+".mpc.ref_path_samp_interval").as_int();
 
+  mpc_params_.drone_id = drone_id_;
+
   mpc_params_.yaw_ctrl_flag  = this->get_parameter(param_ns+".mpc.yaw_ctrl_flag").as_bool();
   mpc_params_.yaw_lookahead_dist  = 
-    this->get_parameter(param_ns+".mpc.yaw_lookahead_dist").as_double();
-  mpc_params_.yaw_gain  = this->get_parameter(param_ns+".mpc.yaw_gain").as_double();
+    this->get_parameter(param_ns+".mpc.yaw_lookahead_dist").as_int();
 
   mpc_params_.MPC_HORIZON  = this->get_parameter(param_ns+".mpc.horizon").as_int();
   mpc_params_.MPC_STEP = this->get_parameter(param_ns+".mpc.time_step").as_double();
@@ -370,22 +406,6 @@ void Navigator::initParams()
   mpc_params_.R_vN = this->get_parameter(param_ns+".mpc.R_vN").as_double();
   mpc_params_.R_aN = this->get_parameter(param_ns+".mpc.R_aN").as_double();
 
-  double v_min = this->get_parameter(param_ns+".mpc.v_min").as_double();
-  double v_max = this->get_parameter(param_ns+".mpc.v_max").as_double();
-  double a_min = this->get_parameter(param_ns+".mpc.a_min").as_double();
-  double a_max = this->get_parameter(param_ns+".mpc.a_max").as_double();
-  double u_min = this->get_parameter(param_ns+".mpc.u_min").as_double();
-  double u_max = this->get_parameter(param_ns+".mpc.u_max").as_double();
-  // State bounds
-  mpc_params_.v_min = Eigen::Vector3d(v_min, v_min, v_min);
-  mpc_params_.v_max = Eigen::Vector3d(v_max, v_max, v_max);
-  mpc_params_.a_min = Eigen::Vector3d(a_min, a_min, a_min);
-  mpc_params_.a_max = Eigen::Vector3d(a_max, a_max, a_max);
-  // Control bounds
-  mpc_params_.u_min = Eigen::Vector3d(u_min, u_min, u_min);
-  mpc_params_.u_max = Eigen::Vector3d(u_max, u_max, u_max);
-
-  mpc_params_.drone_id = drone_id_;
   // Dynamical Parameters
   mpc_params_.Drag.setZero();
   mpc_params_.Drag(0,0) = 0.0;
@@ -417,9 +437,51 @@ void Navigator::pubStateTimerCB()
 
 void Navigator::sendMPCCmdTimerCB()
 {
-  if (mpc_pred_pos_.empty() 
-      || mpc_pred_vel_.empty() 
-      || mpc_pred_acc_.empty())
+
+	// Values set from mavros_msgs/PositionTarget message constants
+	static uint16_t IGNORE_POS{mavros_msgs::msg::PositionTarget::IGNORE_PX 
+                      | mavros_msgs::msg::PositionTarget::IGNORE_PY 
+                      | mavros_msgs::msg::PositionTarget::IGNORE_PZ}; // Ignore position in typemask
+	static uint16_t IGNORE_VEL{mavros_msgs::msg::PositionTarget::IGNORE_VX 
+                      | mavros_msgs::msg::PositionTarget::IGNORE_VY 
+                      | mavros_msgs::msg::PositionTarget::IGNORE_VZ}; // Ignore velocity in typemask
+	static uint16_t IGNORE_ACC{mavros_msgs::msg::PositionTarget::IGNORE_AFX 
+                      | mavros_msgs::msg::PositionTarget::IGNORE_AFY 
+                      | mavros_msgs::msg::PositionTarget::IGNORE_AFZ}; // Ignore acceleration in typemask
+	static uint16_t IGNORE_YAW{mavros_msgs::msg::PositionTarget::IGNORE_YAW}; // Ignore yaw in typemask
+	static uint16_t IGNORE_YAW_RATE{mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE}; // Ignore yaw rate in typemask
+
+  if (enable_dbg_cmds_)
+  {
+    mavros_msgs::msg::PositionTarget cmd_msg;
+
+    cmd_msg.header.stamp = this->get_clock()->now();
+    cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
+    cmd_msg.type_mask = IGNORE_POS | IGNORE_ACC | IGNORE_YAW;
+
+    cmd_msg.position.x = dbg_cmd_p_(0);
+    cmd_msg.position.y = dbg_cmd_p_(1);
+    cmd_msg.position.z = dbg_cmd_p_(2);
+
+    cmd_msg.velocity.x = dbg_cmd_v_(0);
+    cmd_msg.velocity.y = dbg_cmd_v_(1);
+    cmd_msg.velocity.z = dbg_cmd_v_(2);
+    
+    cmd_msg.acceleration_or_force.x = dbg_cmd_a_(0);
+    cmd_msg.acceleration_or_force.y = dbg_cmd_a_(1);
+    cmd_msg.acceleration_or_force.z = dbg_cmd_a_(2);
+
+    cmd_msg.yaw = dbg_fixed_yaw_;
+    cmd_msg.yaw_rate = dbg_fixed_yaw_rate_;
+
+    lin_mpc_cmd_pub_->publish(cmd_msg);
+
+    return;
+  }
+
+  if (mpc_pred_pos_prev_.empty() 
+      || mpc_pred_vel_prev_.empty() 
+      || mpc_pred_acc_prev_.empty())
   {
     return;
   }
@@ -429,7 +491,7 @@ void Navigator::sendMPCCmdTimerCB()
   double t_start = this->get_clock()->now().nanoseconds()/1e9;
   // // Get time t relative to start of MPC trajectory
   double e_t_start = t_start - last_mpc_solve_; 
-  double total_traj_duration = (int)mpc_pred_pos_.size() * mpc_controller_->MPC_STEP;
+  double total_traj_duration = (int)mpc_pred_pos_prev_.size() * mpc_controller_->MPC_STEP;
   
   if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
   {
@@ -441,15 +503,15 @@ void Navigator::sendMPCCmdTimerCB()
   //  elapsed time from start divided by time step of MPC
   int idx =  std::floor(e_t_start / mpc_controller_->MPC_STEP); 
 
-  if (idx >= (int) mpc_pred_pos_.size()){
+  if (idx >= (int) mpc_pred_pos_prev_.size()){
     logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
     return;
   }
 
   // logger_->logError(strFmt("MPC Pos(%f, %f, %f), cur_pos(%f, %f, %f)",
-  //                           mpc_pred_pos_[idx](0), 
-  //                           mpc_pred_pos_[idx](1), 
-  //                           mpc_pred_pos_[idx](2),
+  //                           mpc_pred_pos_prev_[idx](0), 
+  //                           mpc_pred_pos_prev_[idx](1), 
+  //                           mpc_pred_pos_prev_[idx](2),
   //                           cur_pos_(0), cur_pos_(1), cur_pos_(2)));
 
   // Publish PVA command
@@ -458,17 +520,17 @@ void Navigator::sendMPCCmdTimerCB()
 
   cmd_msg.header.stamp = this->get_clock()->now();
   cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
-  cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;
+  cmd_msg.type_mask = IGNORE_YAW_RATE;
 
-  cmd_msg.position.x = mpc_pred_pos_[idx](0);
-  cmd_msg.position.y = mpc_pred_pos_[idx](1);
-  cmd_msg.position.z = mpc_pred_pos_[idx](2);
-  cmd_msg.velocity.x = mpc_pred_vel_[idx](0);
-  cmd_msg.velocity.y = mpc_pred_vel_[idx](1);
-  cmd_msg.velocity.z = mpc_pred_vel_[idx](2);
-  cmd_msg.acceleration_or_force.x = mpc_pred_acc_[idx](0);
-  cmd_msg.acceleration_or_force.y = mpc_pred_acc_[idx](1);
-  cmd_msg.acceleration_or_force.z = mpc_pred_acc_[idx](2);
+  cmd_msg.position.x = mpc_pred_pos_prev_[idx](0);
+  cmd_msg.position.y = mpc_pred_pos_prev_[idx](1);
+  cmd_msg.position.z = mpc_pred_pos_prev_[idx](2);
+  cmd_msg.velocity.x = mpc_pred_vel_prev_[idx](0);
+  cmd_msg.velocity.y = mpc_pred_vel_prev_[idx](1);
+  cmd_msg.velocity.z = mpc_pred_vel_prev_[idx](2);
+  cmd_msg.acceleration_or_force.x = mpc_pred_acc_prev_[idx](0);
+  cmd_msg.acceleration_or_force.y = mpc_pred_acc_prev_[idx](1);
+  cmd_msg.acceleration_or_force.z = mpc_pred_acc_prev_[idx](2);
 
   cmd_msg.yaw = mpc_yaw_yawrate_(0);
   cmd_msg.yaw_rate = mpc_yaw_yawrate_(1);
@@ -500,11 +562,11 @@ void Navigator::planFETimerCB()
 
   // Plan from current position to next waypoint
   if (!planCommlessMPC(goal)){
-    tm_voro_gen_.stop(false);
-    tm_front_end_plan_.stop(false);
-    tm_sfc_.stop(false);
-    tm_mpc_.stop(false);
-    tm_plan_pipeline_.stop(false);
+    // tm_voro_gen_.stop(false);
+    // tm_front_end_plan_.stop(false);
+    // tm_sfc_.stop(false);
+    // tm_mpc_.stop(false);
+    // tm_plan_pipeline_.stop(false);
     return;
   }
   
@@ -669,7 +731,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   //                         start_pos, start_vel, start_acc))
   // {
     start_pos = cur_pos_;
-    start_vel = cur_vel_;
+    // start_vel = cur_vel_;
+    start_vel.setZero();
     start_acc.setZero();
   // }
 
@@ -945,17 +1008,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
 
 
-
-
-
-
-
-
-
-
-
   // 7b) Set reference path for MPC 
-  Eigen::Vector3d last_p_ref; // last position reference
+  Eigen::Vector3d last_p_ref = cur_pos_; // last position reference
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) 
   {
     int fe_idx = fe_start_idx + i;
@@ -970,24 +1024,19 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     Eigen::Vector3d v_ref(0, 0, 0); // vel reference
     Eigen::Vector3d a_ref(0, 0, 0); // acc reference
 
-    if (i == 0) // First iteration
-    {
-      v_ref = (p_ref - cur_pos_) / mpc_controller_->MPC_STEP;
-    }
-    else // rest of the iteration
-    {
-      v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
-    }
+    // if (i == mpc_controller_->MPC_HORIZON-1){
+    //   // do nothing, set as zero
+    // }
+    // else // rest of the iteration
+    // {
+    //   v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
+    // }
 
     // Set PVA reference at given step i
     mpc_controller_->setReference(p_ref, v_ref, a_ref, i);
 
     last_p_ref = p_ref;
   }
-
-
-
-
 
 
 
@@ -1040,6 +1089,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     mpc_pred_acc_.clear();
 
     // Get predicted MPC path based on controls and check if valid
+    bool valid_cmd = true;
     Eigen::Vector3d u_optimal; 
     for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) {
         mpc_controller_->getOptimalControl(u_optimal, i);
@@ -1047,19 +1097,22 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
         // Check if position, velocity and acceleration at valid values
         if (!checkValidCmd(x_optimal.segment<3>(0), -100.0, 100.0) ){
-          logger_->logInfo(strFmt("Invalid MPC commanded position: (%f, %f, %f)"
-            ,x_optimal.segment<3>(0)(0), x_optimal.segment<3>(0)(1), x_optimal.segment<3>(0)(2))) ;
-          return false;
+          logger_->logError(strFmt("Invalid MPC pos: (%f, %f, %f) at idx %d"
+            ,x_optimal.segment<3>(0)(0), x_optimal.segment<3>(0)(1), x_optimal.segment<3>(0)(2), i)) ;
+          valid_cmd = false;
+          break;
         }
-        if (!checkValidCmd(x_optimal.segment<3>(3), -10.0, 10.0) ){
-          logger_->logInfo(strFmt("Invalid MPC commanded velocity: (%f, %f, %f)"
-            ,x_optimal.segment<3>(3)(0), x_optimal.segment<3>(3)(1), x_optimal.segment<3>(3)(2))) ;
-          return false;
+        if (!checkValidCmd(x_optimal.segment<3>(3), -5.0, 5.0) ){
+          logger_->logError(strFmt("Invalid MPC vel: (%f, %f, %f) at idx %d"
+            ,x_optimal.segment<3>(3)(0), x_optimal.segment<3>(3)(1), x_optimal.segment<3>(3)(2), i)) ;
+          valid_cmd = false;
+          break;
         }
         if (!checkValidCmd(x_optimal.segment<3>(6), -60.0, 60.0) ){
-          logger_->logInfo(strFmt("Invalid MPC commanded acceleration: (%f, %f, %f)"
-            ,x_optimal.segment<3>(6)(0), x_optimal.segment<3>(6)(1), x_optimal.segment<3>(6)(2))) ;
-          return false;
+          logger_->logError(strFmt("Invalid MPC acc: (%f, %f, %f) at idx %d"
+            ,x_optimal.segment<3>(6)(0), x_optimal.segment<3>(6)(1), x_optimal.segment<3>(6)(2), i)) ;
+          valid_cmd = false;
+          break;
         }
 
         mpc_pred_u_.push_back(u_optimal);
@@ -1067,6 +1120,17 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         mpc_pred_vel_.push_back(x_optimal.segment<3>(3));
         mpc_pred_acc_.push_back(x_optimal.segment<3>(6));
     }
+
+    if (valid_cmd){
+      mpc_pred_u_prev_ = mpc_pred_u_;
+      mpc_pred_pos_prev_ = mpc_pred_pos_;
+      mpc_pred_vel_prev_ = mpc_pred_vel_;
+      mpc_pred_acc_prev_ = mpc_pred_acc_;
+    }
+    else {
+      return false;
+    }
+
   }
 
   if (mpc_controller_->yaw_ctrl_flag_){
@@ -1074,8 +1138,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     double dt = 0.1;
 
     // Calculate commanded yaw
-    // int lookahead_idx = mpc_controller_->yaw_lookahead_dist_ / voxel_map_->getRes();
-    int lookahead_idx = (int)mpc_controller_->yaw_lookahead_dist_;
+    int lookahead_idx = mpc_controller_->yaw_lookahead_dist_;
 
     if (0 < mpc_pred_pos_.size() - lookahead_idx - 1) 
     {
@@ -1121,7 +1184,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   }
   else {
-    mpc_yaw_yawrate_(0) = 0.0;
+    mpc_yaw_yawrate_(0) = dbg_fixed_yaw_;
     mpc_yaw_yawrate_(1) = 0.0;
   }
 
