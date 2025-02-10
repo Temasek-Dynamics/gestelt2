@@ -479,6 +479,8 @@ void Navigator::sendMPCCmdTimerCB()
     return;
   }
 
+  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+
   if (mpc_pred_pos_prev_.empty() 
       || mpc_pred_vel_prev_.empty() 
       || mpc_pred_acc_prev_.empty())
@@ -486,16 +488,19 @@ void Navigator::sendMPCCmdTimerCB()
     return;
   }
 
-  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
-
-  double t_start = this->get_clock()->now().nanoseconds()/1e9;
-  // // Get time t relative to start of MPC trajectory
+  double t_start = this->get_clock()->now().nanoseconds() / 1e9;
+  // Get time t relative to start of MPC trajectory
   double e_t_start = t_start - last_mpc_solve_; 
   double total_traj_duration = (int)mpc_pred_pos_prev_.size() * mpc_controller_->MPC_STEP;
   
   if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
   {
     // Exceeded duration of trajectory or trajectory timestamp invalid
+    logger_->logWarn("MPC Trajectory is supposed to start in the future or has finished execution! Clearing previously predicted MPC path");
+    mpc_pred_pos_prev_.clear();
+    mpc_pred_vel_prev_.clear();
+    mpc_pred_acc_prev_.clear();
+
     return;
   }
 
@@ -504,15 +509,13 @@ void Navigator::sendMPCCmdTimerCB()
   int idx =  std::floor(e_t_start / mpc_controller_->MPC_STEP); 
 
   if (idx >= (int) mpc_pred_pos_prev_.size()){
-    logger_->logError("DEV ERROR!! sampleMPCTrajectory idx exceeded!");
+    logger_->logWarn("Sampling of MPC Trajectory has exceeded trajectory duration! Clearing previously predicted MPC path");
+    mpc_pred_pos_prev_.clear();
+    mpc_pred_vel_prev_.clear();
+    mpc_pred_acc_prev_.clear();
+
     return;
   }
-
-  // logger_->logError(strFmt("MPC Pos(%f, %f, %f), cur_pos(%f, %f, %f)",
-  //                           mpc_pred_pos_prev_[idx](0), 
-  //                           mpc_pred_pos_prev_[idx](1), 
-  //                           mpc_pred_pos_prev_[idx](2),
-  //                           cur_pos_(0), cur_pos_(1), cur_pos_(2)));
 
   // Publish PVA command
   // Send msg in ENU frame
@@ -727,15 +730,13 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
 
-  // if (!sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
-  //                         start_pos, start_vel, start_acc))
-  // {
+  if (!sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
+                          start_pos, start_vel, start_acc))
+  {
     start_pos = cur_pos_;
-    // start_vel = cur_vel_;
     start_vel.setZero();
     start_acc.setZero();
-  // }
-
+  }
 
   /*****/
   /* 3) Get Receding Horizon Planning goal */
@@ -1004,10 +1005,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     mpc_controller_->setFSC(planes, i); 
   }
 
-
-
-
-
   // 7b) Set reference path for MPC 
   Eigen::Vector3d last_p_ref = cur_pos_; // last position reference
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) 
@@ -1024,30 +1021,19 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     Eigen::Vector3d v_ref(0, 0, 0); // vel reference
     Eigen::Vector3d a_ref(0, 0, 0); // acc reference
 
-    // if (i == mpc_controller_->MPC_HORIZON-1){
-    //   // do nothing, set as zero
-    // }
-    // else // rest of the iteration
-    // {
-    //   v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
-    // }
+    if (i == mpc_controller_->MPC_HORIZON-1){
+      // do nothing, set as zero
+    }
+    else // rest of the iteration
+    {
+      v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
+    }
 
     // Set PVA reference at given step i
     mpc_controller_->setReference(p_ref, v_ref, a_ref, i);
 
     last_p_ref = p_ref;
   }
-
-
-
-
-
-
-
-
-
-
-
 
   // 7c) Solve MPC and visualize path
 
@@ -1057,8 +1043,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   bool mpc_success = mpc_controller_->run();
   tm_mpc_.stop(false);
   // tm_mpc_.getWallAvg(verbose_print_);
-
-  last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
 
   if (!mpc_success){ // Successful MPC solve
     logger_->logError("MPC Solve failure!");
@@ -1081,8 +1065,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   Eigen::VectorXd x_optimal = mpc_controller_->X_0_;
 
   {
-    std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
-
     mpc_pred_u_.clear();
     mpc_pred_pos_.clear();
     mpc_pred_vel_.clear();
@@ -1122,10 +1104,13 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     }
 
     if (valid_cmd){
+      std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
       mpc_pred_u_prev_ = mpc_pred_u_;
       mpc_pred_pos_prev_ = mpc_pred_pos_;
       mpc_pred_vel_prev_ = mpc_pred_vel_;
       mpc_pred_acc_prev_ = mpc_pred_acc_;
+
+      last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
     }
     else {
       return false;

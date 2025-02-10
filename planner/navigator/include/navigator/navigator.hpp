@@ -760,43 +760,48 @@ inline bool Navigator::sampleMPCTrajectory(
   const double& time_samp, 
   Eigen::Vector3d& pos, Eigen::Vector3d& vel, Eigen::Vector3d& acc)
 {
-  return false; 
+  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
-  // if (mpc_pred_pos_.empty() 
-  //     || mpc_pred_vel_.empty() 
-  //     || mpc_pred_acc_.empty())
-  // {
-  //   return false;
-  // }
+  if (mpc_pred_pos_prev_.empty() 
+      || mpc_pred_vel_prev_.empty() 
+      || mpc_pred_acc_prev_.empty())
+  {
+    return false;
+  }
 
-  // if (last_mpc_solve_ < 0.0){
-  //   return false;
-  // }
+  // Get elapsed time since start of MPC trajectory
+  double e_t_start = time_samp - last_mpc_solve_; 
+  // Get total trajectory duration
+  double total_traj_duration = (int)mpc_pred_pos_prev_.size() * mpc_controller_->MPC_STEP;
+  
+  if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
+  {
+    // Exceeded duration of trajectory or trajectory timestamp invalid
+    logger_->logWarn("MPC Trajectory is supposed to start in the future or has finished execution!");
+    return false;
+  }
 
-  // // Get time t relative to start of MPC trajectory
-  // double e_t_start = time_samp - last_mpc_solve_; 
-  // double total_traj_duration = (int)mpc_pred_acc_.size() * mpc_controller_->MPC_STEP;
+  // Get index of point closest to current time
+  //  elapsed time from start divided by time step of MPC
+  int idx =  std::floor(e_t_start / mpc_controller_->MPC_STEP); 
 
-  // if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
-  // {
-  //   // Exceeded duration of trajectory or trajectory timestamp invalid
-  //   return false;
-  // }
+  if (idx >= (int) mpc_pred_pos_prev_.size()){
+    logger_->logWarn("Sampling of MPC Trajectory has exceeded trajectory duration!");
+    return false;
+  }
 
-  // int idx =  std::ceil(e_t_start / mpc_controller_->MPC_STEP); 
+  pos = mpc_pred_pos_prev_[idx];
+  vel = mpc_pred_vel_prev_[idx];
+  acc = mpc_pred_acc_prev_[idx];
 
-  // if (idx >= mpc_pred_acc_.size() ){
-  //   logger_->logError("ERROR!! sampleMPCTrajectory idx exceeded!");
-  // }
+  // Check if sampled MPC position differs from current position by a given tolerance
+  if ((pos-cur_pos_).norm() > samp_mpc_tol_)
+  {
+    
+  }
 
-  // pos = mpc_pred_pos_[idx];
-  // vel = mpc_pred_vel_[idx];
-  // acc = mpc_pred_acc_[idx];
-
-  // return true;
+  return true;
 }
-
-
 
 // P1: Start
 // P2: global goal

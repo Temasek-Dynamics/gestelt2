@@ -24,7 +24,7 @@ Panels:
         - /d71/state1/odom_ax1
         - /Pose1/Topic1
       Splitter Ratio: 0.5569307208061218
-    Tree Height: 707
+    Tree Height: 361
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -43,7 +43,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: cloud
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -222,7 +222,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                plan_req_viz: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -235,9 +235,7 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                fe_path_lines: true
-                fe_path_start_goal: true
-                fe_path_waypoints: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -4777,25 +4775,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 5.9209442138671875
+      Distance: 18.100099563598633
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.16234445571899414
-        Y: -1.9197661876678467
-        Z: 9.308607332059182e-06
+        X: 0.1613391637802124
+        Y: -1.7209737300872803
+        Z: 7.878095857449807e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9247967004776001
+      Pitch: 0.9747970104217529
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.964245557785034
+      Yaw: 3.1192450523376465
     Saved: ~
 Window Geometry:
   Displays:
