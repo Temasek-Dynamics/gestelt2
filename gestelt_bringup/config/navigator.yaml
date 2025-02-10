@@ -22,20 +22,7 @@
       # 2: COMM_MINCO
       plan_method: 1
 
-      enable_dbg_cmds: false
-      dbg_fixed_yaw: 0.0 # [rad] Fixed yaw for debugging, only active when yaw_ctrl_flag is set to false
-      dbg_fixed_yaw_rate: 1.57 # [rad] Fixed yaw for debugging, only active when yaw_ctrl_flag is set to false
-      p_x: 0.0
-      p_y: 0.0
-      p_z: 0.0
-
-      v_x: 0.0
-      v_y: 1.0
-      v_z: 0.0 
-
-      a_x: 0.0
-      a_y: 0.0
-      a_z: 0.0
+      samp_mpc_tolerance: 0.5 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
 
       mpc:
         ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled

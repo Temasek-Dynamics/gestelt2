@@ -248,18 +248,6 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".sfc.poly.bbox_z", 1.0);
   this->declare_parameter(param_ns+".sfc.poly.sfc_sampling_interval", 10);
 
-  this->declare_parameter(param_ns+".enable_dbg_cmds", false);
-  this->declare_parameter(param_ns+".dbg_fixed_yaw", 0.0);
-  this->declare_parameter(param_ns+".dbg_fixed_yaw_rate", 0.0);
-  this->declare_parameter(param_ns+".p_x", 0.0);
-  this->declare_parameter(param_ns+".p_y", 0.0);
-  this->declare_parameter(param_ns+".p_z", 0.0);
-  this->declare_parameter(param_ns+".v_x", 0.0);
-  this->declare_parameter(param_ns+".v_y", 0.0);
-  this->declare_parameter(param_ns+".v_z", 0.0);
-  this->declare_parameter(param_ns+".a_x", 0.0);
-  this->declare_parameter(param_ns+".a_y", 0.0);
-  this->declare_parameter(param_ns+".a_z", 0.0);
 
   /* MPC */
   this->declare_parameter(param_ns+".mpc.ctrl_samp_freq", 30.0);
@@ -367,24 +355,12 @@ void Navigator::initParams()
     this->get_parameter(param_ns+".sfc.poly.sfc_sampling_interval").as_int();
 
   /* Debug commands */
-  enable_dbg_cmds_  = this->get_parameter(param_ns+".enable_dbg_cmds").as_bool();
-
-  dbg_fixed_yaw_ = this->get_parameter(param_ns+".dbg_fixed_yaw").as_double();
-  dbg_fixed_yaw_rate_ = this->get_parameter(param_ns+".dbg_fixed_yaw_rate").as_double();
-
-  dbg_cmd_p_(0)  = this->get_parameter(param_ns+".p_x").as_double();
-  dbg_cmd_p_(1)  = this->get_parameter(param_ns+".p_y").as_double();
-  dbg_cmd_p_(2)  = this->get_parameter(param_ns+".p_z").as_double();
-
-  dbg_cmd_v_(0)  = this->get_parameter(param_ns+".v_x").as_double();
-  dbg_cmd_v_(1)  = this->get_parameter(param_ns+".v_y").as_double();
-  dbg_cmd_v_(2)  = this->get_parameter(param_ns+".v_z").as_double();
-
-  dbg_cmd_a_(0)  = this->get_parameter(param_ns+".a_x").as_double();
-  dbg_cmd_a_(1)  = this->get_parameter(param_ns+".a_y").as_double();
-  dbg_cmd_a_(2)  = this->get_parameter(param_ns+".a_z").as_double();
+  dbg_fixed_yaw_ = this->declare_parameter(param_ns+".dbg_fixed_yaw", 0.0);
+  dbg_fixed_yaw_rate_ = this->declare_parameter(param_ns+".dbg_fixed_yaw_rate", 0.0);
 
   /* MPC */
+  samp_mpc_tol_ = this->declare_parameter(param_ns+".samp_mpc_tolerance", 0.5);
+
   ctrl_samp_freq_ = this->get_parameter(param_ns+".mpc.ctrl_samp_freq").as_double();
   ref_samp_intv_  = this->get_parameter(param_ns+".mpc.ref_path_samp_interval").as_int();
 
@@ -437,48 +413,6 @@ void Navigator::pubStateTimerCB()
 
 void Navigator::sendMPCCmdTimerCB()
 {
-
-	// Values set from mavros_msgs/PositionTarget message constants
-	static uint16_t IGNORE_POS{mavros_msgs::msg::PositionTarget::IGNORE_PX 
-                      | mavros_msgs::msg::PositionTarget::IGNORE_PY 
-                      | mavros_msgs::msg::PositionTarget::IGNORE_PZ}; // Ignore position in typemask
-	static uint16_t IGNORE_VEL{mavros_msgs::msg::PositionTarget::IGNORE_VX 
-                      | mavros_msgs::msg::PositionTarget::IGNORE_VY 
-                      | mavros_msgs::msg::PositionTarget::IGNORE_VZ}; // Ignore velocity in typemask
-	static uint16_t IGNORE_ACC{mavros_msgs::msg::PositionTarget::IGNORE_AFX 
-                      | mavros_msgs::msg::PositionTarget::IGNORE_AFY 
-                      | mavros_msgs::msg::PositionTarget::IGNORE_AFZ}; // Ignore acceleration in typemask
-	static uint16_t IGNORE_YAW{mavros_msgs::msg::PositionTarget::IGNORE_YAW}; // Ignore yaw in typemask
-	static uint16_t IGNORE_YAW_RATE{mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE}; // Ignore yaw rate in typemask
-
-  if (enable_dbg_cmds_)
-  {
-    mavros_msgs::msg::PositionTarget cmd_msg;
-
-    cmd_msg.header.stamp = this->get_clock()->now();
-    cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
-    cmd_msg.type_mask = IGNORE_POS | IGNORE_ACC | IGNORE_YAW;
-
-    cmd_msg.position.x = dbg_cmd_p_(0);
-    cmd_msg.position.y = dbg_cmd_p_(1);
-    cmd_msg.position.z = dbg_cmd_p_(2);
-
-    cmd_msg.velocity.x = dbg_cmd_v_(0);
-    cmd_msg.velocity.y = dbg_cmd_v_(1);
-    cmd_msg.velocity.z = dbg_cmd_v_(2);
-    
-    cmd_msg.acceleration_or_force.x = dbg_cmd_a_(0);
-    cmd_msg.acceleration_or_force.y = dbg_cmd_a_(1);
-    cmd_msg.acceleration_or_force.z = dbg_cmd_a_(2);
-
-    cmd_msg.yaw = dbg_fixed_yaw_;
-    cmd_msg.yaw_rate = dbg_fixed_yaw_rate_;
-
-    lin_mpc_cmd_pub_->publish(cmd_msg);
-
-    return;
-  }
-
   std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
   if (mpc_pred_pos_prev_.empty() 
@@ -523,7 +457,7 @@ void Navigator::sendMPCCmdTimerCB()
 
   cmd_msg.header.stamp = this->get_clock()->now();
   cmd_msg.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
-  cmd_msg.type_mask = IGNORE_YAW_RATE;
+  cmd_msg.type_mask = mavros_msgs::msg::PositionTarget::IGNORE_YAW_RATE;
 
   cmd_msg.position.x = mpc_pred_pos_prev_[idx](0);
   cmd_msg.position.y = mpc_pred_pos_prev_[idx](1);
@@ -1170,7 +1104,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   }
   else {
     mpc_yaw_yawrate_(0) = dbg_fixed_yaw_;
-    mpc_yaw_yawrate_(1) = 0.0;
+    mpc_yaw_yawrate_(1) = dbg_fixed_yaw_rate_;
   }
 
 

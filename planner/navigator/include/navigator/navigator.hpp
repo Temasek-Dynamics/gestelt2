@@ -434,10 +434,6 @@ private:
 private:
   double dbg_fixed_yaw_{0.0};
   double dbg_fixed_yaw_rate_{0.0};
-  bool enable_dbg_cmds_{false};
-  Eigen::Vector3d dbg_cmd_p_;
-  Eigen::Vector3d dbg_cmd_v_;
-  Eigen::Vector3d dbg_cmd_a_;
 
   /* MPC Params */
   double ctrl_samp_freq_{-1.0};
@@ -455,6 +451,8 @@ private:
   std::string local_map_frame_;  // Frame ID of UAV's local map
 
   // Planning params
+
+  double samp_mpc_tol_{0.5}; // [m] tolerance for difference between current position and sampled MPC position
 
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
   
@@ -795,9 +793,10 @@ inline bool Navigator::sampleMPCTrajectory(
   acc = mpc_pred_acc_prev_[idx];
 
   // Check if sampled MPC position differs from current position by a given tolerance
-  if ((pos-cur_pos_).norm() > samp_mpc_tol_)
+  if ((pos - cur_pos_).norm() >= samp_mpc_tol_)
   {
-    
+    logger_->logWarn("Sampled of MPC Trajectory too far from current position, using current position as plan start instead.");
+    return false;
   }
 
   return true;
