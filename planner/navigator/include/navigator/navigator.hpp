@@ -332,21 +332,29 @@ private:
 private:
 
   /* Convert point from world to fixed map origin*/
-  Eigen::Vector3d worldToMap(const Eigen::Vector3d& pt)
+  Eigen::Vector3d globalToMap(const Eigen::Vector3d& pt)
   {
-    return Eigen::Vector3d(
-      pt(0) + map_origin_(0), 
-      pt(1) + map_origin_(1), 
-      pt(2));
-  }
+    Eigen::Vector3d pose = pt;
 
-  /* Convert point from fixed map origin to world*/
-  Eigen::Vector3d mapToWorld(const Eigen::Vector3d& pt)
-  {
-    return Eigen::Vector3d(
-      pt(0) - map_origin_(0), 
-      pt(1) - map_origin_(1), 
-      pt(2));
+    // Get other agent's frame to map_frame transform
+    try {
+      auto tf = tf_buffer_->lookupTransform(
+        map_frame_, global_frame_, 
+        tf2::TimePointZero,
+        tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
+      // Set fixed map origin
+      pose(0) += tf.transform.translation.x;
+      pose(1) += tf.transform.translation.y;
+      // pose(2) += tf.transform.translation.z;
+    }
+    catch (const tf2::TransformException & ex) {
+      RCLCPP_ERROR(
+        this->get_logger(), "Could not get transform from global frame '%s' to map frame '%s': %s",
+        global_frame_.c_str(), map_frame_.c_str(), ex.what());
+      return pose;
+    }
+
+    return pose;
   }
 
   /* Convert point from fixed map origin to local map origin*/

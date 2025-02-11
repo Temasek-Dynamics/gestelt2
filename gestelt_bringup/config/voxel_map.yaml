@@ -18,6 +18,9 @@
         min_height_cm:    50    # [cm] Minimum slice height
         max_height_cm:    200   # [cm] Maximum slice height
         z_sep_cm:  50    # [cm] Separation between slices
+        # min_height_cm:    75    # [cm] Minimum slice height
+        # max_height_cm:    225   # [cm] Maximum slice height
+        # z_sep_cm:  75    # [cm] Separation between slices
 
       global_map: 
         # size_x: 50.0  # [m]

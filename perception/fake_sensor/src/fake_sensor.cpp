@@ -17,6 +17,8 @@ FakeSensor::FakeSensor()
 	this->declare_parameter("tf.listen_to_tf", false);
 	this->declare_parameter("tf.listen_freq", -1.0);
 
+	num_drones_ = this->declare_parameter("num_drones", 1);
+
 	// Frame parameters
 	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("local_map_frame", "local_map_frame");
@@ -67,6 +69,29 @@ FakeSensor::FakeSensor()
 	odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
 		"odom", rclcpp::SensorDataQoS(), std::bind(&FakeSensor::odomSubCB, this, _1));
 
+	auto reentrant_sub_opt = rclcpp::SubscriptionOptions();
+	reentrant_sub_opt.callback_group = reentrant_cb_grp_;
+
+	// Subscribe to odometry individually from each agent
+	swarm_poses_.resize(num_drones_);
+	for (int i = 0; i < num_drones_; i++){
+	  if (i == drone_id_){
+	    continue;
+	  }
+
+	  std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
+	    std::bind(&FakeSensor::swarmOdomCB, this, _1, i);
+
+	  swarm_odom_subs_.push_back(
+	    this->create_subscription<nav_msgs::msg::Odometry>(
+	      "/d"+ std::to_string(i) + "/" + "odom", 
+	      rclcpp::SensorDataQoS(), 
+	      bound_callback_func, 
+	      reentrant_sub_opt)
+	  );
+	}
+
+
 	/* Publishers */
     sensor_pc_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 10);
 
@@ -90,7 +115,6 @@ FakeSensor::FakeSensor()
 	pass_fil_x_->setNegative (true);
 	pass_fil_y_->setNegative (true);
 	pass_fil_z_->setNegative (true);
-
 
 	// Load point cloud map from file
 	if (pcl::io::loadPCDFile(map_filepath, *fake_map_cloud_) == -1) 
@@ -122,7 +146,7 @@ FakeSensor::FakeSensor()
 	} 
 	catch (const tf2::TransformException & ex) {
 			RCLCPP_ERROR(
-				this->get_logger(), "Could not get transform from world_frame('world') to map_frame_(%s): %s",
+				this->get_logger(), "Could not get transform from world_frame('world') to map_frame_(%s): %s. SHUTTING DOWN.",
 				map_frame_.c_str(), ex.what());
 		rclcpp::shutdown();
 		return;
@@ -169,6 +193,34 @@ void FakeSensor::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 		cur_odom_ = *msg;
 	}
 	pose_rcv_ = true;
+}
+
+
+void FakeSensor::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id)
+{
+  Eigen::Vector3d pose = Eigen::Vector3d{msg->pose.pose.position.x,  
+										msg->pose.pose.position.y,  
+										msg->pose.pose.position.z};
+
+  // Get other agent's frame to map_frame transform
+  try {
+    auto tf = tf_buffer_->lookupTransform(
+		map_frame_, msg->header.frame_id,  
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.5)));
+    // Set fixed map origin
+    pose(0) += tf.transform.translation.x;
+    pose(1) += tf.transform.translation.y;
+    // pose(2) += tf.transform.translation.z;
+  } 
+  catch (const tf2::TransformException & ex) {
+		RCLCPP_ERROR(
+			this->get_logger(), "Could not get transform from agent frame '%s' to map frame '%s': %s",
+			msg->header.frame_id.c_str(), map_frame_.c_str(), ex.what());
+    return;
+  }
+
+  swarm_poses_[id] = pose;
 }
 
 /* Timer Callbacks*/
@@ -298,14 +350,22 @@ void FakeSensor::sensorUpdateTimerCB()
 	}
 
 	// Filter away points very close to the agent
-
 	pass_fil_x_-> setInputCloud (sensor_cloud_);
-	pass_fil_y_-> setInputCloud (sensor_cloud_);
-	pass_fil_z_-> setInputCloud (sensor_cloud_);
-
 	pass_fil_x_-> filter (*sensor_cloud_);
+	pass_fil_y_-> setInputCloud (sensor_cloud_);
 	pass_fil_y_-> filter (*sensor_cloud_);
+	pass_fil_z_-> setInputCloud (sensor_cloud_);
 	pass_fil_z_-> filter (*sensor_cloud_);
+
+	// add other agent's odom as obstacle points
+	for (int i = 0; i < num_drones_; i++){
+		if (i == drone_id_){
+		  continue;
+		}
+
+		sensor_cloud_->push_back(
+        	pcl::PointXYZ(swarm_poses_[i](0), swarm_poses_[i](1), swarm_poses_[i](2)) );
+	}
 
 	// Publish cloud 
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;

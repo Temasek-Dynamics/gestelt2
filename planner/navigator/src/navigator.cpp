@@ -168,7 +168,7 @@ void Navigator::initPubSubTimer()
   plan_req_dbg_sub_ = this->create_subscription<gestelt_interfaces::msg::PlanRequest>(
     "plan_request_dbg", rclcpp::SystemDefaultsQoS(), std::bind(&Navigator::planReqDbgSubCB, this, _1));
   goals_sub_ = this->create_subscription<gestelt_interfaces::msg::Goals>(
-    "goals", rclcpp::SystemDefaultsQoS(), std::bind(&Navigator::goalsSubCB, this, _1));
+    "goals", rclcpp::ServicesQoS(), std::bind(&Navigator::goalsSubCB, this, _1));
   point_goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
     "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&Navigator::pointGoalSubCB, this, _1));
 
@@ -1240,12 +1240,13 @@ void Navigator::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
 
 void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
 {
+  logger_->logError(strFmt("Received point goal"));
     std::vector<Eigen::Vector3d> wp_vec;
 
     if (msg->header.frame_id == global_frame_)
     {
       // Transform from global to map frame
-      wp_vec.push_back(worldToMap(Eigen::Vector3d(
+      wp_vec.push_back(globalToMap(Eigen::Vector3d(
         msg->pose.position.x, msg->pose.position.y, point_goal_height_)));
     }
     else if (msg->header.frame_id == map_frame_)
@@ -1266,6 +1267,8 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
 
 void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 {
+  logger_->logInfo(strFmt("Received goals in %s frame", msg->header.frame_id.c_str()));
+
     if (msg->waypoints.empty())
     {
       logger_->logError(strFmt("Received empty waypoints. Ignoring waypoints."));
@@ -1275,11 +1278,11 @@ void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 
     std::vector<Eigen::Vector3d> wp_vec;
 
-    if (msg->header.frame_id == "world")
+    if (msg->header.frame_id == global_frame_)
     {
       // Transform from world to fixed map frame
       for (auto& wp : msg->waypoints) {
-        wp_vec.push_back(worldToMap(Eigen::Vector3d(
+        wp_vec.push_back(globalToMap(Eigen::Vector3d(
           wp.position.x, wp.position.y, wp.position.z)));
       }
     }
@@ -1311,11 +1314,11 @@ void Navigator::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::Uniq
 
   Eigen::Vector3d plan_end;
 
-  if (msg->header.frame_id == "world")
+  if (msg->header.frame_id == global_frame_)
   {
-    cur_pos_ = worldToMap(Eigen::Vector3d(
+    cur_pos_ = globalToMap(Eigen::Vector3d(
       msg->start.position.x, msg->start.position.y, msg->start.position.z));
-    plan_end = worldToMap(Eigen::Vector3d(
+    plan_end = globalToMap(Eigen::Vector3d(
       msg->goal.position.x, msg->goal.position.y, msg->goal.position.z));
   }
   else if (msg->header.frame_id == map_frame_)

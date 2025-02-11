@@ -102,7 +102,7 @@ def generate_launch_description():
                                   'world', global_frame])
     
     # Publish TF for map to fixed drone origin
-    # This is necessary because PX4 SITL is not able to change it's initial starting position
+    # This is necessary because there is no known way to change initial starting position w.r.t global frame for PX4
     drone_origin_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        output="log",
@@ -130,6 +130,7 @@ def generate_launch_description():
             {'fake_drone.base_link_frame': base_link_frame},
             {'fake_drone.init_x': 0.0},
             {'fake_drone.init_y': 0.0},
+            {'fake_drone.init_z': 0.0},
             {'fake_drone.init_yaw': init_yaw},
         ],
         remappings=[
@@ -180,6 +181,7 @@ def generate_launch_description():
         name=['fake_sensor_', drone_id],
         parameters=[
           {'drone_id': drone_id},
+          {'num_drones': num_drones},
           {'map_frame': map_frame},
           {'local_map_frame': local_map_frame},
           {'sensor_frame': camera_frame},

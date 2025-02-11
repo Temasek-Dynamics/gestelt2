@@ -161,6 +161,9 @@ void TrajectoryServer::initPubSubTimers()
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
 		"uav_state", 10);
 
+	reset_map_pub_ = this->create_publisher<std_msgs::msg::Empty>(
+		"reset_map", 10);
+
 	/* Subscribers */
 	navigator_state_sub_ = this->create_subscription<gestelt_interfaces::msg::NavState>(
 		"navigator/state", rclcpp::SensorDataQoS(),
@@ -364,6 +367,9 @@ void TrajectoryServer::setOffboardTimerCB()
 		{
 			mavros_handler_->toggleOffboardMode(true);
 		}
+
+		// std_msgs::msg::Empty empty_msg;
+		// reset_map_pub_->publish(empty_msg);
 	}
 	else if (UAV::is_in_state<Hovering>())
 	{

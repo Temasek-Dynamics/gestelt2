@@ -18,7 +18,8 @@ from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
-SCENARIO_NAME = "empty"
+# SCENARIO_NAME = "empty"
+SCENARIO_NAME = "vicon_antipodal_2"
 
 # SCENARIO_NAME = "forest_dense_1"
 # SCENARIO_NAME = "forest_sparse_1"
@@ -131,7 +132,6 @@ def generate_launch_description():
             {'fake_map.publishing_frequency': 1.0},
         ],
     )
-
 
     # # Mission node: Sends goals to agents
     # swarm_collision_checker_node = Node(

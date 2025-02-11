@@ -181,12 +181,20 @@ def main():
     scene_gen = ScenarioGenerator(take_off_height=1.5, visualize=True)
 
     scene_gen.antipodalSwap(
-        radius = 8.0, 
-        num_agents = 10,
-        goal_z = 1.5,
-        name = "antipodal_swap_10", 
-        map_name = "forest_sparse_10x10", 
+        radius = 2.0, 
+        num_agents = 2,
+        goal_z = 0.75,
+        name = "vicon_antipodal_2", 
+        map_name = "empty_20x20", 
     )
+
+    # scene_gen.antipodalSwap(
+    #     radius = 8.0, 
+    #     num_agents = 10,
+    #     goal_z = 1.5,
+    #     name = "antipodal_swap_10", 
+    #     map_name = "forest_sparse_10x10", 
+    # )
 
     # scene_gen.forwardFlight(
     #     m_size_x = 25.0, 

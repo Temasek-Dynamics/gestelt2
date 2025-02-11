@@ -64,7 +64,8 @@ class Mission(Node):
 
         """Publisher to all UAVs"""
         self.all_uav_cmd_pub = self.create_publisher(
-            AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
+            AllUAVCommand, '/all_uav_command', 
+            rclpy.qos.qos_profile_services_default)
 
         if (no_scenario):
             self.get_logger().info("No scenario required! Only initializing publisher to '/all_uav_command'")
@@ -94,8 +95,8 @@ class Mission(Node):
         self.goals_pubs_ = []
         for id in range(self.scenario.num_agents):
             self.goals_pubs_.append(self.create_publisher(
-                                        Goals, 
-                                        'd' + str(id) + '/goals', 10))
+                                    Goals, 'd' + str(id) + '/goals', 
+                                    rclpy.qos.qos_profile_services_default))
 
         """Set goals_pos"""
         self.plan_req_msgs = []
@@ -276,7 +277,7 @@ class Mission(Node):
 
         goal_msg = Goals()
         goal_msg.header.stamp = self.get_clock().now().to_msg()
-        goal_msg.header.frame_id = 'world'
+        goal_msg.header.frame_id = 'map'
 
         goal_msg.waypoints.append(createPose(goal[0], goal[1], goal[2]))
 

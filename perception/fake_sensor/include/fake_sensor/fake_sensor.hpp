@@ -46,6 +46,8 @@ class FakeSensor : public rclcpp::Node
         /* Subscription callbacks */
         void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
 
+        void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id);
+
     private:
 	    rclcpp::CallbackGroup::SharedPtr reentrant_cb_grp_;
 
@@ -53,6 +55,8 @@ class FakeSensor : public rclcpp::Node
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_pc_pub_; // Publisher of sensor point cloud
 
         rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
+        std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> 
+            swarm_odom_subs_;  // Subscription to odometry from other agents
 
         rclcpp::TimerBase::SharedPtr tf_listen_timer_;	    // Timer for planning front end path
         rclcpp::TimerBase::SharedPtr sensor_update_timer_;	    // Timer for planning front end path
@@ -63,6 +67,9 @@ class FakeSensor : public rclcpp::Node
 
         /* Params */
         int drone_id_{-1};    // ID of drone
+
+        int num_drones_{1}; // Number of drones, used to create subscription for odom
+
         std::string map_frame_; // Fixed map origin frame
         std::string local_map_frame_; // Local map frame of UAV
         std::string sensor_frame_;  // Frame of sensor on UAV
@@ -75,6 +82,8 @@ class FakeSensor : public rclcpp::Node
         /* Data */
         pcl::PointCloud<pcl::PointXYZ>::Ptr fake_map_cloud_; // [map_frame] Global point cloud map
         pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_; //[map_frame] Point cloud from fake laser
+
+        std::vector<Eigen::Vector3d> swarm_poses_;
 
         geometry_msgs::msg::TransformStamped sensor_to_map_tf_; // sensor to global frame transform
             

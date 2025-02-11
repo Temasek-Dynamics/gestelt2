@@ -47,6 +47,7 @@ FakeDrone::FakeDrone()
 
 	this->declare_parameter(param_ns+".init_x", 0.0);
 	this->declare_parameter(param_ns+".init_y", 0.0);
+	this->declare_parameter(param_ns+".init_z", 0.0);
 	this->declare_parameter(param_ns+".init_yaw", 0.0);
 
 	drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
@@ -59,7 +60,7 @@ FakeDrone::FakeDrone()
 	Eigen::Vector3d init_pos;
 	init_pos(0) = this->get_parameter(param_ns+".init_x").as_double();
 	init_pos(1) = this->get_parameter(param_ns+".init_y").as_double();
-	init_pos(2) = 0.5; 
+	init_pos(2) = this->get_parameter(param_ns+".init_z").as_double();
 	double init_yaw = this->get_parameter(param_ns+".init_yaw").as_double();
 	Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, init_yaw);
 
@@ -81,6 +82,9 @@ FakeDrone::FakeDrone()
 
 	map_to_bl_tf_.header.frame_id = map_frame; 
 	map_to_bl_tf_.child_frame_id = base_link_frame; 
+	map_to_bl_tf_.transform.translation.x = init_pos(0);
+	map_to_bl_tf_.transform.translation.y = init_pos(1);
+	map_to_bl_tf_.transform.translation.z = init_pos(2);
 
 	/* Services */
 	cmd_arming_srv_ =

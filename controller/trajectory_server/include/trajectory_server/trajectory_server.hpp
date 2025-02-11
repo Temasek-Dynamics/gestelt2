@@ -177,6 +177,8 @@ private:
 		// State publishers
 		rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
 
+		rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr reset_map_pub_;
+
 	/* Subscribers */
 		// Subscribers to navigator command
 		rclcpp::Subscription<mavros_msgs::msg::PositionTarget>::SharedPtr lin_mpc_cmd_sub_;
