@@ -179,7 +179,7 @@ class Mission(Node):
 
         goal_msg = Goals()
         goal_msg.header.stamp = self.get_clock().now().to_msg()
-        goal_msg.header.frame_id = 'world'
+        goal_msg.header.frame_id = 'map'
 
         goal_msg.waypoints.append(createPose(goal[0], goal[1], goal[2]))
 
