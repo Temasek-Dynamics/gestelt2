@@ -23,7 +23,7 @@ docker exec -it ros2_container /ros_entrypoint.sh ros2 run ros2_zmq ros2_zmq_nod
 
 # Restart VINS estimator
 CMD_3="
-rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f ~/bin/restart.msg
+rostopic pub -5 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f ~/bin/restart.msg
 "
 
 if [ "$SESSIONEXISTS" = "" ]

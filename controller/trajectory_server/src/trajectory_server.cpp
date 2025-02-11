@@ -440,6 +440,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 			logger_->logError("OUT OF GEOFENCE: SKIP COMMAND EXECUTION!");
 			return;
 		}
+        lin_mpc_cmd_.coordinate_frame = mavros_msgs::msg::PositionTarget::FRAME_LOCAL_NED;
 
 		mavros_handler_->execMission(lin_mpc_cmd_);
 	}
