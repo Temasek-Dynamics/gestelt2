@@ -97,8 +97,8 @@ def generateSITLDrone(id, spawn_pos, num_drones):
       'px4_config.yaml'
     )
 
-    map_frame = ['d', id, '_origin'] # Fixed
-    base_link_frame = ['d', id, '_base_link'] # Dynamic
+    map_frame = ['d0_origin'] # Fixed
+    base_link_frame = ['d0_base_link'] # Dynamic
 
     '''Mavlink/Mavros'''
     fcu_url =  '/dev/ttyS7:921600'
