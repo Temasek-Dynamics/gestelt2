@@ -21,11 +21,6 @@ from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     ''' Get launch argument values '''
-    drone_id = LaunchConfiguration('drone_id')
-    init_x = LaunchConfiguration('init_x')
-    init_y = LaunchConfiguration('init_y')
-    num_drones = LaunchConfiguration('num_drones')
-
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
       default_value='0'
@@ -44,6 +39,11 @@ def generate_launch_description():
       'num_drones',
       default_value='4'
     )
+
+    drone_id = LaunchConfiguration('drone_id')
+    init_x = LaunchConfiguration('init_x')
+    init_y = LaunchConfiguration('init_y')
+    num_drones = LaunchConfiguration('num_drones')
 
     '''Frames'''
     global_frame = 'map' # Fixed
@@ -207,7 +207,6 @@ def generate_launch_description():
             ]],
             shell=True
           ),
-          LogInfo(msg='Setting IMU rate to 200'),
           ExecuteProcess(
             cmd=[[
               FindExecutable(name='ros2'),
@@ -215,9 +214,8 @@ def generate_launch_description():
               " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 105 3000 0 0 0 0 0",
             ]],
-            shell=True
+            shell=False
           ),
-          LogInfo(msg='Setting mavros mav cmd 1'),
           ExecuteProcess(
             cmd=[[
               FindExecutable(name='ros2'),
@@ -225,9 +223,8 @@ def generate_launch_description():
               " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 32 33333 0 0 0 0 0",
             ]],
-            shell=True
+            shell=False
           ),
-          LogInfo(msg='Setting mavros mav cmd 2'),
         ]
     )
 
