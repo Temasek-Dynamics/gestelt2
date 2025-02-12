@@ -212,7 +212,7 @@ def generate_launch_description():
             cmd=[[
               FindExecutable(name='ros2'),
               " run mavros mav cmd",
-              " --mavros-ns ", "d", drone_id, "/mavros",
+              " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 105 3000 0 0 0 0 0",
             ]],
             shell=True
@@ -222,7 +222,7 @@ def generate_launch_description():
             cmd=[[
               FindExecutable(name='ros2'),
               " run mavros mav cmd",
-              " --mavros-ns ", "d", drone_id, "/mavros",
+              " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 32 33333 0 0 0 0 0",
             ]],
             shell=True
@@ -230,7 +230,6 @@ def generate_launch_description():
           LogInfo(msg='Setting mavros mav cmd 2'),
         ]
     )
-
 
 
 
