@@ -210,18 +210,18 @@ def generate_launch_description():
           ExecuteProcess(
             cmd=[
               FindExecutable(name='ros2'),
-              " run mavros mav cmd",
+              " run mavros mav",
               " --mavros-ns ", "d0/mavros",
-              " long 511 105 3000 0 0 0 0 0",
+              " cmd long 511 105 3000 0 0 0 0 0",
             ],
             shell=True
           ),
           ExecuteProcess(
             cmd=[
               FindExecutable(name='ros2'),
-              " run mavros mav cmd",
+              " run mavros mav",
               " --mavros-ns ", "d0/mavros",
-              " long 511 32 33333 0 0 0 0 0",
+              " cmd long 511 32 33333 0 0 0 0 0",
             ],
             shell=True
           ),
