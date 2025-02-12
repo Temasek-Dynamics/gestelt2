@@ -201,11 +201,11 @@ def generate_launch_description():
               cmd=[[
                 FindExecutable(name='ros2'),
                 " service call ",
-                "d", drone_id,"/mavros/set_stream_rate ",
+                "d", LaunchConfiguration('drone_id'),"/mavros/set_stream_rate ",
                 "mavros_msgs/srv/StreamRate ",
                 '"{stream_id: 0, message_rate: 15, on_off: true}"',
             ]],
-            shell=False
+            shell=True
           ),
           ExecuteProcess(
             cmd=[[
@@ -214,7 +214,7 @@ def generate_launch_description():
               " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 105 3000 0 0 0 0 0",
             ]],
-            shell=False
+            shell=True
           ),
           ExecuteProcess(
             cmd=[[
@@ -223,7 +223,7 @@ def generate_launch_description():
               " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 32 33333 0 0 0 0 0",
             ]],
-            shell=False
+            shell=True
           ),
         ]
     )
