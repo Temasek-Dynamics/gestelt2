@@ -188,6 +188,12 @@ def generate_launch_description():
         px4_pluginlists_cfg,
         new_px4_config_cfg,
       ],
+      remappings=[
+        ('imu/data', ['/mavros/imu/data']),
+        ('vision_pose/pose', ['/mavros/vision_pose/pose']),
+        ('vision_pose/pose_reset', ['/mavros/vision_pose/pose_reset']),
+        ('vision_speed/speed_twist', ['/mavros/vision_speed/speed_twist']),
+      ],
     )
 
     # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
