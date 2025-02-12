@@ -196,34 +196,35 @@ def generate_launch_description():
     fcu_setup_service_calls = ExecuteProcess(
         cmd=['sleep', '12'],
         log_cmd=True,
+        output='screen',
         on_exit=[
           ExecuteProcess(
-              cmd=[[
+              cmd=[
                 FindExecutable(name='ros2'),
                 " service call ",
                 "d", LaunchConfiguration('drone_id'),"/mavros/set_stream_rate ",
                 "mavros_msgs/srv/StreamRate ",
                 '"{stream_id: 0, message_rate: 15, on_off: true}"',
-            ]],
-            shell=True
+            ],
+            # shell=True
           ),
           ExecuteProcess(
-            cmd=[[
+            cmd=[
               FindExecutable(name='ros2'),
               " run mavros mav cmd",
               " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 105 3000 0 0 0 0 0",
-            ]],
-            shell=True
+            ],
+            # shell=True
           ),
           ExecuteProcess(
-            cmd=[[
+            cmd=[
               FindExecutable(name='ros2'),
               " run mavros mav cmd",
               " --mavros-ns ", "d", LaunchConfiguration('drone_id'), "/mavros",
               " long 511 32 33333 0 0 0 0 0",
-            ]],
-            shell=True
+            ],
+            # shell=True
           ),
         ]
     )
