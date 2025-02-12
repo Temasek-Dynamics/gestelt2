@@ -69,16 +69,6 @@ def generate_launch_description():
       'voxel_map.yaml'
     )
 
-    px4_pluginlists_cfg = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'config',
-      'px4_pluginlists.yaml'
-    )
-
-    px4_config_cfg = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'config',
-      'px4_config.yaml'
-    )
-
 
     """Nodes"""
     world_to_map_tf = Node(package = "tf2_ros", 
@@ -128,7 +118,7 @@ def generate_launch_description():
         ],
       remappings=[
         ('cloud', ['/visbot_itof/point_cloud']),
-        ('odom', ['mavros/local_position/odom']),
+        ('odom', ['/mavros/local_position/odom']),
       ],
     )
 
@@ -145,98 +135,13 @@ def generate_launch_description():
         traj_server_config
       ],
       remappings=[
-        ('odom', ['mavros/local_position/odom']),
+        ('odom', ['/mavros/local_position/odom']),
+        ('mavros/state', ['/mavros/state']),
+        ('mavros/setpoint_raw/local', ['/mavros/setpoint_raw/local']),
+        ('mavros/cmd/arming', ['/mavros/cmd/arming']),
+        ('mavros/set_mode', ['/mavros/set_mode']),
       ],
     )
-
-    '''Mavlink/Mavros'''
-    # Simulation
-    # fcu_addr =  PythonExpression(['14540 +', drone_id])
-    # fcu_port =  PythonExpression(['14580 +', drone_id])
-    # fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
-    # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
-    # tgt_system = PythonExpression(['1 +', drone_id])
-    # Actual
-    fcu_url =  '/dev/ttyS7:921600'
-    tgt_system = 36
-
-    px4_config_param_subs = {}
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.send': 'true'})
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.frame_id': map_frame})
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
-
-    new_px4_config_cfg = RewrittenYaml(
-        source_file=px4_config_cfg,
-        root_key='',
-        param_rewrites=px4_config_param_subs,
-        convert_types=True)
-
-    mavros_node = Node(
-      package='mavros',
-      executable='mavros_node',
-      output='screen',
-      shell=False,
-      namespace='mavros',
-      parameters=[
-        {'fcu_url': fcu_url},
-        {'gcs_url': 'udp://:14556@'},
-        {'tgt_system': tgt_system},
-        {'tgt_component': 1},
-        {'fcu_protocol': 'v2.0'},
-        {'startup_px4_usb_quirk': 'true'},
-        px4_pluginlists_cfg,
-        new_px4_config_cfg,
-      ],
-      remappings=[
-        ('imu/data_raw', ['/mavros/imu/data_raw']),
-        ('vision_pose/pose', ['/mavros/vision_pose/pose']),
-        ('vision_pose/pose_cov', ['/mavros/vision_pose/pose_cov']),
-        ('vision_pose/pose_reset', ['/mavros/vision_pose/pose_reset']),
-        ('vision_speed/speed_twist', ['/mavros/vision_speed/speed_twist']),
-      ],
-    )
-
-    # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
-    # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
-    # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-    fcu_setup_service_calls = ExecuteProcess(
-        cmd=['sleep', '10'],
-        log_cmd=True,
-        on_exit=[
-          ExecuteProcess(
-              cmd=[
-                FindExecutable(name='ros2'),
-                " service call ",
-                "d0/mavros/set_stream_rate ",
-                "mavros_msgs/srv/StreamRate ",
-                '"{stream_id: 0, message_rate: 15, on_off: true}"',
-            ],
-            shell=True
-          ),
-          ExecuteProcess(
-            cmd=[
-              FindExecutable(name='ros2'),
-              " run mavros mav",
-              " --mavros-ns ", "d0/mavros",
-              " cmd long 511 105 3000 0 0 0 0 0",
-            ],
-            shell=True
-          ),
-          ExecuteProcess(
-            cmd=[
-              FindExecutable(name='ros2'),
-              " run mavros mav",
-              " --mavros-ns ", "d0/mavros",
-              " cmd long 511 32 33333 0 0 0 0 0",
-            ],
-            shell=True
-          ),
-        ]
-    )
-
-
-
 
     return LaunchDescription([
         # Launch arguments
@@ -251,8 +156,5 @@ def generate_launch_description():
         # Nodes
         navigator_node,
         trajectory_server,
-        # Mavlink to ROS bridge
-        mavros_node,
-        fcu_setup_service_calls,
         # Set parameters
     ])
