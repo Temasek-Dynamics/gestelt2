@@ -189,8 +189,9 @@ def generate_launch_description():
         new_px4_config_cfg,
       ],
       remappings=[
-        ('imu/data', ['/mavros/imu/data']),
+        ('imu/data_raw', ['/mavros/imu/data_raw']),
         ('vision_pose/pose', ['/mavros/vision_pose/pose']),
+        ('vision_pose/pose_cov', ['/mavros/vision_pose/pose_cov']),
         ('vision_pose/pose_reset', ['/mavros/vision_pose/pose_reset']),
         ('vision_speed/speed_twist', ['/mavros/vision_speed/speed_twist']),
       ],
