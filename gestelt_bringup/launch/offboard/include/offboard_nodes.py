@@ -199,8 +199,42 @@ def generate_launch_description():
     # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
     # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
     # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-    fcu_setup_service_calls = ExecuteProcess(
-        cmd=['sleep', '8'],
+    # fcu_setup_service_calls = ExecuteProcess(
+    #     cmd=['sleep', '10'],
+    #     log_cmd=True,
+    #     on_exit=[
+    #       ExecuteProcess(
+    #           cmd=[[
+    #             FindExecutable(name='ros2'),
+    #             " service call ",
+    #             "/mavros/set_stream_rate ",
+    #             "mavros_msgs/srv/StreamRate ",
+    #             '"{stream_id: 0, message_rate: 15, on_off: true}"',
+    #         ]],
+    #         shell=True
+    #       ),
+    #       LogInfo(msg='Setting IMU rate to 200'),
+    #       ExecuteProcess(
+    #         cmd=[[
+    #           FindExecutable(name='ros2'),
+    #           " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
+    #         ]],
+    #         shell=True
+    #       ),
+    #       LogInfo(msg='Setting mavros mav cmd 1'),
+    #       ExecuteProcess(
+    #         cmd=[[
+    #           FindExecutable(name='ros2'),
+    #           " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
+    #         ]],
+    #         shell=True
+    #       ),
+    #       LogInfo(msg='Setting mavros mav cmd 2'),
+    #     ]
+    # )
+
+    fcu_setup_service_call_1 = ExecuteProcess(
+        cmd=['sleep', '10'],
         log_cmd=True,
         on_exit=[
           ExecuteProcess(
@@ -213,7 +247,13 @@ def generate_launch_description():
             ]],
             shell=True
           ),
-          LogInfo(msg='Setting IMU rate to 200'),
+        ]
+    )
+
+    fcu_setup_service_call_2 = ExecuteProcess(
+        cmd=['sleep', '15'],
+        log_cmd=True,
+        on_exit=[
           ExecuteProcess(
             cmd=[[
               FindExecutable(name='ros2'),
@@ -221,7 +261,13 @@ def generate_launch_description():
             ]],
             shell=True
           ),
-          LogInfo(msg='Setting mavros mav cmd 1'),
+        ]
+    )
+
+    fcu_setup_service_call_3 = ExecuteProcess(
+        cmd=['sleep', '20'],
+        log_cmd=True,
+        on_exit=[
           ExecuteProcess(
             cmd=[[
               FindExecutable(name='ros2'),
@@ -229,7 +275,6 @@ def generate_launch_description():
             ]],
             shell=True
           ),
-          LogInfo(msg='Setting mavros mav cmd 2'),
         ]
     )
 
@@ -249,6 +294,8 @@ def generate_launch_description():
         trajectory_server,
         # Mavlink to ROS bridge
         mavros_node,
-        fcu_setup_service_calls,
+        fcu_setup_service_call_1,
+        fcu_setup_service_call_2,
+        fcu_setup_service_call_3,
         # Set parameters
     ])

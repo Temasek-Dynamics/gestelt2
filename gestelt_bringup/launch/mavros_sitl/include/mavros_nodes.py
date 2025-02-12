@@ -48,7 +48,6 @@ def generate_launch_description():
     )
 
 
-
     ''' Get parameter files '''
     traj_server_config = os.path.join(
       get_package_share_directory('trajectory_server'),
