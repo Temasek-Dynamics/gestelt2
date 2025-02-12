@@ -87,6 +87,26 @@ def generateSITLDrone(id, spawn_pos, num_drones):
         }.items()
     )
 
+
+    return GroupAction(
+      actions=[
+          PushROSNamespace('d' + str(id)),
+          sitl_drone_launchfile,
+
+        ]
+    )
+
+def generate_launch_description():
+    
+    scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
+      SCENARIO_NAME
+    )
+
+    # Generate nodes of SITL drone instances according to scenario
+    offboard_nodes = generateSITLDrone(
+            0, scenario.spawns_pos[0], scenario.num_agents)
+        
+
     px4_pluginlists_cfg = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'config',
       'px4_pluginlists.yaml'
@@ -175,26 +195,9 @@ def generateSITLDrone(id, spawn_pos, num_drones):
         ]
     )
 
-    return GroupAction(
-      actions=[
-          PushROSNamespace('d' + str(id)),
-          sitl_drone_launchfile,
-          # Mavlink to ROS bridge
-          mavros_node,
-          fcu_setup_service_calls,
-        ]
-    )
-
-def generate_launch_description():
-    
-    scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
-      SCENARIO_NAME
-    )
-
-    # Generate nodes of SITL drone instances according to scenario
-    offboard_nodes = generateSITLDrone(
-            0, scenario.spawns_pos[0], scenario.num_agents)
-        
     return LaunchDescription([
         offboard_nodes,
+        # Mavlink to ROS bridge
+        mavros_node,
+        fcu_setup_service_calls,
     ])
