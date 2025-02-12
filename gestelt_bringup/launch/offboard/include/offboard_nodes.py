@@ -24,7 +24,6 @@ def generate_launch_description():
     drone_id = LaunchConfiguration('drone_id')
     init_x = LaunchConfiguration('init_x')
     init_y = LaunchConfiguration('init_y')
-    fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
     num_drones = LaunchConfiguration('num_drones')
 
     drone_id_launch_arg = DeclareLaunchArgument(
@@ -39,11 +38,6 @@ def generate_launch_description():
     init_y_launch_arg = DeclareLaunchArgument(
       'init_y',
       default_value='0.0'
-    )
-
-    fake_map_pcd_filepath_launch_arg = DeclareLaunchArgument(
-      'fake_map_pcd_filepath',
-      default_value=''
     )
 
     num_drones_arg = DeclareLaunchArgument(
@@ -167,14 +161,10 @@ def generate_launch_description():
     tgt_system = 36
 
     px4_config_param_subs = {}
-    px4_config_param_subs.update({
-        '/**/local_position.ros__parameters.frame_id': map_frame})
-    px4_config_param_subs.update({
-        '/**/local_position.ros__parameters.tf.send': 'true'})
-    px4_config_param_subs.update({
-        '/**/local_position.ros__parameters.tf.frame_id': map_frame})
-    px4_config_param_subs.update({
-        '/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.send': 'true'})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
 
     new_px4_config_cfg = RewrittenYaml(
         source_file=px4_config_cfg,
@@ -196,7 +186,7 @@ def generate_launch_description():
         {'fcu_protocol': 'v2.0'},
         {'startup_px4_usb_quirk': 'true'},
         px4_pluginlists_cfg,
-        px4_config_cfg,
+        new_px4_config_cfg,
       ],
     )
 
@@ -204,14 +194,14 @@ def generate_launch_description():
     # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
     # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
     fcu_setup_service_calls = ExecuteProcess(
-        cmd=['sleep', '10'],
+        cmd=['sleep', '12'],
         log_cmd=True,
         on_exit=[
           ExecuteProcess(
               cmd=[[
                 FindExecutable(name='ros2'),
                 " service call ",
-                "/mavros/set_stream_rate ",
+                "d", drone_id,"/mavros/set_stream_rate ",
                 "mavros_msgs/srv/StreamRate ",
                 '"{stream_id: 0, message_rate: 15, on_off: true}"',
             ]],
@@ -221,7 +211,9 @@ def generate_launch_description():
           ExecuteProcess(
             cmd=[[
               FindExecutable(name='ros2'),
-              " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
+              " run mavros mav cmd",
+              " --mavros-ns ", "d", drone_id, "/mavros",
+              " long 511 105 3000 0 0 0 0 0",
             ]],
             shell=True
           ),
@@ -229,7 +221,9 @@ def generate_launch_description():
           ExecuteProcess(
             cmd=[[
               FindExecutable(name='ros2'),
-              " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
+              " run mavros mav cmd",
+              " --mavros-ns ", "d", drone_id, "/mavros",
+              " long 511 32 33333 0 0 0 0 0",
             ]],
             shell=True
           ),
@@ -237,57 +231,15 @@ def generate_launch_description():
         ]
     )
 
-    # fcu_setup_service_call_1 = ExecuteProcess(
-    #     cmd=['sleep', '10'],
-    #     log_cmd=True,
-    #     on_exit=[
-    #       ExecuteProcess(
-    #           cmd=[[
-    #             FindExecutable(name='ros2'),
-    #             " service call ",
-    #             "/mavros/set_stream_rate ",
-    #             "mavros_msgs/srv/StreamRate ",
-    #             '"{stream_id: 0, message_rate: 15, on_off: true}"',
-    #         ]],
-    #         shell=True
-    #       ),
-    #     ]
-    # )
 
-    # fcu_setup_service_call_2 = ExecuteProcess(
-    #     cmd=['sleep', '15'],
-    #     log_cmd=True,
-    #     on_exit=[
-    #       ExecuteProcess(
-    #         cmd=[[
-    #           FindExecutable(name='ros2'),
-    #           " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
-    #         ]],
-    #         shell=True
-    #       ),
-    #     ]
-    # )
 
-    # fcu_setup_service_call_3 = ExecuteProcess(
-    #     cmd=['sleep', '20'],
-    #     log_cmd=True,
-    #     on_exit=[
-    #       ExecuteProcess(
-    #         cmd=[[
-    #           FindExecutable(name='ros2'),
-    #           " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
-    #         ]],
-    #         shell=True
-    #       ),
-    #     ]
-    # )
+
 
     return LaunchDescription([
         # Launch arguments
         drone_id_launch_arg,
         init_x_launch_arg,
         init_y_launch_arg,
-        fake_map_pcd_filepath_launch_arg,
         num_drones_arg,
         # Static transforms
         world_to_map_tf,
@@ -299,8 +251,5 @@ def generate_launch_description():
         # Mavlink to ROS bridge
         mavros_node,
         fcu_setup_service_calls,
-        # fcu_setup_service_call_1,
-        # fcu_setup_service_call_2,
-        # fcu_setup_service_call_3,
         # Set parameters
     ])
