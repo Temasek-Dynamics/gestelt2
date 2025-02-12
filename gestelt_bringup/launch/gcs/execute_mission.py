@@ -17,7 +17,8 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
-SCENARIO_NAME = "vicon_3"
+SCENARIO_NAME = "empty"
+# SCENARIO_NAME = "vicon_3"
 # SCENARIO_NAME = "sutd_2"
 
 class Scenario:

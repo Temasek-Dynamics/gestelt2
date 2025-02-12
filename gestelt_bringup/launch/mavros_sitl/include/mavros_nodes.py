@@ -13,9 +13,7 @@ from launch_ros.actions import Node, SetParameter
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, OpaqueFunction, LogInfo
 from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
 
-# def render_launch_config(context: LaunchContext, launch_config):
-#   launch_config_str = context.perform_substitution(launch_config)
-#   # Render xacro
+from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     ''' Get launch argument values '''
@@ -85,17 +83,12 @@ def generate_launch_description():
     )
 
     '''Frames'''
-    # global_frame = 'map' # Fixed
-    # map_frame = ['d', drone_id, '_origin'] # Fixed
-    # base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
-    # local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
-    # camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
-
     global_frame = 'map' # Fixed
-    map_frame = 'map' # Fixed
-    base_link_frame = 'base_link' # Dynamic
+    map_frame = ['d', drone_id, '_origin'] # Fixed
+    base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
     local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
-    camera_frame = 'camera_link' # Fixed to base_link
+    camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
+
 
     """Nodes"""
     world_to_map_tf = Node(package = "tf2_ros", 
@@ -144,7 +137,8 @@ def generate_launch_description():
             voxel_map_cfg,
         ],
       remappings=[
-        ('cloud', ['/visbot_itof/point_cloud']),
+        ('cloud', ['visbot_itof/point_cloud']),
+        ('odom', ['mavros/local_position/odom']),
       ],
     )
 
@@ -160,6 +154,9 @@ def generate_launch_description():
           {'map_frame': map_frame},
           traj_server_config
         ],
+      remappings=[
+        ('odom', ['mavros/local_position/odom']),
+      ],
     )
 
     ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
@@ -178,7 +175,8 @@ def generate_launch_description():
           fake_sensor_config,
         ],
         remappings=[
-          ('cloud', ['/visbot_itof/point_cloud']),
+          ('cloud', ['visbot_itof/point_cloud']),
+          ('odom', ['mavros/local_position/odom']),
         ],
     )
 
@@ -189,6 +187,18 @@ def generate_launch_description():
     fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
     fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
     tgt_system = PythonExpression(['1 +', drone_id])
+
+    px4_config_param_subs = {}
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.send': 'true'})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
+
+    new_px4_config_cfg = RewrittenYaml(
+        source_file=px4_config_cfg,
+        root_key='',
+        param_rewrites=px4_config_param_subs,
+        convert_types=True)
 
     mavros_node = Node(
       package='mavros',
@@ -202,55 +212,10 @@ def generate_launch_description():
         {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},
-        {'startup_px4_usb_quirk': 'true'},
         px4_pluginlists_cfg,
-        px4_config_cfg,
-        # {'mavros.local_position.frame_id': map_frame},
-        # {'mavros.local_position.tf.send': 'true'},
-        # {'mavros.local_position.tf.frame_id': map_frame},
-        # {'mavros.local_position.tf.child_frame_id': base_link_frame},
-      ],
-      remappings=[
-        ('local_position/odom', ['/odom']),
+        new_px4_config_cfg,
       ],
     )
-
-    # # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
-    # # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
-    # # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-    # fcu_setup_service_calls = ExecuteProcess(
-    #     cmd=['sleep', '8'],
-    #     log_cmd=True,
-    #     on_exit=[
-    #       ExecuteProcess(
-    #           cmd=[[
-    #             FindExecutable(name='ros2'),
-    #             " service call ",
-    #             "/mavros/set_stream_rate ",
-    #             "mavros_msgs/srv/StreamRate ",
-    #             '"{stream_id: 0, message_rate: 15, on_off: true}"',
-    #         ]],
-    #         shell=True
-    #       ),
-    #       LogInfo(msg='Setting IMU rate to 200'),
-    #       ExecuteProcess(
-    #         cmd=[[
-    #           FindExecutable(name='ros2'),
-    #           " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
-    #         ]],
-    #         shell=True
-    #       ),
-    #       LogInfo(msg='Setting mavros mav cmd 1'),
-    #       ExecuteProcess(
-    #         cmd=[[
-    #           FindExecutable(name='ros2'),
-    #           " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
-    #         ]],
-    #         shell=True
-    #       ),
-    #       LogInfo(msg='Setting mavros mav cmd 2'),
-    #     ]
-    # )
 
     return LaunchDescription([
         # Launch arguments
@@ -261,7 +226,7 @@ def generate_launch_description():
         num_drones_arg,
         # Static transforms
         world_to_map_tf,
-        # drone_origin_tf,
+        drone_origin_tf,
         camera_link_tf,
         # Nodes
         fake_sensor,

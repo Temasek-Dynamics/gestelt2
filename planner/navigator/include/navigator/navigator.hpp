@@ -458,9 +458,13 @@ private:
   std::string map_frame_;  // Fixed Frame of UAV's origin
   std::string local_map_frame_;  // Frame ID of UAV's local map
 
-  // Planning params
+  // Map slicing params (For voronoi roadmap)
+  int min_height_cm_;
+  int max_height_cm_;
+  int z_sep_cm_;
 
-  double samp_mpc_tol_{0.5}; // [m] tolerance for difference between current position and sampled MPC position
+  // Planning params
+  double samp_mpc_tol_{0.2}; // [m] tolerance for difference between current position and sampled MPC position
 
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
   
@@ -513,6 +517,8 @@ private:
   /* Flags*/
   bool currently_planning_{false}; // flag to indicate navigator has a goal to plan to
   bool plan_complete_{false}; // flag to indicate a plan has been completed
+
+  bool prev_plan_fail_{false}; // Indicates if previous planning iteration failed
 
   /* Mapping */
   std::unique_ptr<voxel_map::VoxelMap> voxel_map_;  // Occupancy map object

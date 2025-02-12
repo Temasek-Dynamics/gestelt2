@@ -11,17 +11,6 @@
 
       verbose_print: false       # If enabled, print debug information such as timing information
 
-      map_slicing: # 2D boolean map slices used for voronoi generation
-        # min_height_cm:    40    # [cm] Minimum slice height
-        # max_height_cm:    320   # [cm] Maximum slice height
-        # z_sep_cm:  40    # [cm] Separation between slices
-        min_height_cm:    50    # [cm] Minimum slice height
-        max_height_cm:    200   # [cm] Maximum slice height
-        z_sep_cm:  50    # [cm] Separation between slices
-        # min_height_cm:    75    # [cm] Minimum slice height
-        # max_height_cm:    225   # [cm] Maximum slice height
-        # z_sep_cm:  75    # [cm] Separation between slices
-
       global_map: 
         # size_x: 50.0  # [m]
         # size_y: 50.0  # [m]

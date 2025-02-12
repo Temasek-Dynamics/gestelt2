@@ -3,7 +3,7 @@
     navigator:
 
       planner: 
-        verbose_print: false  # If enabled, print debug information such as runtime 
+        verbose_print: true  # If enabled, print debug information such as runtime 
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
@@ -24,14 +24,26 @@
 
       samp_mpc_tolerance: 0.5 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
 
+      map_slicing: # 2D boolean map slices used for voronoi generation
+        # min_height_cm:    40    # [cm] Minimum slice height
+        # max_height_cm:    320   # [cm] Maximum slice height
+        # z_sep_cm:  40    # [cm] Separation between slices
+        # min_height_cm:    50    # [cm] Minimum slice height
+        # max_height_cm:    200   # [cm] Maximum slice height
+        # z_sep_cm:  50    # [cm] Separation between slices
+        min_height_cm:    60    # [cm] Minimum slice height
+        max_height_cm:    300   # [cm] Maximum slice height
+        z_sep_cm:  60    # [cm] Separation between slices
+        sample_thickness: 1.16 # [m] Height above and below to sample for obstacles for each slice. 0.5m means 0.25m top and 0.25m bottom
+
       mpc:
         ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
         ref_path_samp_interval: 1
         # Yaw control
         yaw_ctrl_flag: true # Control the yaw
-        yaw_lookahead_dist: 22 # [mpc sample points] Lookahead distance for calculating yaw
+        yaw_lookahead_dist: 13 # [mpc sample points] Lookahead distance for calculating yaw
         # MPC parameters
-        horizon: 25
+        horizon: 15
         time_step: 0.1 #[s]
         # Objective Weights
         R_p: 1000.0 # Error from reference position
@@ -51,24 +63,26 @@
         vy_max:      0.15
         vz_max:      0.15
 
-        ax_min:     -6.0
-        ay_min:     -6.0
-        az_min:     -10.0
-        ax_max:      6.0
-        ay_max:      6.0
-        az_max:      10.0
+        ax_min:     -20.0
+        ay_min:     -20.0
+        az_min:     -20.0
+        ax_max:      20.0
+        ay_max:      20.0
+        az_max:      20.0
 
-        ux_min:     -20.0
-        uy_min:     -20.0
-        uz_min:     -20.0
-        ux_max:      20.0
-        uy_max:      20.0
-        uz_max:      20.0
+        ux_min:     -30.0
+        uy_min:     -30.0
+        uz_min:     -30.0
+        ux_max:      30.0
+        uy_max:      30.0
+        uz_max:      30.0
 
       sfc:
-        bbox_x: 1.0
-        bbox_y: 2.0
-        bbox_z: 1.0
+        poly:
+          bbox_x: 2.0
+          bbox_y: 2.0
+          bbox_z: 2.0
+          sfc_sampling_interval: 10
 
       reservation_table:
         inflation: 1.0    # [m] buffer for reservation table in spatial domain

@@ -320,6 +320,8 @@ private:
   /* Params */
   int drone_id_{0}; //Drone ID
 
+  double map_slicing_sample_thickness_; // [m] map slice sampling thickness
+
   bool verbose_print_{false}; // Flag to enable printing of debug information such as timers
   bool dbg_input_entire_map_{false}; // flag to indicate that map will be constructed at the start from the entire pcd map (instead of through incremental sensor data)
   std::string entire_pcd_map_topic_; // Topic to listen for an entire PCD for debugging

@@ -146,10 +146,6 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".dyn_obs.mark_in_occ_map", false);
   node_->declare_parameter(param_ns+".dyn_obs.time_vel", 0.5);
 
-  node_->declare_parameter(param_ns+".map_slicing.min_height_cm", -1);
-  node_->declare_parameter(param_ns+".map_slicing.max_height_cm",  -1);
-  node_->declare_parameter(param_ns+".map_slicing.z_sep_cm",  -1);
-
   node_->declare_parameter(param_ns+".global_map.size_x", -1.0);
   node_->declare_parameter(param_ns+".global_map.size_y", -1.0);
   node_->declare_parameter(param_ns+".global_map.size_z", -1.0);
@@ -187,9 +183,10 @@ void VoxelMap::initParams()
   dyn_obs_mark_in_occ_map_ = node_->get_parameter(param_ns+".dyn_obs.mark_in_occ_map").as_bool();
   time_vel_ = node_->get_parameter(param_ns+".dyn_obs.time_vel").as_double();
 
-  bool_map_3d_.min_height_cm = node_->get_parameter(param_ns+".map_slicing.min_height_cm").as_int();
-  bool_map_3d_.max_height_cm = node_->get_parameter(param_ns+".map_slicing.max_height_cm").as_int();
-  bool_map_3d_.z_sep_cm = node_->get_parameter(param_ns+".map_slicing.z_sep_cm").as_int();
+  bool_map_3d_.min_height_cm = node_->get_parameter("navigator.map_slicing.min_height_cm").as_int();
+  bool_map_3d_.max_height_cm = node_->get_parameter("navigator.map_slicing.max_height_cm").as_int();
+  bool_map_3d_.z_sep_cm = node_->get_parameter("navigator.map_slicing.z_sep_cm").as_int();
+  map_slicing_sample_thickness_ = node_->get_parameter("navigator.map_slicing.sample_thickness").as_double();
 
   auto cmToM = [&](const int& val_cm){ 
     /* Convert from units of centimeters to meters*/
@@ -502,7 +499,7 @@ void VoxelMap::updateLocalMapTimerCB()
       bool_map_3d_.bool_maps[z_cm] = std::vector<bool>(
         mp_.local_map_num_voxels_(0) * mp_.local_map_num_voxels_(1), false);
       // Get a slice of the map occupancy grid as a boolean array
-      getMapSlice(z_cm, getRes(), bool_map_3d_.bool_maps[z_cm]);
+      getMapSlice(z_cm, map_slicing_sample_thickness_, bool_map_3d_.bool_maps[z_cm]);
     }
   }
   local_map_updated_ = true;

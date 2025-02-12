@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /TF1/Frames1
-        - /d0_actual1
         - /d0_actual1/state1
         - /d0_actual1/state1/odom_ax1/Shape1
         - /d0_actual1/state1/agent_id_text1/Topic1
@@ -17,8 +16,11 @@ Panels:
         - /d0_actual1/maps1/occ1/occ_map_2001/Topic1
         - /d0_actual1/maps1/occ1/occ_map_2501/Topic1
         - /d0_actual1/3d_occ_map1/Topic1
-        - /d01/maps1
-      Splitter Ratio: 0.6424418687820435
+        - /d01
+        - /d01/state1
+        - /d01/state1/odom_ax1
+        - /d01/sfc1/Topic1
+      Splitter Ratio: 0.3651452362537384
     Tree Height: 707
   - Class: rviz_common/Selection
     Name: Selection
@@ -200,7 +202,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -717,7 +719,7 @@ Visualization Manager:
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: true
+      Enabled: false
       Name: d0_actual
     - Class: rviz_common/Group
       Displays:
@@ -760,7 +762,7 @@ Visualization Manager:
                 Filter size: 10
                 History Policy: System Default
                 Reliability Policy: Best Effort
-                Value: /d0/odom
+                Value: /d0/mavros/local_position/odom
               Value: true
             - Alpha: 1
               Axes Length: 1
@@ -786,7 +788,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -803,7 +805,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                {}
+                plan_req_viz: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -816,7 +818,9 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                {}
+                fe_path_lines: true
+                fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1261,7 +1265,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.4000000059604645
+          Size (m): 0.20000000298023224
           Style: Boxes
           Topic:
             Depth: 5
@@ -1299,11 +1303,11 @@ Visualization Manager:
             Filter size: 10
             History Policy: Keep Last
             Reliability Policy: Best Effort
-            Value: /sfc
+            Value: /d0/sfc
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: false
+      Enabled: true
       Name: d0
     - Class: rviz_common/Group
       Displays:
@@ -3679,7 +3683,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /point_goal
+        Value: /d0/point_goal
     - Class: rviz_default_plugins/PublishPoint
       Single click: true
       Topic:
@@ -3695,33 +3699,33 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 11.177976608276367
+      Distance: 10.7078275680542
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.9676036834716797
-        Y: -0.2672555446624756
-        Z: 1.6792109818197787e-06
+        X: 1.846268653869629
+        Y: -0.6315765380859375
+        Z: 2.0275860151741654e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4697964191436768
+      Pitch: -0.0752028375864029
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.159248113632202
+      Yaw: 3.1842539310455322
     Saved: ~
 Window Geometry:
   Displays:
-    collapsed: true
+    collapsed: false
   Height: 1011
-  Hide Left Dock: true
+  Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd00000004000000000000015600000351fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000000bd000002c70000029bfb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003f00000351000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000351fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f00000351000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000039f0000003efc0100000002fb0000000800540069006d006501000000000000039f0000026f00fffffffb0000000800540069006d006501000000000000045000000000000000000000039f0000035100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001e400000351fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005d00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000000bd000002c70000029bfb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003f00000351000000cc00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f00000351fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003f00000351000000a900fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073e0000003efc0100000002fb0000000800540069006d006501000000000000073e0000026f00fffffffb0000000800540069006d00650100000000000004500000000000000000000005540000035100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -3730,6 +3734,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 927
-  X: 993
+  Width: 1854
+  X: 66
   Y: 32

@@ -69,6 +69,16 @@
     magnetic_stdev: 0.0
 
 # # local_position
+/**/local_position:
+  ros__parameters:
+    frame_id: "map"
+    tf:
+      send: false
+      frame_id: "map"
+      child_frame_id: "base_link"
+      send_fcu: false
+
+# local_position
 # /**/local_position:
 #   ros__parameters:
 #     frame_id: "d0_origin"
@@ -76,15 +86,6 @@
 #     tf.frame_id: "d0_origin"
 #     tf.child_frame_id: "d0_base_link"
 #     tf.send_fcu: false
-
-# local_position
-/**/local_position:
-  ros__parameters:
-    frame_id: "d0_origin"
-    tf.send: true
-    tf.frame_id: "d0_origin"
-    tf.child_frame_id: "d0_base_link"
-    tf.send_fcu: false
 
 # param
 # None, used for FCU params

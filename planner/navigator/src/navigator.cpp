@@ -118,9 +118,9 @@ void Navigator::initPubSubTimer()
   // Map publishers
 
   // TODO: Change to dynamic instead of hard-coded values
-  for (int z_cm = 50; 
-        z_cm <= 400; 
-        z_cm += 50)
+  for (int z_cm = min_height_cm_; 
+        z_cm <= max_height_cm_; 
+        z_cm += z_sep_cm_)
   {
     occ_map_pubs_[z_cm] = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
       "occ_map_" + std::to_string(z_cm), rclcpp::SensorDataQoS());
@@ -231,6 +231,12 @@ void Navigator::initParams()
   this->declare_parameter("camera_frame", "camera_frame");
   this->declare_parameter("base_link_frame", "base_link");
 
+  /* Voronoi map slicing*/
+  this->declare_parameter(param_ns+".map_slicing.min_height_cm", -1);
+  this->declare_parameter(param_ns+".map_slicing.max_height_cm",  -1);
+  this->declare_parameter(param_ns+".map_slicing.z_sep_cm",  -1);
+  this->declare_parameter(param_ns+".map_slicing.sample_thickness",  -1.0);
+
   /* Space time A* planner */
   this->declare_parameter(param_ns+".planner.goal_tolerance", 0.1);
   this->declare_parameter(param_ns+".planner.verbose_print", false);
@@ -247,7 +253,6 @@ void Navigator::initParams()
   this->declare_parameter(param_ns+".sfc.poly.bbox_y", 1.0);
   this->declare_parameter(param_ns+".sfc.poly.bbox_z", 1.0);
   this->declare_parameter(param_ns+".sfc.poly.sfc_sampling_interval", 10);
-
 
   /* MPC */
   this->declare_parameter(param_ns+".mpc.ctrl_samp_freq", 30.0);
@@ -324,6 +329,11 @@ void Navigator::initParams()
   global_frame_ = this->get_parameter("global_frame").as_string();
   map_frame_ = this->get_parameter("map_frame").as_string();
   local_map_frame_ = this->get_parameter("local_map_frame").as_string();
+
+  /* Voronoi */
+  min_height_cm_ = this->get_parameter(param_ns+".map_slicing.min_height_cm").as_int();
+  max_height_cm_ = this->get_parameter(param_ns+".map_slicing.max_height_cm").as_int();
+  z_sep_cm_ = this->get_parameter(param_ns+".map_slicing.z_sep_cm").as_int();
 
   /* A* Planner */
   double goal_tol = this->get_parameter(param_ns+".planner.goal_tolerance").as_double();
@@ -499,11 +509,11 @@ void Navigator::planFETimerCB()
 
   // Plan from current position to next waypoint
   if (!planCommlessMPC(goal)){
-    // tm_voro_gen_.stop(false);
-    // tm_front_end_plan_.stop(false);
-    // tm_sfc_.stop(false);
-    // tm_mpc_.stop(false);
-    // tm_plan_pipeline_.stop(false);
+    tm_voro_gen_.stop(false);
+    tm_front_end_plan_.stop(false);
+    tm_sfc_.stop(false);
+    tm_mpc_.stop(false);
+    tm_plan_pipeline_.stop(false);
     return;
   }
   
@@ -664,7 +674,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   Eigen::Vector3d start_pos, start_vel, start_acc;
 
-  if (!sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
+  if (prev_plan_fail_ || !sampleMPCTrajectory(mpc_controller_, plan_start_clock.nanoseconds()/1e9, 
                           start_pos, start_vel, start_acc))
   {
     start_pos = cur_pos_;
@@ -703,8 +713,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // map_ready_for_cons_ = false;
   // prod_map_cv_.notify_one();
 
-  tm_front_end_plan_.stop(false);
-  // tm_front_end_plan_.getWallAvg(verbose_print_);
+  tm_front_end_plan_.stop(verbose_print_);
+  tm_front_end_plan_.getWallAvg(verbose_print_);
 
   if (!fe_plan_success)
   {
@@ -781,8 +791,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   tm_sfc_.start();
   bool gen_sfc_success = 
     poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
-  tm_sfc_.stop(false);
-  // tm_sfc_.getWallAvg(verbose_print_);
+  tm_sfc_.stop(verbose_print_);
+  tm_sfc_.getWallAvg(verbose_print_);
 
 
   // logger_->logInfo(strFmt("   Drone %d: After generateSFC", drone_id_));
@@ -975,8 +985,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
 
   bool mpc_success = mpc_controller_->run();
-  tm_mpc_.stop(false);
-  // tm_mpc_.getWallAvg(verbose_print_);
+  tm_mpc_.stop(verbose_print_);
+  tm_mpc_.getWallAvg(verbose_print_);
 
   if (!mpc_success){ // Successful MPC solve
     logger_->logError("MPC Solve failure!");
@@ -1044,9 +1054,18 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
       mpc_pred_vel_prev_ = mpc_pred_vel_;
       mpc_pred_acc_prev_ = mpc_pred_acc_;
 
+      prev_plan_fail_ = false;
+
       last_mpc_solve_ = this->get_clock()->now().nanoseconds() / 1e9;
     }
     else {
+      mpc_pred_u_prev_.clear();
+      mpc_pred_pos_prev_.clear();
+      mpc_pred_vel_prev_.clear();
+      mpc_pred_acc_prev_.clear();
+
+      prev_plan_fail_ = true;
+
       return false;
     }
 
@@ -1059,12 +1078,20 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     // Calculate commanded yaw
     int lookahead_idx = mpc_controller_->yaw_lookahead_dist_;
 
-    if (0 < mpc_pred_pos_.size() - lookahead_idx - 1) 
+    if (0 < fe_path_.size() - lookahead_idx - 1) 
     {
 
       Eigen::Vector2d dir_vec(
-        mpc_pred_pos_[lookahead_idx](1) - cur_pos_(1),
-        mpc_pred_pos_[lookahead_idx](0) - cur_pos_(0)
+        fe_path_[lookahead_idx](1) - cur_pos_(1),
+        fe_path_[lookahead_idx](0) - cur_pos_(0)
+      );
+
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+    }
+    else {
+      Eigen::Vector2d dir_vec(
+        fe_path_.back()(1) - cur_pos_(1),
+        fe_path_.back()(0) - cur_pos_(0)
       );
 
       cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
@@ -1107,10 +1134,9 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     mpc_yaw_yawrate_(1) = dbg_fixed_yaw_rate_;
   }
 
-
   pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 
-  tm_plan_pipeline_.stop(false);
+  tm_plan_pipeline_.stop(verbose_print_);
 
   // logger_->logInfo(strFmt(" Drone %d: After planner", drone_id_));
 
