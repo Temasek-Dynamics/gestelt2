@@ -88,7 +88,7 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
 
     return GroupAction(
       actions=[
-        #   PushROSNamespace('d' + str(id)),
+          PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
         #   SetParameter("use_sim_time", "true"),
         ]
@@ -110,7 +110,6 @@ def generate_launch_description():
     offboard_nodes = generateSITLDrone(
             0, scenario.spawns_pos[0], fake_map_pcd_filepath, scenario.num_agents)
         
-
     return LaunchDescription([
         offboard_nodes,
     ])

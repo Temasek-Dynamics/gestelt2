@@ -13,6 +13,8 @@ from launch_ros.actions import Node, SetParameter
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, GroupAction, OpaqueFunction, LogInfo
 from launch.substitutions import LaunchConfiguration, PythonExpression, FindExecutable
 
+from nav2_common.launch import RewrittenYaml
+
 # def render_launch_config(context: LaunchContext, launch_config):
 #   launch_config_str = context.perform_substitution(launch_config)
 #   # Render xacro
@@ -56,24 +58,11 @@ def generate_launch_description():
     local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
     camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
 
-
-    # global_frame = 'world' # Fixed
-    # map_frame = 'world' # Fixed
-    # base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
-    # local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
-    # camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
-
     ''' Get parameter files '''
     traj_server_config = os.path.join(
       get_package_share_directory('trajectory_server'),
       'config',
       'trajectory_server.yaml'
-    )
-
-    fake_sensor_config = os.path.join(
-      get_package_share_directory('fake_sensor'),
-      'config',
-      'fake_sensor.yaml'
     )
 
     navigator_cfg = os.path.join(
@@ -145,42 +134,26 @@ def generate_launch_description():
         ],
       remappings=[
         ('cloud', ['/visbot_itof/point_cloud']),
+        ('odom', ['mavros/local_position/odom']),
       ],
     )
 
     ''' Trajectory server for executing trajectories '''
     trajectory_server = Node(
-        package='trajectory_server',
-        executable='trajectory_server_node',
-        output='screen',
-        shell=False,
-        name=['traj_server_', drone_id],
-        parameters=[
-          {'drone_id': drone_id},
-          {'map_frame': map_frame},
-          traj_server_config
-        ],
+      package='trajectory_server',
+      executable='trajectory_server_node',
+      output='screen',
+      shell=False,
+      name=['traj_server_', drone_id],
+      parameters=[
+        {'drone_id': drone_id},
+        {'map_frame': map_frame},
+        traj_server_config
+      ],
+      remappings=[
+        ('odom', ['mavros/local_position/odom']),
+      ],
     )
-
-    ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
-    # fake_sensor = Node(
-    #     package='fake_sensor',
-    #     executable='fake_sensor_node',
-    #     output='screen',
-    #     shell=False,
-    #     name=['fake_sensor_', drone_id],
-    #     parameters=[
-    #       {'drone_id': drone_id},
-    #       {'map_frame': map_frame},
-    #       {'local_map_frame': local_map_frame},
-    #       {'sensor_frame': camera_frame},
-    #       {'pcd_map.filepath': fake_map_pcd_filepath},
-    #       fake_sensor_config,
-    #     ],
-    #     remappings=[
-    #       ('cloud', ['/visbot_itof/point_cloud']),
-    #     ],
-    # )
 
     '''Mavlink/Mavros'''
     # Simulation
@@ -192,6 +165,18 @@ def generate_launch_description():
     # Actual
     fcu_url =  '/dev/ttyS7:921600'
     tgt_system = 36
+
+    px4_config_param_subs = {}
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.send': 'true'})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
+
+    new_px4_config_cfg = RewrittenYaml(
+        source_file=px4_config_cfg,
+        root_key='',
+        param_rewrites=px4_config_param_subs,
+        convert_types=True)
 
     mavros_node = Node(
       package='mavros',
@@ -207,14 +192,7 @@ def generate_launch_description():
         {'fcu_protocol': 'v2.0'},
         {'startup_px4_usb_quirk': 'true'},
         px4_pluginlists_cfg,
-        px4_config_cfg,
-        # {'mavros.local_position.frame_id': map_frame},
-        # {'mavros.local_position.tf.send': 'true'},
-        # {'mavros.local_position.tf.frame_id': map_frame},
-        # {'mavros.local_position.tf.child_frame_id': base_link_frame},
-      ],
-      remappings=[
-        ('local_position/odom', ['/odom']),
+        new_px4_config_cfg,
       ],
     )
 
@@ -267,7 +245,6 @@ def generate_launch_description():
         drone_origin_tf,
         camera_link_tf,
         # Nodes
-        # fake_sensor,
         navigator_node,
         trajectory_server,
         # Mavlink to ROS bridge
