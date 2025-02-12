@@ -205,7 +205,7 @@ def generate_launch_description():
                 "mavros_msgs/srv/StreamRate ",
                 '"{stream_id: 0, message_rate: 15, on_off: true}"',
             ]],
-            shell=True
+            shell=False
           ),
           ExecuteProcess(
             cmd=[[
