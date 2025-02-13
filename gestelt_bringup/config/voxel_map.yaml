@@ -15,8 +15,8 @@
         # size_x: 50.0  # [m]
         # size_y: 50.0  # [m]
         # size_z: 10.0  # [m]
-        size_x: 30.0  # [m]
-        size_y: 30.0  # [m]
+        size_x: 60.0  # [m]
+        size_y: 60.0  # [m]
         size_z: 10.0  # [m]
 
       local_map:  # Local map used by planner

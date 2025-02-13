@@ -122,25 +122,18 @@ def generate_launch_description():
 
     # ROSBag 
     bag_topics = []
-    bag_topics.append("/odom")
-    bag_topics.append("/agent_id_text")
+    # bag_topics.append("/odom")
+    # bag_topics.append("/agent_id_text")
+    # bag_topics.append("/d0/occ_map")
     # Subscription to 3d occupancy voxel map
-    bag_topics.append("/occ_map")
-
-    bag_topics.append("/occ_map_50")
-    bag_topics.append("/occ_map_100")
-    bag_topics.append("/occ_map_150")
-    bag_topics.append("/occ_map_200")
-
-    bag_topics.append("/voro_map_50")
-    bag_topics.append("/voro_map_100")
-    bag_topics.append("/voro_map_150")
-    bag_topics.append("/voro_map_200")
-    # Paths
-    bag_topics.append("/fe_plan/viz")
-    bag_topics.append("/mpc/traj")
-    # Subscription to point clouds
     # bag_topics.append("/visbot_itof/point_cloud")
+
+    bag_topics.append("/mavros/local_position/odom")
+
+    # Paths
+    bag_topics.append("/d0/fe_plan/viz")
+    bag_topics.append("/d0/mpc/traj")
+    # Subscription to point clouds
     bag_topics.append("/rosout")
     bag_topics.append("/tf")
 
