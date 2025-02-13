@@ -90,8 +90,8 @@ public:
   /// These default values are the same as OctoMap
   struct Options
   {
-    int32_t prob_miss_log = logods(0.6f);
-    int32_t prob_hit_log = logods(0.7f);
+    int32_t prob_miss_log = logods(0.49f);
+    int32_t prob_hit_log = logods(0.65f);
 
     int32_t clamp_min_log = logods(0.12f);
     int32_t clamp_max_log = logods(0.90f);
