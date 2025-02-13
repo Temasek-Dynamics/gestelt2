@@ -69,13 +69,22 @@ def generate_launch_description():
       'voxel_map.yaml'
     )
 
+    px4_pluginlists_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'px4_pluginlists.yaml'
+    )
+
+    px4_config_cfg = os.path.join(
+      get_package_share_directory('gestelt_bringup'), 'config',
+      'px4_config.yaml'
+    )
 
     """Nodes"""
-    world_to_map_tf = Node(package = "tf2_ros", 
-                       executable = "static_transform_publisher",
-                       output="log",
-                      arguments = ["0", "0", "0", "0", "0", "0", 
-                                  'world', global_frame])
+    # world_to_map_tf = Node(package = "tf2_ros", 
+    #                    executable = "static_transform_publisher",
+    #                    output="log",
+    #                   arguments = ["0", "0", "0", "0", "0", "0", 
+    #                               'world', global_frame])
 
     # Publish TF for map to fixed drone origin
     # This is necessary because PX4 SITL is not able to change it's initial starting position
@@ -118,7 +127,6 @@ def generate_launch_description():
         ],
       remappings=[
         ('cloud', ['/visbot_itof/point_cloud']),
-        ('odom', ['/mavros/local_position/odom']),
       ],
     )
 
@@ -134,13 +142,77 @@ def generate_launch_description():
         {'map_frame': map_frame},
         traj_server_config
       ],
-      remappings=[
-        ('odom', ['/mavros/local_position/odom']),
-        ('mavros/state', ['/mavros/state']),
-        ('mavros/setpoint_raw/local', ['/mavros/setpoint_raw/local']),
-        ('mavros/cmd/arming', ['/mavros/cmd/arming']),
-        ('mavros/set_mode', ['/mavros/set_mode']),
+    )
+
+    '''Mavlink/Mavros'''
+    fcu_url =  '/dev/ttyS7:921600'
+    tgt_system = 36
+
+    px4_config_param_subs = {}
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.send': 'true'})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.frame_id': map_frame})
+    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
+
+    new_px4_config_cfg = RewrittenYaml(
+        source_file=px4_config_cfg,
+        root_key='',
+        param_rewrites=px4_config_param_subs,
+        convert_types=True)
+
+    mavros_node = Node(
+      package='mavros',
+      executable='mavros_node',
+      output='screen',
+      shell=False,
+      namespace='mavros',
+      parameters=[
+        {'fcu_url': fcu_url},
+        {'gcs_url': 'udp://:14556@'},
+        {'tgt_system': tgt_system},
+        {'tgt_component': 1},
+        {'fcu_protocol': 'v2.0'},
+        {'startup_px4_usb_quirk': 'true'},
+        px4_pluginlists_cfg,
+        new_px4_config_cfg,
       ],
+      remappings=[
+        ('local_position/odom', ['/odom']),
+      ],
+    )
+
+    # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
+    # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
+    # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
+    fcu_setup_service_calls = ExecuteProcess(
+        cmd=['sleep', '10'],
+        log_cmd=True,
+        on_exit=[
+          ExecuteProcess(
+              cmd=[[
+                FindExecutable(name='ros2'),
+                " service call",
+                " /mavros/set_stream_rate",
+                " mavros_msgs/srv/StreamRate ",
+                '"{stream_id: 0, message_rate: 15, on_off: true}"',
+              ]],
+            shell=True
+          ),
+          ExecuteProcess(
+            cmd=[[
+              FindExecutable(name='ros2'),
+              " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
+            ]],
+            shell=True
+          ),
+          ExecuteProcess(
+            cmd=[[
+              FindExecutable(name='ros2'),
+              " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
+            ]],
+            shell=True
+          ),
+        ]
     )
 
     return LaunchDescription([
@@ -157,4 +229,6 @@ def generate_launch_description():
         navigator_node,
         trajectory_server,
         # Set parameters
+        mavros_node,
+        fcu_setup_service_calls,
     ])

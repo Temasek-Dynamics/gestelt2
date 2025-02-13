@@ -12,12 +12,10 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, FindExecutable
+from launch.substitutions import PathJoinSubstitution
 
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace, SetParameter
-
-from nav2_common.launch import RewrittenYaml
 
 SCENARIO_NAME = "empty"
 
@@ -87,12 +85,10 @@ def generateSITLDrone(id, spawn_pos, num_drones):
         }.items()
     )
 
-
     return GroupAction(
       actions=[
-          PushROSNamespace('d' + str(id)),
+          # PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
-
         ]
     )
 
@@ -102,102 +98,10 @@ def generate_launch_description():
       SCENARIO_NAME
     )
 
-    # Generate nodes of SITL drone instances according to scenario
+     # Generate nodes of SITL drone instances according to scenario
     offboard_nodes = generateSITLDrone(
-            0, scenario.spawns_pos[0], scenario.num_agents)
-        
-
-    px4_pluginlists_cfg = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'config',
-      'px4_pluginlists.yaml'
-    )
-
-    px4_config_cfg = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'config',
-      'px4_config.yaml'
-    )
-
-    map_frame = ['d0_origin'] # Fixed
-    base_link_frame = ['d0_base_link'] # Dynamic
-
-    '''Mavlink/Mavros'''
-    fcu_url =  '/dev/ttyS7:921600'
-    tgt_system = 36
-
-    px4_config_param_subs = {}
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.send': 'true'})
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.frame_id': map_frame})
-    px4_config_param_subs.update({'/**/local_position.ros__parameters.tf.child_frame_id': base_link_frame})
-
-    new_px4_config_cfg = RewrittenYaml(
-        source_file=px4_config_cfg,
-        root_key='',
-        param_rewrites=px4_config_param_subs,
-        convert_types=True)
-
-    mavros_node = Node(
-      package='mavros',
-      executable='mavros_node',
-      output='screen',
-      shell=False,
-      namespace='mavros',
-      parameters=[
-        {'fcu_url': fcu_url},
-        {'gcs_url': 'udp://:14556@'},
-        {'tgt_system': tgt_system},
-        {'tgt_component': 1},
-        {'fcu_protocol': 'v2.0'},
-        {'startup_px4_usb_quirk': 'true'},
-        px4_pluginlists_cfg,
-        new_px4_config_cfg,
-      ],
-      # remappings=[
-      #   ('imu/data_raw', ['/mavros/imu/data_raw']),
-      #   ('vision_pose/pose', ['/mavros/vision_pose/pose']),
-      #   ('vision_pose/pose_cov', ['/mavros/vision_pose/pose_cov']),
-      #   ('vision_pose/pose_reset', ['/mavros/vision_pose/pose_reset']),
-      #   ('vision_speed/speed_twist', ['/mavros/vision_speed/speed_twist']),
-      # ],
-    )
-
-    # ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate "{stream_id: 0, message_rate: 15, on_off: true}"
-    # ros2 run mavros mav cmd long 511 105 3000 0 0 0 0 0
-    # ros2 run mavros mav cmd long 511 32 33333 0 0 0 0 0
-    fcu_setup_service_calls = ExecuteProcess(
-        cmd=['sleep', '10'],
-        log_cmd=True,
-        on_exit=[
-          ExecuteProcess(
-              cmd=[[
-                FindExecutable(name='ros2'),
-                " service call",
-                " /mavros/set_stream_rate",
-                " mavros_msgs/srv/StreamRate ",
-                '"{stream_id: 0, message_rate: 15, on_off: true}"',
-              ]],
-            shell=True
-          ),
-          ExecuteProcess(
-            cmd=[[
-              FindExecutable(name='ros2'),
-              " run mavros mav cmd long 511 105 3000 0 0 0 0 0",
-            ]],
-            shell=True
-          ),
-          ExecuteProcess(
-            cmd=[[
-              FindExecutable(name='ros2'),
-              " run mavros mav cmd long 511 32 33333 0 0 0 0 0",
-            ]],
-            shell=True
-          ),
-        ]
-    )
+      0, scenario.spawns_pos[0], scenario.num_agents)
 
     return LaunchDescription([
         offboard_nodes,
-        # Mavlink to ROS bridge
-        mavros_node,
-        fcu_setup_service_calls,
     ])

@@ -62,54 +62,18 @@ def generate_launch_description():
       'default.rviz'
     )
 
-    fake_map_pcd_filepath = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
-      scenario.map + '.pcd'
-    )
+    '''Frames'''
+    world_to_map_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                       output="log",
+                      arguments = ["0", "0", "0", "0", "0", "0", 
+                                  'world', "map"])
 
-
-    # Mission node: Sends goals to agents
-    # mission_node = Node(
-    #     package='gestelt_mission',
-    #     executable='mission',
-    #     output='screen',
-    #     shell=False,
-    #     emulate_tty=True,
-    #     name='mission_node',
-    #     parameters = [
-    #         {'scenario': scenario.name},
-    #         {'init_delay': 5},
-    #     ]
-    # )
-
-    # swarm_collision_checker_node = Node(
-    #     package='swarm_collision_checker',
-    #     executable='swarm_collision_checker_node',
-    #     output='screen',
-    #     shell=False,
-    #     name='swarm_collision_checker_node',
-    #     parameters = [
-    #         {'num_drones': scenario.num_agents},
-    #         {'odom_topic': "odom"},
-    #         {'collision_check.frequency': 20.0},
-    #         {'collision_check.warn_radius': 0.225},
-    #         {'collision_check.fatal_radius': 0.14},
-    #     ]
-    # )
-
-    # Fake map
-    fake_map_publisher = Node(
-        package='fake_map',
-        executable='fake_map_publisher_node',
-        output='screen',
-        shell=False,
-        name='fake_map_publisher_node',
-        parameters=[
-            {'fake_map.pcd_filepath': fake_map_pcd_filepath},
-            {'fake_map.frame_id': "world"},
-            {'fake_map.publishing_frequency': 1.0},
-        ],
-    )
+    drone0_origin_tf = Node(package = "tf2_ros", 
+                       executable = "static_transform_publisher",
+                       output="log",
+                      arguments = ["0", "0", "0", "0", "0", "0", 
+                                  "map", "drone0_origin"])
 
     # RVIZ Visualization
     rviz_node = Node(
@@ -149,8 +113,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # fake_map_publisher,
-        rosbag_record,
+        # rosbag_record,
         rviz_node,
-        # swarm_collision_checker_node,
+        # world_to_map_tf,
+        # drone0_origin_tf,
     ])
