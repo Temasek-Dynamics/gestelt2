@@ -806,7 +806,7 @@ Visualization Manager:
               Enabled: true
               Name: fe_plan_req
               Namespaces:
-                {}
+                plan_req_viz: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -819,7 +819,9 @@ Visualization Manager:
               Enabled: true
               Name: /fe_plan/viz
               Namespaces:
-                {}
+                fe_path_lines: true
+                fe_path_start_goal: true
+                fe_path_waypoints: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3697,26 +3699,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/XYOrbit
-      Distance: 28.887466430664062
+      Angle: -1.5599993467330933
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: -4.065176963806152
-        Y: 0.49628400802612305
-        Z: 6.083309926907532e-07
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1447958946228027
+      Scale: 38.38966751098633
       Target Frame: <Fixed Frame>
-      Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.216114044189453
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 2.7506263256073
+      Y: 1.057555079460144
     Saved: ~
 Window Geometry:
   Displays:
