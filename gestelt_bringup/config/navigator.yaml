@@ -8,7 +8,7 @@
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
 
-      point_goal_height: 1.5 #[m] Height to send point goal
+      point_goal_height: 2.0 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
       planner_frequency: 8.0  # [Hz] Frequency at which plan is generated
