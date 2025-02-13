@@ -19,6 +19,7 @@ Panels:
         - /d01
         - /d01/state1
         - /d01/state1/odom_ax1/Shape1
+        - /d01/3d_occ_map1
         - /d01/sfc1/Topic1
       Splitter Ratio: 0.5029411911964417
     Tree Height: 707
@@ -1250,7 +1251,7 @@ Visualization Manager:
           Axis: Z
           Channel Name: intensity
           Class: rviz_default_plugins/PointCloud2
-          Color: 165; 29; 45
+          Color: 255; 255; 255
           Color Transformer: FlatColor
           Decay Time: 0
           Enabled: true
@@ -3697,25 +3698,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 6.6916046142578125
+      Distance: 6.689583778381348
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.5454436540603638
-        Y: -1.294027328491211
-        Z: 3.352050498506287e-06
+        X: -0.49482226371765137
+        Y: 0.5058417320251465
+        Z: 6.083309926907532e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2747963070869446
+      Pitch: 0.6097962260246277
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.894279956817627
+      Yaw: 0.6311209201812744
     Saved: ~
 Window Geometry:
   Displays:
