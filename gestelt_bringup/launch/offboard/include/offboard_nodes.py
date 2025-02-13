@@ -222,7 +222,7 @@ def generate_launch_description():
         init_y_launch_arg,
         num_drones_arg,
         # Static transforms
-        world_to_map_tf,
+        # world_to_map_tf,
         drone_origin_tf,
         camera_link_tf,
         # Nodes
