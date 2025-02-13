@@ -91,7 +91,7 @@ public:
   struct Options
   {
     int32_t prob_miss_log = logods(0.49f);
-    int32_t prob_hit_log = logods(0.65f);
+    int32_t prob_hit_log = logods(0.55f);
 
     int32_t clamp_min_log = logods(0.12f);
     int32_t clamp_max_log = logods(0.90f);
