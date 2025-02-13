@@ -71,7 +71,7 @@ public:
     int32_t clamp_min_log = logods(0.12f);
     int32_t clamp_max_log = logods(0.90f);
 
-    int32_t occupancy_threshold_log = logods(0.8);
+    int32_t occupancy_threshold_log = logods(0.85);
   };
 
   static const int32_t UnknownProbability;
