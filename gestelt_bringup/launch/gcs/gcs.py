@@ -126,7 +126,7 @@ def generate_launch_description():
     # bag_topics.append("/agent_id_text")
     # bag_topics.append("/d0/occ_map")
     # Subscription to 3d occupancy voxel map
-    # bag_topics.append("/visbot_itof/point_cloud")
+    bag_topics.append("/visbot_itof/point_cloud")
 
     bag_topics.append("/mavros/local_position/odom")
 
@@ -150,7 +150,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         # fake_map_publisher,
-        # rosbag_record,
+        rosbag_record,
         rviz_node,
         # swarm_collision_checker_node,
     ])
