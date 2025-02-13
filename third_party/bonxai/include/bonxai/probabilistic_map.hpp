@@ -68,14 +68,14 @@ public:
     // int32_t prob_miss_log = logods(0.4f);
     // int32_t prob_hit_log = logods(0.7f);
 
-    int32_t prob_miss_log = logods(0.6f);
-    int32_t prob_hit_log = logods(0.7f);
+    int32_t prob_miss_log = logods(0.4f);
+    int32_t prob_hit_log = logods(0.5f);
 
     int32_t clamp_min_log = logods(0.12f);
     int32_t clamp_max_log = logods(0.97f);
 
-    int32_t occupancy_threshold_log = logods(0.5);
-    // int32_t occupancy_threshold_log = logods(0.6);
+    // int32_t occupancy_threshold_log = logods(0.5);
+    int32_t occupancy_threshold_log = logods(0.6);
   };
 
   static const int32_t UnknownProbability;
