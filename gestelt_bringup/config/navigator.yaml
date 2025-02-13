@@ -8,7 +8,7 @@
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
 
-      point_goal_height: 0.75 #[m] Height to send point goal
+      point_goal_height: 1.5 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
       planner_frequency: 8.0  # [Hz] Frequency at which plan is generated
@@ -56,12 +56,12 @@
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.15
-        vy_min:     -0.15
-        vz_min:     -0.15
-        vx_max:      0.15
-        vy_max:      0.15
-        vz_max:      0.15
+        vx_min:     -0.4
+        vy_min:     -0.4
+        vz_min:     -0.4
+        vx_max:      0.4
+        vy_max:      0.4
+        vz_max:      0.4
 
         ax_min:     -20.0
         ay_min:     -20.0
