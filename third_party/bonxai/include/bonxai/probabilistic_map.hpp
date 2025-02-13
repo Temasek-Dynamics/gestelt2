@@ -62,10 +62,35 @@ public:
       , probability_log(UnknownProbability){};
   };
 
+  // /// These default values are the same as OctoMap
+  // struct Options
+  // {
+  //   int32_t prob_miss_log = logods(0.4f);
+  //   int32_t prob_hit_log = logods(0.7f);
+
+  //   int32_t clamp_min_log = logods(0.12f);
+  //   int32_t clamp_max_log = logods(0.97f);
+
+  //   int32_t occupancy_threshold_log = logods(0.5);
+  // };
+
+  // /// These default values are the same as OctoMap
+  // struct Options
+  // {
+  //   int32_t prob_miss_log = logods(0.35f);
+  //   int32_t prob_hit_log = logods(0.78f);
+
+  //   int32_t clamp_min_log = logods(0.12f);
+  //   int32_t clamp_max_log = logods(0.90f);
+
+  //   int32_t occupancy_threshold_log = logods(0.85);
+  // };
+
+
   /// These default values are the same as OctoMap
   struct Options
   {
-    int32_t prob_miss_log = logods(0.35f);
+    int32_t prob_miss_log = logods(0.5f);
     int32_t prob_hit_log = logods(0.78f);
 
     int32_t clamp_min_log = logods(0.12f);
