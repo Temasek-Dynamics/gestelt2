@@ -17,12 +17,6 @@ from nav2_common.launch import RewrittenYaml
 
 def generate_launch_description():
     ''' Get launch argument values '''
-    drone_id = LaunchConfiguration('drone_id')
-    init_x = LaunchConfiguration('init_x')
-    init_y = LaunchConfiguration('init_y')
-    fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
-    num_drones = LaunchConfiguration('num_drones')
-
     drone_id_launch_arg = DeclareLaunchArgument(
       'drone_id',
       default_value='0'
@@ -46,6 +40,19 @@ def generate_launch_description():
       'num_drones',
       default_value='4'
     )
+
+    drone_id = LaunchConfiguration('drone_id')
+    init_x = LaunchConfiguration('init_x')
+    init_y = LaunchConfiguration('init_y')
+    fake_map_pcd_filepath = LaunchConfiguration('fake_map_pcd_filepath')
+    num_drones = LaunchConfiguration('num_drones')
+
+    '''Frames'''
+    global_frame = 'map' # Fixed
+    map_frame = ['d', drone_id, '_origin'] # Fixed
+    base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
+    local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
+    camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
 
 
     ''' Get parameter files '''
@@ -81,20 +88,7 @@ def generate_launch_description():
       'px4_config.yaml'
     )
 
-    '''Frames'''
-    global_frame = 'map' # Fixed
-    map_frame = ['d', drone_id, '_origin'] # Fixed
-    base_link_frame = ['d', drone_id, '_base_link'] # Dynamic
-    local_map_frame = ['d', drone_id, '_lcl_map'] # Fixed to base_link
-    camera_frame = ['d', drone_id, '_camera_link'] # Fixed to base_link
-
-
     """Nodes"""
-    world_to_map_tf = Node(package = "tf2_ros", 
-                       executable = "static_transform_publisher",
-                       output="log",
-                      arguments = ["0", "0", "0", "0", "0", "0", 
-                                  'world', global_frame])
 
     # Publish TF for map to fixed drone origin
     # This is necessary because PX4 SITL is not able to change it's initial starting position
@@ -136,8 +130,7 @@ def generate_launch_description():
             voxel_map_cfg,
         ],
       remappings=[
-        ('cloud', ['visbot_itof/point_cloud']),
-        ('odom', ['mavros/local_position/odom']),
+        ('cloud', ['/visbot_itof/point_cloud']),
       ],
     )
 
@@ -153,9 +146,6 @@ def generate_launch_description():
           {'map_frame': map_frame},
           traj_server_config
         ],
-      remappings=[
-        ('odom', ['mavros/local_position/odom']),
-      ],
     )
 
     ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
@@ -167,15 +157,14 @@ def generate_launch_description():
         name=['fake_sensor_', drone_id],
         parameters=[
           {'drone_id': drone_id},
+          {'global_frame': global_frame},
           {'map_frame': map_frame},
-          {'local_map_frame': local_map_frame},
           {'sensor_frame': camera_frame},
           {'pcd_map.filepath': fake_map_pcd_filepath},
           fake_sensor_config,
         ],
         remappings=[
-          ('cloud', ['visbot_itof/point_cloud']),
-          ('odom', ['mavros/local_position/odom']),
+          ('cloud', ['/visbot_itof/point_cloud']),
         ],
     )
 
@@ -214,6 +203,9 @@ def generate_launch_description():
         px4_pluginlists_cfg,
         new_px4_config_cfg,
       ],
+      remappings=[
+        ('local_position/odom', ['/odom']),
+      ],
     )
 
     return LaunchDescription([
@@ -224,7 +216,6 @@ def generate_launch_description():
         fake_map_pcd_filepath_launch_arg,
         num_drones_arg,
         # Static transforms
-        world_to_map_tf,
         drone_origin_tf,
         camera_link_tf,
         # Nodes

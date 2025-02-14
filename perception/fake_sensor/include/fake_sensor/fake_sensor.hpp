@@ -70,8 +70,8 @@ class FakeSensor : public rclcpp::Node
 
         int num_drones_{1}; // Number of drones, used to create subscription for odom
 
+        std::string global_frame_; // Global map frame
         std::string map_frame_; // Fixed map origin frame
-        std::string local_map_frame_; // Local map frame of UAV
         std::string sensor_frame_;  // Frame of sensor on UAV
 
         bool listen_to_tf_; // If true, then use /tf to determine camera to map transform, else use the odom topic
@@ -87,7 +87,7 @@ class FakeSensor : public rclcpp::Node
 
         geometry_msgs::msg::TransformStamped sensor_to_map_tf_; // sensor to global frame transform
             
-        Eigen::Matrix4d world_to_map_tf_mat_; // world to map TF matrix
+        Eigen::Matrix4d gbl_to_map_tf_mat_; // global to map TF matrix
         Eigen::Matrix4d map_to_sensor_tf_mat_; // map to sensor TF matrix
         Eigen::Matrix4d sensor_to_map_tf_mat_; // map to sensor TF matrix
 

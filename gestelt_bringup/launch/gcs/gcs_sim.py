@@ -17,7 +17,7 @@ def generate_launch_description():
     '''ROS parameters'''
     rviz_cfg = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'config',
-      'default.rviz'
+      'gazebo_sim.rviz'
     )
 
     '''Frames'''
@@ -34,18 +34,6 @@ def generate_launch_description():
         output='log',
         shell=False,
         arguments=['-d' + rviz_cfg],
-        remappings=[
-            ('/tf', ['/d0/tf']),
-            ('/tf_static', ['/d0/tf_static']),
-            ('/tf', ['/d1/tf']),
-            ('/tf_static', ['/d1/tf_static']),
-            ('/tf', ['/d2/tf']),
-            ('/tf_static', ['/d2/tf_static']),
-            ('/tf', ['/d3/tf']),
-            ('/tf_static', ['/d3/tf_static']),
-            ('/tf', ['/d4/tf']),
-            ('/tf_static', ['/d4/tf_static']),
-        ],
     )
 
     # ROSBag 

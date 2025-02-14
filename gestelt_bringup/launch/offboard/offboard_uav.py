@@ -19,20 +19,6 @@ from launch_ros.actions import Node, PushROSNamespace, SetParameter
 
 SCENARIO_NAME = "empty"
 
-# SCENARIO_NAME = "forest_dense_1"
-# SCENARIO_NAME = "forest_sparse_1"
-
-# SCENARIO_NAME = "forward_flight_8"
-# SCENARIO_NAME = "forward_flight_16"
-
-# SCENARIO_NAME = "antipodal_swap_4_normal"
-# SCENARIO_NAME = "antipodal_swap_4_sparse"
-# SCENARIO_NAME = "antipodal_swap_4_dense"
-# SCENARIO_NAME = "antipodal_swap_4_empty"
-
-# SCENARIO_NAME = "antipodal_swap_8_normal"
-# SCENARIO_NAME = "antipodal_swap_8_sparse"
-
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
     and define the number of drones and their spawn positions

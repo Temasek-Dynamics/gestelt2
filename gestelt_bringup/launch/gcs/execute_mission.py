@@ -18,8 +18,7 @@ from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
 SCENARIO_NAME = "empty"
-# SCENARIO_NAME = "vicon_3"
-# SCENARIO_NAME = "sutd_2"
+# SCENARIO_NAME = "vicon_antipodal_2"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map

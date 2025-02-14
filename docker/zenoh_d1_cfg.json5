@@ -1,7 +1,7 @@
 {
   plugins: {
     ros2dds: {
-      namespace: "/d0",
+      namespace: "/d1",
       ros_localhost_only: true,
       ros_automatic_discovery_range: "LOCALHOST",
       allow: {

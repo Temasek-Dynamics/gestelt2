@@ -20,8 +20,8 @@ FakeSensor::FakeSensor()
 	num_drones_ = this->declare_parameter("num_drones", 1);
 
 	// Frame parameters
+	this->declare_parameter("global_frame", "world");
 	this->declare_parameter("map_frame", "map");
-	this->declare_parameter("local_map_frame", "local_map_frame");
 	this->declare_parameter("sensor_frame", "camera_frame");
 
 	// Pcd map file parameters
@@ -46,8 +46,8 @@ FakeSensor::FakeSensor()
 	double tf_listen_freq = this->get_parameter("tf.listen_freq").as_double();
 
 	// Frame parameters
+	global_frame_ = this->get_parameter("map_frame").as_string();
 	map_frame_ = this->get_parameter("map_frame").as_string();
-	local_map_frame_ = this->get_parameter("local_map_frame").as_string();
 	sensor_frame_ = this->get_parameter("sensor_frame").as_string();
 
 	// Pcd map file parameters
@@ -125,35 +125,35 @@ FakeSensor::FakeSensor()
 	}
 	RCLCPP_INFO(this->get_logger(), "drone%d loaded PCD input file from %s\n", 
 		drone_id_, map_filepath.c_str());
-	
-	// Get 'world' to map_frame fixed TF, used for transforming PCD map to map_frame
+
+	// Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
 	try {
-		auto tf_world_to_map = tf_buffer_->lookupTransform(
-			map_frame_, "world",
+		auto tf_gbl_to_map = tf_buffer_->lookupTransform(
+			map_frame_, global_frame_,
 			tf2::TimePointZero,
 			tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
 
 		// Create transformation matrix from global to sensor frame
-		world_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
-			tf_world_to_map.transform.rotation.w,
-			tf_world_to_map.transform.rotation.x,
-			tf_world_to_map.transform.rotation.y,
-			tf_world_to_map.transform.rotation.z).toRotationMatrix();
-		world_to_map_tf_mat_(0, 3) = tf_world_to_map.transform.translation.x;
-		world_to_map_tf_mat_(1, 3) = tf_world_to_map.transform.translation.y;
-		world_to_map_tf_mat_(2, 3) = tf_world_to_map.transform.translation.z;
-		world_to_map_tf_mat_(3, 3) = 1.0;
+		gbl_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
+			tf_gbl_to_map.transform.rotation.w,
+			tf_gbl_to_map.transform.rotation.x,
+			tf_gbl_to_map.transform.rotation.y,
+			tf_gbl_to_map.transform.rotation.z).toRotationMatrix();
+		gbl_to_map_tf_mat_(0, 3) = tf_gbl_to_map.transform.translation.x;
+		gbl_to_map_tf_mat_(1, 3) = tf_gbl_to_map.transform.translation.y;
+		gbl_to_map_tf_mat_(2, 3) = tf_gbl_to_map.transform.translation.z;
+		gbl_to_map_tf_mat_(3, 3) = 1.0;
 	} 
 	catch (const tf2::TransformException & ex) {
 			RCLCPP_ERROR(
-				this->get_logger(), "Could not get transform from world_frame('world') to map_frame_(%s): %s. SHUTTING DOWN.",
-				map_frame_.c_str(), ex.what());
+				this->get_logger(), "Could not get transform from global frame(%s) to map_frame_(%s): %s. SHUTTING DOWN.",
+				global_frame_.c_str(), map_frame_.c_str(), ex.what());
 		rclcpp::shutdown();
 		return;
 	}
 
-	// Transform point cloud map from 'world' frame to map_frame_
-	pcl::transformPointCloud (*fake_map_cloud_, *fake_map_cloud_, world_to_map_tf_mat_);
+	// Transform point cloud map from global_frame_ frame to map_frame_
+	pcl::transformPointCloud (*fake_map_cloud_, *fake_map_cloud_, gbl_to_map_tf_mat_);
   	fake_map_cloud_->header.frame_id = map_frame_;
 
 	// Set up sensor renderer
