@@ -69,37 +69,45 @@ def generate_launch_description():
                       arguments = ["0", "0", "0", "0", "0", "0", 
                                   'world', "map"])
 
-    drone0_origin_tf = Node(package = "tf2_ros", 
-                       executable = "static_transform_publisher",
-                       output="log",
-                      arguments = ["0", "0", "0", "0", "0", "0", 
-                                  "map", "drone0_origin"])
-
     # RVIZ Visualization
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         output='log',
         shell=False,
-        arguments=['-d' + rviz_cfg]
+        arguments=['-d' + rviz_cfg],
+        remappings=[
+            ('/tf', ['/d0/tf']),
+            ('/tf_static', ['/d0/tf_static']),
+            ('/tf', ['/d1/tf']),
+            ('/tf_static', ['/d1/tf_static']),
+            ('/tf', ['/d2/tf']),
+            ('/tf_static', ['/d2/tf_static']),
+            ('/tf', ['/d3/tf']),
+            ('/tf_static', ['/d3/tf_static']),
+            ('/tf', ['/d4/tf']),
+            ('/tf_static', ['/d4/tf_static']),
+        ],
     )
 
     # ROSBag 
     bag_topics = []
-    # bag_topics.append("/odom")
-    # bag_topics.append("/agent_id_text")
-    # bag_topics.append("/d0/occ_map")
-    # Subscription to 3d occupancy voxel map
-    bag_topics.append("/visbot_itof/point_cloud")
-
-    bag_topics.append("/mavros/local_position/odom")
+    # Position
+    bag_topics.append("/d0/odom")
+    bag_topics.append("/d0/agent_id_text")
+    # Perception
+    bag_topics.append("/d0/occ_map")
+    bag_topics.append("/d0/visbot_itof/point_cloud")
+    # Transforms
+    bag_topics.append("/d0/tf")
+    bag_topics.append("/d0/tf_static")
 
     # Paths
+    bag_topics.append("/d0/fe_plan_req")
     bag_topics.append("/d0/fe_plan/viz")
     bag_topics.append("/d0/mpc/traj")
     # Subscription to point clouds
     bag_topics.append("/rosout")
-    bag_topics.append("/tf")
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
@@ -115,6 +123,5 @@ def generate_launch_description():
     return LaunchDescription([
         # rosbag_record,
         rviz_node,
-        # world_to_map_tf,
-        # drone0_origin_tf,
+        world_to_map_tf,
     ])
