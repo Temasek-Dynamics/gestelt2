@@ -1266,29 +1266,38 @@ void Navigator::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
 
 void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
 {
-  logger_->logError(strFmt("Received point goal"));
-    std::vector<Eigen::Vector3d> wp_vec;
+  logger_->logInfo(strFmt("Received point goal in %s frame", msg->header.frame_id.c_str()));
 
-    if (msg->header.frame_id == global_frame_)
-    {
-      // Transform from global to map frame
-      wp_vec.push_back(globalToMap(Eigen::Vector3d(
-        msg->pose.position.x, msg->pose.position.y, point_goal_height_)));
-    }
-    else if (msg->header.frame_id == map_frame_)
-    {
-      // Keep in map frame
-      wp_vec.push_back(Eigen::Vector3d(
-        msg->pose.position.x, msg->pose.position.y, point_goal_height_));
-    }
-    else {
-      logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
+  std::vector<Eigen::Vector3d> wp_vec;
+
+  if (msg->header.frame_id == global_frame_)
+  {
+    // Transform from global to map frame
+    Eigen::Vector3d src_pt(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+    Eigen::Vector3d tgt_pt;
+    if (!globalToMap(src_pt, tgt_pt)){
+      logger_->logError(strFmt("Failed to transform goals from '%s' frame to %s frame, ignoring goal request.", 
         global_frame_.c_str(), map_frame_.c_str()));
       return;
     }
-    waypoints_.reset();
 
-    waypoints_.addMultipleWP(wp_vec);
+    wp_vec.push_back(tgt_pt);
+    logger_->logInfo(strFmt("  Added global goal (%f, %f, %f)", tgt_pt(0), tgt_pt(1), tgt_pt(2)));
+  }
+  else if (msg->header.frame_id == map_frame_)
+  {
+    // Keep in map frame
+    wp_vec.push_back(Eigen::Vector3d(
+      msg->pose.position.x, msg->pose.position.y, point_goal_height_));
+  }
+  else {
+    logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
+      global_frame_.c_str(), map_frame_.c_str()));
+    return;
+  }
+  waypoints_.reset();
+
+  waypoints_.addMultipleWP(wp_vec);
 }
 
 void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
@@ -1308,8 +1317,15 @@ void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
     {
       // Transform from world to fixed map frame
       for (auto& wp : msg->waypoints) {
-        wp_vec.push_back(globalToMap(Eigen::Vector3d(
-          wp.position.x, wp.position.y, wp.position.z)));
+        Eigen::Vector3d src_pt(wp.position.x, wp.position.y, wp.position.z);
+        Eigen::Vector3d tgt_pt;
+        if (!globalToMap(src_pt, tgt_pt)){
+          logger_->logError(strFmt("Failed to transform goals from '%s' frame to %s frame, ignoring goal request.", 
+            global_frame_.c_str(), map_frame_.c_str()));
+          return;
+        }
+        wp_vec.push_back(tgt_pt);
+        logger_->logInfo(strFmt("  Added global goal (%f, %f, %f)", tgt_pt(0), tgt_pt(1), tgt_pt(2)));
       }
     }
     else if (msg->header.frame_id == map_frame_)
@@ -1321,7 +1337,7 @@ void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
       }
     }
     else {
-      logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
+      logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goal request.", 
         global_frame_.c_str(), map_frame_.c_str()));
       return;
     }
@@ -1332,22 +1348,9 @@ void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
 
 void Navigator::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::UniquePtr msg)
 {
-  // Transform from map to local map
-  // Eigen::Vector3d plan_start = mapToLclMap(
-  //   Eigen::Vector3d(msg->start.position.x, msg->start.position.y, msg->start.position.z));
-  // Eigen::Vector3d plan_end = mapToLclMap(
-  //   Eigen::Vector3d(msg->goal.position.x, msg->goal.position.y, msg->goal.position.z));
-
   Eigen::Vector3d plan_end;
 
-  if (msg->header.frame_id == global_frame_)
-  {
-    cur_pos_ = globalToMap(Eigen::Vector3d(
-      msg->start.position.x, msg->start.position.y, msg->start.position.z));
-    plan_end = globalToMap(Eigen::Vector3d(
-      msg->goal.position.x, msg->goal.position.y, msg->goal.position.z));
-  }
-  else if (msg->header.frame_id == map_frame_)
+  if (msg->header.frame_id == map_frame_)
   {
     // Keep in map frame
     cur_pos_ = Eigen::Vector3d(
@@ -1356,8 +1359,8 @@ void Navigator::planReqDbgSubCB(const gestelt_interfaces::msg::PlanRequest::Uniq
       msg->goal.position.x, msg->goal.position.y, msg->goal.position.z);
   }
   else {
-    logger_->logError(strFmt("Only accepting goals in '%s' or '%s' frame, ignoring goals.", 
-      global_frame_.c_str(), map_frame_.c_str()));
+    logger_->logError(strFmt("Only accepting goals in '%s' frame, ignoring goals.", 
+      map_frame_.c_str()));
     return;
   }
 

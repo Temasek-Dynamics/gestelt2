@@ -59,7 +59,7 @@ def generateSITLDrone(id, spawn_pos, num_drones):
                 'launch',
                 'offboard',
                 'include',
-                'offboard_nodes.py'
+                'offboard_nodes_1.py'
             ])
         ]),
         launch_arguments={

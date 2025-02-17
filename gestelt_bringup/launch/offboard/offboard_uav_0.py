@@ -17,7 +17,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace, SetParameter
 
-SCENARIO_NAME = "test_sim"
+SCENARIO_NAME = "empty"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -50,16 +50,16 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
+def generateSITLDrone(id, spawn_pos, num_drones):
 
     sitl_drone_launchfile = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
                 FindPackageShare('gestelt_bringup'),
                 'launch',
-                'mavros_sitl',
+                'offboard',
                 'include',
-                'mavros_nodes.py'
+                'offboard_nodes_0.py'
             ])
         ]),
         launch_arguments={
@@ -67,13 +67,13 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
             'init_x': str(spawn_pos[0]),
             'init_y': str(spawn_pos[1]),
             'init_yaw': str(spawn_pos[2]),
-            'fake_map_pcd_filepath': str(pcd_filepath),
             'num_drones': str(num_drones),
         }.items()
     )
 
     return GroupAction(
       actions=[
+          # PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
         ]
     )
@@ -84,16 +84,9 @@ def generate_launch_description():
       SCENARIO_NAME
     )
 
-    '''ROS parameters'''
-    fake_map_pcd_filepath = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
-      scenario.map + '.pcd'
-    )
-
      # Generate nodes of SITL drone instances according to scenario
     offboard_nodes = generateSITLDrone(
-            0, scenario.spawns_pos[0], fake_map_pcd_filepath, scenario.num_agents)
-        
+      0, scenario.spawns_pos[0], scenario.num_agents)
 
     return LaunchDescription([
         offboard_nodes,

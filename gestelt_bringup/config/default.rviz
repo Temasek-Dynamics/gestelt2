@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /world1
         - /TF1/Frames1
         - /d0_actual1
         - /d0_actual1/state1/odom_ax1/Shape1
@@ -36,7 +37,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: 3d_occ_map
 Visualization Manager:
   Class: ""
   Displays:
@@ -59,12 +60,12 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz_default_plugins/Axes
-      Enabled: false
+      Enabled: true
       Length: 0.5
       Name: world
       Radius: 0.07000000029802322
       Reference Frame: <Fixed Frame>
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/TF
       Enabled: false
       Filter (blacklist): ""
@@ -663,7 +664,7 @@ Visualization Manager:
           Color: 165; 29; 45
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -683,7 +684,7 @@ Visualization Manager:
             Value: /occ_map
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Class: rviz_default_plugins/Marker
           Enabled: false
           Name: static_collisions
@@ -3693,25 +3694,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 8.591917991638184
+      Distance: 15.931057929992676
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.30952227115631104
-        Y: -2.0214548110961914
-        Z: 0
+        X: -0.1989668607711792
+        Y: -1.1605725288391113
+        Z: 4.76837158203125e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8647971153259277
+      Pitch: 1.2047981023788452
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.867393732070923
+      Yaw: 3.4073855876922607
     Saved: ~
 Window Geometry:
   Displays:

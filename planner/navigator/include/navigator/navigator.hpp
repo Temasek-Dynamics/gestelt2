@@ -332,29 +332,43 @@ private:
 private:
 
   /* Convert point from world to fixed map origin*/
-  Eigen::Vector3d globalToMap(const Eigen::Vector3d& pt)
+  bool globalToMap(const Eigen::Vector3d& src_pt, Eigen::Vector3d& tgt_pt)
   {
-    Eigen::Vector3d pose = pt;
+    tf2::Vector3 pt_in_src_frame(src_pt(0), src_pt(1), src_pt(2));
 
     // Get other agent's frame to map_frame transform
     try {
-      auto tf = tf_buffer_->lookupTransform(
+      auto tf_res = tf_buffer_->lookupTransform(
         map_frame_, global_frame_, 
         tf2::TimePointZero,
         tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
-      // Set fixed map origin
-      pose(0) += tf.transform.translation.x;
-      pose(1) += tf.transform.translation.y;
-      // pose(2) += tf.transform.translation.z;
+
+      tf2::Quaternion q(
+          tf_res.transform.rotation.x,
+          tf_res.transform.rotation.y,
+          tf_res.transform.rotation.z,
+          tf_res.transform.rotation.w
+      );
+      tf2::Vector3 p(
+          tf_res.transform.translation.x,
+          tf_res.transform.translation.y,
+          tf_res.transform.translation.z
+      );
+
+      tf2::Transform transform(q, p);
+
+      tf2::Vector3 pt_in_tgt_frame = transform * pt_in_src_frame;
+
+      tgt_pt = Eigen::Vector3d(pt_in_tgt_frame.x(), pt_in_tgt_frame.y(), pt_in_tgt_frame.z());
     }
     catch (const tf2::TransformException & ex) {
       RCLCPP_ERROR(
         this->get_logger(), "Could not get transform from global frame '%s' to map frame '%s': %s",
         global_frame_.c_str(), map_frame_.c_str(), ex.what());
-      return pose;
+      return false;
     }
 
-    return pose;
+    return true;
   }
 
   /* Convert point from fixed map origin to local map origin*/

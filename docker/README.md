@@ -96,7 +96,7 @@ sudo mkdir -p /media/john/gestelt/docker
 sudo rsync -avxP /var/lib/docker/ /media/john/gestelt/docker
 ```
 
-## Method A
+## Method A (Recommended)
 2. Create symbolic link 
 ```bash
 sudo ln -s /media/visbot/gestelt/docker /var/lib/docker

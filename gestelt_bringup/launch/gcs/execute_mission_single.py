@@ -17,8 +17,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node, PushROSNamespace
 
-SCENARIO_NAME = "empty"
-# SCENARIO_NAME = "sutd_2"
+SCENARIO_NAME = "test_sim"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
