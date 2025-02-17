@@ -43,7 +43,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: 3d_occ_map
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -3657,7 +3657,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: d0_origin
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
@@ -3700,25 +3700,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 3.8486852645874023
+      Distance: 8.111499786376953
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.8876886367797852
-        Y: -0.44730329513549805
-        Z: 1.5974044799804688e-05
+        X: -1.2511446475982666
+        Y: -1.794459342956543
+        Z: 2.2305010134004988e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5847966074943542
+      Pitch: 0.964796245098114
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.617379665374756
+      Yaw: 3.312377691268921
     Saved: ~
 Window Geometry:
   Displays:

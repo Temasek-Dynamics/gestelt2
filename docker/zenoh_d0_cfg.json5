@@ -24,7 +24,7 @@
                     ],
         subscribers: [
                       ".*/point_goal",
-                      "/all_uav_command",
+                      ".*/all_uav_command",
                       ".*/goals",
                       ".*/reset_map",
                     ],
