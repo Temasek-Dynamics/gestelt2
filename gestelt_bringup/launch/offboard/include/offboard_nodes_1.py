@@ -146,7 +146,7 @@ def generate_launch_description():
 
     '''Mavlink/Mavros'''
     fcu_url =  '/dev/ttyS7:921600'
-    tgt_system = 37
+    tgt_system = 35
 
     px4_config_param_subs = {}
     px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
