@@ -377,7 +377,7 @@ void Navigator::initParams()
   mpc_params_.drone_id = drone_id_;
 
   mpc_params_.yaw_ctrl_flag  = this->get_parameter(param_ns+".mpc.yaw_ctrl_flag").as_bool();
-  mpc_params_.yaw_lookahead_dist  = 
+  yaw_lookahead_dist_  = 
     this->get_parameter(param_ns+".mpc.yaw_lookahead_dist").as_int();
 
   mpc_params_.MPC_HORIZON  = this->get_parameter(param_ns+".mpc.horizon").as_int();
@@ -1076,7 +1076,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     double dt = 0.1;
 
     // Calculate commanded yaw
-    int lookahead_idx = mpc_controller_->yaw_lookahead_dist_;
+    int lookahead_idx = yaw_lookahead_dist_;
 
     if (fe_path_.size() > lookahead_idx + 1) 
     {

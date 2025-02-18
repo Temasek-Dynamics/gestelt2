@@ -415,8 +415,8 @@ private:
    * The RHP goal is the intersection of the P1-P2 line segment with the local map bounds (Cuboid).
    * P1 (current position) is the defined at the centroid of the local map bound 
    * 
-   * @param P1 Current position
-   * @param P2 Desired goal point
+   * @param P1 Current position (map frame)
+   * @param P2 Desired goal point (map frame)
    * @param local_map_min local map minimum bound (corner)
    * @param local_map_max local map maximum bound (corner)
    * @param offset Keep goal within local map bounds by an offset along P1-P2
@@ -478,6 +478,8 @@ private:
   int z_sep_cm_;
 
   // Planning params
+  int yaw_lookahead_dist_{5};
+
   double samp_mpc_tol_{0.2}; // [m] tolerance for difference between current position and sampled MPC position
 
   double t_unit_{0.1}; // [s] Time duration of each space-time A* unit
@@ -515,6 +517,8 @@ private:
 
 private:
   /* Stored Odometry data */
+
+  // cur_pos_ (map frame)
   Eigen::Vector3d cur_pos_{0.0, 0.0, 0.0}, cur_vel_{0.0, 0.0, 0.0}, cur_acc_{0.0, 0.0, 0.0};   // [MAP FRAME] current state
   double cur_yaw_{0.0};
   Eigen::Vector3d map_origin_{0.0, 0.0, 0.0}; // Fixed Map origin relative to world
@@ -830,8 +834,8 @@ inline bool Navigator::sampleMPCTrajectory(
   return true;
 }
 
-// P1: Start
-// P2: global goal
+// P1: Start (map frame)
+// P2: global goal (map frame)
 inline Eigen::Vector3d Navigator::getRHPGoal(
   const Eigen::Vector3d& P1, const Eigen::Vector3d& P2, 
   const Eigen::Vector3d& local_map_min, const Eigen::Vector3d& local_map_max)

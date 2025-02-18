@@ -130,7 +130,6 @@ namespace pvaj_mpc
 
 		// Yaw control
 		bool yaw_ctrl_flag{true};
-		int yaw_lookahead_dist{5};
 
 		// Controller params
 		int MPC_HORIZON{15};	// Planning horizon
@@ -184,7 +183,6 @@ namespace pvaj_mpc
 
 			// Yaw control
 			yaw_ctrl_flag_ = params.yaw_ctrl_flag;
-			yaw_lookahead_dist_ = params.yaw_lookahead_dist;
 
 			// MPC parameters
 			MPC_HORIZON = params.MPC_HORIZON;
@@ -820,7 +818,6 @@ namespace pvaj_mpc
 
 		// Yaw control params
 		bool yaw_ctrl_flag_{true};
-		double yaw_lookahead_dist_{0.5};
 
 		// Controller params
 		int MPC_HORIZON{5};
