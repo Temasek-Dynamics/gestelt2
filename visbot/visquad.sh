@@ -13,18 +13,20 @@ if [[ ! -d "$LOGDIR" ]]; then
   mkdir $LOGDIR
 fi
 
-for((i=0;i<12;i++))
+sudo killall -9 roscore
+sleep 1
+sudo killall -9 rosmaster
+sleep 1
+
+for((i=0;i<2;i++))
 do
-  killall roslaunch
+  sudo killall roslaunch
   if [ $? = 1 ]
   then
           break;
   fi
-  sleep 5
+  sleep 2
 done
-
-killall -9 rosmaster
-sleep 2
 
 index=0
 obindex=0
@@ -80,7 +82,6 @@ echo roslaunch visbot_itof visbot_itof.launch
 roslaunch visbot_itof visbot_itof.launch > $LOGCUR/itof.log 2>&1  &
 sleep 2
 
-echo roslaunch ros_zmq ros_zmq.launch
-roslaunch ros_zmq ros_zmq.launch > $LOGCUR/ros_zmq.log 2>&1  &
-sleep 2
-
+#echo roslaunch ros_zmq ros_zmq.launch
+#roslaunch ros_zmq ros_zmq.launch > $LOGCUR/ros_zmq.log 2>&1  &
+#sleep 2

@@ -46,7 +46,7 @@ sudo sh get-docker.sh
 # Stop docker and update daemon
 sudo systemctl stop docker
 sudo rm -rf /var/lib/docker
-sudo ln -s /mnt/gestelt/docker /var/lib/docker
+sudo ln -s /mnt/gestelt /var/lib/docker
 sudo vim /etc/docker/daemon.json
 # Add the following information
 {
@@ -107,7 +107,6 @@ sudo ntpd -gq
 sudo service ntp start
 ```
 
-
 ## Restore image on Visbot
 - Get a live OS image from (Ubuntu 20.04.3 LTS (Focal Fossa) Daily Build)[https://ftpmirror.your.org/pub/ubuntu/cdimage/focal/daily-live/20211219/HEADER.html]
   - Mount it onto a portable disk
@@ -150,26 +149,13 @@ Drone 6 IP:
  - [reference](https://robotics.stackexchange.com/questions/98161/ros2-foxy-nodes-cant-communicate-through-docker-container-border)
 
 
-
-
-# startup sequence
+# Change hostname
 ```bash
-# Start stereocam nodes
-visbot_restart
-
-# Start ROS1 Bridge
-start_bridge
-
-# Start gestelt
-dbg_gestelt
-
-# IN GESTELT CONTAINER
-start_gestelt
-start_bridge
-
-# Restart VINS (Immediately after starting bridge)
-vins_restart
-
-# Reset occupancy map
-ros2 topic pub /reset_map std_msgs/msg/Empty {} -1
+# Change all instances of droneX to the correct hostname
+sudo vim /etc/hosts
+# Set the hostname to the appropriate droneX
+sudo hostnamectl set-hostname droneX
+# Restart hostname service
+sudo systemctl restart systemd-hostnamed
 ```
+
