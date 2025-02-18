@@ -15,14 +15,14 @@
     "description": "Simple 2 agent test in empty map",
     "map": "empty_20x20",
     "num_agents": 2,
-    "take_off_height": 1.2,
+    "take_off_height": 0.6,
     "spawns_pos": [
       [-2.0, 0.0, 0.0],
       [2.0, 0.0, 3.14159]
     ],
     "goals_pos": [
-      [2.0, 0.0, 1.2],
-      [-2.0, 0.0, 1.2]
+      [2.0, 0.0, 0.6],
+      [-2.0, 0.0, 0.6]
     ]
   },
   "test_sim": {

@@ -8,7 +8,7 @@
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
 
-      point_goal_height: 2.0 #[m] Height to send point goal
+      point_goal_height: 0.6 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
       planner_frequency: 8.0  # [Hz] Frequency at which plan is generated
@@ -17,12 +17,12 @@
       planner_recovery_timeout: 3.0 # [s] UNIMPLEMENTED Timeout before planner recovery behaviour is executed
 
       # plan_method options
-      # 0: COMMLESS_MINCO 
+      # 0: COMMLESS_MINCO
       # 1: COMMLESS_MPC 
       # 2: COMM_MINCO
       plan_method: 1
 
-      samp_mpc_tolerance: 0.5 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
+      samp_mpc_tolerance: 0.25 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
 
       map_slicing: # 2D boolean map slices used for voronoi generation
         # min_height_cm:    40    # [cm] Minimum slice height
@@ -56,19 +56,19 @@
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.1
-        vy_min:     -0.1
-        vz_min:     -0.1
-        vx_max:      0.1
-        vy_max:      0.1
-        vz_max:      0.1
+        vx_min:     -0.5
+        vy_min:     -0.5
+        vz_min:     -0.5
+        vx_max:      0.5
+        vy_max:      0.5
+        vz_max:      0.5
 
-        ax_min:     -10.0
-        ay_min:     -10.0
-        az_min:     -10.0
-        ax_max:      10.0
-        ay_max:      10.0
-        az_max:      10.0
+        ax_min:     -20.0
+        ay_min:     -20.0
+        az_min:     -20.0
+        ax_max:      20.0
+        ay_max:      20.0
+        az_max:      20.0
 
         ux_min:     -30.0
         uy_min:     -30.0
