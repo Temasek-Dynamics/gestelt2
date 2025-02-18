@@ -34,6 +34,7 @@ roslaunch ros_zmq ros_zmq.launch \
 ROS2_NODES=" \
 docker run -e 'DRONE_ID=${DRONE_ID}' --name ros2_container --ipc=host -it --rm --privileged \
 --network host --mount type=bind,src=/tmp,dst=/tmp gestelt/mavoro_arm64:devel \
+/ros_entrypoint.sh \
 ros2 launch gestelt_bringup offboard_uav.py drone_id:=${DRONE_ID} scenario_name:=empty2 \
 "
 

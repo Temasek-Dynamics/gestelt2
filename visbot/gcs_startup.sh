@@ -9,11 +9,11 @@ SESSIONEXISTS=$(tmux list-sessions | grep $SESSION)
 # Start gcs node
 GCS_NODES="ros2 launch gestelt_bringup gcs.py"
 
-# Start mission node
-MISSION_NODES="ros2 launch gestelt_bringup execute_mission.py scenario_name:=empty2"
-
 # Start Zenoh
 ZENOH_BRIDGE="zenoh-bridge-ros2dds -c ~/gestelt_ws/src/gestelt2/gestelt_network/zenoh_host_cfg.json5"
+
+# Start mission node
+MISSION_NODES="ros2 launch gestelt_bringup execute_mission.py scenario_name:=empty2"
 
 if [ "$SESSIONEXISTS" = "" ]
 then 

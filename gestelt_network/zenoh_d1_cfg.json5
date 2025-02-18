@@ -1,6 +1,7 @@
 {
   plugins: {
     ros2dds: {
+      nodename: "zenoh_bridge_ros2dds_1",
       namespace: "/d1",
       ros_localhost_only: true,
       ros_automatic_discovery_range: "LOCALHOST",
