@@ -1273,7 +1273,7 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
   if (msg->header.frame_id == global_frame_)
   {
     // Transform from global to map frame
-    Eigen::Vector3d src_pt(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+    Eigen::Vector3d src_pt(msg->pose.position.x, msg->pose.position.y, point_goal_height_);
     Eigen::Vector3d tgt_pt;
     if (!globalToMap(src_pt, tgt_pt)){
       logger_->logError(strFmt("Failed to transform goals from '%s' frame to %s frame, ignoring goal request.", 
