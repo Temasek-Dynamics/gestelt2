@@ -1086,7 +1086,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         fe_path_[lookahead_idx](0) - cur_pos_(0)
       );
 
-      cmd_yaw = std::atan2(dir_vec(1), dir_vec(0));
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
     else {
       Eigen::Vector2d dir_vec(
@@ -1094,7 +1094,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         fe_path_.back()(0) - cur_pos_(0)
       );
 
-      cmd_yaw = std::atan2(dir_vec(1), dir_vec(0));
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
 
 
