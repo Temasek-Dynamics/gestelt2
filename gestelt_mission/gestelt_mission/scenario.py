@@ -62,11 +62,6 @@ class Mission(Node):
         # Sleep for init_delay
         time.sleep(self.init_delay)
 
-        """Publisher to all UAVs"""
-        self.all_uav_cmd_pub = self.create_publisher(
-            AllUAVCommand, '/all_uav_command', 
-            rclpy.qos.qos_profile_services_default)
-
         if (no_scenario):
             self.get_logger().info("No scenario required! Only initializing publisher to '/all_uav_command'")
             return
@@ -75,6 +70,17 @@ class Mission(Node):
         self.scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
             self.scenario_name
         )
+
+        """Publisher to all UAVs"""
+        self.all_uav_cmd_pubs = []
+        for id in range(self.scenario.num_agents):
+            self.all_uav_cmd_pubs.append(self.create_publisher(
+                                    AllUAVCommand, '/d' + str(id) + '/all_uav_command', 
+                                    rclpy.qos.qos_profile_services_default))
+
+        # self.all_uav_cmd_pub = self.create_publisher(
+        #     AllUAVCommand, '/all_uav_command', 
+        #     rclpy.qos.qos_profile_services_default)
 
         '''Initialize data structures'''
         self.uav_states = []
@@ -191,8 +197,10 @@ class Mission(Node):
         msg.value = value
         msg.mode = mode
 
-        self.all_uav_cmd_pub.publish(msg)
-        self.get_logger().info(f"Commanded all drones via '/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
+        for uav_cmd_pub in self.all_uav_cmd_pubs:
+            uav_cmd_pub.publish(msg)
+
+        self.get_logger().info(f"Commanded all drones via 'dx/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
 
