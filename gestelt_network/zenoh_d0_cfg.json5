@@ -7,20 +7,20 @@
       allow: {
         publishers: [ 
                       // State machine
-                      ".*/uav_state", 
+                      "/uav_state", 
                       // Perception
-                      ".*/visbot_itof/point_cloud", 
-                      ".*/occ_map", 
+                      "/visbot_itof/point_cloud", 
+                      "/occ_map", 
                       // Localization
-                      ".*/odom", 
-                      ".*/agent_id_text",
+                      "/odom", 
+                      "/agent_id_text",
                       // Planning
-                      ".*/fe_plan_req", // plan start and goal request
-                      ".*/fe_plan/viz", // A* path
-                      ".*/mpc/traj", // MPC trajectory
+                      "/fe_plan_req", // plan start and goal request
+                      "/fe_plan/viz", // A* path
+                      "/mpc/traj", // MPC trajectory
                       // Transformations
-                      ".*/tf",
-                      ".*/tf_static",
+                      "/tf",
+                      "/tf_static",
                     ],
         subscribers: [
                       ".*/point_goal",
