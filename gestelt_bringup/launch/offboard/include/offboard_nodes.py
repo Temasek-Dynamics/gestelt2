@@ -146,7 +146,7 @@ def generate_launch_description():
 
     '''Mavlink/Mavros'''
     fcu_url =  '/dev/ttyS7:921600'
-    tgt_system = 35
+    tgt_system =  PythonExpression(['35 +', drone_id])
 
     px4_config_param_subs = {}
     px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
@@ -168,7 +168,7 @@ def generate_launch_description():
       namespace='mavros',
       parameters=[
         {'fcu_url': fcu_url},
-        {'gcs_url': 'udp://:14557@'},
+        {'gcs_url': 'udp://:14556@'},
         {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},

@@ -41,7 +41,7 @@
         ref_path_samp_interval: 1
         # Yaw control
         yaw_ctrl_flag: true # Control the yaw
-        yaw_lookahead_dist: 8 # [front-end sample points] Lookahead distance for calculating yaw
+        yaw_lookahead_dist: 4 # [front-end sample points] Lookahead distance for calculating yaw
         # MPC parameters
         horizon: 15
         time_step: 0.1 #[s]

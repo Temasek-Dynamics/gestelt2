@@ -968,65 +968,6 @@ inline Eigen::Vector3d Navigator::getRHPGoal(
   return P3_gbl;
 }
 
-// inline Eigen::Vector2d Navigator::calculateYaw(
-//     const std::vector<Eigen::Vector3d>& fe_path,
-//     const double& e_t_start, const double& dt);
-// 	{
-
-// 		// get direction vector
-// 		Eigen::Vector3d dir = e_t_start + t_step_ <= traj->getTotalDuration()
-// 									? traj->getPos(e_t_start + t_step_) - traj->getPos(e_t_start)
-// 									: traj->getPos(traj->getTotalDuration()) - traj->getPos(e_t_start);
-
-// 		double yaw_temp = dir.norm() > 0.1
-// 								? atan2(dir(1), dir(0))
-// 								: last_yaw_yawrate_(0);
-
-// 		// d_yaw: change in yaw
-// 		double d_yaw = yaw_temp - last_yaw_yawrate_(0);
-
-// 		d_yaw = d_yaw >= M_PI ? d_yaw - 2*M_PI : d_yaw;
-// 		d_yaw = d_yaw <= -M_PI ? d_yaw + 2*M_PI : d_yaw;
-		
-// 		// Set maximum values for yawrate and yaw_ddot
-// 		const double YDM = d_yaw >= 0 ? 2 * M_PI : -2 * M_PI;
-// 		const double YDDM = d_yaw >= 0 ? 5 * M_PI : -5 * M_PI;
-// 		double d_yaw_max;
-
-// 		if (fabs(last_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yawrate limits
-// 		{
-// 			d_yaw_max = (last_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
-// 		}
-// 		else // exceed yawrate limits
-// 		{
-// 			double t1 = (YDM - last_yaw_yawrate_(1)) / YDDM;
-// 			d_yaw_max = ((dt - t1) + dt) * (YDM - last_yaw_yawrate_(1)) / 2.0;
-// 		}
-
-// 		if (fabs(d_yaw) > fabs(d_yaw_max))
-// 		{
-// 			d_yaw = d_yaw_max;
-// 		}
-
-// 		double yawdot = d_yaw / dt;
-// 		double yaw = last_yaw_yawrate_(0) + d_yaw;
-// 		/* Correct phase*/
-// 		if (yaw > M_PI)
-// 			yaw -= 2 * M_PI;
-// 		if (yaw < -M_PI)
-// 			yaw += 2 * M_PI;
-		
-// 		Eigen::Vector2d yaw_yawrate(0, 0);
-// 		yaw_yawrate(0) = yaw;
-// 		yaw_yawrate(1) = yawdot;
-
-// 		last_yaw_yawrate_ = yaw_yawrate;
-
-// 		yaw_yawrate(1) = yaw_temp;
-
-// 		return yaw_yawrate;
-// 	}
-
 
 inline void Navigator::pubMPCPath(std::vector<Eigen::Vector3d> &path) {
     nav_msgs::msg::Path msg;

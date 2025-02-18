@@ -10,15 +10,10 @@ import json
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess, SetEnvironmentVariable
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetEnvironmentVariable
+from launch.substitutions import LaunchConfiguration
 
-from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace
-
-SCENARIO_NAME = "empty"
-# SCENARIO_NAME = "vicon_antipodal_2"
+from launch_ros.actions import Node
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -51,9 +46,12 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-def generate_launch_description():
-    scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
-        SCENARIO_NAME
+def launch_setup(context):
+    scenario_name = LaunchConfiguration('scenario_name').perform(context)
+
+    scenario = Scenario(os.path.join(
+        get_package_share_directory('gestelt_mission'), 'scenarios.json'),
+        scenario_name
     )
 
     # Mission node: Sends goals to agents
@@ -70,7 +68,18 @@ def generate_launch_description():
         ]
     )
 
-    return LaunchDescription([
+    return [
         SetEnvironmentVariable(name='PYTHONUNBUFFERED', value='0'),
         mission_node,
-    ])
+    ]
+
+def generate_launch_description():
+    opfunc = OpaqueFunction(function = launch_setup)
+
+    launch_args = [
+        DeclareLaunchArgument('scenario_name', default_value='empty2'),
+    ]
+
+    ld = LaunchDescription(launch_args)
+    ld.add_action(opfunc)
+    return ld

@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /world1
         - /TF1/Frames1
         - /d0_actual1/state1/odom_ax1/Shape1
         - /d0_actual1/state1/agent_id_text1/Topic1
@@ -15,7 +14,6 @@ Panels:
         - /d0_actual1/maps1/occ1/occ_map_2001/Topic1
         - /d0_actual1/maps1/occ1/occ_map_2501/Topic1
         - /d0_actual1/3d_occ_map1/Topic1
-        - /d01
         - /d01/state1
         - /d01/state1/odom_ax1
         - /d01/state1/odom_ax1/Shape1
@@ -43,7 +41,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: 3d_occ_map
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -722,7 +720,7 @@ Visualization Manager:
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: false
+      Enabled: true
       Name: d0_actual
     - Class: rviz_common/Group
       Displays:
@@ -1308,7 +1306,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d0/static_collisions
           Value: false
-      Enabled: true
+      Enabled: false
       Name: d0
     - Class: rviz_common/Group
       Displays:
@@ -3700,25 +3698,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 3.8486852645874023
+      Distance: 10.19968032836914
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.8876886367797852
-        Y: -0.44730329513549805
-        Z: 1.5974044799804688e-05
+        X: -0.9209680557250977
+        Y: -0.918968677520752
+        Z: 1.7881393432617188e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5847966074943542
+      Pitch: 1.2897963523864746
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.617379665374756
+      Yaw: 3.137376308441162
     Saved: ~
 Window Geometry:
   Displays:

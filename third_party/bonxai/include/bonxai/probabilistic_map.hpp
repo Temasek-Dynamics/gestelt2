@@ -63,7 +63,7 @@ public:
   };
 
   // /// These default values are the same as OctoMap
-  // struct Options
+  struct Options
   {
     int32_t prob_miss_log = logods(0.4f);
     int32_t prob_hit_log = logods(0.7f);
