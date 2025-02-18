@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Usage: ./gestelt_startup.sh -i <DRONE_ID>
+
 SESSION="gestelt_startup"
 SESSIONEXISTS=$(tmux list-sessions | grep $SESSION)
 
@@ -19,33 +21,36 @@ done
 # Commands
 #####
 # Start ROS1 nodes
-CMD_0="
-sudo /home/visbot/bin/visquad.sh
+ROS1_NODES=" \
+sudo /home/visbot/bin/visquad.sh \
 "
 
 # Start ROS1 bridge
-CMD_1="
-roslaunch ros_zmq ros_zmq.launch
+ROS1_TO_ROS2_BRIDGE=" \
+roslaunch ros_zmq ros_zmq.launch \
 "
 
 # Start Gestelt
-CMD_2="
-docker run --name ros2_container --ipc=host -it --rm --privileged --network host --mount type=bind,src=/tmp,dst=/tmp gestelt/mavoro_arm64:devel ros2 launch gestelt_bringup offboard_uav.py
+ROS2_NODES=" \
+docker run -e 'DRONE_ID=${DRONE_ID}' --name ros2_container --ipc=host -it --rm --privileged \
+--network host --mount type=bind,src=/tmp,dst=/tmp gestelt/mavoro_arm64:devel \
+ros2 launch gestelt_bringup offboard_uav.py drone_id:=${DRONE_ID} scenario_name:=empty2 \
 "
 
-# Start Zenoh
-CMD_3="
-docker exec -it ros2_container /ros_entrypoint.sh ros2 run ros2_zmq ros2_zmq_node
+# Start Zenoh bridge 
+ZENOH_BRIDGE=" \
+docker exec -it ros2_container /ros_entrypoint.sh ros2 run ros2_zmq ros2_zmq_node \
 "
 
 # Start ROS2 Bridge
-CMD_4="
-docker exec -it ros2_container /ros_entrypoint.sh zenoh-bridge-ros2dds -c ~/zenoh_d${DRONE_ID}_cfg.json5
+ROS2_TO_ROS1_BRIDGE=" \
+docker exec -it ros2_container /ros_entrypoint.sh zenoh-bridge-ros2dds \
+-c /root/gestelt_ws/src/gestelt2/gestelt_network/zenoh_d${DRONE_ID}_cfg.json5 \
 "
 
 # Restart VINS estimator
-CMD_5="
-rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f ~/bin/restart.msg
+RESTART_VINS=" \
+rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f ~/bin/restart.msg \
 "
 
 if [ "$SESSIONEXISTS" = "" ]
@@ -57,14 +62,20 @@ then
     tmux split-window -t $SESSION:0.1 -h
     tmux split-window -t $SESSION:0.0 -h
     tmux split-window -t $SESSION:0.2 -h
+    tmux split-window -t $SESSION:0.0 -h
 
-    # tmux send-keys -t $SESSION:0.0 "$CMD_0" C-m 
-    # sleep 25
-    # tmux send-keys -t $SESSION:0.1 "$CMD_1" C-m 
-    # sleep 20
-    # tmux send-keys -t $SESSION:0.2 "$CMD_2" C-m 
-    # sleep 2
-    # tmux send-keys -t $SESSION:0.3 "$CMD_3" C-m
+    tmux send-keys -t $SESSION:0.0 "$ROS1_NODES" C-m 
+    sleep 10
+    tmux send-keys -t $SESSION:0.2 "$ROS2_NODES" C-m 
+    sleep 8
+    # ROS1 bridge needs to start a while after ROS1 nodes as ROS1_NODES script will terminate ros1 nodes at the start
+    tmux send-keys -t $SESSION:0.1 "$ROS1_TO_ROS2_BRIDGE" C-m 
+    sleep 1
+    tmux send-keys -t $SESSION:0.3 "$ZENOH_BRIDGE" C-m
+    sleep 15
+    tmux send-keys -t $SESSION:0.4 "$ROS2_TO_ROS1_BRIDGE" C-m
+    sleep 1
+    tmux send-keys -t $SESSION:0.5 "$RESTART_VINS" C-m
 fi
 
 # Attach session on the first window

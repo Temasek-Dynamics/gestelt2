@@ -720,7 +720,7 @@ Visualization Manager:
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: true
+      Enabled: false
       Name: d0_actual
     - Class: rviz_common/Group
       Displays:
@@ -1306,7 +1306,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d0/static_collisions
           Value: false
-      Enabled: false
+      Enabled: true
       Name: d0
     - Class: rviz_common/Group
       Displays:
@@ -1375,7 +1375,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1892,7 +1892,7 @@ Visualization Manager:
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: false
+      Enabled: true
       Name: d1
     - Class: rviz_common/Group
       Displays:
@@ -3655,7 +3655,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: map
+    Fixed Frame: d1_origin
     Frame Rate: 30
   Name: root
   Tools:
@@ -3713,10 +3713,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2897963523864746
+      Pitch: 1.0147961378097534
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.137376308441162
+      Yaw: 3.2573750019073486
     Saved: ~
 Window Geometry:
   Displays:

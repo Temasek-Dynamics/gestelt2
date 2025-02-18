@@ -20,13 +20,6 @@ def generate_launch_description():
       'default.rviz'
     )
 
-    '''Frames'''
-    # world_to_map_tf = Node(package = "tf2_ros", 
-    #                    executable = "static_transform_publisher",
-    #                    output="log",
-    #                   arguments = ["0", "0", "0", "0", "0", "0", 
-    #                               'world', "map"])
-
     # RVIZ Visualization
     rviz_node = Node(
         package='rviz2',
@@ -81,5 +74,4 @@ def generate_launch_description():
     return LaunchDescription([
         # rosbag_record,
         rviz_node,
-        # world_to_map_tf,
     ])

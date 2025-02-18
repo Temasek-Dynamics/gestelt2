@@ -15,10 +15,6 @@ from launch.substitutions import LaunchConfiguration, PythonExpression, FindExec
 
 from nav2_common.launch import RewrittenYaml
 
-# def render_launch_config(context: LaunchContext, launch_config):
-#   launch_config_str = context.perform_substitution(launch_config)
-#   # Render xacro
-
 def generate_launch_description():
     ''' Get launch argument values '''
     drone_id_launch_arg = DeclareLaunchArgument(
@@ -34,6 +30,10 @@ def generate_launch_description():
       'init_y',
       default_value='0.0'
     )
+    init_yaw_launch_arg = DeclareLaunchArgument(
+      'init_y',
+      default_value='0.0'
+    )
 
     num_drones_arg = DeclareLaunchArgument(
       'num_drones',
@@ -43,6 +43,7 @@ def generate_launch_description():
     drone_id = LaunchConfiguration('drone_id')
     init_x = LaunchConfiguration('init_x')
     init_y = LaunchConfiguration('init_y')
+    init_yaw = LaunchConfiguration('init_yaw')
     num_drones = LaunchConfiguration('num_drones')
 
     '''Frames'''
@@ -80,18 +81,13 @@ def generate_launch_description():
     )
 
     """Nodes"""
-    # world_to_map_tf = Node(package = "tf2_ros", 
-    #                    executable = "static_transform_publisher",
-    #                    output="log",
-    #                   arguments = ["0", "0", "0", "0", "0", "0", 
-    #                               'world', global_frame])
 
     # Publish TF for map to fixed drone origin
     # This is necessary because PX4 SITL is not able to change it's initial starting position
     drone_origin_tf = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
                        output="log",
-                      arguments = [init_x, init_y, "0", "0", "0", "0", 
+                      arguments = [init_x, init_y, "0", init_yaw, "0", "0", 
                                   global_frame, map_frame])
     
     # drone base_link to sensor fixed TFx
@@ -220,9 +216,9 @@ def generate_launch_description():
         drone_id_launch_arg,
         init_x_launch_arg,
         init_y_launch_arg,
+        init_yaw_launch_arg,
         num_drones_arg,
         # Static transforms
-        # world_to_map_tf,
         drone_origin_tf,
         camera_link_tf,
         # Nodes

@@ -1,5 +1,30 @@
 # vistbot_setup (OWL 3)
 
+
+# Quick start 
+
+## GCS
+```bash
+# Drone 0
+ssh visbot@10.42.0.35
+# Drone 1
+ssh visbot@10.42.0.45
+
+# Ground control 
+~/gestelt_ws/src/gestelt2/docker/gcs_startup.sh
+```
+
+## Drones
+```bash
+# Restart NTP
+sudo service ntp stop && sudo ntpd -gq && sudo service ntp start
+
+# Start nodes
+./gestelt_startup.sh -i 0
+./gestelt_startup.sh -i 1
+```
+
+
 # Install dependencies
 1. Install packages
 ```bash
