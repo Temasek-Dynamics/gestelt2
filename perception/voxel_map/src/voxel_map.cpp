@@ -163,11 +163,12 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
 
   /* Probabilistic map*/
-  bonxai_options_.prob_miss_log = node_->declare_parameter(param_ns+".occ_map.prob_miss_log", 0.4);
-  bonxai_options_.prob_hit_log = node_->declare_parameter(param_ns+".occ_map.prob_hit_log", 0.7);
-  bonxai_options_.clamp_min_log = node_->declare_parameter(param_ns+".occ_map.clamp_min_log", 0.12);
-  bonxai_options_.clamp_max_log = node_->declare_parameter(param_ns+".occ_map.clamp_max_log", 0.97);
-  bonxai_options_.occupancy_threshold_log = node_->declare_parameter(param_ns+".occ_map.occupancy_threshold_log", 0.5);
+
+  bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.prob_miss_log", 0.4));
+  bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.prob_hit_log", 0.7));
+  bonxai_options_.clamp_min_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.clamp_min_log", 0.12));
+  bonxai_options_.clamp_max_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.clamp_max_log", 0.97));
+  bonxai_options_.occupancy_threshold_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.occupancy_threshold_log", 0.5));
 
   /* Collision checking*/
   node_->declare_parameter(param_ns+".collision_check.enable",  false);
