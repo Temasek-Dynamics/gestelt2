@@ -34,7 +34,7 @@
         min_height_cm:    60    # [cm] Minimum slice height
         max_height_cm:    210   # [cm] Maximum slice height
         z_sep_cm:  30    # [cm] Separation between slices
-        sample_thickness: 1.16 # [m] Height above and below to sample for obstacles for each slice. For example, 0.5m means 0.25m top and 0.25m bottom
+        sample_thickness: 0.8 # [m] Height above and below to sample for obstacles for each slice. For example, 0.5m means 0.25m top and 0.25m bottom
 
       mpc:
         ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
@@ -82,7 +82,7 @@
           bbox_x: 2.0
           bbox_y: 2.0
           bbox_z: 2.0
-          sfc_sampling_interval: 10
+          sfc_sampling_interval: 8
 
       reservation_table:
         inflation: 1.0    # [m] buffer for reservation table in spatial domain
