@@ -377,7 +377,7 @@ void Navigator::initParams()
   mpc_params_.drone_id = drone_id_;
 
   mpc_params_.yaw_ctrl_flag  = this->get_parameter(param_ns+".mpc.yaw_ctrl_flag").as_bool();
-  mpc_params_.yaw_lookahead_dist  = 
+  yaw_lookahead_dist_  = 
     this->get_parameter(param_ns+".mpc.yaw_lookahead_dist").as_int();
 
   mpc_params_.MPC_HORIZON  = this->get_parameter(param_ns+".mpc.horizon").as_int();
@@ -1076,7 +1076,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     double dt = 0.1;
 
     // Calculate commanded yaw
-    int lookahead_idx = mpc_controller_->yaw_lookahead_dist_;
+    int lookahead_idx = yaw_lookahead_dist_;
 
     if (fe_path_.size() > lookahead_idx + 1) 
     {
@@ -1273,7 +1273,7 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
   if (msg->header.frame_id == global_frame_)
   {
     // Transform from global to map frame
-    Eigen::Vector3d src_pt(msg->pose.position.x, msg->pose.position.y, msg->pose.position.z);
+    Eigen::Vector3d src_pt(msg->pose.position.x, msg->pose.position.y, point_goal_height_);
     Eigen::Vector3d tgt_pt;
     if (!globalToMap(src_pt, tgt_pt)){
       logger_->logError(strFmt("Failed to transform goals from '%s' frame to %s frame, ignoring goal request.", 
