@@ -348,13 +348,13 @@ void VoxelMap::updateLocalMap(){
       }
 
       // Add inflated obstacles
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos); 
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{mp_.static_inflation_, 0.0, 0.0}); 
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{-mp_.static_inflation_, 0.0, 0.0}); 
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, mp_.static_inflation_, 0.0}); 
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, -mp_.static_inflation_, 0.0}); 
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, mp_.static_inflation_}); 
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, -mp_.static_inflation_}); 
+      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos); 
+      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{mp_.static_inflation_, 0.0, 0.0}); 
+      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{-mp_.static_inflation_, 0.0, 0.0}); 
+      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, mp_.static_inflation_, 0.0}); 
+      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, -mp_.static_inflation_, 0.0}); 
+      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, mp_.static_inflation_}); 
+      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, -mp_.static_inflation_}); 
 
       // obs_lcl_pos: With respect to local origins
       Eigen::Vector3d obs_lcl_pos = obs_gbl_pos - mp_.local_map_origin_;
