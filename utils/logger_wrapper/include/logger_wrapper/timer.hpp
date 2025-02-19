@@ -73,8 +73,8 @@ public:
   // stop timer
   bool stop(bool print_dur = false) {
     if (!timer_running_){ // True if timer is not running
-      printf(ANSI_COLOR_YELLOW "%sTimer[%s] is not running, ignoring stop() function call! \n" ANSI_COLOR_RESET, 
-            indent_str_.c_str(), name_.c_str());
+      // printf(ANSI_COLOR_YELLOW "%sTimer[%s] is not running, ignoring stop() function call! \n" ANSI_COLOR_RESET, 
+      //       indent_str_.c_str(), name_.c_str());
 
       return false;
     }
