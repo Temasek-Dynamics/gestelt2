@@ -3,7 +3,7 @@
     navigator:
 
       planner: 
-        verbose_print: false  # If enabled, print debug information such as runtime 
+        verbose_print: true  # If enabled, print debug information such as runtime 
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           

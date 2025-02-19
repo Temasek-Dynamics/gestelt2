@@ -912,8 +912,6 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   tm_mpc_.start();
 
-  mpc_controller_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params_);
-
   int final_fe_idx = (int) fe_path_.size(); // last index of front end path that lies in SFC
   for (int i = 0, poly_idx = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC point
   {

@@ -23,14 +23,21 @@
         size_x: 10.0  # [m]
         size_y: 10.0  # [m]
         size_z: 10.0   # [m]
-        update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
+        update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
         viz_map_frequency: 0.5   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters
+        # Probabilistic map
+        prob_miss_log: 0.35 # 
+        prob_hit_log: 0.78  # 
+        clamp_min_log: 0.12 # 
+        clamp_max_log: 0.90 # 
+        occupancy_threshold_log: 0.80 # 
+
         resolution: 0.1   # [m] Resolution of voxel
-        dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
         static_inflation: 0.1    # [m] Static obstacle inflation
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
+        # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
         max_range: 7.0   # [m] Maximum range of sensor
 
       collision_check: # For visualizing collision with static obstacles

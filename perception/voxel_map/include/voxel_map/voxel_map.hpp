@@ -338,6 +338,8 @@ private:
 
   MappingParameters mp_;  // Parameters used for map
 
+  Bonxai::ProbabilisticMap::Options bonxai_options_; // Bonxai probabilistic map options
+
   /* Subscribers */
 
   SynchronizerCloudOdom sync_cloud_odom_; // Synchronization policy for cloud and odom topic
@@ -374,7 +376,7 @@ private:
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_map_frame_;  // Point cloud global map in UAV Origin frame
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_fixedmapframe_; // Vector of obstacle points used for sfc generation
 
-  std::unique_ptr<BonxaiT> bonxai_map_; // Bonxai data structure 
+  std::unique_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
   // std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
 
   BoolMap3D bool_map_3d_; // Bool map slices 

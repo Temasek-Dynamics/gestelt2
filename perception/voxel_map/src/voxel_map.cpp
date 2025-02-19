@@ -162,6 +162,13 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".occ_map.max_range", -1.0);
   node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
 
+  /* Probabilistic map*/
+  bonxai_options_.prob_miss_log = node_->declare_parameter(param_ns+".occ_map.prob_miss_log", 0.4);
+  bonxai_options_.prob_hit_log = node_->declare_parameter(param_ns+".occ_map.prob_hit_log", 0.7);
+  bonxai_options_.clamp_min_log = node_->declare_parameter(param_ns+".occ_map.clamp_min_log", 0.12);
+  bonxai_options_.clamp_max_log = node_->declare_parameter(param_ns+".occ_map.clamp_max_log", 0.97);
+  bonxai_options_.occupancy_threshold_log = node_->declare_parameter(param_ns+".occ_map.occupancy_threshold_log", 0.5);
+
   /* Collision checking*/
   node_->declare_parameter(param_ns+".collision_check.enable",  false);
   node_->declare_parameter(param_ns+".collision_check.warn_radius",  -1.0); 
@@ -233,6 +240,7 @@ void VoxelMap::reset(const double& resolution){
 
   // Set up Bonxai data structure
   bonxai_map_ = std::make_unique<BonxaiT>(resolution);
+  bonxai_map_->setOptions(bonxai_options_);
   
   // Set up KDTree for collision checks
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
