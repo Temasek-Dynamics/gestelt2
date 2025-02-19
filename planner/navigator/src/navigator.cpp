@@ -1171,7 +1171,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     // std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
 
     mpc_yaw_yawrate_(0) = cmd_yaw;
-    mpc_yaw_yawrate_(1) = yawdot;
+    mpc_yaw_yawrate_(1) = 0.0;
 
   }
   else {
