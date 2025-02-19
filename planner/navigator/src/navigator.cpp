@@ -1077,6 +1077,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
     // Calculate commanded yaw
     int lookahead_idx = yaw_lookahead_dist_;
+    std::cout << "yaw_lookahead_dist_: " << yaw_lookahead_dist_ << std::endl;
 
     if (0 < fe_path_.size() - lookahead_idx - 1) 
     {
@@ -1085,6 +1086,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         fe_path_[lookahead_idx](1) - cur_pos_(1),
         fe_path_[lookahead_idx](0) - cur_pos_(0)
       );
+      std::cout << "within lookahead, dir_vec: " << dir_vec.transpose() << std::endl;
 
       cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
@@ -1093,10 +1095,12 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         fe_path_.back()(1) - cur_pos_(1),
         fe_path_.back()(0) - cur_pos_(0)
       );
+      std::cout << "dir_vec: " << dir_vec.transpose() << std::endl;
 
       cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
 
+    std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
 
     double yawdot = 0;
     double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
