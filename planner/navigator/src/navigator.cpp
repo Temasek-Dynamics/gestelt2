@@ -1071,13 +1071,81 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   }
 
+  // if (mpc_controller_->yaw_ctrl_flag_){
+  //   double cmd_yaw = 0.0;
+  //   double dt = 0.1;
+
+  //   // Calculate commanded yaw
+  //   int lookahead_idx = yaw_lookahead_dist_;
+  //   std::cout << "yaw_lookahead_dist_: " << yaw_lookahead_dist_ << std::endl;
+
+  //   if (0 < fe_path_.size() - lookahead_idx - 1) 
+  //   {
+
+  //     Eigen::Vector2d dir_vec(
+  //       fe_path_[lookahead_idx](1) - cur_pos_(1),
+  //       fe_path_[lookahead_idx](0) - cur_pos_(0)
+  //     );
+  //     std::cout << "within lookahead, dir_vec: " << dir_vec.transpose() << std::endl;
+
+  //     cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+  //   }
+  //   else {
+  //     Eigen::Vector2d dir_vec(
+  //       fe_path_.back()(1) - cur_pos_(1),
+  //       fe_path_.back()(0) - cur_pos_(0)
+  //     );
+  //     std::cout << "dir_vec: " << dir_vec.transpose() << std::endl;
+
+  //     cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+  //   }
+
+  //   std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
+
+  //   double yawdot = 0;
+  //   double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
+
+  //   d_yaw = constrainPi(d_yaw);
+
+  //   const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
+  //   const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
+  //   double d_yaw_max;
+
+  //   if (fabs(mpc_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
+  //   {
+  //     d_yaw_max = (mpc_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
+  //   }
+  //   else { // exceed yaw_dot limits
+  //     double t1 = (YDM - mpc_yaw_yawrate_(1)) / YDDM;
+  //     d_yaw_max = ((dt - t1) + dt) * (YDM - mpc_yaw_yawrate_(1)) / 2.0;
+  //   }
+
+  //   if (fabs(d_yaw) > fabs(d_yaw_max))
+  //   {
+  //     d_yaw = d_yaw_max;
+  //   }
+  //   yawdot = d_yaw / dt;
+
+  //   double yaw = mpc_yaw_yawrate_(0) + d_yaw;
+  //   yaw = constrainPi(yaw);
+
+  //   mpc_yaw_yawrate_(0) = yaw;
+  //   mpc_yaw_yawrate_(1) = yawdot;
+
+  // }
+  // else {
+  //   mpc_yaw_yawrate_(0) = dbg_fixed_yaw_;
+  //   mpc_yaw_yawrate_(1) = dbg_fixed_yaw_rate_;
+  // }
+
+
   if (mpc_controller_->yaw_ctrl_flag_){
     double cmd_yaw = 0.0;
     double dt = 0.1;
 
     // Calculate commanded yaw
     int lookahead_idx = yaw_lookahead_dist_;
-    std::cout << "yaw_lookahead_dist_: " << yaw_lookahead_dist_ << std::endl;
+    // std::cout << "yaw_lookahead_dist_: " << yaw_lookahead_dist_ << std::endl;
 
     if (0 < fe_path_.size() - lookahead_idx - 1) 
     {
@@ -1086,7 +1154,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         fe_path_[lookahead_idx](1) - cur_pos_(1),
         fe_path_[lookahead_idx](0) - cur_pos_(0)
       );
-      std::cout << "within lookahead, dir_vec: " << dir_vec.transpose() << std::endl;
+      // std::cout << "within lookahead, dir_vec: " << dir_vec.transpose() << std::endl;
 
       cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
@@ -1095,41 +1163,14 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
         fe_path_.back()(1) - cur_pos_(1),
         fe_path_.back()(0) - cur_pos_(0)
       );
-      std::cout << "dir_vec: " << dir_vec.transpose() << std::endl;
+      // std::cout << "dir_vec: " << dir_vec.transpose() << std::endl;
 
       cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
 
-    std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
+    // std::cout << "cmd_yaw: " << cmd_yaw << std::endl;
 
-    double yawdot = 0;
-    double d_yaw = cmd_yaw - mpc_yaw_yawrate_(0);
-
-    d_yaw = constrainPi(d_yaw);
-
-    const double YDM = d_yaw >= 0 ? YAW_DOT_MAX_PER_SEC : -YAW_DOT_MAX_PER_SEC;
-    const double YDDM = d_yaw >= 0 ? YAW_DOT_DOT_MAX_PER_SEC : -YAW_DOT_DOT_MAX_PER_SEC;
-    double d_yaw_max;
-
-    if (fabs(mpc_yaw_yawrate_(1) + dt * YDDM) <= fabs(YDM)) // Within yaw_dot limits
-    {
-      d_yaw_max = (mpc_yaw_yawrate_(1) * dt) + (0.5 * YDDM * dt * dt);
-    }
-    else { // exceed yaw_dot limits
-      double t1 = (YDM - mpc_yaw_yawrate_(1)) / YDDM;
-      d_yaw_max = ((dt - t1) + dt) * (YDM - mpc_yaw_yawrate_(1)) / 2.0;
-    }
-
-    if (fabs(d_yaw) > fabs(d_yaw_max))
-    {
-      d_yaw = d_yaw_max;
-    }
-    yawdot = d_yaw / dt;
-
-    double yaw = mpc_yaw_yawrate_(0) + d_yaw;
-    yaw = constrainPi(yaw);
-
-    mpc_yaw_yawrate_(0) = yaw;
+    mpc_yaw_yawrate_(0) = cmd_yaw;
     mpc_yaw_yawrate_(1) = yawdot;
 
   }
@@ -1137,6 +1178,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     mpc_yaw_yawrate_(0) = dbg_fixed_yaw_;
     mpc_yaw_yawrate_(1) = dbg_fixed_yaw_rate_;
   }
+
 
   pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 
