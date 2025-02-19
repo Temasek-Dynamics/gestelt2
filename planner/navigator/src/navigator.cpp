@@ -1078,7 +1078,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
     // Calculate commanded yaw
     int lookahead_idx = yaw_lookahead_dist_;
 
-    if (fe_path_.size() > lookahead_idx + 1) 
+    if (0 < fe_path_.size() - lookahead_idx - 1) 
     {
 
       Eigen::Vector2d dir_vec(
