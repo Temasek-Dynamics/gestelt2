@@ -18,7 +18,6 @@ from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 
-# SCENARIO_NAME = "empty"
 SCENARIO_NAME = "vicon_antipodal_2"
 
 # SCENARIO_NAME = "forest_dense_1"

@@ -16,11 +16,11 @@
         # max_x: 18.0
         # max_y: 18.0
         # max_z: 4.5
-        min_x: -25.0
-        min_y: -25.0
-        min_z: 0.0
-        max_x: 25.0
-        max_y: 25.0
+        min_x: -50.0
+        min_y: -50.0
+        min_z: 0.2
+        max_x: 50.0
+        max_y: 50.0
         max_z: 2.0
 
     # Frequency for timers

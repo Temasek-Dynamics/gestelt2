@@ -43,22 +43,30 @@ def generate_launch_description():
 
     # ROSBag 
     bag_topics = []
-    # Position
-    bag_topics.append("/d0/odom")
-    bag_topics.append("/d0/agent_id_text")
-    # Perception
-    bag_topics.append("/d0/occ_map")
-    bag_topics.append("/d0/visbot_itof/point_cloud")
-    # Transforms
-    bag_topics.append("/d0/tf")
-    bag_topics.append("/d0/tf_static")
 
-    # Paths
-    # bag_topics.append("/d0/fe_plan_req")
-    # bag_topics.append("/d0/fe_plan/viz")
-    # bag_topics.append("/d0/mpc/traj")
-    # Subscription to point clouds
-    # bag_topics.append("/rosout")
+    for id in range(2):
+        prefix = "/d" + str(id) + "/"
+        bag_topics.append(prefix + "odom")
+        bag_topics.append(prefix + "agent_id_text")
+        # Subscription to paths
+        bag_topics.append(prefix + "fe_plan_req")
+        bag_topics.append(prefix + "fe_plan/viz")
+        bag_topics.append(prefix + "sfc")
+        bag_topics.append(prefix + "mpc/traj")
+        # Subscription to 3d occupancy voxel map
+        bag_topics.append(prefix + "occ_map")
+        bag_topics.append(prefix + "visbot_itof/point_cloud")
+        # Subscription to maps
+        bag_topics.append(prefix + "voro_planning")
+        bag_topics.append(prefix + "occ_map_100")
+        bag_topics.append(prefix + "occ_map_150")
+        bag_topics.append(prefix + "occ_map_200")
+        bag_topics.append(prefix + "voro_map_100")
+        bag_topics.append(prefix + "voro_map_150")
+        bag_topics.append(prefix + "voro_map_200")
+
+        bag_topics.append(prefix + "tf")
+        bag_topics.append(prefix + "tf_static")
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',

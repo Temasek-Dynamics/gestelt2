@@ -3,12 +3,12 @@
     navigator:
 
       planner: 
-        verbose_print: true  # If enabled, print debug information such as runtime 
+        verbose_print: false  # If enabled, print debug information such as runtime 
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
 
-      point_goal_height: 1.5 #[m] Height to send point goal
+      point_goal_height: 0.8 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
       planner_frequency: 5.0  # [Hz] Frequency at which plan is generated
@@ -81,7 +81,7 @@
           bbox_x: 2.0
           bbox_y: 2.0
           bbox_z: 2.0
-          sfc_sampling_interval: 8
+          sfc_sampling_interval: 5
 
       reservation_table:
         inflation: 1.0    # [m] buffer for reservation table in spatial domain

@@ -81,7 +81,7 @@ def generate_launch_description():
 
     launch_args = [
         DeclareLaunchArgument('drone_id', default_value='0'),
-        DeclareLaunchArgument('scenario_name', default_value='empty2'),
+        DeclareLaunchArgument('scenario_name', default_value='goals_2d_0'),
     ]
 
     ld = LaunchDescription(launch_args)

@@ -1,6 +1,6 @@
 {
-  "empty": {
-    "description": "Simple single agent test in empty map",
+  "test_1d": {
+    "description": "Simple single agent test",
     "map": "empty_20x20",
     "num_agents": 1,
     "take_off_height": 1.5,
@@ -12,8 +12,8 @@
       [2.0,0.0,1.5]
     ]
   },
-  "empty2": {
-    "description": "Simple 2 agent test in empty map",
+  "start_2d": {
+    "description": "Spawning configs for 2 agents",
     "map": "empty_20x20",
     "num_agents": 2,
     "take_off_height": 0.6,
@@ -25,6 +25,36 @@
     "goals_pos": [
       [2.0, 0.25, 0.6],
       [-2.0, -0.25, 0.6]
+    ]
+  },
+  "goals_2d_0": {
+    "description": "First set of goals for 2 agents",
+    "map": "empty_20x20",
+    "num_agents": 2,
+    "take_off_height": 0.6,
+    "send_goals": false,
+    "spawns_pos": [
+      [2.0, 0.25, 0.6],
+      [-2.0, -0.25, 0.6]
+    ],
+    "goals_pos": [
+      [2.0, 0.25, 0.6],
+      [-2.0, -0.25, 0.6]
+    ]
+  },
+  "goals_2d_1": {
+    "description": "Second set of goals for 2 agents",
+    "map": "empty_20x20",
+    "num_agents": 2,
+    "take_off_height": 0.6,
+    "send_goals": false,
+    "spawns_pos": [
+      [2.0, 0.25, 0.6],
+      [-2.0, -0.25, 0.6]
+    ],
+    "goals_pos": [
+      [-2.0, -0.25, 0.6],
+      [2.0, 0.25, 0.6]
     ]
   },
   "test_sim": {
