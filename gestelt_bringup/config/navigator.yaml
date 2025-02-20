@@ -55,12 +55,12 @@
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.25
-        vy_min:     -0.25
-        vz_min:     -0.25
-        vx_max:      0.25
-        vy_max:      0.25
-        vz_max:      0.25
+        vx_min:     -0.1
+        vy_min:     -0.1
+        vz_min:     -0.1
+        vx_max:      0.1
+        vy_max:      0.1
+        vz_max:      0.1
 
         ax_min:     -20.0
         ay_min:     -20.0

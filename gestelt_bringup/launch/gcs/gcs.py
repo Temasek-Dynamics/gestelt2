@@ -67,10 +67,10 @@ def generate_launch_description():
         shell=False,
         arguments=['-d' + rviz_cfg],
         remappings=[
-            ('/tf', ['/d0/tf']),
-            ('/tf_static', ['/d0/tf_static']),
-            ('/tf', ['/d1/tf']),
-            ('/tf_static', ['/d1/tf_static']),
+            # ('/tf', ['/d0/tf']),
+            # ('/tf_static', ['/d0/tf_static']),
+            # ('/tf', ['/d1/tf']),
+            # ('/tf_static', ['/d1/tf_static']),
         ],
     )
 
@@ -88,18 +88,11 @@ def generate_launch_description():
         bag_topics.append(prefix + "mpc/traj")
         # Subscription to 3d occupancy voxel map
         bag_topics.append(prefix + "occ_map")
-        bag_topics.append(prefix + "visbot_itof/point_cloud")
+        # bag_topics.append(prefix + "visbot_itof/point_cloud")
         # Subscription to maps
-        bag_topics.append(prefix + "voro_planning")
-        bag_topics.append(prefix + "occ_map_100")
-        bag_topics.append(prefix + "occ_map_150")
-        bag_topics.append(prefix + "occ_map_200")
-        bag_topics.append(prefix + "voro_map_100")
-        bag_topics.append(prefix + "voro_map_150")
-        bag_topics.append(prefix + "voro_map_200")
 
-        bag_topics.append(prefix + "tf")
-        bag_topics.append(prefix + "tf_static")
+    bag_topics.append("/tf")
+    bag_topics.append("/tf_static")
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
