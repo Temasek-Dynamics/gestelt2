@@ -10,6 +10,8 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess
 
+from launch.substitutions import FindExecutable
+
 from launch_ros.actions import Node, PushROSNamespace
 
 def generate_launch_description():
@@ -20,6 +22,43 @@ def generate_launch_description():
       'default.rviz'
     )
 
+    # ros2 run topic_tools relay /d0/tf /tf
+    # ros2 run topic_tools relay /d1/tf /tf
+    # ros2 run topic_tools relay /d0/tf_static /tf_static
+    # ros2 run topic_tools relay /d1/tf_static /tf_static
+
+    relay_d0_tf = ExecuteProcess(
+        cmd=[FindExecutable(name='ros2'), 
+              'run topic_tools relay /d0/tf /tf'
+            ],
+        output='screen',
+        shell=True
+    )
+
+    relay_d1_tf = ExecuteProcess(
+        cmd=[FindExecutable(name='ros2'), 
+              'run topic_tools relay /d1/tf /tf'
+            ],
+        output='screen',
+        shell=True
+    )
+
+    relay_d0_static_tf = ExecuteProcess(
+        cmd=[FindExecutable(name='ros2'), 
+              'run topic_tools relay /d0/static_tf /static_tf'
+            ],
+        output='screen',
+        shell=True
+    )
+
+    relay_d1_static_tf = ExecuteProcess(
+        cmd=[FindExecutable(name='ros2'), 
+              'run topic_tools relay /d1/static_tf /static_tf'
+            ],
+        output='screen',
+        shell=True
+    )
+
     # RVIZ Visualization
     rviz_node = Node(
         package='rviz2',
@@ -28,16 +67,16 @@ def generate_launch_description():
         shell=False,
         arguments=['-d' + rviz_cfg],
         remappings=[
-            ('/tf', ['/d0/tf']),
-            ('/tf_static', ['/d0/tf_static']),
-            ('/tf', ['/d1/tf']),
-            ('/tf_static', ['/d1/tf_static']),
-            ('/tf', ['/d2/tf']),
-            ('/tf_static', ['/d2/tf_static']),
-            ('/tf', ['/d3/tf']),
-            ('/tf_static', ['/d3/tf_static']),
-            ('/tf', ['/d4/tf']),
-            ('/tf_static', ['/d4/tf_static']),
+            # ('/tf', ['/d0/tf']),
+            # ('/tf_static', ['/d0/tf_static']),
+            # ('/tf', ['/d1/tf']),
+            # ('/tf_static', ['/d1/tf_static']),
+            # ('/tf', ['/d2/tf']),
+            # ('/tf_static', ['/d2/tf_static']),
+            # ('/tf', ['/d3/tf']),
+            # ('/tf_static', ['/d3/tf_static']),
+            # ('/tf', ['/d4/tf']),
+            # ('/tf_static', ['/d4/tf_static']),
         ],
     )
 
@@ -82,4 +121,8 @@ def generate_launch_description():
     return LaunchDescription([
         rosbag_record,
         rviz_node,
+        # relay_d0_tf,
+        # relay_d1_tf,
+        # relay_d0_static_tf,
+        # relay_d1_static_tf,
     ])

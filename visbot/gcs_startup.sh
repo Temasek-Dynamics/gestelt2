@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SESSION="gestelt_startup"
+SESSION="gcs_startup"
 SESSIONEXISTS=$(tmux list-sessions | grep $SESSION)
 
 #####
