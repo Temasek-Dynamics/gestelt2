@@ -67,16 +67,10 @@ def generate_launch_description():
         shell=False,
         arguments=['-d' + rviz_cfg],
         remappings=[
-            # ('/tf', ['/d0/tf']),
-            # ('/tf_static', ['/d0/tf_static']),
-            # ('/tf', ['/d1/tf']),
-            # ('/tf_static', ['/d1/tf_static']),
-            # ('/tf', ['/d2/tf']),
-            # ('/tf_static', ['/d2/tf_static']),
-            # ('/tf', ['/d3/tf']),
-            # ('/tf_static', ['/d3/tf_static']),
-            # ('/tf', ['/d4/tf']),
-            # ('/tf_static', ['/d4/tf_static']),
+            ('/tf', ['/d0/tf']),
+            ('/tf_static', ['/d0/tf_static']),
+            ('/tf', ['/d1/tf']),
+            ('/tf_static', ['/d1/tf_static']),
         ],
     )
 
