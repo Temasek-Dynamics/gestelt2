@@ -113,10 +113,10 @@ class Mission(Node):
         """Timers"""
         # self.plan_req_timer_ = self.create_timer(1.0, self.planReqTimerCB, autostart=True)
 
-        self.get_logger().info(f"Waiting for /dX/uav_state topics...")
-        for id in range(self.scenario.num_agents):
-            while not self.isInReqState(id, UAVState.IDLE):
-                time.sleep(0.5)
+        # self.get_logger().info(f"Waiting for /dX/uav_state topics...")
+        # for id in range(self.scenario.num_agents):
+        #     while not self.isInReqState(id, UAVState.IDLE):
+        #         time.sleep(0.5)
 
         self.get_logger().info(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
 

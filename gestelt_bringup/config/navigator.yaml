@@ -8,7 +8,7 @@
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
 
-      point_goal_height: 0.8 #[m] Height to send point goal
+      point_goal_height: 1.0 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
       planner_frequency: 5.0  # [Hz] Frequency at which plan is generated
@@ -62,19 +62,19 @@
         vy_max:      0.1
         vz_max:      0.1
 
-        ax_min:     -20.0
-        ay_min:     -20.0
-        az_min:     -20.0
-        ax_max:      20.0
-        ay_max:      20.0
-        az_max:      20.0
+        ax_min:     -30.0
+        ay_min:     -30.0
+        az_min:     -30.0
+        ax_max:      30.0
+        ay_max:      30.0
+        az_max:      30.0
 
-        ux_min:     -30.0
-        uy_min:     -30.0
-        uz_min:     -30.0
-        ux_max:      30.0
-        uy_max:      30.0
-        uz_max:      30.0
+        ux_min:     -60.0
+        uy_min:     -60.0
+        uz_min:     -60.0
+        ux_max:      60.0
+        uy_max:      60.0
+        uz_max:      60.0
 
       sfc:
         poly:

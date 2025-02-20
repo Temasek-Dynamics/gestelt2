@@ -14,13 +14,13 @@ Panels:
         - /d0_actual1/maps1/occ1/occ_map_2001/Topic1
         - /d0_actual1/maps1/occ1/occ_map_2501/Topic1
         - /d0_actual1/3d_occ_map1/Topic1
-        - /d01
         - /d01/state1/odom_ax1/Shape1
         - /d01/state1/odom_ax1/Covariance1
         - /d01/front_end1/fe_plan_req1
         - /d11
         - /d11/state1/odom_ax1/Shape1
         - /d11/state1/odom_ax1/Covariance1/Position1
+        - /d11/front_end1
       Splitter Ratio: 0.5941176414489746
     Tree Height: 707
   - Class: rviz_common/Selection
@@ -789,7 +789,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1306,7 +1306,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d0/static_collisions
           Value: false
-      Enabled: true
+      Enabled: false
       Name: d0
     - Class: rviz_common/Group
       Displays:
@@ -1375,7 +1375,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1828,7 +1828,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: true
-        - Alpha: 0.5
+        - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
@@ -1850,7 +1850,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.10000000149011612
+          Size (m): 0.20000000298023224
           Style: Boxes
           Topic:
             Depth: 5
@@ -3655,7 +3655,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: d0_origin
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
@@ -3682,7 +3682,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /d0/point_goal
+        Value: /d1/point_goal
     - Class: rviz_default_plugins/PublishPoint
       Single click: true
       Topic:
@@ -3698,25 +3698,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 9.524420738220215
+      Distance: 6.442636966705322
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.5192806720733643
-        Y: 0.6638259887695312
-        Z: -8.768067345954478e-06
+        X: -0.7044739723205566
+        Y: 1.1868362426757812
+        Z: -1.2582764611579478e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9697970151901245
+      Pitch: 1.184796690940857
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 1.7292506694793701
+      Yaw: 1.5992454290390015
     Saved: ~
 Window Geometry:
   Displays:

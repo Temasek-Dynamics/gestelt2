@@ -18,10 +18,10 @@
         # max_z: 4.5
         min_x: -50.0
         min_y: -50.0
-        min_z: 0.2
+        min_z: -0.5
         max_x: 50.0
         max_y: 50.0
-        max_z: 2.0
+        max_z: 5.0
 
     # Frequency for timers
     set_offb_ctrl_freq: 5.0  #[ Hz] Offboard control mode publish frequency
