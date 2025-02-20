@@ -4,6 +4,7 @@
     "map": "empty_20x20",
     "num_agents": 1,
     "take_off_height": 1.5,
+    "send_goals": false,
     "spawns_pos": [
       [0.0,0.0,0.0]
     ],
@@ -16,20 +17,22 @@
     "map": "empty_20x20",
     "num_agents": 2,
     "take_off_height": 0.6,
+    "send_goals": false,
     "spawns_pos": [
       [-2.0, 0.0, 0.0],
       [2.0, 0.0, 3.14159]
     ],
     "goals_pos": [
-      [2.0, 0.0, 0.6],
-      [-2.0, 0.0, 0.6]
+      [2.0, 0.25, 0.6],
+      [-2.0, -0.25, 0.6]
     ]
   },
   "test_sim": {
     "description": "Simple single agent test for simulation",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.8,
+    "take_off_height": 1.2,
+    "send_goals": false,
     "spawns_pos": [
       [2.0,2.0,1.57]
     ],

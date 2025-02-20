@@ -31,6 +31,7 @@ class Scenario:
         self.goals_pos = scenario_dict.get("goals_pos", None )
         self.num_agents = scenario_dict.get("num_agents", None )
         self.take_off_height = scenario_dict.get("take_off_height", None )
+        self.send_goals = scenario_dict.get("send_goals", None )
 
         self.checks()
 

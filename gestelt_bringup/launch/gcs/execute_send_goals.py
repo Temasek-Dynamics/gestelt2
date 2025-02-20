@@ -55,10 +55,10 @@ def launch_setup(context):
     )
 
     # Mission node: Sends goals to agents
-    mission_node = Node(
-        name='mission_node',
+    send_goals_node = Node(
+        name='send_goals_node',
         package='gestelt_mission',
-        executable='mission',
+        executable='send_goals',
         output='screen',
         emulate_tty=False,
         shell=True,
@@ -70,14 +70,14 @@ def launch_setup(context):
 
     return [
         SetEnvironmentVariable(name='PYTHONUNBUFFERED', value='0'),
-        mission_node,
+        send_goals_node,
     ]
 
 def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)
 
     launch_args = [
-        DeclareLaunchArgument('scenario_name', default_value='empty2'),
+        DeclareLaunchArgument('scenario_name', default_value='test_sim'),
     ]
 
     ld = LaunchDescription(launch_args)

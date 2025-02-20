@@ -25,7 +25,7 @@ setup(
             'mission_single = gestelt_mission.mission_single:main',
             'land = gestelt_mission.land:main',
             'takeoff = gestelt_mission.takeoff:main',
-            'go_to_goal = gestelt_mission.go_to_goal:main',
+            'send_goals = gestelt_mission.send_goals:main',
         ],
     },
 )

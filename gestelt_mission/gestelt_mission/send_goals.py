@@ -14,32 +14,10 @@ def main(args=None):
 
     try: 
         #########
-        # Take off 
-        #########
-        mission.cmdAllDronesPub(
-            UAVCommand.Request.COMMAND_TAKEOFF, 
-            UAVState.IDLE,
-            value=mission.scenario.take_off_height)
-        mission.get_logger().info("All drones TAKING OFF")
-        
-        #########
-        # Wait for Hover
-        #########
-        if not mission.waitForReqState(UAVState.HOVERING, max_retries=20):
-            raise Exception("Failed to transition to hover mode")
-
-        #########
-        # Mission mode
-        #########
-        mission.cmdAllDronesPub(
-            UAVCommand.Request.COMMAND_START_MISSION, 
-            UAVState.HOVERING,
-            mode=0)
-        mission.get_logger().info("All drones swtching switching to MISSION MODE")
-
-        #########
         # Wait for mission
         #########
+        mission.get_logger().info("Checking if all drones are in MISSION MODE")
+        
         if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
             raise Exception("Failed to transition to mission mode")
 
