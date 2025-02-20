@@ -35,7 +35,7 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-// #include <ikd_tree/ikd_tree.hpp>
+#include <ikd_tree/ikd_tree.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/wait_for_message.hpp>
@@ -371,13 +371,13 @@ private:
   /* Data structures for maps */
   MappingData md_;  // Mapping data
 
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_lclmapframe_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_fixedmapframe_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_lcl_frame_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_gbl_frame_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_map_frame_;  // Point cloud global map in UAV Origin frame
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_fixedmapframe_; // Vector of obstacle points used for sfc generation
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_in_global_frame_; // Vector of obstacle points used for sfc generation
 
   std::unique_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
-  // std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
+  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
 
   BoolMap3D bool_map_3d_; // Bool map slices 
 
@@ -390,7 +390,7 @@ private:
   /* Mutexes */
   std::mutex bonxai_map_mtx_;  // Mutex lock for bonxai map
   std::mutex bool_map_3d_mtx_;  // Mutex lock for bool map 3d
-  std::mutex lcl_occ_map_mtx_;  // Mutex lock for lcl_pcd_lclmapframe_
+  std::mutex lcl_occ_map_mtx_;  // Mutex lock for occ_pcd_in_lcl_frame_
 
   /* Stopwatch for profiling performance */
   // logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
@@ -436,7 +436,7 @@ inline Eigen::Vector3d VoxelMap::getLocalMapMax(const double& offset) const{
 inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VoxelMap::getLclObsPts()
 {
   std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
-  return lcl_pts_fixedmapframe_;
+  return lcl_pts_in_global_frame_;
 }
 
 

@@ -32,7 +32,7 @@
         prob_hit_log: 0.78  # 
         clamp_min_log: 0.12 # 
         clamp_max_log: 0.90 # 
-        occupancy_threshold_log: 0.80 # 
+        occupancy_threshold_log: 0.60 # 
 
         resolution: 0.1   # [m] Resolution of voxel
         static_inflation: 0.1    # [m] Static obstacle inflation
