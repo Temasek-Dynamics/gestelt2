@@ -20,9 +20,9 @@
         size_z: 10.0  # [m]
 
       local_map:  # Local map used by planner
-        size_x: 10.0  # [m]
-        size_y: 10.0  # [m]
-        size_z: 10.0   # [m]
+        size_x: 6.5  # [m]
+        size_y: 6.5  # [m]
+        size_z: 6.5   # [m]
         update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
         viz_map_frequency: 0.5   # [Hz] Frequency to visualize the local map
 
@@ -39,6 +39,14 @@
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
         # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
         max_range: 7.0   # [m] Maximum range of sensor
+
+      # Passthrough filter for input point cloud
+      cloud_in_min_z: 0.3 # [m]
+      cloud_in_min_z: 4.0 # [m]
+
+      # Noise filter by checking clusters
+      noise_search_radius: 0.2  # Radius to search for neighbouring points
+      noise_min_neighbors: 3 # Minimum number of neighbors within 'search_radius' to be a valid point
 
       collision_check: # For visualizing collision with static obstacles
         enable: false    # Enable checking of collisions

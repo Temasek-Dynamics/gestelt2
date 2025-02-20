@@ -224,6 +224,8 @@ public:
   // Subscriber callback to point cloud and odom
   void cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
+  void odomCB(const nav_msgs::msg::Odometry::UniquePtr& msg);
+
   /*Timer Callbacks*/
 
   /**
@@ -320,6 +322,14 @@ private:
   /* Params */
   int drone_id_{0}; //Drone ID
 
+  // Noise filter
+  double noise_search_radius_{0.3}; // Radius to search for neighbouring points
+  int noise_min_neighbors_{1}; // Minimum number of neighbors within 'search_radius' to be a valid point
+
+  // Passthrough filter for point cloud 
+  double cloud_in_min_z_{0.0};
+  double cloud_in_max_z_{10.0};
+
   double map_slicing_sample_thickness_; // [m] map slice sampling thickness
 
   bool verbose_print_{false}; // Flag to enable printing of debug information such as timers
@@ -347,6 +357,7 @@ private:
   // std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> cloud_sub_;
   // std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> odom_sub_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
 
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_map_sub_;
   
@@ -371,10 +382,15 @@ private:
   /* Data structures for maps */
   MappingData md_;  // Mapping data
 
+  pcl::PointXYZ cur_pos_pt_{0.0, 0.0, 0.0};
+
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_lcl_frame_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_gbl_frame_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcd_in_map_frame_;  // Point cloud global map in UAV Origin frame
+  
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> raw_lcl_pcd_in_global_frame_; // Raw point clouds
+
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_in_global_frame_; // Vector of obstacle points used for sfc generation
+
 
   std::unique_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
   std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
@@ -396,6 +412,9 @@ private:
   // logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
   // logger_wrapper::Timer tm_bonxai_insert_{"bonxai::insertPointCloud"};  // Time required for map construction
   // logger_wrapper::Timer tm_slice_map_{"VoxelMap::getMapSlice"};   // Time required to slice map
+
+  /* Point cloud Filters */
+  pcl::PassThrough<pcl::PointXYZ> z_filter_cloud_in_;
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
