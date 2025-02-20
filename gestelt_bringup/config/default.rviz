@@ -789,7 +789,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1306,7 +1306,7 @@ Visualization Manager:
             Reliability Policy: Reliable
             Value: /d0/static_collisions
           Value: false
-      Enabled: false
+      Enabled: true
       Name: d0
     - Class: rviz_common/Group
       Displays:
@@ -1375,7 +1375,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3698,7 +3698,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 6.442636966705322
+      Distance: 7.9007978439331055
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -3713,10 +3713,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.184796690940857
+      Pitch: 1.0097966194152832
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 1.5992454290390015
+      Yaw: 1.7292546033859253
     Saved: ~
 Window Geometry:
   Displays:
