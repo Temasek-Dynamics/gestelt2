@@ -380,7 +380,7 @@ void VoxelMap::updateLocalMap(){
         pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
     }
 
-    kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+    // kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
     // Add local occ points in fixed map frame to KDTree
     kdtree_->Build(raw_lcl_pcd_in_global_frame_->points);
 
