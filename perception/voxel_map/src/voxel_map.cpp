@@ -125,6 +125,12 @@ void VoxelMap::initPubSubTimer()
   odom_sub_ = node_->create_subscription<nav_msgs::msg::Odometry>(
     "odom", rclcpp::SensorDataQoS(), std::bind(&VoxelMap::odomCB, this, _1));
 
+  // Create callback
+  param_cb_ = node_->add_on_set_parameters_callback(
+    std::bind(&VoxelMap::updateParamCB, this, std::placeholders::_1));
+
+  // param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+
   /* Initialize ROS Timers */
 	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
     std::bind(&VoxelMap::vizMapTimerCB, this), mapping_group_);
@@ -133,11 +139,11 @@ void VoxelMap::initPubSubTimer()
 	pub_lcl_map_tf_timer_ = node_->create_wall_timer((1.0/100.0) *1000ms, 
     std::bind(&VoxelMap::pubLocalMapTFTimerCB, this), tf_broadcast_group_);
 
-  if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
-    // Publisher for collision visualizations
-	  collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("static_collisions", 10);
-	  check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
-  }
+  // if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
+  //   // Publisher for collision visualizations
+	//   collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("static_collisions", 10);
+	//   check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
+  // }
 }
 
 void VoxelMap::initParams()
@@ -380,11 +386,11 @@ void VoxelMap::updateLocalMap(){
         pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
     }
 
-    // kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+    kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
     // Add local occ points in fixed map frame to KDTree
     kdtree_->Build(raw_lcl_pcd_in_global_frame_->points);
 
-    for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_global_frame_->points) // For each occupied coordinate
+    for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_global_frame_->points) // For each point in local bounds
     {
       Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
 
@@ -401,18 +407,6 @@ void VoxelMap::updateLocalMap(){
       // occ_pcd_in_lcl_frame_: Used by map slice and hence dynamic voronoi
       occ_pcd_in_lcl_frame_->push_back(
         pcl::PointXYZ(pt_in_lcl_frame_eig(0), pt_in_lcl_frame_eig(1), pt_in_lcl_frame_eig(2)));
-      // occ_pcd_in_lcl_frame_->push_back(
-      //   pcl::PointXYZ(pt_in_lcl_frame(0) + mp_.static_inflation_, pt_in_lcl_frame(1), pt_in_lcl_frame(2)));
-      // occ_pcd_in_lcl_frame_->push_back(
-      //   pcl::PointXYZ(pt_in_lcl_frame(0) - mp_.static_inflation_, pt_in_lcl_frame(1), pt_in_lcl_frame(2)));
-      // occ_pcd_in_lcl_frame_->push_back(
-      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1) + mp_.static_inflation_, pt_in_lcl_frame(2)));
-      // occ_pcd_in_lcl_frame_->push_back(
-      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1) - mp_.static_inflation_, pt_in_lcl_frame(2)));
-      // occ_pcd_in_lcl_frame_->push_back(
-      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1), pt_in_lcl_frame(2)  + mp_.static_inflation_));
-      // occ_pcd_in_lcl_frame_->push_back(
-      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1), pt_in_lcl_frame(2) - mp_.static_inflation_));
 
       // occ_pcd_in_gbl_frame_: Used for visualization
       occ_pcd_in_gbl_frame_->push_back(pt_in_gbl_frame);
@@ -503,6 +497,7 @@ void VoxelMap::vizMapTimerCB()
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
     publishOccMap(occ_pcd_in_gbl_frame_);
   }
+
   publishLocalMapBounds(); // publish boundaries of local map volume
 }
 
@@ -583,6 +578,135 @@ void VoxelMap::checkCollisionsTimerCB()
 }
 
 /** Subscriber callbacks */
+
+rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vector<rclcpp::Parameter> & parameters)
+{
+  std::string param_ns = "voxel_map";
+
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+
+  logger_->logInfo("Updating parameters");
+
+  bool update_bonxai{false};
+
+  for (const rclcpp::Parameter & param : parameters)
+  {
+
+    /* Noise filter*/
+
+    if (param.get_name() == param_ns+".noise_search_radius")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "noise_search_radius must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'noise_search_radius' parameters");
+      noise_search_radius_ = param.as_double();
+    }
+
+    if (param.get_name() == param_ns+".noise_min_neighbors")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_INTEGER)
+      {
+        result.successful = false;
+        result.reason = "noise_min_neighbors must be an integer";
+        break;
+      }
+      logger_->logInfo("Updated 'noise_min_neighbors' parameters");
+      noise_min_neighbors_ = param.as_int();
+    }
+    
+    /* Occupancy mapping */
+
+    if (param.get_name() == param_ns+".occ_map.prob_miss_log")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "occ_map.prob_miss_log must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'occ_map.prob_miss_log' parameters");
+      update_bonxai = true;
+      bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(param.as_double());
+    }
+    
+    if (param.get_name() == param_ns+".occ_map.prob_hit_log")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "occ_map.prob_hit_log must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'occ_map.prob_hit_log' parameters");
+      update_bonxai = true;
+      bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(param.as_double());
+    }
+    
+    if (param.get_name() == param_ns+".occ_map.clamp_min_log")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "occ_map.clamp_min_log must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'occ_map.clamp_min_log' parameters");
+      update_bonxai = true;
+      bonxai_options_.clamp_min_log = Bonxai::ProbabilisticMap::logods(param.as_double());
+    }
+    
+    if (param.get_name() == param_ns+".occ_map.clamp_max_log")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "occ_map.clamp_max_log must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'occ_map.clamp_max_log' parameters");
+      update_bonxai = true;
+      bonxai_options_.clamp_max_log = Bonxai::ProbabilisticMap::logods(param.as_double());
+    }
+    
+    if (param.get_name() == param_ns+".occ_map.occupancy_threshold_log")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "occ_map.occupancy_threshold_log must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'occ_map.occupancy_threshold_log' parameters");
+      update_bonxai = true;
+      bonxai_options_.occupancy_threshold_log = Bonxai::ProbabilisticMap::logods(param.as_double());
+    }
+
+    /* Inflation */
+    if (param.get_name() == param_ns+".occ_map.static_inflation")
+    {
+      if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        result.successful = false;
+        result.reason = "occ_map.static_inflation must be a double";
+        break;
+      }
+      logger_->logInfo("Updated 'occ_map.static_inflation' parameters");
+      mp_.static_inflation_ = param.as_double();
+      mp_.inf_static_vox_ = std::ceil(mp_.static_inflation_/mp_.resolution_);
+    }
+  }
+
+  if (update_bonxai){
+    bonxai_map_->setOptions(bonxai_options_);
+  }
+
+  return result;
+}
 
 void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 {

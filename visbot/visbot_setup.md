@@ -159,3 +159,28 @@ sudo hostnamectl set-hostname droneX
 sudo systemctl restart systemd-hostnamed
 ```
 
+
+
+# Change parameters at runtime
+```bash
+
+# noise_search_radius
+# noise_min_neighbors
+# occ_map.prob_miss_log
+# occ_map.prob_hit_log
+# occ_map.clamp_min_log
+# occ_map.clamp_max_log
+# occ_map.occupancy_threshold_log
+# occ_map.static_inflation
+
+ros2 param set navigator_0 voxel_map.noise_search_radius 0.17
+ros2 param set navigator_0 voxel_map.noise_min_neighbors 3
+
+ros2 param set navigator_0 voxel_map.occ_map.prob_miss_log 0.35
+ros2 param set navigator_0 voxel_map.occ_map.prob_hit_log 0.78
+ros2 param set navigator_0 voxel_map.occ_map.clamp_min_log 0.12
+ros2 param set navigator_0 voxel_map.occ_map.clamp_max_log 0.90
+ros2 param set navigator_0 voxel_map.occ_map.occupancy_threshold_log 0.65
+
+ros2 param set navigator_0 voxel_map.occ_map.static_inflation 0.1
+```

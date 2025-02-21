@@ -226,6 +226,8 @@ public:
 
   void odomCB(const nav_msgs::msg::Odometry::UniquePtr& msg);
 
+  rcl_interfaces::msg::SetParametersResult updateParamCB(const std::vector<rclcpp::Parameter> & parameters);
+
   /*Timer Callbacks*/
 
   /**
@@ -242,7 +244,6 @@ public:
    * @brief This timer publishes the map to local map TF
   */
   void pubLocalMapTFTimerCB();
-
 
   /**
    * @brief Timer for checking collision of drone with obstacles
@@ -291,7 +292,6 @@ private:
 
   // Checks if time elapsed has exceeded a given threshold
   bool isTimeout(const double& last_state_time, const double& threshold);
-
 
   // Takes in position [global_map_frame] and check if within global map
   bool isInGlobalMap(const Eigen::Vector3d &pos);
@@ -349,6 +349,10 @@ private:
   MappingParameters mp_;  // Parameters used for map
 
   Bonxai::ProbabilisticMap::Options bonxai_options_; // Bonxai probabilistic map options
+
+  /* Params callback */
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_;
+  // std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
 
   /* Subscribers */
 

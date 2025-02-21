@@ -15,6 +15,7 @@ Panels:
         - /d0_actual1/maps1/occ1/occ_map_2501/Topic1
         - /d0_actual1/3d_occ_map1/Topic1
         - /d01
+        - /d01/state1
         - /d01/state1/odom_ax1/Shape1
         - /d01/state1/odom_ax1/Covariance1
         - /d01/front_end1/fe_plan_req1
@@ -22,6 +23,7 @@ Panels:
         - /d11/state1/odom_ax1/Shape1
         - /d11/state1/odom_ax1/Covariance1/Position1
         - /d11/front_end1
+        - /d21/cloud1
       Splitter Ratio: 0.5941176414489746
     Tree Height: 707
   - Class: rviz_common/Selection
@@ -790,7 +792,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1240,7 +1242,7 @@ Visualization Manager:
           Color: 255; 163; 72
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -1260,8 +1262,8 @@ Visualization Manager:
             Value: /d0/visbot_itof/point_cloud
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
-        - Alpha: 1
+          Value: false
+        - Alpha: 0.75
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
             Max Value: 10
@@ -1283,7 +1285,7 @@ Visualization Manager:
           Position Transformer: XYZ
           Selectable: true
           Size (Pixels): 3
-          Size (m): 0.20000000298023224
+          Size (m): 0.10000000149011612
           Style: Boxes
           Topic:
             Depth: 5
@@ -3683,7 +3685,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /d1/point_goal
+        Value: /d0/point_goal
     - Class: rviz_default_plugins/PublishPoint
       Single click: true
       Topic:
@@ -3699,25 +3701,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 7.09750509262085
+      Distance: 3.7716917991638184
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.7044739723205566
-        Y: 1.1868362426757812
-        Z: -1.2582764611579478e-05
+        X: -1.2822299003601074
+        Y: -0.5518825650215149
+        Z: -1.0198578820563853e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6947950720787048
+      Pitch: 0.7047975659370422
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.3142786026000977
+      Yaw: 4.314296245574951
     Saved: ~
 Window Geometry:
   Displays:

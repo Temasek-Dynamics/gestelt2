@@ -22,9 +22,9 @@
       local_map:  # Local map used by planner
         size_x: 6.5  # [m]
         size_y: 6.5  # [m]
-        size_z: 6.5   # [m]
+        size_z: 5.0   # [m]
         update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
-        viz_map_frequency: 1.0   # [Hz] Frequency to visualize the local map
+        viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
       occ_map:  # Occupancy map parameters
         # Probabilistic map
@@ -32,7 +32,7 @@
         prob_hit_log: 0.78  # 
         clamp_min_log: 0.12 # 
         clamp_max_log: 0.90 # 
-        occupancy_threshold_log: 0.60 # 
+        occupancy_threshold_log: 0.65 # 
 
         resolution: 0.1   # [m] Resolution of voxel
         static_inflation: 0.1    # [m] Static obstacle inflation
@@ -48,8 +48,8 @@
       noise_search_radius: 0.2  # Radius to search for neighbouring points
       noise_min_neighbors: 3 # Minimum number of neighbors within 'search_radius' to be a valid point
 
-      collision_check: # For visualizing collision with static obstacles
-        enable: false    # Enable checking of collisions
-        warn_radius: 0.25  # [m]  Distance to collision to display warning sphere
-        fatal_radius: 0.14  # [m] Distance to collision to display fatal sphere
-        check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
+      # collision_check: # For visualizing collision with static obstacles
+      #   enable: false    # Enable checking of collisions
+      #   warn_radius: 0.25  # [m]  Distance to collision to display warning sphere
+      #   fatal_radius: 0.14  # [m] Distance to collision to display fatal sphere
+      #   check_collision_frequency: 15.0 # [Hz]  Frequency to check for collision
