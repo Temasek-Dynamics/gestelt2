@@ -32,7 +32,7 @@ set(ROS_LIBRABRIES
   logger_wrapper
   bonxai
   tf2_eigen
-  # ikd_tree
+  ikd_tree
 )
 
 set(EXPORTED_DEPENDENCIES
@@ -40,7 +40,7 @@ set(EXPORTED_DEPENDENCIES
   pcl_conversions
   bonxai
   tf2_eigen
-  # ikd_tree
+  ikd_tree
 )
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})

@@ -79,6 +79,11 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
     pcd2MsgToMap(pcd_map_msg);
   }
 
+  // Initialize point cloud filters
+  z_filter_cloud_in_.setFilterFieldName("z");
+  z_filter_cloud_in_.setFilterLimits(cloud_in_min_z_, cloud_in_max_z_);
+  // z_filter_cloud_in_.setNegative (true);
+
   // initialize timer with drone_id
   // tm_update_local_map_.updateID(drone_id_);
   // tm_bonxai_insert_.updateID(drone_id_);
@@ -117,6 +122,9 @@ void VoxelMap::initPubSubTimer()
 	reset_map_sub_ = node_->create_subscription<std_msgs::msg::Empty>(
     "reset_map", 10, std::bind(&VoxelMap::resetMapCB, this, _1) );
 
+  odom_sub_ = node_->create_subscription<nav_msgs::msg::Odometry>(
+    "odom", rclcpp::SensorDataQoS(), std::bind(&VoxelMap::odomCB, this, _1));
+
   /* Initialize ROS Timers */
 	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
     std::bind(&VoxelMap::vizMapTimerCB, this), mapping_group_);
@@ -130,7 +138,6 @@ void VoxelMap::initPubSubTimer()
 	  collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("static_collisions", 10);
 	  check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
   }
-
 }
 
 void VoxelMap::initParams()
@@ -175,6 +182,14 @@ void VoxelMap::initParams()
   node_->declare_parameter(param_ns+".collision_check.warn_radius",  -1.0); 
   node_->declare_parameter(param_ns+".collision_check.fatal_radius",  -1.0); 
   node_->declare_parameter(param_ns+".collision_check.check_collision_frequency",  -1.0); 
+
+  /* Noise filter */
+  noise_search_radius_ = node_->declare_parameter(param_ns+".noise_search_radius", 0.2);
+  noise_min_neighbors_ = node_->declare_parameter(param_ns+".noise_min_neighbors", 3);
+
+  /* Passthrough filter for input point cloud */
+  cloud_in_min_z_ =  node_->declare_parameter(param_ns+".cloud_in_min_z", 0.0);
+  cloud_in_max_z_ =  node_->declare_parameter(param_ns+".cloud_in_max_z", 5.0);
 
 	/**
 	 * Get params
@@ -245,14 +260,13 @@ void VoxelMap::reset(const double& resolution){
   
   // Set up KDTree for collision checks
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
-  // kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+  kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
 
-  lcl_pcd_lclmapframe_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  lcl_pcd_lclmapframe_->header.frame_id = mp_.local_map_frame;
-  lcl_pcd_fixedmapframe_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  lcl_pcd_fixedmapframe_->header.frame_id = mp_.global_map_frame;
-  pcd_in_map_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcd_in_map_frame_->header.frame_id = mp_.global_map_frame;
+  occ_pcd_in_lcl_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  occ_pcd_in_lcl_frame_->header.frame_id = mp_.local_map_frame;
+  occ_pcd_in_gbl_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  occ_pcd_in_gbl_frame_->header.frame_id = mp_.global_map_frame;
+
 
   // Global map origin is FIXED at a corner of the global map i.e. (-W/2, -L/2, 0)
   mp_.global_map_origin_ = Eigen::Vector3d(
@@ -339,74 +353,88 @@ void VoxelMap::updateLocalMap(){
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
 
     // Clear existing local map
-    lcl_pcd_lclmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    lcl_pcd_fixedmapframe_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    lcl_pts_fixedmapframe_.clear();
+    raw_lcl_pcd_in_global_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
+    occ_pcd_in_lcl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    occ_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+
+    lcl_pts_in_global_frame_.clear();
+
+    /**
+     * Add points within a local bound of the agent
+     */
     for (auto& coord : occ_coords) // For each occupied coordinate
     {
       // obs_gbl_pos: global obstacle pos
-      // Check if the obstacle within local map bounds
       Bonxai::Point3D obs_gbl_pos_pt3d = bonxai_map_->grid().coordToPos(coord);
 
       // obs_gbl_pos: With respect to (0,0,0) of world frame
       Eigen::Vector3d obs_gbl_pos = Bonxai::ConvertPoint<Eigen::Vector3d>(obs_gbl_pos_pt3d);
+
       if (!isInLocalMap(obs_gbl_pos)){ 
         // Point is outside the local map
         continue;
       }
 
-      // Add inflated obstacles
-      lcl_pts_fixedmapframe_.push_back(obs_gbl_pos); 
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{mp_.static_inflation_, 0.0, 0.0}); 
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{-mp_.static_inflation_, 0.0, 0.0}); 
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, mp_.static_inflation_, 0.0}); 
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, -mp_.static_inflation_, 0.0}); 
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, mp_.static_inflation_}); 
-      // lcl_pts_fixedmapframe_.push_back(obs_gbl_pos + Eigen::Vector3d{0.0, 0.0, -mp_.static_inflation_}); 
-
-      // obs_lcl_pos: With respect to local origins
-      Eigen::Vector3d obs_lcl_pos = obs_gbl_pos - mp_.local_map_origin_;
-      
-      // Add pts in local map to local_map and fixed_map frame
-      lcl_pcd_lclmapframe_->push_back(
-        pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2)));
-
-      // lcl_pcd_lclmapframe_->push_back(
-      //   pcl::PointXYZ(obs_lcl_pos(0) + mp_.static_inflation_, obs_lcl_pos(1), obs_lcl_pos(2)));
-      // lcl_pcd_lclmapframe_->push_back(
-      //   pcl::PointXYZ(obs_lcl_pos(0) - mp_.static_inflation_, obs_lcl_pos(1), obs_lcl_pos(2)));
-      // lcl_pcd_lclmapframe_->push_back(
-      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1) + mp_.static_inflation_, obs_lcl_pos(2)));
-      // lcl_pcd_lclmapframe_->push_back(
-      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1) - mp_.static_inflation_, obs_lcl_pos(2)));
-      // lcl_pcd_lclmapframe_->push_back(
-      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2)  + mp_.static_inflation_));
-      // lcl_pcd_lclmapframe_->push_back(
-      //   pcl::PointXYZ(obs_lcl_pos(0), obs_lcl_pos(1), obs_lcl_pos(2) - mp_.static_inflation_));
-
-      lcl_pcd_fixedmapframe_->push_back(
-        pcl::PointXYZ(obs_gbl_pos_pt3d.x, obs_gbl_pos_pt3d.y, obs_gbl_pos_pt3d.z));
+      raw_lcl_pcd_in_global_frame_->push_back(
+        pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
     }
 
-    lcl_pcd_lclmapframe_->width = lcl_pcd_lclmapframe_->points.size();
-    lcl_pcd_lclmapframe_->height = 1;
-    lcl_pcd_lclmapframe_->is_dense = true; 
+    kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+    // Add local occ points in fixed map frame to KDTree
+    kdtree_->Build(raw_lcl_pcd_in_global_frame_->points);
 
-    lcl_pcd_fixedmapframe_->width = lcl_pcd_fixedmapframe_->points.size();
-    lcl_pcd_fixedmapframe_->height = 1;
-    lcl_pcd_fixedmapframe_->is_dense = true; 
+    for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_global_frame_->points) // For each occupied coordinate
+    {
+      Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
 
+      // pt_in_lcl_frame_eig: With respect to local origins
+      Eigen::Vector3d pt_in_lcl_frame_eig = pt_in_gbl_frame_eig - mp_.local_map_origin_;
+
+      std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
+      // Perform radius search for each point and get nunber of points
+      kdtree_->Radius_Search(pt_in_gbl_frame, noise_search_radius_, nb_points);
+      if ((int) nb_points.size() < noise_min_neighbors_){
+        continue;
+      }
+
+      // occ_pcd_in_lcl_frame_: Used by map slice and hence dynamic voronoi
+      occ_pcd_in_lcl_frame_->push_back(
+        pcl::PointXYZ(pt_in_lcl_frame_eig(0), pt_in_lcl_frame_eig(1), pt_in_lcl_frame_eig(2)));
+      // occ_pcd_in_lcl_frame_->push_back(
+      //   pcl::PointXYZ(pt_in_lcl_frame(0) + mp_.static_inflation_, pt_in_lcl_frame(1), pt_in_lcl_frame(2)));
+      // occ_pcd_in_lcl_frame_->push_back(
+      //   pcl::PointXYZ(pt_in_lcl_frame(0) - mp_.static_inflation_, pt_in_lcl_frame(1), pt_in_lcl_frame(2)));
+      // occ_pcd_in_lcl_frame_->push_back(
+      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1) + mp_.static_inflation_, pt_in_lcl_frame(2)));
+      // occ_pcd_in_lcl_frame_->push_back(
+      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1) - mp_.static_inflation_, pt_in_lcl_frame(2)));
+      // occ_pcd_in_lcl_frame_->push_back(
+      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1), pt_in_lcl_frame(2)  + mp_.static_inflation_));
+      // occ_pcd_in_lcl_frame_->push_back(
+      //   pcl::PointXYZ(pt_in_lcl_frame(0), pt_in_lcl_frame(1), pt_in_lcl_frame(2) - mp_.static_inflation_));
+
+      // occ_pcd_in_gbl_frame_: Used for visualization
+      occ_pcd_in_gbl_frame_->push_back(pt_in_gbl_frame);
+
+      // lcl_pts_in_global_frame_: Used for SFC
+      lcl_pts_in_global_frame_.push_back(pt_in_gbl_frame_eig);
+    }
+
+    occ_pcd_in_lcl_frame_->width = occ_pcd_in_lcl_frame_->points.size();
+    occ_pcd_in_lcl_frame_->height = 1;
+    occ_pcd_in_lcl_frame_->is_dense = true; 
+
+    occ_pcd_in_gbl_frame_->width = occ_pcd_in_gbl_frame_->points.size();
+    occ_pcd_in_gbl_frame_->height = 1;
+    occ_pcd_in_gbl_frame_->is_dense = true; 
   }
-
-  // Add local occ points in fixed map frame to KDTree
-  // kdtree_->Build(lcl_pcd_fixedmapframe_->points);
 }
 
 void VoxelMap::getMapSlice(const double& slice_z_cm, 
   const double& thickness, std::vector<bool>& bool_map) 
 {
-  if (lcl_pcd_lclmapframe_->points.empty()){
+  if (occ_pcd_in_lcl_frame_->points.empty()){
     logger_->logWarnThrottle("Local map is empty!", 1.0);
     // return;
   }
@@ -416,7 +444,7 @@ void VoxelMap::getMapSlice(const double& slice_z_cm,
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   // Apply passthrough filter
   pcl::PassThrough<pcl::PointXYZ> z_filter;
-  z_filter.setInputCloud(lcl_pcd_lclmapframe_);
+  z_filter.setInputCloud(occ_pcd_in_lcl_frame_);
   z_filter.setFilterFieldName("z");
   z_filter.setFilterLimits(slice_z - (thickness/2) , slice_z + (thickness/2));
   z_filter.filter(*cloud);
@@ -473,7 +501,7 @@ void VoxelMap::vizMapTimerCB()
 {
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
-    publishOccMap(lcl_pcd_fixedmapframe_);
+    publishOccMap(occ_pcd_in_gbl_frame_);
   }
   publishLocalMapBounds(); // publish boundaries of local map volume
 }
@@ -512,100 +540,6 @@ void VoxelMap::updateLocalMapTimerCB()
     }
   }
   local_map_updated_ = true;
-
-  // // [Communication-less] Add obstacles to boolean map based on position of other drones
-  // if (dyn_obs_mark_in_occ_map_){
-  //   for (int id = 0; id < (int)swarm_poses_.size(); id++){ // for each drone id
-  //     if (id == drone_id_){
-  //       continue;
-  //     }
-
-  //     if (!isInLocalMap(swarm_poses_[id])){ 
-  //       // Point is outside the local map
-  //       continue;
-  //     }
-
-  //     // Convert from global map to local map 
-  //     Eigen::Vector3d lcl_map_start_pos = swarm_poses_[id] - mp_.local_map_origin_; // in [m] meters
-  //     double z_m = swarm_poses_[id](2);
-
-  //     auto roundToMultInt = [&](const int& num, const int& mult, 
-  //                               const int& min, const int& max)
-  //     {
-  //       if (mult == 0){
-  //         return num;
-  //       }
-
-  //       if (num > max){
-  //         return max;
-  //       }
-
-  //       if (num < min){
-  //         return min;
-  //       }
-
-  //       int rem = (int)num % mult;
-  //       if (rem == 0){
-  //         return num;
-  //       }
-
-  //       return rem < (mult/2) ? (num-rem) : (num-rem) + mult;
-  //     };
-
-  //     int z_cm = roundToMultInt((int) (z_m * 100.0), 
-  //                                   bool_map_3d_.z_sep_cm,
-  //                                   bool_map_3d_.min_height_cm,
-  //                                   bool_map_3d_.max_height_cm);
-
-  //     int top_height = z_cm + bool_map_3d_.z_sep_cm;
-  //     int btm_height = z_cm - bool_map_3d_.z_sep_cm;
-
-  //     // Add the other layer sandwiching the current drone position as occupied too
-  //     int z2_cm = z_cm;  
-  //     if (top_height <= bool_map_3d_.max_height_cm 
-  //         && (double)z_cm <= z_m * 100.0 
-  //         && z_m * 100.0 < (double)top_height)
-  //     {
-  //       z2_cm = top_height;
-  //     }
-  //     else if (btm_height >= bool_map_3d_.min_height_cm
-  //       && (double)btm_height < z_m * 100.0
-  //       && z_m * 100.0 < (double)z_cm ) 
-  //     {
-  //       z2_cm = btm_height;
-  //     }
-
-  //     // Iterate for a short duration along velocity vector
-  //     for (double t = 0; t <= time_vel_; t += 0.05 )
-  //     {
-  //       Eigen::Vector3d lcl_map_pos = lcl_map_start_pos + t * swarm_vels_[id];
-
-  //       // Convert from fixed map origin to local map origin
-  //       Eigen::Vector3d lcl_map_grid = lcl_map_pos/getRes(); // In grid coordinares
-
-  //       // inflate map 
-  //       for(int x = lcl_map_grid(0) - mp_.inf_dyn_vox_; x <= lcl_map_grid(0) + mp_.inf_dyn_vox_; x++)
-  //       {
-  //         for(int y = lcl_map_grid(1) - mp_.inf_dyn_vox_; y <= lcl_map_grid(1) + mp_.inf_dyn_vox_; y++)
-  //         {
-  //           // Convert from 2D coordinates to 1D index
-  //           int idx = x + y * mp_.local_map_num_voxels_(0);
-
-  //           if (idx < 0 || idx >= (int) bool_map_3d_.bool_maps[z_cm].size()){ 
-  //             // if out of map, skip
-  //             continue;
-  //           }
-
-  //           bool_map_3d_.bool_maps[z_cm][idx] = true;
-  //           bool_map_3d_.bool_maps[z2_cm][idx] = true;
-  //         }
-  //       }
-
-  //     }
-
-  //   }
-
-  // }
 
   // tm_slice_map_.stop(verbose_print_);
 
@@ -656,6 +590,13 @@ void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 
   bonxai_map_ = std::make_unique<BonxaiT>(mp_.resolution_);
   logger_->logWarn("Reset map as requested by user!");
+}
+
+void VoxelMap::odomCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
+{
+  cur_pos_pt_ = pcl::PointXYZ(msg->pose.pose.position.x, 
+                              msg->pose.pose.position.y, 
+                              msg->pose.pose.position.z);
 }
 
 void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -709,17 +650,23 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     return;
   }
 
+  auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
+
   // Transform point cloud from camera frame to global_map_frame 
-  pcl::transformPointCloud(*pcd, *pcd_in_map_frame_, md_.cam_to_map);
+  pcl::transformPointCloud(*pcd, *pcd_in_map_frame, md_.cam_to_map);
 
   // Getting the Translation from the sensor to the Global Reference Frame
   const pcl::PointXYZ sensor_origin(
     md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
 
+  z_filter_cloud_in_.setInputCloud(pcd_in_map_frame);
+  z_filter_cloud_in_.filter(*pcd_in_map_frame);
+
   // tm_bonxai_insert_.start();
   // Add point cloud to bonxai_maps_
   std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
-  bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
+  bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, mp_.max_range);
   // tm_bonxai_insert_.stop(false);
 }
 
@@ -804,7 +751,7 @@ void VoxelMap::publishCollisionSphere(
 //     cloud_msg.header.frame_id = "local_map_frame";
 //     cloud_msg.header.stamp = node_->get_clock()->now();
 //     slice_map_pub_->publish(cloud_msg);
-//     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", lcl_pcd_lclmapframe_.points.size()));
+//     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", occ_pcd_in_lcl_frame_.points.size()));
 //   }
   
 // }
@@ -850,9 +797,12 @@ void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
   // pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   // pcl::fromROSMsg(msg, *pcd);
 
+  // auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  // pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
+
   // // Transform point cloud from camera frame to global_map_frame (the global reference frame)
-  // pcl::transformPointCloud(*pcd, *pcd_in_map_frame_, md_.cam_to_map);
-  // pcd_in_map_frame_->header.frame_id = mp_.global_map_frame;
+  // pcl::transformPointCloud(*pcd, *pcd_in_map_frame, md_.cam_to_map);
+  // pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
 
   // // Getting the Translation from the sensor to the Global Reference Frame
   // const pcl::PointXYZ sensor_origin(
@@ -860,7 +810,7 @@ void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
 
   // tm_bonxai_insert_.start();
   // // Add point cloud to bonxai_maps_
-  // bonxai_map_->insertPointCloud(pcd_in_map_frame_->points, sensor_origin, mp_.max_range);
+  // bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, mp_.max_range);
   // tm_bonxai_insert_.stop(false);
 }
 
