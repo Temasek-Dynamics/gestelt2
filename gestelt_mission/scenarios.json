@@ -12,6 +12,19 @@
       [2.0,0.0,1.5]
     ]
   },
+  "goals_1d_0": {
+    "description": "First set of goals for single agents",
+    "map": "empty_20x20",
+    "num_agents": 1,
+    "take_off_height": 0.8,
+    "send_goals": false,
+    "spawns_pos": [
+      [-2.0, 0.0, 0.0]
+    ],
+    "goals_pos": [
+      [2.0, 0.25, 0.8]
+    ]
+  },
   "start_2d": {
     "description": "Spawning configs for 2 agents",
     "map": "empty_20x20",

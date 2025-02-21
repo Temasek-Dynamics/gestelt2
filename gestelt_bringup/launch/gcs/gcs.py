@@ -106,7 +106,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        # rosbag_record,
+        rosbag_record,
         rviz_node,
         # relay_d0_tf,
         # relay_d1_tf,
