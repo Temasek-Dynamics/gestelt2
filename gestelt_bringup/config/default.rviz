@@ -14,10 +14,11 @@ Panels:
         - /d0_actual1/maps1/occ1/occ_map_2001/Topic1
         - /d0_actual1/maps1/occ1/occ_map_2501/Topic1
         - /d0_actual1/3d_occ_map1/Topic1
+        - /d01
         - /d01/state1/odom_ax1/Shape1
         - /d01/state1/odom_ax1/Covariance1
         - /d01/front_end1/fe_plan_req1
-        - /d11
+        - /d01/3d_occ_map1
         - /d11/state1/odom_ax1/Shape1
         - /d11/state1/odom_ax1/Covariance1/Position1
         - /d11/front_end1
@@ -41,7 +42,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: 3d_occ_map
+    SyncSource: cloud
 Visualization Manager:
   Class: ""
   Displays:
@@ -1375,7 +1376,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1892,7 +1893,7 @@ Visualization Manager:
           Value: false
           VsColor: 0; 255; 0
           VsScale: 0.10000000149011612
-      Enabled: true
+      Enabled: false
       Name: d1
     - Class: rviz_common/Group
       Displays:
@@ -3698,7 +3699,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 7.9007978439331055
+      Distance: 8.091132164001465
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -3713,10 +3714,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.0097966194152832
+      Pitch: 0.9097951054573059
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 1.7292546033859253
+      Yaw: 3.509256362915039
     Saved: ~
 Window Geometry:
   Displays:

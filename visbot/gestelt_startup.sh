@@ -66,14 +66,14 @@ then
     tmux split-window -t $SESSION:0.0 -h
 
     tmux send-keys -t $SESSION:0.0 "$ROS1_NODES" C-m 
-    sleep 10
+    sleep 8
     tmux send-keys -t $SESSION:0.2 "$ROS2_NODES" C-m 
     sleep 8
     # ROS1 bridge needs to start a while after ROS1 nodes as ROS1_NODES script will terminate ros1 nodes at the start
     tmux send-keys -t $SESSION:0.1 "$ROS1_TO_ROS2_BRIDGE" C-m 
     sleep 1
     tmux send-keys -t $SESSION:0.3 "$ZENOH_BRIDGE" C-m
-    sleep 15
+    sleep 12
     tmux send-keys -t $SESSION:0.4 "$ROS2_TO_ROS1_BRIDGE" C-m
     sleep 1
     tmux send-keys -t $SESSION:0.5 "$RESTART_VINS" C-m
