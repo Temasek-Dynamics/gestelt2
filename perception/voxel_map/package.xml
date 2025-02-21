@@ -25,7 +25,7 @@
   <depend>tf2_eigen</depend>
 
   <depend>bonxai</depend>
-  <!-- <depend>ikd_tree</depend> -->
+  <depend>ikd_tree</depend>
   <depend>logger_wrapper</depend>
 
   <export>
