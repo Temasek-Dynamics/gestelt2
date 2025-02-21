@@ -42,7 +42,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: cloud
+    SyncSource: 3d_occ_map
 Visualization Manager:
   Class: ""
   Displays:
@@ -3699,7 +3699,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 8.091132164001465
+      Distance: 7.09750509262085
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -3714,10 +3714,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9097951054573059
+      Pitch: 0.6947950720787048
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.509256362915039
+      Yaw: 3.3142786026000977
     Saved: ~
 Window Geometry:
   Displays:

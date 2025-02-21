@@ -41,8 +41,8 @@
         max_range: 5.0   # [m] Maximum range of sensor
 
       # Passthrough filter for input point cloud
-      cloud_in_min_z: 0.3 # [m]
-      cloud_in_max_z: 4.0 # [m]
+      cloud_in_min_z: 0.3 # [m] Minimum height for point cloud to be included in map
+      cloud_in_max_z: 4.0 # [m] Maximum height for point cloud to be included in map
 
       # Noise filter by checking clusters
       noise_search_radius: 0.2  # Radius to search for neighbouring points
