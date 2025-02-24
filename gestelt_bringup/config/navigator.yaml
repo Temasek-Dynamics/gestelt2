@@ -7,6 +7,10 @@
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
+        min_sqr_dist_obs: 0  # Minimum squared distnace to obstacle to be considered a free cell
+        max_iterations: 50000 # Max number of allowed iterations
+        tie_breaker: 1.001
+        cost_function_type: 2 # 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
 
       point_goal_height: 1.0 #[m] Height to send point goal
 

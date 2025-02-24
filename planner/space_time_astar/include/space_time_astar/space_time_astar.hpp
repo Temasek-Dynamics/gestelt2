@@ -50,6 +50,8 @@ namespace global_planner{
     double tie_breaker;
     bool debug_viz; // Publish visualization messages for debugging 
 
+    int min_sqr_dist_obs; // Minimum squared distance to obstacle for a free cell
+
     /**
      * 0: Octile
      * 1: L1 Norm 

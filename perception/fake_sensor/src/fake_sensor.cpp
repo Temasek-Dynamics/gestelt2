@@ -84,7 +84,7 @@ FakeSensor::FakeSensor()
 
 	  swarm_odom_subs_.push_back(
 	    this->create_subscription<nav_msgs::msg::Odometry>(
-	      "/d"+ std::to_string(i) + "/" + "odom", 
+	      "/d"+ std::to_string(i) + "/" + "mavros/local_position/odom", 
 	      rclcpp::SensorDataQoS(), 
 	      bound_callback_func, 
 	      reentrant_sub_opt)
@@ -108,9 +108,9 @@ FakeSensor::FakeSensor()
 	pass_fil_y_->setFilterFieldName ("y");
 	pass_fil_z_->setFilterFieldName ("z");
 
-	pass_fil_x_->setFilterLimits (-0.05, 0.05);
-	pass_fil_y_->setFilterLimits (-0.05, 0.05);
-	pass_fil_z_->setFilterLimits (-0.05, 0.05);
+	pass_fil_x_->setFilterLimits (-0.025, 0.025);
+	pass_fil_y_->setFilterLimits (-0.025, 0.025);
+	pass_fil_z_->setFilterLimits (-0.025, 0.025);
 
 	pass_fil_x_->setNegative (true);
 	pass_fil_y_->setNegative (true);
@@ -198,20 +198,35 @@ void FakeSensor::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 
 void FakeSensor::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id)
 {
-  Eigen::Vector3d pose = Eigen::Vector3d{msg->pose.pose.position.x,  
-										msg->pose.pose.position.y,  
-										msg->pose.pose.position.z};
-
   // Get other agent's frame to map_frame transform
   try {
-    auto tf = tf_buffer_->lookupTransform(
+    auto tf_res = tf_buffer_->lookupTransform(
 		map_frame_, msg->header.frame_id,  
       tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.5)));
-    // Set fixed map origin
-    pose(0) += tf.transform.translation.x;
-    pose(1) += tf.transform.translation.y;
-    // pose(2) += tf.transform.translation.z;
+
+	tf2::Quaternion q(
+		tf_res.transform.rotation.x,
+		tf_res.transform.rotation.y,
+		tf_res.transform.rotation.z,
+		tf_res.transform.rotation.w
+	);
+	tf2::Vector3 p(
+		tf_res.transform.translation.x,
+		tf_res.transform.translation.y,
+		tf_res.transform.translation.z
+	);
+
+	tf2::Transform transform(q, p);
+
+	tf2::Vector3 pt_in_src_frame(msg->pose.pose.position.x, 
+		msg->pose.pose.position.y, 
+		msg->pose.pose.position.z);
+
+	tf2::Vector3 pt_in_tgt_frame = transform * pt_in_src_frame;
+
+	swarm_poses_[id] = Eigen::Vector3d(pt_in_tgt_frame.x(), pt_in_tgt_frame.y(), pt_in_tgt_frame.z());
+
   } 
   catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(
@@ -220,7 +235,6 @@ void FakeSensor::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int 
     return;
   }
 
-  swarm_poses_[id] = pose;
 }
 
 /* Timer Callbacks*/
@@ -286,7 +300,17 @@ void FakeSensor::sensorUpdateTimerCB()
 			sensor_pos_in_map_frame,  // sensor position in map frame
 			sensor_ori_in_map_frame,  // sensor orientation in map frame
 			*sensor_cloud_);
-		
+
+		// add other agent's odom as obstacle points
+		for (int i = 0; i < num_drones_; i++){
+			if (i == drone_id_){
+				continue;
+			}
+			
+			sensor_cloud_->push_back(
+				pcl::PointXYZ(swarm_poses_[i](0), swarm_poses_[i](1), swarm_poses_[i](2)) );
+		}
+
 		// Create transformation matrix from global to sensor frame
 		sensor_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
 			sensor_to_map_tf.transform.rotation.w,
@@ -357,15 +381,7 @@ void FakeSensor::sensorUpdateTimerCB()
 	pass_fil_z_-> setInputCloud (sensor_cloud_);
 	pass_fil_z_-> filter (*sensor_cloud_);
 
-	// add other agent's odom as obstacle points
-	for (int i = 0; i < num_drones_; i++){
-		if (i == drone_id_){
-		  continue;
-		}
 
-		sensor_cloud_->push_back(
-        	pcl::PointXYZ(swarm_poses_[i](0), swarm_poses_[i](1), swarm_poses_[i](2)) );
-	}
 
 	// Publish cloud 
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;

@@ -13,7 +13,7 @@ def main(args=None):
     mission = Mission()
 
     try: 
-        for i in range(0, 3):
+        for i in range(0, 2):
             mission.pubGoals()
             mission.get_logger().info("Published goals to navigator")
 
@@ -24,22 +24,13 @@ def main(args=None):
             UAVCommand.Request.COMMAND_START_MISSION, 
             UAVState.HOVERING,
             mode=0)
-        mission.get_logger().info("All drones swtching switching to MISSION MODE")
+        mission.get_logger().info("All drones switching to MISSION MODE")
 
         #########
         # Wait for mission
         #########
         if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
             raise Exception("Failed to transition to mission mode")
-
-        #########
-        # Wait for mission
-        #########
-        mission.get_logger().info("All drones are in MISSION MODE")
-        
-        if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
-            raise Exception("Failed to transition to mission mode")
-
 
         rclpy.spin(mission)
 

@@ -1,15 +1,15 @@
 {
-  "test_1d": {
-    "description": "Simple single agent test",
+  "goals_1d_0": {
+    "description": "First set of goals for single agent",
     "map": "empty_20x20",
-    "num_agents": 1,
-    "take_off_height": 1.5,
+    "num_agents": 2,
+    "take_off_height": 0.8,
     "send_goals": false,
     "spawns_pos": [
-      [0.0,0.0,0.0]
+      [-2.0, 0.0, 0.0]
     ],
     "goals_pos": [
-      [2.0,0.0,1.5]
+      [2.0, 0.25, 0.8]
     ]
   },
   "start_2d": {
@@ -68,6 +68,49 @@
     ],
     "goals_pos": [
       [4.0,4.0,1.2]
+    ]
+  },
+  "start_1d_sitl": {
+    "description": "SITL Spawn config for 1 agent",
+    "map": "empty_20x20",
+    "num_agents": 1,
+    "take_off_height": 1.2,
+    "send_goals": true,
+    "spawns_pos": [
+      [0.0,0.0,0.0]
+    ],
+    "goals_pos": [
+      [2.0,0.0,1.5]
+    ]
+  },  
+  "start_2d_sitl": {
+    "description": "SITL Spawning configs for 2 agents",
+    "map": "empty_20x20",
+    "num_agents": 2,
+    "take_off_height": 1.2,
+    "send_goals": true,
+    "spawns_pos": [
+      [-2.0, 0.0, 0.0],
+      [2.0, 0.0, 0.0]
+    ],
+    "goals_pos": [
+      [2.0, 0.1, 1.2],
+      [-2.0, -0.1, 1.2]
+    ]
+  },
+  "goals_2d_sitl": {
+    "description": "SITL goal configs for 2 agents",
+    "map": "empty_20x20",
+    "num_agents": 2,
+    "take_off_height": 1.2,
+    "send_goals": true,
+    "spawns_pos": [
+      [-2.0, 0.0, 0.0],
+      [2.0, 0.0, 0.0]
+    ],
+    "goals_pos": [
+      [2.0, 0.0, 0.8],
+      [-2.0, -0.0, 0.8]
     ]
   }
 }

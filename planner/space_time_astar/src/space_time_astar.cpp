@@ -276,7 +276,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                         || dyn_voro_arr_[z_cm]->isOccupied(nx, ny)){
                         continue;
                     }
-                    
+
                     if (!(dyn_voro_arr_[z_cm]->isVoronoiAlternative(nx, ny) 
                         || (marked_bubble_cells.find(z_cm) != marked_bubble_cells.end()
                             && marked_bubble_cells[z_cm].find(IntPoint(nx, ny)) != marked_bubble_cells[z_cm].end())))
@@ -285,6 +285,11 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
                         continue;
                     }
 
+                    if (dyn_voro_arr_[z_cm]->getSqrDistToObs(nx, ny) < astar_params_.min_sqr_dist_obs)
+                    {
+                        continue;
+                    }
+                    
                     neighbours.push_back(Eigen::Vector4i{   nx, 
                                                             ny, 
                                                             z_cm, 

@@ -4,7 +4,6 @@ Complete set of nodes for trajectory server
 """
 
 import os
-from datetime import datetime
 import json
 
 from ament_index_python.packages import get_package_share_directory

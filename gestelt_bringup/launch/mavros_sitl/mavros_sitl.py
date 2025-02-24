@@ -4,20 +4,17 @@ Complete set of nodes for trajectory server
 """
 
 import os
-from datetime import datetime
 import json
 
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, GroupAction, OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace, SetParameter
-
-SCENARIO_NAME = "test_sim"
+from launch_ros.actions import PushROSNamespace
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -56,10 +53,7 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
                 FindPackageShare('gestelt_bringup'),
-                'launch',
-                'mavros_sitl',
-                'include',
-                'mavros_nodes.py'
+                'launch','mavros_sitl','include','mavros_nodes.py'
             ])
         ]),
         launch_arguments={
@@ -74,27 +68,37 @@ def generateSITLDrone(id, spawn_pos, pcd_filepath, num_drones):
 
     return GroupAction(
       actions=[
+          PushROSNamespace('d' + str(id)),
           sitl_drone_launchfile,
         ]
     )
 
-def generate_launch_description():
-    
-    scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
-      SCENARIO_NAME
-    )
+def launch_setup(context):
+    scenario_name = LaunchConfiguration('scenario_name').perform(context)
 
-    '''ROS parameters'''
+    scenario = Scenario(os.path.join(
+        get_package_share_directory('gestelt_mission'), 'scenarios.json'),
+        scenario_name
+    )
     fake_map_pcd_filepath = os.path.join(
       get_package_share_directory('gestelt_bringup'), 'pcd_maps',
       scenario.map + '.pcd'
     )
 
-     # Generate nodes of SITL drone instances according to scenario
-    offboard_nodes = generateSITLDrone(
-            0, scenario.spawns_pos[0], fake_map_pcd_filepath, scenario.num_agents)
-        
+    sitl_drone_nodes = []
+    for id in range(scenario.num_agents):
+        sitl_drone_nodes.append(generateSITLDrone(
+            id, scenario.spawns_pos[id], fake_map_pcd_filepath, scenario.num_agents))
 
-    return LaunchDescription([
-        offboard_nodes,
-    ])
+    return sitl_drone_nodes
+
+def generate_launch_description():
+    opfunc = OpaqueFunction(function = launch_setup)
+
+    launch_args = [
+        DeclareLaunchArgument('scenario_name', default_value='start_2d_sitl'),
+    ]
+
+    ld = LaunchDescription(launch_args)
+    ld.add_action(opfunc)
+    return ld

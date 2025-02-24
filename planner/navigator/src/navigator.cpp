@@ -349,11 +349,13 @@ void Navigator::initParams()
   t_buffer_ = (int) std::lround(rsvn_tbl_t_buffer/t_unit_);  // [space-time units] for time buffer
 
   /* A* parameters */
+  astar_params_.min_sqr_dist_obs = this->declare_parameter(param_ns+".planner.min_sqr_dist_obs", 2);
+  astar_params_.max_iterations = this->declare_parameter(param_ns+".planner.max_iterations", 50000);
+  astar_params_.tie_breaker = this->declare_parameter(param_ns+".planner.tie_breaker", 1.001);
+  astar_params_.cost_function_type = this->declare_parameter(param_ns+".planner.cost_function_type", 1); 
+  
   astar_params_.drone_id = drone_id_;
-  astar_params_.max_iterations = 50000;
   astar_params_.debug_viz = true;
-  astar_params_.tie_breaker = 1.001;
-  astar_params_.cost_function_type  = 1; // 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
   astar_params_.t_unit = t_unit_;
 
   // Liu SFC Params

@@ -136,7 +136,8 @@ def generate_launch_description():
             voxel_map_cfg,
         ],
       remappings=[
-        ('cloud', ['/visbot_itof/point_cloud']),
+        ('cloud', ['visbot_itof/point_cloud']),
+        ('odom', ['mavros/local_position/odom']),
       ],
     )
 
@@ -152,6 +153,10 @@ def generate_launch_description():
           {'map_frame': map_frame},
           traj_server_config
         ],
+        remappings=[
+          ('odom', ['mavros/local_position/odom']),
+          ('/all_uav_command', ['/d', drone_id, '/all_uav_command'])
+        ],
     )
 
     ''' Fake sensor node: For acting as a simulated depth camera/lidar '''
@@ -163,6 +168,7 @@ def generate_launch_description():
         name=['fake_sensor_', drone_id],
         parameters=[
           {'drone_id': drone_id},
+          {'num_drones': num_drones},
           {'global_frame': global_frame},
           {'map_frame': map_frame},
           {'sensor_frame': camera_frame},
@@ -170,17 +176,25 @@ def generate_launch_description():
           fake_sensor_config,
         ],
         remappings=[
-          ('cloud', ['/visbot_itof/point_cloud']),
+          ('cloud', ['visbot_itof/point_cloud']),
+          ('odom', ['mavros/local_position/odom']),
         ],
     )
 
     '''Mavlink/Mavros'''
     # Simulation
+    # fcu_addr =  PythonExpression(['14540 +', drone_id])
+    # fcu_port =  PythonExpression(['14580 +', drone_id])
+    # fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
+    # fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
+    # tgt_system = PythonExpression(['1 +', drone_id])
+
     fcu_addr =  PythonExpression(['14540 +', drone_id])
-    fcu_port =  PythonExpression(['14580 +', drone_id])
-    fcu_port =  PythonExpression(['14557 +', drone_id]) # Used for SITL
+    fcu_port =  PythonExpression(['14580 +', drone_id]) # Used for SITL
     fcu_url = ["udp://:", fcu_addr, "@localhost:", fcu_port] # udp://:14540@localhost:14557
     tgt_system = PythonExpression(['1 +', drone_id])
+    # gcs_port = PythonExpression(['14556 +', drone_id])
+    # gcs_url = ["udp://:", gcs_port, "@"] 
 
     px4_config_param_subs = {}
     px4_config_param_subs.update({'/**/local_position.ros__parameters.frame_id': map_frame})
@@ -202,16 +216,16 @@ def generate_launch_description():
       namespace='mavros',
       parameters=[
         {'fcu_url': fcu_url},
-        {'gcs_url': 'udp://:14556@'},
+        {'gcs_url': ""},
         {'tgt_system': tgt_system},
         {'tgt_component': 1},
         {'fcu_protocol': 'v2.0'},
         px4_pluginlists_cfg,
         new_px4_config_cfg,
       ],
-      remappings=[
-        ('local_position/odom', ['/odom']),
-      ],
+      # remappings=[
+      #   ('local_position/odom', ['odom']),
+      # ],
     )
 
     return LaunchDescription([

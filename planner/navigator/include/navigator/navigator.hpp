@@ -334,7 +334,6 @@ private:
   /* Convert point from world to fixed map origin*/
   bool globalToMap(const Eigen::Vector3d& src_pt, Eigen::Vector3d& tgt_pt)
   {
-    tf2::Vector3 pt_in_src_frame(src_pt(0), src_pt(1), src_pt(2));
 
     // Get other agent's frame to map_frame transform
     try {
@@ -356,6 +355,8 @@ private:
       );
 
       tf2::Transform transform(q, p);
+      
+      tf2::Vector3 pt_in_src_frame(src_pt(0), src_pt(1), src_pt(2));
 
       tf2::Vector3 pt_in_tgt_frame = transform * pt_in_src_frame;
 

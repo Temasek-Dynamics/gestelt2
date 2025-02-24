@@ -30,26 +30,29 @@ def main(args=None):
 
         mission.get_logger().info("All drones are in HOVER MODE")
 
-        # #########
-        # # Mission mode
-        # #########
-        # mission.cmdAllDronesPub(
-        #     UAVCommand.Request.COMMAND_START_MISSION, 
-        #     UAVState.HOVERING,
-        #     mode=0)
-        # mission.get_logger().info("All drones swtching switching to MISSION MODE")
+        if mission.scenario.send_goals:
 
-        # #########
-        # # Wait for mission
-        # #########
-        # if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
-        #     raise Exception("Failed to transition to mission mode")
+            for i in range(0, 2):
+                mission.pubGoals()
+                mission.get_logger().info("Published goals to navigator")
 
-        # if mission.scenario.send_goals:
-        #     mission.pubGoals()
-        #     mission.get_logger().info("Published goals to navigator")
-        # else:
-        #     mission.get_logger().info("Not publishing goals to navigator")
+            #########
+            # Mission mode
+            #########
+            mission.cmdAllDronesPub(
+                UAVCommand.Request.COMMAND_START_MISSION, 
+                UAVState.HOVERING,
+                mode=0)
+            mission.get_logger().info("All drones swtching switching to MISSION MODE")
+
+            #########
+            # Wait for mission
+            #########
+            if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
+                raise Exception("Failed to transition to mission mode")
+
+        else:
+            mission.get_logger().info("Not transitioning to MISSION mode as defined by user config.")
 
         rclpy.spin(mission)
 
