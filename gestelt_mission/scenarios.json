@@ -29,45 +29,45 @@
     "description": "Spawning configs for 2 agents",
     "map": "empty_20x20",
     "num_agents": 2,
-    "take_off_height": 0.8,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
-      [-2.0, 0.0, 0.0],
-      [2.0, 0.0, 3.14159]
+      [-3.0, 0.0, 0.0],
+      [3.0, 0.0, 3.14159]
     ],
     "goals_pos": [
-      [2.0, 0.25, 0.8],
-      [-2.0, -0.25, 0.8]
+      [3.0, 0.25, 1.2],
+      [-3.0, -0.25, 1.2]
     ]
   },
   "goals_2d_0": {
     "description": "First set of goals for 2 agents",
     "map": "empty_20x20",
     "num_agents": 2,
-    "take_off_height": 0.8,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
-      [2.0, 0.25, 0.6],
-      [-2.0, -0.25, 0.6]
+      [-3.0, -0.25, 1.2],
+      [3.0, 0.25, 1.2]
     ],
     "goals_pos": [
-      [2.0, 0.25, 0.8],
-      [-2.0, -0.25, 0.8]
+      [3.0, 0.25, 1.2],
+      [-3.0, -0.25, 1.2]
     ]
   },
   "goals_2d_1": {
     "description": "Second set of goals for 2 agents",
     "map": "empty_20x20",
     "num_agents": 2,
-    "take_off_height": 0.8,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
-      [2.0, 0.25, 0.6],
-      [-2.0, -0.25, 0.6]
+      [3.0, 0.25, 1.2],
+      [-3.0, -0.25, 1.2]
     ],
     "goals_pos": [
-      [-2.0, -0.25, 0.8],
-      [2.0, 0.25, 0.8]
+      [-3.0, -0.25, 1.2],
+      [3.0, 0.25, 1.2]
     ]
   },
   "test_sim": {

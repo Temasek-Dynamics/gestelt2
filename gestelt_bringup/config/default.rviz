@@ -44,7 +44,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: 3d_occ_map
+    SyncSource: cloud
 Visualization Manager:
   Class: ""
   Displays:
@@ -792,7 +792,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                agent_id: true
+                {}
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -1843,7 +1843,7 @@ Visualization Manager:
           Color: 192; 97; 203
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: false
+          Enabled: true
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -1863,7 +1863,7 @@ Visualization Manager:
             Value: /d1/occ_map
           Use Fixed Frame: true
           Use rainbow: true
-          Value: false
+          Value: true
         - Class: rviz_default_plugins/Marker
           Enabled: false
           Name: static_collisions
@@ -3700,21 +3700,26 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0.10999999940395355
-      Class: rviz_default_plugins/TopDownOrtho
+      Class: rviz_default_plugins/XYOrbit
+      Distance: 10.37458610534668
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
+      Focal Point:
+        X: -1.0139528512954712
+        Y: -0.4710822105407715
+        Z: 1.0013580322265625e-05
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 315.9388732910156
+      Pitch: 0.6897953152656555
       Target Frame: <Fixed Frame>
-      Value: TopDownOrtho (rviz_default_plugins)
-      X: 1.4148920774459839
-      Y: 0.3787488043308258
+      Value: XYOrbit (rviz_default_plugins)
+      Yaw: 3.9823758602142334
     Saved: ~
 Window Geometry:
   Displays:
