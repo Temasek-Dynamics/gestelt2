@@ -40,11 +40,11 @@ def generate_launch_description():
     #   parameters=dump_params(rosbag_player_params, 'player'),
     # )
 
-    name = "antipodal_8"
+    name = "2_drone_test_unsure"
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',
-        name + '/' + name + '_0.mcap',
+        name + '/' + name + '.mcap',
     )
 
     print("Run: ")

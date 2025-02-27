@@ -79,6 +79,10 @@ docker run hello-world
 docker run --privileged --rm tonistiigi/binfmt --install all
 ```
 
+# Prune and remove everything
+```bash
+```
+
 # Store docker images on another volume
 1. Stop docker
 ```bash
@@ -154,6 +158,12 @@ docker run -it --privileged \
             gestelt/mavoro:latest bash
             # --rm \
             # -p 14560:14570/udp \
+```
+
+# Mounting for compiling ROS2 ZMQ Bridge
+```
+docker run --name ros2_container -it --platform linux/arm64 --privileged --ipc=host --network host --mount type=bind,src=/opt/ros/noetic,dst=/opt/ros/noetic gestelt/mavoro_arm64:base
+colcon build --symlink-install --packages-select ros2_zmq
 ```
 
 # Repositories

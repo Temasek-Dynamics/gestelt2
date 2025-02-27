@@ -19,7 +19,7 @@ MISSION_NODES="ros2 launch gestelt_bringup execute_mission.py scenario_name:=sta
 SEND_GOAL_NODES="ros2 launch gestelt_bringup execute_send_goals.py scenario_name:=goals_1d_0"
 
 # Reset map 
-RESET_MAP="ros2 topic pub /d0/reset_map std_msgs/msg/Empty {} -1 && ros2 topic pub /d2/reset_map std_msgs/msg/Empty {} -1"
+RESET_MAP="ros2 topic pub /d0/reset_map std_msgs/msg/Empty {} -1 && ros2 topic pub /d1/reset_map std_msgs/msg/Empty {} -1"
 
 # Land
 LAND_NODES="ros2 launch gestelt_bringup execute_land.py scenario_name:=start_2d"
@@ -42,7 +42,7 @@ then
     tmux send-keys -t $SESSION:0.2 "$MISSION_NODES" 
     tmux send-keys -t $SESSION:0.3 "$SEND_GOAL_NODES" 
     tmux send-keys -t $SESSION:0.4 "$RESET_MAP" 
-    tmux send-keys -t $SESSION:0.4 "$LAND_NODES" 
+    tmux send-keys -t $SESSION:0.5 "$LAND_NODES" 
 fi
 
 # Attach session on the first window

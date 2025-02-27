@@ -51,7 +51,7 @@ docker exec -it ros2_container /ros_entrypoint.sh zenoh-bridge-ros2dds \
 
 # Restart VINS estimator
 RESTART_VINS=" \
-rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f ~/bin/restart.msg \
+rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f /home/visbot/bin/restart.msg \
 "
 
 if [ "$SESSIONEXISTS" = "" ]
@@ -65,18 +65,13 @@ then
     tmux split-window -t $SESSION:0.2 -h
     tmux split-window -t $SESSION:0.0 -h
 
-    tmux send-keys -t $SESSION:0.0 "$ROS1_NODES" C-m 
-    sleep 8
-    tmux send-keys -t $SESSION:0.2 "$ROS2_NODES" C-m 
-    sleep 8
+    tmux send-keys -t $SESSION:0.0 "$ROS2_NODES" C-m 
+    tmux send-keys -t $SESSION:0.1 "sleep 1 && $ZENOH_BRIDGE" C-m
+    tmux send-keys -t $SESSION:0.2 "sleep 1 && $ROS2_TO_ROS1_BRIDGE" C-m
+    tmux send-keys -t $SESSION:0.3 "sleep 20 && $ROS1_NODES" C-m 
     # ROS1 bridge needs to start a while after ROS1 nodes as ROS1_NODES script will terminate ros1 nodes at the start
-    tmux send-keys -t $SESSION:0.1 "$ROS1_TO_ROS2_BRIDGE" C-m 
-    sleep 1
-    tmux send-keys -t $SESSION:0.3 "$ZENOH_BRIDGE" C-m
-    sleep 12
-    tmux send-keys -t $SESSION:0.4 "$ROS2_TO_ROS1_BRIDGE" C-m
-    sleep 1
-    tmux send-keys -t $SESSION:0.5 "$RESTART_VINS" C-m
+    # tmux send-keys -t $SESSION:0.3 "sleep 25 && $ROS1_TO_ROS2_BRIDGE" C-m 
+    # tmux send-keys -t $SESSION:0.4 "sleep 16 &&  $RESTART_VINS" C-m
 fi
 
 # Attach session on the first window

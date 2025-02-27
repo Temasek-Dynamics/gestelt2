@@ -100,21 +100,27 @@ fi
 
 export OsqpEigen_DIR==/usr/local/lib/cmake/OsqpEigen/
 
+# ROS1
+source /opt/ros/noetic/setup.bash
+
 # ROS2 
 export RCUTILS_COLORIZED_OUTPUT=1
 export RCUTILS_LOGGING_USE_STDOUT=1
-export ROS_DOMAIN_ID=0
-export ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
 
 export ROS_DISTRO="jazzy"
-source /opt/ros/$ROS_DISTRO/setup.bash
-source /gestelt_ws/install/setup.bash
+source /opt/ros/jazzy/setup.bash
+source ~/gestelt_ws/install/setup.bash
+
+# ROS2 Network
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export ROS_DOMAIN_ID=0
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 
 # Shortcuts
-alias ez_build="cd /gestelt_ws && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker ikd_tree decomp_ros_utils"
-
-# Set DRONE_ID here
-export DRONE_ID=0
+alias ez_build="cd ~/gestelt_ws && colcon build --symlink-install --packages-ignore fake_drone pcd_map_generator swarm_collision_checker decomp_ros_utils ros2_zmq"
 
 # Startup for demo
-alias uav_startup="ros2 launch gestelt_bringup offboard_uav.py"
+alias start_zenoh="zenoh-bridge-ros2dds -c ~/gestelt_ws/src/gestelt2/gestelt_network/zenoh_d${DRONE_ID}_cfg.json5 "
+alias start_gestelt="ros2 launch gestelt_bringup offboard_uav.py drone_id:=${DRONE_ID} scenario_name=${empty2}"
+alias start_bridge="ros2 run ros2_zmq ros2_zmq_node"
+. "$HOME/.cargo/env"

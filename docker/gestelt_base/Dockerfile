@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     nlohmann-json3-dev \
     libasio-dev \
     libeigen3-dev \
+    ros-jazzy-rmw-cyclonedds-cpp \
     ros-jazzy-nav2-common \
     ros-jazzy-mavros* \
     ros-jazzy-mavlink \
@@ -31,6 +32,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     geographiclib-tools \
     libgeographiclib-dev \
     libgeographiclib26 \
+    zenoh-bridge-ros2dds \
     && rm -rf /var/lib/apt/lists/*
 
 RUN wget https://raw.githubusercontent.com/mavlink/mavros/master/mavros/scripts/install_geographiclib_datasets.sh \ 

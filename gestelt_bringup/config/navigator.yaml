@@ -3,19 +3,19 @@
     navigator:
 
       planner: 
-        verbose_print: false  # If enabled, print debug information such as runtime 
+        verbose_print: true  # If enabled, print debug information such as runtime 
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
         min_sqr_dist_obs: 0  # Minimum squared distnace to obstacle to be considered a free cell
-        max_iterations: 50000 # Max number of allowed iterations
+        max_iterations: 99999 # Max number of allowed iterations
         tie_breaker: 1.001
         cost_function_type: 2 # 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
 
       point_goal_height: 1.0 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
-      planner_frequency: 5.0  # [Hz] Frequency at which plan is generated
+      planner_frequency: 8.0  # [Hz] Frequency at which plan is generated
       # generate_voronoi_frequency: 5.0  # Unused [Hz] Frequency at which voronoi is generated
 
       planner_recovery_timeout: 3.0 # [s] UNIMPLEMENTED Timeout before planner recovery behaviour is executed
@@ -26,7 +26,7 @@
       # 2: COMM_MINCO
       plan_method: 1
 
-      samp_mpc_tolerance: 0.25 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
+      samp_mpc_tolerance: 0.2 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
 
       map_slicing: # 2D boolean map slices used for voronoi generation
         # min_height_cm:    40    # [cm] Minimum slice height
@@ -36,8 +36,8 @@
         # max_height_cm:    200   # [cm] Maximum slice height
         # z_sep_cm:  50    # [cm] Separation between slices
         min_height_cm:    60    # [cm] Minimum slice height
-        max_height_cm:    160   # [cm] Maximum slice height
-        z_sep_cm:  20    # [cm] Separation between slices
+        max_height_cm:    200   # [cm] Maximum slice height
+        z_sep_cm:  10    # [cm] Separation between slices
         sample_thickness: 1.0 # [m] Height above and below to sample for obstacles for each slice. For example, 0.5m means 0.25m top and 0.25m bottom
       mpc:
         ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
@@ -59,12 +59,12 @@
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.5
-        vy_min:     -0.5
-        vz_min:     -0.5
-        vx_max:      0.5
-        vy_max:      0.5
-        vz_max:      0.5
+        vx_min:     -0.4
+        vy_min:     -0.4
+        vz_min:     -0.4
+        vx_max:      0.4
+        vy_max:      0.4
+        vz_max:      0.4
 
         ax_min:     -30.0
         ay_min:     -30.0
@@ -85,7 +85,7 @@
           bbox_x: 2.0
           bbox_y: 2.0
           bbox_z: 2.0
-          sfc_sampling_interval: 5
+          sfc_sampling_interval: 4
 
       reservation_table:
         inflation: 1.0    # [m] buffer for reservation table in spatial domain

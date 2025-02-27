@@ -381,8 +381,6 @@ void FakeSensor::sensorUpdateTimerCB()
 	pass_fil_z_-> setInputCloud (sensor_cloud_);
 	pass_fil_z_-> filter (*sensor_cloud_);
 
-
-
 	// Publish cloud 
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;
 	// printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
