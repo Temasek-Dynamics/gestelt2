@@ -13,16 +13,16 @@ GCS_NODES="ros2 launch gestelt_bringup gcs.py"
 ZENOH_BRIDGE="zenoh-bridge-ros2dds -c ~/gestelt_ws/src/gestelt2/gestelt_network/zenoh_host_cfg.json5"
 
 # Start mission node
-MISSION_NODES="ros2 launch gestelt_bringup execute_mission.py scenario_name:=start_2d"
+MISSION_NODES="ros2 launch gestelt_bringup execute_mission.py scenario_name:=start_3d"
 
 # Send goals node
-SEND_GOAL_NODES="ros2 launch gestelt_bringup execute_send_goals.py scenario_name:=goals_1d_0"
+SEND_GOAL_NODES="ros2 launch gestelt_bringup execute_send_goals.py scenario_name:=goals_3d_0"
 
 # Reset map 
-RESET_MAP="ros2 topic pub /d0/reset_map std_msgs/msg/Empty {} -1 && ros2 topic pub /d1/reset_map std_msgs/msg/Empty {} -1"
+RESET_MAP="ros2 topic pub /d0/reset_map std_msgs/msg/Empty {} -1 && ros2 topic pub /d1/reset_map std_msgs/msg/Empty {} -1 && ros2 topic pub /d2/reset_map std_msgs/msg/Empty {} -1"
 
 # Land
-LAND_NODES="ros2 launch gestelt_bringup execute_land.py scenario_name:=start_2d"
+LAND_NODES="ros2 launch gestelt_bringup execute_land.py scenario_name:=start_3d"
 
 if [ "$SESSIONEXISTS" = "" ]
 then 

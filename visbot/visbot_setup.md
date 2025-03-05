@@ -160,7 +160,6 @@ sudo systemctl restart systemd-hostnamed
 ```
 
 
-
 # Change parameters at runtime
 ```bash
 
