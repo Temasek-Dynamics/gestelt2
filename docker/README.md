@@ -12,14 +12,6 @@ docker push gestelt/mavoro:latest
 docker build --platform linux/arm64 -t gestelt/mavoro_arm64:latest --push .
 ```
 
-docker run -it --rm --privileged --network host  gestelt/px4_sitl_gz
-
-ros2 launch gestelt_bringup mavros_sitl.py
-
-ros2 launch gestelt_bringup execute_mission_single.py
-
-ros2 launch gestelt_bringup gcs.py
-
 ## Running containers
 ```bash
 # To use host USB devices, add "--privileged" flag or "--device=/dev/ttyAML1"
@@ -81,6 +73,12 @@ docker run --privileged --rm tonistiigi/binfmt --install all
 
 # Prune and remove everything
 ```bash
+# delete all containers including its volumes use
+docker rm -vf $(docker ps -aq)
+# delete all the images
+docker rmi -f $(docker images -aq)
+# delete everything
+docker system prune -a --volumes
 ```
 
 # Store docker images on another volume

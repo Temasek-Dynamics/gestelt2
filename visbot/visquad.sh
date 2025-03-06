@@ -25,7 +25,7 @@ do
   then
           break;
   fi
-  sleep 2
+  sleep 1
 done
 
 index=0
@@ -51,12 +51,11 @@ if [[ -d "$LOGDIR/latest" ]]; then
 fi
 ln -s $LOGCUR $LOGDIR/latest
 
+#echo "stereocam, imu, vins log lacated at $LOGCUR" 
+#sleep 5
 
-echo "stereocam, imu, vins log lacated at $LOGCUR" 
-sleep 5
-
-export MASTER_IP=10.42.0.45
-export SELF_IP=10.42.0.45
+export MASTER_IP=10.42.0.37
+export SELF_IP=10.42.0.37
 
 export ROS_MASTER_URI=http://$MASTER_IP:11311
 export ROS_HOSTNAME=$SELF_IP
@@ -68,20 +67,26 @@ source /home/visbot/ros1_ws/devel/setup.bash
 
 echo starting roscore
 roscore & 
-sleep 2
+sleep 8
+
+echo roslaunch ros_zmq ros_zmq.launch
+roslaunch ros_zmq ros_zmq.launch > $LOGCUR/ros_zmq.log 2>&1  &
+sleep 1
 
 echo roslaunch stereo_cam stereo_cam.launch 
 roslaunch stereo_cam stereo_cam_itof.launch > $LOGCUR/stereo_cam.log 2>&1  &
-sleep 2
+sleep 1
 
-echo roslaunch vins stereo.launch
-roslaunch vins stereo.launch > $LOGCUR/vins.log 2>&1 &
-sleep 6
+#echo roslaunch vins stereo.launch
+#roslaunch vins stereo.launch > $LOGCUR/vins.log 2>&1 &
+#sleep 1
 
 echo roslaunch visbot_itof visbot_itof.launch
 roslaunch visbot_itof visbot_itof.launch > $LOGCUR/itof.log 2>&1  &
-sleep 2
+sleep 1
 
-#echo roslaunch ros_zmq ros_zmq.launch
-#roslaunch ros_zmq ros_zmq.launch > $LOGCUR/ros_zmq.log 2>&1  &
-#sleep 2
+echo roslaunch vins stereo.launch
+roslaunch vins stereo.launch > $LOGCUR/vins.log 2>&1 &
+sleep 5
+
+rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f /home/visbot/bin/restart.msg

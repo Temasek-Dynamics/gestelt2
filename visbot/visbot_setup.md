@@ -4,20 +4,23 @@
 1. Change hostname
 2. Change IP address through network manager for wifi network.
 3. Update .bashrc to reflect correct IP address and drone ID
-4. Update "~/ros_ws/install/share/visbot_itof/launch/visbot_itof.launch"
+4. Update ~/ros_ws/install/share/visbot_itof/launch/visbot_itof.launch
 5. Copy updated "gestelt_startup.sh" script
 6. Mount docker images onto removable SSD 
   - Format as EXT4 (For use with Linux systems) 
   - Set custom mount path
 7. Git pull and update ROS1 packages and configs 
   - Update "pcl_frame_id" and "minimum_points_per_voxel"
+    - vim ~/ros1_ws/src/ros_zmq/launch/ros_zmq.launch
   - catkin_make
-
+8. Update "~/bin/visquad.sh" with correct ip address
 
 # Subsequent setups
-1. Ensure docker image is up to date
-2. 
-
+1. Make sure hostname is correct
+2. Update .bashrc
+3. Ensure docker image is up to date
+4. Copy startup script "gestelt_startup.sh" over
+5. Update and build ROS1 packages
 
 # Install dependencies
 1. Install packages

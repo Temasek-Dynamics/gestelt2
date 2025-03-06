@@ -127,20 +127,25 @@ source /home/visbot/ros1_ws/devel/setup.bash
 #export FASTRTPS_DEFAULT_PROFILES_FILE=~/fastdds_config.xml
 
 # ROS1 IP
-export MASTER_IP=10.42.0.45
-export SELF_IP=10.42.0.45
+export MASTER_IP=10.42.0.34
+export SELF_IP=10.42.0.34
 
 export ROS_MASTER_URI=http://$MASTER_IP:11311
 export ROS_HOSTNAME=$SELF_IP
 export ROS_IP=$SELF_IP
+
+alias MASTER_START="./gestelt_startup.sh -i 0"
+alias VICON_START="./gestelt_startup_vicon.sh -i 0"
 
 # Shortcuts
 alias killbill="sudo killall roslaunch; sudo killall -9 roscore; sudo killall -9 rosmaster; tmux kill-server;"
 alias kill_all_containers="docker stop $(docker ps -a -q)"
 
 # Gestelt commands
-alias enter_gestelt="docker exec -it ros2_container /ros_entrypoint.sh bash" 
+alias update_gestelt="docker pull gestelt/mavoro_arm64:devel"
+alias enter_gestelt="docker exec -it ros2_container /ros_entrypoint.sh bash"
 alias dbg_gestelt="docker run --name ros2_container --ipc=host -it --platform linux/arm64 --privileged --network host --mount type=bind,src=/tmp,dst=/tmp gestelt/mavoro_arm64:devel"
+alias compile_bridge_gestelt="docker run --name ros2_container -it --platform linux/arm64 --privileged --ipc=host --network host --mount type=bind,src=/opt/ros/noetic,dst=/opt/ros/noetic gestelt/mavoro_arm64:devel"
 alias stop_gestelt="docker stop ros2_container"
 alias rm_gestelt="docker rm ros2_container"
 alias save_gestelt="docker commit ros2_container gestelt/mavoro_arm64:devel"
@@ -157,6 +162,3 @@ alias visbot_record_kill="/home/visbot/ros_ws/src/visbot_scripts/data_record/dat
 alias visbot_rosbag_record="/home/visbot/ros_ws/src/visbot_scripts/rosbag_record/rosbag_record.sh"
 alias visbot_rosbag_record_kill="/home/visbot/ros_ws/src/visbot_scripts/rosbag_record/rosbag_record_kill.sh"
 alias visbot_raw_record="/home/visbot/ros_ws/src/visbot_scripts/raw_data_record/vio_raw_data_record.sh"
-
-# RUST
-export PATH=$PATH:~/.cargo/bin/
