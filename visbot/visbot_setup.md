@@ -1,29 +1,14 @@
 # vistbot_setup (OWL 3)
 
-
-# Quick start 
-
-## GCS
-```bash
-# Drone 0
-ssh visbot@10.42.0.35
-# Drone 1
-ssh visbot@10.42.0.45
-
-# Ground control 
-~/gestelt_ws/src/gestelt2/docker/gcs_startup.sh
-```
-
-## Drones
-```bash
-# Restart NTP
-sudo service ntp stop && sudo ntpd -gq && sudo service ntp start
-
-# Start nodes
-./gestelt_startup.sh -i 0
-./gestelt_startup.sh -i 1
-```
-
+# First time setup
+1. Change hostname
+2. Change IP address through network manager for wifi network.
+3. Update .bashrc to reflect correct IP address and drone ID
+4. Update "~/ros_ws/install/share/visbot_itof/launch/visbot_itof.launch"
+5. Copy updated "gestelt_startup.sh" script
+6. Mount docker images onto removable SSD 
+  - Format as EXT4 (For use with Linux systems) 
+  - Set custom mount path
 
 # Install dependencies
 1. Install packages
@@ -53,12 +38,6 @@ sudo vim /etc/docker/daemon.json
   "data-root": "/mnt/gestelt"
 }
 sudo systemctl start docker
-```
-
-# Add to ~/.bashrc
-```bash
-alias start_gestelt="docker run -it  --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/mavoro_arm64:base"
-alias start_ros_one_broker="docker run -it --platform linux/arm64 --rm --privileged --network host  -e "DRONE_ID=0" gestelt/ros_one_broker:latest"
 ```
 
 3. configuration for auto-connect to wifi 

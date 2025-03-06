@@ -20,43 +20,59 @@ done
 #####
 # Commands
 #####
-relay_tf1=" \
+relay_tf0=" \
 ros2 run topic_tools relay /d0/tf /tf \
 "
-
-relay_tf2=" \
+relay_tf1=" \
 ros2 run topic_tools relay /d1/tf /tf \
 "
+relay_tf2=" \
+ros2 run topic_tools relay /d2/tf /tf \
+"
+relay_tf3=" \
+ros2 run topic_tools relay /d3/tf /tf \
+"
 
-relay_static_tf1=" \
+relay_static_tf0=" \
 ros2 run topic_tools relay /d0/tf_static /tf_static \
 "
-
-# Start Zenoh bridge 
-relay_static_tf2=" \
+relay_static_tf1=" \
 ros2 run topic_tools relay /d1/tf_static /tf_static \
 "
-
+relay_static_tf2=" \
+ros2 run topic_tools relay /d2/tf_static /tf_static \
+"
+relay_static_tf3=" \
+ros2 run topic_tools relay /d3/tf_static /tf_static \
+"
 
 if [ "$SESSIONEXISTS" = "" ]
 then 
-
     tmux new-session -d -s $SESSION
 
     tmux split-window -t $SESSION:0.0 -v
-    tmux split-window -t $SESSION:0.1 -h
     tmux split-window -t $SESSION:0.0 -h
+    tmux split-window -t $SESSION:0.2 -v
     tmux split-window -t $SESSION:0.2 -h
-    tmux split-window -t $SESSION:0.0 -h
+    tmux split-window -t $SESSION:0.4 -h
+    tmux split-window -t $SESSION:0.1 -v
+    tmux split-window -t $SESSION:0.0 -v
 
-    tmux send-keys -t $SESSION:0.0 "$relay_tf1" C-m 
+    tmux send-keys -t $SESSION:0.0 "$relay_tf0" C-m 
+    sleep 1
+    tmux send-keys -t $SESSION:0.1 "$relay_tf1" C-m 
     sleep 1
     tmux send-keys -t $SESSION:0.2 "$relay_tf2" C-m 
     sleep 1
-    # ROS1 bridge needs to start a while after ROS1 nodes as ROS1_NODES script will terminate ros1 nodes at the start
-    tmux send-keys -t $SESSION:0.1 "$relay_static_tf1" C-m 
+    tmux send-keys -t $SESSION:0.3 "$relay_tf3" C-m 
     sleep 1
-    tmux send-keys -t $SESSION:0.3 "$relay_static_tf2" C-m
+    tmux send-keys -t $SESSION:0.4 "$relay_static_tf0" C-m 
+    sleep 1
+    tmux send-keys -t $SESSION:0.5 "$relay_static_tf1" C-m 
+    sleep 1
+    tmux send-keys -t $SESSION:0.6 "$relay_static_tf2" C-m 
+    sleep 1
+    tmux send-keys -t $SESSION:0.7 "$relay_static_tf3" C-m
 fi
 
 # Attach session on the first window
