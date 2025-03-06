@@ -9,6 +9,15 @@
 6. Mount docker images onto removable SSD 
   - Format as EXT4 (For use with Linux systems) 
   - Set custom mount path
+7. Git pull and update ROS1 packages and configs 
+  - Update "pcl_frame_id" and "minimum_points_per_voxel"
+  - catkin_make
+
+
+# Subsequent setups
+1. Ensure docker image is up to date
+2. 
+
 
 # Install dependencies
 1. Install packages
@@ -79,30 +88,6 @@ https://bitbucket.org/nusuav/ros2_zmq/src/master/
 1. `/vins_estimator/point_cloud`
 4. `/visbot_itof/depth`: Only for OWL3. Ensure the depth image is being published around 10 Hz.
 
-# Restart NTP 
-```bash
-sudo service ntp stop
-sudo ntpd -gq
-sudo service ntp start
-```
-
-## Restore image on Visbot
-- Get a live OS image from (Ubuntu 20.04.3 LTS (Focal Fossa) Daily Build)[https://ftpmirror.your.org/pub/ubuntu/cdimage/focal/daily-live/20211219/HEADER.html]
-  - Mount it onto a portable disk
-
-- Identify the partition, an example being `/dev/mmcblk0p7`
-
-- To back-up partition to image
-```bash
-# Make sure partition is un-mounted first! 
-dd if=/dev/mmcblk0p7 of=./IMAGE_NAME.image
-```
-
-- To restore image to partition
-```bash
-dd if=./IMAGE_NAME.image of=/dev/mmcblk0p7
-```
-
 ## Communications
 
 Drone 6 IP: 
@@ -161,4 +146,10 @@ ros2 param set navigator_0 voxel_map.occ_map.clamp_max_log 0.90
 ros2 param set navigator_0 voxel_map.occ_map.occupancy_threshold_log 0.65
 
 ros2 param set navigator_0 voxel_map.occ_map.static_inflation 0.1
+```
+
+# Mounting for compiling ROS2 ZMQ Bridge
+```
+docker run --name ros2_container -it --platform linux/arm64 --privileged --ipc=host --network host --mount type=bind,src=/opt/ros/noetic,dst=/opt/ros/noetic gestelt/mavoro_arm64:base
+colcon build --symlink-install --packages-select ros2_zmq
 ```
