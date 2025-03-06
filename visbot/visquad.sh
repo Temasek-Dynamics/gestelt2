@@ -67,7 +67,7 @@ source /home/visbot/ros1_ws/devel/setup.bash
 
 echo starting roscore
 roscore & 
-sleep 8
+sleep 10
 
 echo roslaunch ros_zmq ros_zmq.launch
 roslaunch ros_zmq ros_zmq.launch > $LOGCUR/ros_zmq.log 2>&1  &
@@ -87,6 +87,6 @@ sleep 1
 
 echo roslaunch vins stereo.launch
 roslaunch vins stereo.launch > $LOGCUR/vins.log 2>&1 &
-sleep 5
+sleep 1
 
 rostopic pub -1 /vins_estimator/vins_restart geometry_msgs/PoseStamped -f /home/visbot/bin/restart.msg
