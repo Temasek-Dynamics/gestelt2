@@ -166,7 +166,7 @@ class Mission(Node):
         self.get_logger().info(f"Waiting for required state: {req_state} ...")
                     
         return True
-
+    
     def cmdAllDronesPub(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones using publisher
 
@@ -198,8 +198,9 @@ class Mission(Node):
         msg.value = value
         msg.mode = mode
 
-        for uav_cmd_pub in self.all_uav_cmd_pubs:
-            uav_cmd_pub.publish(msg)
+        for i in range(3):
+            for uav_cmd_pub in self.all_uav_cmd_pubs:
+                uav_cmd_pub.publish(msg)
 
         self.get_logger().info(f"Commanded all drones via 'dx/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 

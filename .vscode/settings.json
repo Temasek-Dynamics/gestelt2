@@ -100,5 +100,6 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "numericaldiff": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "/home/john/gestelt_ws/src/gestelt2/swarm_tools/swarm_collision_checker"
 }
