@@ -57,7 +57,7 @@
       [3.0, 0.15, 1.2]
     ]
   },
-  "start_3d": {
+  "start_3d_obs": {
     "description": "Spawning configs for 3 agents",
     "map": "empty_20x20",
     "num_agents": 3,
@@ -74,7 +74,7 @@
       [0.0, 15.0, 1.2]
     ]
   },
-  "goals_3d_0": {
+  "goals_3d_0_obs": {
     "description": "First set of goals for 3 agents",
     "map": "empty_20x20",
     "num_agents": 3,
@@ -91,7 +91,7 @@
       [0.0, 15.0, 1.2]
     ]
   },
-  "goals_3d_1": {
+  "goals_3d_1_obs": {
     "description": "Second set of goals for 3 agents",
     "map": "empty_20x20",
     "num_agents": 3,
@@ -108,7 +108,7 @@
       [0.15, 3.0, 1.2]
     ]
   },
-  "start_4d_vicon": {
+  "start_4d_empty": {
     "description": "Spawning configs for 4 agents",
     "map": "empty_20x20",
     "num_agents": 4,
@@ -127,7 +127,7 @@
       [0.15, 2.0, 0.8]
     ]
   },
-  "goals_4d_0_vicon": {
+  "goals_4d_0_empty": {
     "description": "First set of goals for 4 agents",
     "map": "empty_20x20",
     "num_agents": 4,
@@ -146,7 +146,7 @@
       [0.15, 2.0, 0.8]
     ]
   },
-  "goals_4d_1_vicon": {
+  "goals_4d_1_empty": {
     "description": "Second set of goals for 4 agents",
     "map": "empty_20x20",
     "num_agents": 4,
@@ -165,7 +165,7 @@
       [-0.15, -2.0, 0.8]
     ]
   },
-  "start_4d": {
+  "start_4d_obs": {
     "description": "Spawning configs for 4 agents",
     "map": "empty_20x20",
     "num_agents": 4,
@@ -174,36 +174,36 @@
     "spawns_pos": [
       [-3.0, 0.0, 0.0],
       [3.0, 0.0, 3.14159],
-      [0.0, 3.0, -1.57],
-      [0.0, -3.0, 1.57]
+      [0.0, -6.0, -1.57],
+      [0.0, 15.0, 1.57]
     ],
     "goals_pos": [
       [3.0, 0.15, 1.2],
       [-3.0, -0.15, 1.2],
-      [-0.15, -3.0, 1.2],
-      [0.15, 3.0, 1.2]
+      [0.15, 15.0, 1.2],
+      [-0.15, -6.0, 1.2]
     ]
   },
-  "goals_4d_0": {
+  "goals_4d_0_obs": {
     "description": "First set of goals for 4 agents",
     "map": "empty_20x20",
     "num_agents": 4,
     "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
-      [-3.0, -0.15, 1.2],
-      [3.0, 0.15, 1.2],
-      [0.15, 3.0, 1.2],
-      [-0.15, -3.0, 1.2]
+      [-3.0, 0.0, 1.2],
+      [3.0, 0.0, 1.2],
+      [-0.15, -6.0, 1.2],
+      [0.15, 15.0, 1.2]
     ],
     "goals_pos": [
       [3.0, 0.15, 1.2],
       [-3.0, -0.15, 1.2],
-      [-0.15, -3.0, 1.2],
-      [0.15, 3.0, 1.2]
+      [0.15, 15.0, 1.2],
+      [-0.15, -6.0, 1.2]
     ]
   },
-  "goals_4d_1": {
+  "goals_4d_1_obs": {
     "description": "Second set of goals for 4 agents",
     "map": "empty_20x20",
     "num_agents": 4,
@@ -212,14 +212,14 @@
     "spawns_pos": [
       [3.0, 0.15, 1.2],
       [-3.0, -0.15, 1.2],
-      [-0.15, -3.0, 1.2],
-      [0.15, 3.0, 1.2]
+      [0.15, 15.0, 1.2],
+      [-0.15, -6.0, 1.2]
     ],
     "goals_pos": [
-      [-3.0, -0.15, 1.2],
-      [3.0, 0.15, 1.2],
-      [0.15, 3.0, 1.2],
-      [-0.15, -3.0, 1.2]
+      [-3.0, 0.0, 1.2],
+      [3.0, 0.0, 1.2],
+      [-0.15, -6.0, 1.2],
+      [0.15, 15.0, 1.2]
     ]
   }
 }

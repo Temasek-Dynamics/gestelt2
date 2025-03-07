@@ -3,7 +3,7 @@
     navigator:
 
       planner: 
-        verbose_print: true  # If enabled, print debug information such as runtime 
+        verbose_print: false  # If enabled, print debug information such as runtime 
         plan_once: false       # Only plan once
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
         t_unit: 0.1           # [s] Duration of each time unit           
@@ -36,9 +36,9 @@
         # max_height_cm:    200   # [cm] Maximum slice height
         # z_sep_cm:  50    # [cm] Separation between slices
         min_height_cm:    60    # [cm] Minimum slice height
-        max_height_cm:    280   # [cm] Maximum slice height
+        max_height_cm:    260   # [cm] Maximum slice height
         z_sep_cm:  10    # [cm] Separation between slices
-        sample_thickness: 0.75 # [m] Height above and below to sample for obstacles for each slice. For example, 0.5m means 0.25m top and 0.25m bottom
+        sample_thickness: 0.55 # [m] Height above and below to sample for obstacles for each slice. For example, 0.5m means 0.25m top and 0.25m bottom
       mpc:
         ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
         ref_path_samp_interval: 1
