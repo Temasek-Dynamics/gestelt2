@@ -21,8 +21,6 @@ Panels:
         - /d01/front_end1/fe_plan_req1/Topic1
         - /d01/front_end1//fe_plan/viz1/Topic1
         - /d01/maps1/local_map/bounds1/Topic1
-        - /d11
-        - /d31
       Splitter Ratio: 0.5941176414489746
     Tree Height: 707
   - Class: rviz_common/Selection
@@ -43,7 +41,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: 3d_occ_map
+    SyncSource: cloud
 Visualization Manager:
   Class: ""
   Displays:
@@ -1241,7 +1239,7 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: FlatColor
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
           Max Intensity: 4096
@@ -1261,7 +1259,7 @@ Visualization Manager:
             Value: /d0/visbot_itof/point_cloud
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
         - Alpha: 0.15000000596046448
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -1377,7 +1375,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3070,7 +3068,7 @@ Visualization Manager:
       Name: d3
   Enabled: true
   Global Options:
-    Background Color: 0; 0; 0
+    Background Color: 255; 255; 255
     Fixed Frame: map
     Frame Rate: 30
   Name: root
@@ -3114,7 +3112,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 16.046875
+      Distance: 4.971467971801758
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -3129,10 +3127,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.42979753017425537
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 1.6273853778839111
+      Yaw: 1.5123854875564575
     Saved: ~
 Window Geometry:
   Displays:

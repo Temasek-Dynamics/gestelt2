@@ -68,7 +68,7 @@ then
     tmux send-keys -t $SESSION:0.0 "$ROS2_NODES" C-m 
     tmux send-keys -t $SESSION:0.1 "sleep 1 && $ZENOH_BRIDGE" C-m
     tmux send-keys -t $SESSION:0.2 "sleep 1 && $ROS2_TO_ROS1_BRIDGE" C-m
-    tmux send-keys -t $SESSION:0.3 "sleep 15 && $ROS1_NODES" C-m 
+    tmux send-keys -t $SESSION:0.3 "sleep 5 && $ROS1_NODES" C-m 
     # ROS1 bridge needs to start a while after ROS1 nodes as ROS1_NODES script will terminate ros1 nodes at the start
     # tmux send-keys -t $SESSION:0.4 "sleep 25 && $ROS1_TO_ROS2_BRIDGE" C-m 
     # tmux send-keys -t $SESSION:0.5 "sleep 16 &&  $RESTART_VINS" C-m
