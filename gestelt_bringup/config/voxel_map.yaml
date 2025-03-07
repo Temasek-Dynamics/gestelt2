@@ -35,7 +35,7 @@
         occupancy_threshold_log: 0.5 # 
 
         resolution: 0.1   # [m] Resolution of voxel
-        static_inflation: 0.2    # [m] Static obstacle inflation
+        static_inflation: 0.3    # [m] Static obstacle inflation
         ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
         # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
         max_range: 5.0   # [m] Maximum range of sensor
