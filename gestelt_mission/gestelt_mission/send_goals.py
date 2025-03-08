@@ -22,7 +22,7 @@ def main(args=None):
         #########
         mission.cmdAllDronesPub(
             UAVCommand.Request.COMMAND_START_MISSION, 
-            UAVState.HOVERING,
+            None,
             mode=0)
         mission.get_logger().info("All drones switching to MISSION MODE")
 
