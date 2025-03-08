@@ -59,19 +59,12 @@ then
     tmux split-window -t $SESSION:0.0 -v
 
     tmux send-keys -t $SESSION:0.0 "$relay_tf0" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.1 "$relay_tf1" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.2 "$relay_tf2" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.3 "$relay_tf3" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.4 "$relay_static_tf0" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.5 "$relay_static_tf1" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.6 "$relay_static_tf2" C-m 
-    sleep 1
     tmux send-keys -t $SESSION:0.7 "$relay_static_tf3" C-m
 fi
 

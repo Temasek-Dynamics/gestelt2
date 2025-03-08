@@ -46,7 +46,7 @@
 
       # Noise filter by checking clusters
       noise_search_radius: 0.17  # Radius to search for neighbouring points
-      noise_min_neighbors: 2 # Minimum number of neighbors within 'search_radius' to be a valid point
+      noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point
 
       # collision_check: # For visualizing collision with static obstacles
       #   enable: false    # Enable checking of collisions

@@ -134,8 +134,12 @@ export ROS_MASTER_URI=http://$MASTER_IP:11311
 export ROS_HOSTNAME=$SELF_IP
 export ROS_IP=$SELF_IP
 
-alias MASTER_START="./gestelt_startup.sh -i 0"
-alias VICON_START="./gestelt_startup_vicon.sh -i 0"
+export DRONE_ID=0
+
+alias START_EMPTY_4="./gestelt_startup.sh -i $DRONE_ID -s start_4d_empty"
+alias START_OBS_3="./gestelt_startup.sh -i $DRONE_ID -s start_3d_obs"
+alias START_OBS_4="./gestelt_startup.sh -i $DRONE_ID -s start_4d_obs"
+
 
 # Shortcuts
 alias killbill="sudo killall roslaunch; sudo killall -9 roscore; sudo killall -9 rosmaster; tmux kill-server;"
