@@ -197,7 +197,7 @@ inline bool MavrosHandler::toggleOffboardMode(bool toggle)
   auto set_mode_req = std::make_shared<mavros_msgs::srv::SetMode::Request>();
   set_mode_req->custom_mode = toggle ? "OFFBOARD" : "AUTO.LOITER"; 
 
-  rclcpp::Rate srv_loop_rate(2.0);
+  rclcpp::Rate srv_loop_rate(1.0);
   rclcpp::Rate cmd_loop_rate(15.0);
 
   // send a few setpoints before starting

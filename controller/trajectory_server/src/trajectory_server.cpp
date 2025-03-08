@@ -387,7 +387,7 @@ void TrajectoryServer::setOffboardTimerCB()
 
 void TrajectoryServer::pubCtrlTimerCB()
 {
-	static double take_off_hover_T = 1.0 / 5.0; // Take off and landing period
+	static double take_off_hover_T = 1.0 / 15.0; // Take off and landing period
 	static double estop_T = 1.0 / 50.0;			// EStop period
 
 	// Check all states
