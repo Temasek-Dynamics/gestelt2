@@ -140,7 +140,6 @@ alias START_EMPTY_4="./gestelt_startup.sh -i $DRONE_ID -s start_4d_empty"
 alias START_OBS_3="./gestelt_startup.sh -i $DRONE_ID -s start_3d_obs"
 alias START_OBS_4="./gestelt_startup.sh -i $DRONE_ID -s start_4d_obs"
 
-
 # Shortcuts
 alias killbill="sudo killall roslaunch; sudo killall -9 roscore; sudo killall -9 rosmaster; tmux kill-server;"
 alias kill_all_containers="docker stop $(docker ps -a -q)"
