@@ -38,7 +38,7 @@ TrajectoryServer::TrajectoryServer()
 
 	geofence_ = std::make_unique<Geofence>(logger_);
 
-	initParams();
+	getParams();
 
 	// start UAV state machine
 	fsm_list::start();
@@ -72,7 +72,7 @@ void TrajectoryServer::init()
 	logger_->logInfo("Initialized");
 }
 
-void TrajectoryServer::initParams()
+void TrajectoryServer::getParams()
 {
 	/**
 	 * Declare params
@@ -387,9 +387,6 @@ void TrajectoryServer::setOffboardTimerCB()
 
 void TrajectoryServer::pubCtrlTimerCB()
 {
-	static double take_off_hover_T = 1.0 / 15.0; // Take off and landing period
-	static double estop_T = 1.0 / 50.0;			// EStop period
-
 	// Check all states
 	if (UAV::is_in_state<Unconnected>())
 	{
@@ -401,6 +398,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<Landing>())
 	{
+		// Do nothing
 	}
 	else if (UAV::is_in_state<TakingOff>())
 	{
@@ -409,25 +407,13 @@ void TrajectoryServer::pubCtrlTimerCB()
 		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
 			cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
 
-		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T)
-		{
-			mavros_handler_->execTakeOff(pos_enu_corr, cmd_yaw_yawrate_);
-
-			last_cmd_pub_t_ = this->get_clock()->now().seconds();
-		}
+		mavros_handler_->execTakeOff(pos_enu_corr, cmd_yaw_yawrate_);
 	}
 	else if (UAV::is_in_state<Hovering>())
 	{
 		// Adjust for ground height
 		Eigen::Vector3d pos_enu_corr = Eigen::Vector3d(
 			cmd_pos_enu_(0), cmd_pos_enu_(1), cmd_pos_enu_(2) + ground_height_); // Adjust for ground height
-
-		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T)
-		{
-			mavros_handler_->execHover(pos_enu_corr, cmd_yaw_yawrate_);
-
-			last_cmd_pub_t_ = this->get_clock()->now().seconds();
-		}
 	}
 	else if (UAV::is_in_state<Mission>())
 	{
@@ -446,12 +432,6 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<EmergencyStop>())
 	{
-		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > estop_T)
-		{
-
-
-			last_cmd_pub_t_ = this->get_clock()->now().seconds();
-		}
 	}
 	else
 	{

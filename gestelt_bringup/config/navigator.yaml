@@ -3,10 +3,8 @@
     navigator:
 
       planner: 
-        verbose_print: false  # If enabled, print debug information such as runtime 
-        plan_once: false       # Only plan once
+        print_runtime: false  # If enabled, print debug information such as runtime 
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
-        t_unit: 0.1           # [s] Duration of each time unit           
         min_sqr_dist_obs: 0  # Minimum squared distnace to obstacle to be considered a free cell
         max_iterations: 99999 # Max number of allowed iterations
         tie_breaker: 1.001

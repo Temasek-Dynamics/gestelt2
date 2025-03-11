@@ -170,7 +170,7 @@
     "map": "empty_20x20",
     "num_agents": 4,
     "take_off_height": 1.1,
-    "send_goals": false,
+    "send_goals": true,
     "spawns_pos": [
       [-3.0, 0.0, 0.0],
       [3.0, 0.0, 3.14159],

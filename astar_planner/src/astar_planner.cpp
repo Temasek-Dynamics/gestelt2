@@ -1,0 +1,189 @@
+#include "astar_planner/astar_planner.hpp"
+
+#include <chrono>
+
+using namespace std::chrono_literals;
+using namespace std::chrono; // NOLINT
+using nav2_util::declare_parameter_if_not_declared;
+
+namespace astar_planner
+{
+
+AStarPlanner::AStarPlanner()
+    : tf_(nullptr), costmap_(nullptr)
+{
+}
+
+AStarPlanner::~AStarPlanner()
+{
+  RCLCPP_INFO(
+      logger_, "Destroying plugin %s of type AStarPlanner",
+      name_.c_str());
+}
+
+void
+AStarPlanner::configure(
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr &parent,
+    std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
+    std::shared_ptr<Bonxai::ProbabilisticMap> occ_map)
+{
+  tf_ = tf;
+  name_ = name;
+
+  global_frame_ = occ_map->getGlobalFrameID();
+
+  node_ = parent;
+  auto node = parent.lock();
+  clock_ = node->get_clock();
+  logger_ = node->get_logger();
+
+  RCLCPP_INFO(
+      logger_, "Configuring plugin %s of type AStarPlanner",
+      name_.c_str());
+
+  // Initialize parameters
+  // Declare this plugin's parameters
+  declare_parameter_if_not_declared(node, name + ".print_runtime", rclcpp::ParameterValue(false));
+  node->get_parameter(name + ".print_runtime", print_runtime_);
+  declare_parameter_if_not_declared(node, name + ".tolerance", rclcpp::ParameterValue(0.5));
+  node->get_parameter(name + ".tolerance", tolerance_);
+  declare_parameter_if_not_declared(node, name + ".max_iterations", rclcpp::ParameterValue(99999));
+  node->get_parameter(name + ".max_iterations", max_iterations_);
+  declare_parameter_if_not_declared(node, name + ".tie_breaker", rclcpp::ParameterValue(1.001));
+  node->get_parameter(name + ".tie_breaker", tie_breaker_);
+  declare_parameter_if_not_declared(node, name + ".cost_function_type", rclcpp::ParameterValue(2));
+  node->get_parameter(name + ".cost_function_type", cost_function_type_);
+
+  // Create a planner based on the new costmap size
+  planner_ = std::make_unique<AStar>();
+}
+
+void
+AStarPlanner::activate()
+{
+  RCLCPP_INFO(
+      logger_, "Activating plugin %s of type AStarPlanner",
+      name_.c_str());
+  // Add callback for dynamic parameters
+  auto node = node_.lock();
+  dyn_params_handler_ = node->add_on_set_parameters_callback(
+      std::bind(&AStarPlanner::dynamicParametersCallback, this, _1));
+}
+
+void
+AStarPlanner::deactivate()
+{
+  RCLCPP_INFO(
+      logger_, "Deactivating plugin %s of type AStarPlanner",
+      name_.c_str());
+  auto node = node_.lock();
+  if (dyn_params_handler_ && node)
+  {
+    node->remove_on_set_parameters_callback(dyn_params_handler_.get());
+  }
+  dyn_params_handler_.reset();
+}
+
+void
+AStarPlanner::cleanup()
+{
+  RCLCPP_INFO(
+      logger_, "Cleaning up plugin %s of type AStarPlanner",
+      name_.c_str());
+  planner_.reset();
+}
+
+nav_msgs::msg::Path AStarPlanner::createPlan(
+    const Eigen::Vector3d &start,
+    const Eigen::Vector3d &goal,
+    std::function<bool()> cancel_checker)
+{
+
+  // Search takes place in index space. So we first convert 3d real world positions into indices
+  if (!occ_map_->inGlobalMap(start))
+  {
+    throw nav2_core::StartOutsideMapBounds(
+        "Start Coordinates of(" + std::to_string(start(0)) + ", " +
+        std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
+  }
+
+  if (!occ_map_->inGlobalMap(goal))
+  {
+    throw nav2_core::GoalOutsideMapBounds(
+        "Goal Coordinates of(" + std::to_string(start(0)) + ", " +
+        std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
+  }
+
+  if (tolerance_ == 0 && occ_map_->isOccupied(mx_goal, my_goal))
+  {
+    throw nav2_core::GoalOccupied(
+        "Goal Coordinates of(" + std::to_string(goal.pose.position.x) + ", " +
+        std::to_string(goal.pose.position.y) + ") was in lethal cost");
+  }
+
+  nav_msgs::msg::Path path;
+
+  if (!makePlan(start, goal, tolerance_, cancel_checker, path))
+  {
+    throw nav2_core::NoValidPathCouldBeFound(
+        "Failed to create plan with tolerance of: " + std::to_string(tolerance_));
+  }
+}
+
+bool
+AStarPlanner::makePlan(
+    const geometry_msgs::msg::Pose &start,
+    const geometry_msgs::msg::Pose &goal, double tolerance,
+    std::function<bool()> cancel_checker,
+    nav_msgs::msg::Path &plan)
+{
+  // clear the plan, just in case
+  plan.poses.clear();
+
+  plan.header.stamp = clock_->now();
+  plan.header.frame_id = global_frame_;
+
+  Eigen::Vector3d map_start, map_goal;
+
+  occ_map_->worldToMap(start, map_start);
+  occ_map_->worldToMap(goal, map_goal);
+
+  // clear the starting cell within the costmap because we know it can't be an obstacle
+  // clearRobotCell(map_start);
+
+  std::unique_lock<gestelt_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
+
+  planner_->setCostMap(occ_map_);
+
+  lock.unlock();
+
+  planner_->setStart(map_goal);
+  planner_->setGoal(map_start);
+
+  int path_len = planner_->computePath(max_iterations_);
+  if (path_len == 0) {
+    return false;
+  }
+
+  planned_path = planner_->getPath();
+
+  for (int i = path_len - 1; i >= 0; --i) {
+    Eigen::Vector3d planned_pos;
+    occ_map_->mapToWorld(planned_path[i], planned_pos);
+
+    pose.pose.position.x = planned_pos(0);
+    pose.pose.position.y = planned_pos(1);
+    pose.pose.position.z = planned_pos(2);
+
+    pose.pose.orientation.x = 0.0;
+    pose.pose.orientation.y = 0.0;
+    pose.pose.orientation.z = 0.0;
+    pose.pose.orientation.w = 1.0;
+
+    plan.poses.push_back(pose);
+  }
+
+  return !plan.poses.empty();
+}
+
+};

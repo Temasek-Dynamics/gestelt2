@@ -95,8 +95,6 @@ namespace voxel_map
     double max_range; // Max sensor range
 
     /* visualization and computation time display */
-    double ground_height_; // Lowest possible height (z-axis)
-
     std::string global_map_frame; // frame id of global map reference 
     std::string local_map_frame; // frame id of UAV origin 
     std::string camera_frame; // frame id of camera link
@@ -120,38 +118,18 @@ namespace voxel_map
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-  /* Boolean map structure used by planner*/
-  struct BoolMap3D {  
-    int z_sep_cm{-1};   // [cm] Separation between slice layers
-    int min_height_cm{-1};     // [cm] Lowest slice height
-    int max_height_cm{-1};     // [cm] Highest slice height
-
-    double z_sep_m{-1.0}; // [m] separation between slice layers
-    double min_height_m{-1.0};   // [m] Lowest slice height
-    double max_height_m{-1.0};   // [m] Highest slice height
-
-    Eigen::Vector3d origin{0.0, 0.0, 0.0}; // [m] Origin of local map
-
-    int width{-1};            // [] Number of width cells 
-    int height{-1};           // [] Number of height cells
-    double resolution{-1.0};    // [cm] Resolution of map
-
-    std::map<int, std::vector<bool>> bool_maps; // Map of BoolMap objects
-  };
-
-class VoxelMap
+class OccMap : public nav2_util::LifecycleNode
 {
-public: 
-  // Custom type definition for message filters
-  using SyncPolicyCloudOdom = message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, nav_msgs::msg::Odometry>;
-  using SynchronizerCloudOdom =  std::shared_ptr<message_filters::Synchronizer<SyncPolicyCloudOdom>>;
-
-  // Custom type definition for Bonxai
-  using BonxaiT = Bonxai::ProbabilisticMap;
-
 public:
 
   /** Initialization methods */
+  /**
+   * @brief  Constructor for the wrapper
+   * @param options Additional options to control creation of the node.
+   */
+  explicit OccMap(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+
+  explicit 
 
   /**
    * @brief Construct a new Voxel Map object
@@ -160,18 +138,18 @@ public:
    * @param map_origin Only used for debugging with full point cloud map
    * @param num_drones 
    */
-  VoxelMap(rclcpp::Node::SharedPtr node, 
+  OccMap(rclcpp::Node::SharedPtr node, 
             const Eigen::Vector3d& map_origin,
             const int& num_drones);
 
-  virtual ~VoxelMap();
+  virtual ~OccMap();
 
   // Reset map data
   void reset(const double& resolution);
 
   void init();
 
-  void initParams();
+  void getParams();
 
   void initPubSubTimer();
 
@@ -224,8 +202,6 @@ public:
   // Subscriber callback to point cloud and odom
   void cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-  void odomCB(const nav_msgs::msg::Odometry::UniquePtr& msg);
-
   rcl_interfaces::msg::SetParametersResult updateParamCB(const std::vector<rclcpp::Parameter> & parameters);
 
   /*Timer Callbacks*/
@@ -273,16 +249,11 @@ public:
   Eigen::Vector3d getLocalMapMax() const;
 
   Eigen::Vector3d getLocalMapOrigin(const double& offset) const;
-  Eigen::Vector3d getLocalMapMax(const double& offset) const;
 
+  Eigen::Vector3d getLocalMapMax(const double& offset) const;
 
   // Get points in local map (in fixed map frame). Used by safe flight corridor generation
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLclObsPts();
-
-  // Get inflation value
-  double getInflation() const;
-
-  bool getBoolMap3D(BoolMap3D& bool_map_3d);
 
   // Takes in position in [global_map_frame] and check if occupied
   bool isOccupied(const Eigen::Vector3d &pos);
@@ -313,6 +284,10 @@ private:
   //                             Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb);
 
 private: 
+
+  bool is_lifecycle_follower_{true};   ///< whether is a child-LifecycleNode or an independent node
+
+
   rclcpp::Node::SharedPtr node_;
 
 	/* Callback groups */
@@ -332,15 +307,10 @@ private:
 
   double map_slicing_sample_thickness_; // [m] map slice sampling thickness
 
-  bool verbose_print_{false}; // Flag to enable printing of debug information such as timers
+  bool print_timer_{false}; // Flag to enable printing of debug information such as timers
   bool dbg_input_entire_map_{false}; // flag to indicate that map will be constructed at the start from the entire pcd map (instead of through incremental sensor data)
-  std::string entire_pcd_map_topic_; // Topic to listen for an entire PCD for debugging
 
-  bool dyn_obs_mark_in_occ_map_{false}; // flag to mark dynamic obstacles in occupancy map as occupied
   double time_vel_{0.1}; // [s] time along velocity vector to mark as occupied
-
-  bool check_collisions_{true}; // Flag for checking collisions
-  double col_warn_radius_, col_fatal_radius_; // collision check radius
 
   double viz_occ_map_freq_{-1.0}; // Frequency to publish occupancy map visualization
   double update_local_map_freq_{-1.0};  // Frequency to update local map
@@ -355,8 +325,6 @@ private:
   // std::shared_ptr<rclcpp::ParameterEventHandler> param_subscriber_;
 
   /* Subscribers */
-
-  SynchronizerCloudOdom sync_cloud_odom_; // Synchronization policy for cloud and odom topic
   
   // std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> cloud_sub_;
   // std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> odom_sub_;
@@ -386,8 +354,6 @@ private:
   /* Data structures for maps */
   MappingData md_;  // Mapping data
 
-  pcl::PointXYZ cur_pos_pt_{0.0, 0.0, 0.0};
-
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_lcl_frame_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_gbl_frame_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   
@@ -395,11 +361,8 @@ private:
 
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_in_global_frame_; // Vector of obstacle points used for sfc generation
 
-
-  std::unique_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
+  std::shared_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
   std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
-
-  BoolMap3D bool_map_3d_; // Bool map slices 
 
   std::vector<Eigen::Vector3d> swarm_poses_; // [Comm-less plannig] Pose of other agents 
   std::vector<Eigen::Vector3d> swarm_vels_; // [Comm-less plannig] Velocities of other agents 
@@ -413,9 +376,9 @@ private:
   std::mutex lcl_occ_map_mtx_;  // Mutex lock for occ_pcd_in_lcl_frame_
 
   /* Stopwatch for profiling performance */
-  // logger_wrapper::Timer tm_update_local_map_{"VoxelMap::updateLocalMap"};  // Time required for map construction
+  // logger_wrapper::Timer tm_update_local_map_{"OccMap::updateLocalMap"};  // Time required for map construction
   // logger_wrapper::Timer tm_bonxai_insert_{"bonxai::insertPointCloud"};  // Time required for map construction
-  // logger_wrapper::Timer tm_slice_map_{"VoxelMap::getMapSlice"};   // Time required to slice map
+  // logger_wrapper::Timer tm_slice_map_{"OccMap::getMapSlice"};   // Time required to slice map
 
   /* Point cloud Filters */
   pcl::PassThrough<pcl::PointXYZ> z_filter_cloud_in_;
@@ -426,7 +389,7 @@ private:
 };
 
 /* Setters */
-inline void VoxelMap::updateSwarmState(
+inline void OccMap::updateSwarmState(
   const int& id,
   Eigen::Vector3d& swarm_pose, 
   Eigen::Vector3d& swarm_vel)
@@ -437,46 +400,32 @@ inline void VoxelMap::updateSwarmState(
 
 /* Getters */
 
-inline double VoxelMap::getRes() const{ 
+inline double OccMap::getRes() const{ 
   return mp_.resolution_; }
 
-inline Eigen::Vector3d VoxelMap::getGlobalOrigin() const{ 
+inline Eigen::Vector3d OccMap::getGlobalOrigin() const{ 
   return mp_.global_map_origin_; }
 
-inline Eigen::Vector3d VoxelMap::getLocalMapOrigin() const{ 
+inline Eigen::Vector3d OccMap::getLocalMapOrigin() const{ 
   return mp_.local_map_origin_; }
 
-inline Eigen::Vector3d VoxelMap::getLocalMapMax() const{ 
+inline Eigen::Vector3d OccMap::getLocalMapMax() const{ 
   return mp_.local_map_max_; }
 
-inline Eigen::Vector3d VoxelMap::getLocalMapOrigin(const double& offset) const{ 
+inline Eigen::Vector3d OccMap::getLocalMapOrigin(const double& offset) const{ 
   return mp_.local_map_origin_ + Eigen::Vector3d::Constant(offset); }
 
-inline Eigen::Vector3d VoxelMap::getLocalMapMax(const double& offset) const{ 
+inline Eigen::Vector3d OccMap::getLocalMapMax(const double& offset) const{ 
   return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); }
 
 
-inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> VoxelMap::getLclObsPts()
+inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> OccMap::getLclObsPts()
 {
   std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
   return lcl_pts_in_global_frame_;
 }
 
-
-inline double VoxelMap::getInflation() const{ return mp_.static_inflation_; }
-
-inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
-  if (!local_map_updated_){
-    return false;
-  }
-  
-  std::lock_guard<std::mutex> bool_map_3d_guard(bool_map_3d_mtx_);
-  bool_map_3d = bool_map_3d_;
-
-  return true;
-}
-
-// inline bool VoxelMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
+// inline bool OccMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
 //                             Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb){
 //   int nearest_num_nb = 1;
 //   pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
@@ -498,11 +447,11 @@ inline bool VoxelMap::getBoolMap3D(BoolMap3D& bool_map_3d) {
 
 /* Checks */
 
-inline bool VoxelMap::isTimeout(const double& last_state_time, const double& threshold){
+inline bool OccMap::isTimeout(const double& last_state_time, const double& threshold){
   return (node_->get_clock()->now().seconds() - last_state_time) >= threshold;
 } 
 
-inline bool VoxelMap::isInGlobalMap(const Eigen::Vector3d &pos)
+inline bool OccMap::isInGlobalMap(const Eigen::Vector3d &pos)
 {
   if (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
     && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
@@ -514,7 +463,7 @@ inline bool VoxelMap::isInGlobalMap(const Eigen::Vector3d &pos)
   return false;
 }
 
-inline bool VoxelMap::isInLocalMap(const Eigen::Vector3d &pos)
+inline bool OccMap::isInLocalMap(const Eigen::Vector3d &pos)
 {
   if (pos(0) >= mp_.local_map_origin_(0)   && pos(0) < mp_.local_map_max_(0)
     && pos(1) >= mp_.local_map_origin_(1)  && pos(1) < mp_.local_map_max_(1)
@@ -526,7 +475,7 @@ inline bool VoxelMap::isInLocalMap(const Eigen::Vector3d &pos)
   return false;
 }
 
-inline bool VoxelMap::isOccupied(const Eigen::Vector3d &pos)
+inline bool OccMap::isOccupied(const Eigen::Vector3d &pos)
 {
     // If not in map or not in octree bounding box. return -1 
     if (!isInGlobalMap(pos)){

@@ -119,7 +119,7 @@ public:
 	void init();
 
 private:
-	void initParams();
+	void getParams();
 	void initPubSubTimers();
 	void initSrv();
 
@@ -239,8 +239,6 @@ private:
 
 	/* FCU interface */
 	std::unique_ptr<MavrosHandler> mavros_handler_; // Class for handling mavros stuff
-	
-	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 
 	double last_nav_heartbeat_{0.0}; // Time since last navigator heartbeat 
 }; // class TrajectoryServer

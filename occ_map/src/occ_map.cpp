@@ -23,16 +23,40 @@
  *
  ****************************************************************************/
 
-#include "voxel_map/voxel_map.hpp"
+#include "occ_map/occ_map.hpp"
 
-namespace voxel_map
+namespace occ_map
 {
 
-/** Initialization methods */
+OccMap::OccMap(const rclcpp::NodeOptions & options)
+: nav2_util::LifecycleNode("occ_map", "", options),
+  name_("occ_map")
+{
+  is_lifecycle_follower_ = false;
+  init();
+}
 
-VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node, 
-                    const Eigen::Vector3d& map_origin, 
-                    const int& num_drones) 
+OccMap::OccMap(
+  const std::string & name,
+  const std::string & parent_namespace,
+  const bool & use_sim_time)
+: nav2_util::LifecycleNode(name, "",
+    // NodeOption arguments take precedence over the ones provided on the command line
+    // use this to make sure the node is placed on the provided namespace
+    rclcpp::NodeOptions().arguments({
+    "--ros-args", "-r", std::string("__ns:=") +
+    nav2_util::add_namespaces(parent_namespace, name),
+    "--ros-args", "-r", name + ":" + std::string("__node:=") + name,
+    "--ros-args", "-p", "use_sim_time:=" + std::string(use_sim_time ? "true" : "false"),
+  })),
+  name_(name)
+{
+  init();
+}
+
+OccMap::OccMap( rclcpp::Node::SharedPtr node, 
+                const Eigen::Vector3d& map_origin, 
+                const int& num_drones) 
 : node_(node)
 {
 	// Create callback groups
@@ -51,33 +75,11 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-  initParams();
+  getParams();
 
   reset(mp_.resolution_);
 
   initPubSubTimer();
-
-  for (int i = 0; i < num_drones; i++){
-    swarm_poses_.push_back(Eigen::Vector3d::Constant(999.9));
-    swarm_vels_.push_back(Eigen::Vector3d::Constant(0.0));
-  }
-
-  if (dbg_input_entire_map_){
-    md_.cam_to_map.block<3,1>(0,3) = map_origin;
-
-    logger_->logInfo(strFmt("DEBUG: INPUT ENTIRE MAP. Waiting for point cloud on topic %s",  entire_pcd_map_topic_.c_str()));
-
-		sensor_msgs::msg::PointCloud2 pcd_map_msg;
-
-    //https://github.com/ros2/rclcpp/issues/1953
-    auto got_pcd = rclcpp::wait_for_message(pcd_map_msg, node_, entire_pcd_map_topic_, 10s);
-
-    if (!got_pcd){
-			logger_->logError(strFmt("No point cloud topic %s received. Shutting down.",  entire_pcd_map_topic_.c_str()));
-			rclcpp::shutdown();
-    }
-    pcd2MsgToMap(pcd_map_msg);
-  }
 
   // Initialize point cloud filters
   z_filter_cloud_in_.setFilterFieldName("z");
@@ -88,28 +90,91 @@ VoxelMap::VoxelMap(rclcpp::Node::SharedPtr node,
   // tm_update_local_map_.updateID(drone_id_);
   // tm_bonxai_insert_.updateID(drone_id_);
   // tm_slice_map_.updateID(drone_id_);
+}
+
+
+OccMap::~OccMap()
+{
+}
+
+
+void OccMap::init() 
+{
+  logger_->logInfo("Creating OccMap");
+  
+  /* Map parameters */
+  node_->declare_parameter("print_timer", false);
+
+  declare_parameter("update_local_map_frequency",  -1.0);
+  declare_parameter("viz_map_frequency",  -1.0);
+
+  declare_parameter("global_map.size_x", -1.0);
+  declare_parameter("global_map.size_y", -1.0);
+  declare_parameter("global_map.size_z", -1.0);
+
+  declare_parameter("local_map.size_x", -1.0);
+  declare_parameter("local_map.size_y", -1.0);
+  declare_parameter("local_map.size_z", -1.0);
+
+  /* Probabilistic map*/
+  declare_parameter("occ_map.resolution", -1.0);
+  declare_parameter("occ_map.static_inflation", -1.0);
+  declare_parameter("occ_map.max_range", -1.0);
+
+  declare_parameter("occ_map.prob_miss_log", 0.4);
+  declare_parameter("occ_map.prob_hit_log", 0.7);
+  declare_parameter("occ_map.clamp_min_log", 0.12);
+  declare_parameter("occ_map.clamp_max_log", 0.97);
+  declare_parameter("occ_map.occupancy_threshold_log", 0.5);
+
+
+  /* Passthrough filter for input point cloud */
+  declare_parameter("cloud_in_passthrough.min_z", 0.0);
+  declare_parameter("cloud_in_passthrough.max_z", 5.0);
+
+  /* Noise filter */
+  declare_parameter("noise_search_radius", 0.2);
+  declare_parameter("noise_min_neighbors", 3);
+}
+
+nav2_util::CallbackReturn
+Costmap2DROS::on_configure(const rclcpp_lifecycle::State & /*state*/)
+{
+  logger_->logInfo("Configuring");
 
 }
 
-VoxelMap::~VoxelMap(){
+nav2_util::CallbackReturn
+Costmap2DROS::on_activate(const rclcpp_lifecycle::State & /*state*/)
+{
+
 }
 
-void VoxelMap::initPubSubTimer()
+nav2_util::CallbackReturn
+Costmap2DROS::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
+{
+
+}
+
+nav2_util::CallbackReturn
+Costmap2DROS::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
+{
+
+}
+
+nav2_util::CallbackReturn
+Costmap2DROS::on_shutdown(const rclcpp_lifecycle::State &)
+{
+  
+}
+
+
+void OccMap::initPubSubTimer()
 {
   /* Initialize Subscribers */
-  if (!dbg_input_entire_map_){
-    // cloud_sub_ = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
-    //   node_, "cloud", rmw_qos_profile_sensor_data);
-    // odom_sub_ = std::make_shared<message_filters::Subscriber<nav_msgs::msg::Odometry>>(
-    //   node_, "odom", rmw_qos_profile_sensor_data);
 
-    // sync_cloud_odom_ = std::make_shared<message_filters::Synchronizer<SyncPolicyCloudOdom>>(
-    //     SyncPolicyCloudOdom(5), *cloud_sub_, *odom_sub_);
-    // sync_cloud_odom_->registerCallback(&VoxelMap::cloudOdomCB, this);
-    // sync_cloud_odom_->setAgePenalty(0.50);
-  }
   cloud_sub_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-    "cloud", rclcpp::SensorDataQoS(), std::bind(&VoxelMap::cloudCB, this, _1) );
+    "cloud", rclcpp::SensorDataQoS(), std::bind(&OccMap::cloudCB, this, _1) );
 
   /* Initialize Publishers */
 	occ_map_pub_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -120,148 +185,83 @@ void VoxelMap::initPubSubTimer()
   
   /* Initialize Subscribers */
 	reset_map_sub_ = node_->create_subscription<std_msgs::msg::Empty>(
-    "reset_map", 10, std::bind(&VoxelMap::resetMapCB, this, _1) );
-
-  odom_sub_ = node_->create_subscription<nav_msgs::msg::Odometry>(
-    "odom", rclcpp::SensorDataQoS(), std::bind(&VoxelMap::odomCB, this, _1));
+    "reset_map", 10, std::bind(&OccMap::resetMapCB, this, _1) );
 
   // Create callback
   param_cb_ = node_->add_on_set_parameters_callback(
-    std::bind(&VoxelMap::updateParamCB, this, std::placeholders::_1));
+    std::bind(&OccMap::updateParamCB, this, std::placeholders::_1));
 
   // param_subscriber_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
 
   /* Initialize ROS Timers */
 	viz_map_timer_ = node_->create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
-    std::bind(&VoxelMap::vizMapTimerCB, this), mapping_group_);
+    std::bind(&OccMap::vizMapTimerCB, this), mapping_group_);
 	update_local_map_timer_ = node_->create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
-    std::bind(&VoxelMap::updateLocalMapTimerCB, this), mapping_group_);
+    std::bind(&OccMap::updateLocalMapTimerCB, this), mapping_group_);
 	pub_lcl_map_tf_timer_ = node_->create_wall_timer((1.0/100.0) *1000ms, 
-    std::bind(&VoxelMap::pubLocalMapTFTimerCB, this), tf_broadcast_group_);
+    std::bind(&OccMap::pubLocalMapTFTimerCB, this), tf_broadcast_group_);
 
   // if (check_collisions_){ // True if we want to publish collision visualizations between the agent and static obstacles
   //   // Publisher for collision visualizations
 	//   collision_viz_pub_ = node_->create_publisher<visualization_msgs::msg::Marker>("static_collisions", 10);
-	//   check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&VoxelMap::checkCollisionsTimerCB, this));
+	//   check_collisions_timer_ = node_->create_wall_timer((1.0/check_col_freq_) *1000ms, std::bind(&OccMap::checkCollisionsTimerCB, this));
   // }
 }
 
-void VoxelMap::initParams()
+void OccMap::getParams()
 {
-  std::string param_ns = "voxel_map";
-
   /* Map parameters */
-  node_->declare_parameter(param_ns+".verbose_print", false);
+  print_timer_ = node_->declare_parameter("print_timer", false);
 
-  node_->declare_parameter(param_ns+".debug_input_entire_map", false);
-  node_->declare_parameter(param_ns+".entire_pcd_map_topic", "/fake_map");
+  /* Frame IDs */
+  mp_.global_map_frame = node_->declare_parameter("map_frame", rclcpp::ParameterValue(std::string("map")));
+  mp_.local_map_frame = node_->declare_parameter("local_map_frame", rclcpp::ParameterValue(std::string("local_map")));
+  mp_.camera_frame = node_->declare_parameter("camera_frame", rclcpp::ParameterValue(std::string("camera_link")));
+  mp_.base_link_frame = node_->declare_parameter("base_link_frame", rclcpp::ParameterValue(std::string("base_link")));
 
-  node_->declare_parameter(param_ns+".dyn_obs.mark_in_occ_map", false);
-  node_->declare_parameter(param_ns+".dyn_obs.time_vel", 0.5);
+  mp_.global_map_size_(0) = node_->declare_parameter("global_map.size_x", -1.0);
+  mp_.global_map_size_(1) = node_->declare_parameter("global_map.size_y", -1.0);
+  mp_.global_map_size_(2) = node_->declare_parameter("global_map.size_z", -1.0);
 
-  node_->declare_parameter(param_ns+".global_map.size_x", -1.0);
-  node_->declare_parameter(param_ns+".global_map.size_y", -1.0);
-  node_->declare_parameter(param_ns+".global_map.size_z", -1.0);
+  mp_.local_map_size_(0) = node_->declare_parameter("local_map.size_x", -1.0);
+  mp_.local_map_size_(1) = node_->declare_parameter("local_map.size_y", -1.0);
+  mp_.local_map_size_(2) = node_->declare_parameter("local_map.size_z", -1.0);
 
-  node_->declare_parameter(param_ns+".local_map.size_x", -1.0);
-  node_->declare_parameter(param_ns+".local_map.size_y", -1.0);
-  node_->declare_parameter(param_ns+".local_map.size_z", -1.0);
-  node_->declare_parameter(param_ns+".local_map.update_local_map_frequency",  -1.0);
-  node_->declare_parameter(param_ns+".local_map.viz_map_frequency",  -1.0);
+  update_local_map_freq_ = node_->declare_parameter("local_map.update_local_map_frequency",  -1.0);
+  viz_occ_map_freq_ = node_->declare_parameter("local_map.viz_map_frequency",  -1.0);
 
-  node_->declare_parameter(param_ns+".occ_map.resolution", -1.0);
-  node_->declare_parameter(param_ns+".occ_map.dynamic_inflation", -1.0);
-  node_->declare_parameter(param_ns+".occ_map.static_inflation", -1.0);
-  node_->declare_parameter(param_ns+".occ_map.max_range", -1.0);
-  node_->declare_parameter(param_ns+".occ_map.ground_height", 0.0);
+  mp_.resolution_ = node_->declare_parameter("occ_map.resolution", -1.0);
+  mp_.static_inflation_ = node_->declare_parameter("occ_map.static_inflation", -1.0);
+  mp_.max_range = node_->declare_parameter("occ_map.max_range", -1.0);
+
+  mp_.inf_static_vox_ = std::ceil(mp_.static_inflation_/mp_.resolution_);
 
   /* Probabilistic map*/
-
-  bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.prob_miss_log", 0.4));
-  bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.prob_hit_log", 0.7));
-  bonxai_options_.clamp_min_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.clamp_min_log", 0.12));
-  bonxai_options_.clamp_max_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.clamp_max_log", 0.97));
-  bonxai_options_.occupancy_threshold_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter(param_ns+".occ_map.occupancy_threshold_log", 0.5));
-
-  /* Collision checking*/
-  node_->declare_parameter(param_ns+".collision_check.enable",  false);
-  node_->declare_parameter(param_ns+".collision_check.warn_radius",  -1.0); 
-  node_->declare_parameter(param_ns+".collision_check.fatal_radius",  -1.0); 
-  node_->declare_parameter(param_ns+".collision_check.check_collision_frequency",  -1.0); 
+  bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter("occ_map.prob_miss_log", 0.4));
+  bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter("occ_map.prob_hit_log", 0.7));
+  bonxai_options_.clamp_min_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter("occ_map.clamp_min_log", 0.12));
+  bonxai_options_.clamp_max_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter("occ_map.clamp_max_log", 0.97));
+  bonxai_options_.occupancy_threshold_log = Bonxai::ProbabilisticMap::logods(node_->declare_parameter("occ_map.occupancy_threshold_log", 0.5));
 
   /* Noise filter */
-  noise_search_radius_ = node_->declare_parameter(param_ns+".noise_search_radius", 0.2);
-  noise_min_neighbors_ = node_->declare_parameter(param_ns+".noise_min_neighbors", 3);
+  noise_search_radius_ = node_->declare_parameter("noise_search_radius", 0.2);
+  noise_min_neighbors_ = node_->declare_parameter("noise_min_neighbors", 3);
 
   /* Passthrough filter for input point cloud */
-  cloud_in_min_z_ =  node_->declare_parameter(param_ns+".cloud_in_min_z", 0.0);
-  cloud_in_max_z_ =  node_->declare_parameter(param_ns+".cloud_in_max_z", 5.0);
+  cloud_in_min_z_ =  node_->declare_parameter("cloud_in_min_z", 0.0);
+  cloud_in_max_z_ =  node_->declare_parameter("cloud_in_max_z", 5.0);
 
 	/**
 	 * Get params
 	 */
 
   drone_id_ = node_->get_parameter("drone_id").as_int();
-
-  /* Map parameters */
-  verbose_print_ = node_->get_parameter(param_ns+".verbose_print").as_bool();
-
-  dbg_input_entire_map_ = node_->get_parameter(param_ns+".debug_input_entire_map").as_bool();
-  entire_pcd_map_topic_ = node_->get_parameter(param_ns+".entire_pcd_map_topic").as_string();
-
-  dyn_obs_mark_in_occ_map_ = node_->get_parameter(param_ns+".dyn_obs.mark_in_occ_map").as_bool();
-  time_vel_ = node_->get_parameter(param_ns+".dyn_obs.time_vel").as_double();
-
-  bool_map_3d_.min_height_cm = node_->get_parameter("navigator.map_slicing.min_height_cm").as_int();
-  bool_map_3d_.max_height_cm = node_->get_parameter("navigator.map_slicing.max_height_cm").as_int();
-  bool_map_3d_.z_sep_cm = node_->get_parameter("navigator.map_slicing.z_sep_cm").as_int();
-  map_slicing_sample_thickness_ = node_->get_parameter("navigator.map_slicing.sample_thickness").as_double();
-
-  auto cmToM = [&](const int& val_cm){ 
-    /* Convert from units of centimeters to meters*/
-    return ((double) val_cm)/100.0;  
-  };
-
-  bool_map_3d_.z_sep_m = cmToM(bool_map_3d_.z_sep_cm); 
-  bool_map_3d_.min_height_m = cmToM(bool_map_3d_.min_height_cm);  
-  bool_map_3d_.max_height_m = cmToM(bool_map_3d_.max_height_cm);   
-
-  mp_.global_map_size_(0) = node_->get_parameter(param_ns+".global_map.size_x").as_double();
-  mp_.global_map_size_(1) = node_->get_parameter(param_ns+".global_map.size_y").as_double();
-  mp_.global_map_size_(2) = node_->get_parameter(param_ns+".global_map.size_z").as_double();
-
-  mp_.local_map_size_(0) = node_->get_parameter(param_ns+".local_map.size_x").as_double();
-  mp_.local_map_size_(1) = node_->get_parameter(param_ns+".local_map.size_y").as_double();
-  mp_.local_map_size_(2) = node_->get_parameter(param_ns+".local_map.size_z").as_double();
-  update_local_map_freq_ = node_->get_parameter(param_ns+".local_map.update_local_map_frequency").as_double();
-  viz_occ_map_freq_ = node_->get_parameter(param_ns+".local_map.viz_map_frequency").as_double();
-
-  mp_.resolution_ = node_->get_parameter(param_ns+".occ_map.resolution").as_double();
-  mp_.agent_inflation_ = node_->get_parameter(param_ns+".occ_map.dynamic_inflation").as_double();
-  mp_.static_inflation_ = node_->get_parameter(param_ns+".occ_map.static_inflation").as_double();
-  mp_.max_range = node_->get_parameter(param_ns+".occ_map.max_range").as_double();
-  mp_.ground_height_ = node_->get_parameter(param_ns+".occ_map.ground_height").as_double();
-  mp_.inf_static_vox_ = std::ceil(mp_.static_inflation_/mp_.resolution_);
-  mp_.inf_dyn_vox_ = std::ceil(mp_.agent_inflation_/mp_.resolution_);
-
-  /* Frame IDs */
-  mp_.global_map_frame = node_->get_parameter("map_frame").as_string();
-  mp_.local_map_frame = node_->get_parameter("local_map_frame").as_string();
-  mp_.camera_frame = node_->get_parameter("camera_frame").as_string();
-  mp_.base_link_frame = node_->get_parameter("base_link_frame").as_string();
-
-  /* Collision checking*/
-  check_collisions_ = node_->get_parameter(param_ns+".collision_check.enable").as_bool();
-  col_warn_radius_ = node_->get_parameter(param_ns+".collision_check.warn_radius").as_double();
-  col_fatal_radius_ = node_->get_parameter(param_ns+".collision_check.fatal_radius").as_double();
-  check_col_freq_ = node_->get_parameter(param_ns+".collision_check.check_collision_frequency").as_double();
-
 }
 
-void VoxelMap::reset(const double& resolution){
+void OccMap::reset(const double& resolution){
 
   // Set up Bonxai data structure
-  bonxai_map_ = std::make_unique<BonxaiT>(resolution);
+  bonxai_map_ = std::make_unique<Bonxai::ProbabilisticMap>(resolution);
   bonxai_map_->setOptions(bonxai_options_);
   
   // Set up KDTree for collision checks
@@ -278,7 +278,7 @@ void VoxelMap::reset(const double& resolution){
   mp_.global_map_origin_ = Eigen::Vector3d(
     -mp_.global_map_size_(0) / 2.0, 
     -mp_.global_map_size_(1) / 2.0, 
-    mp_.ground_height_);
+    0.0);
 
   /* LOCAL MAP COORDINATES ARE NOT FIXED! */
   // Local map min is at a corner of the local map i.e. (uav_pos_x - local_sz_x /2, uav_pos_y - local_sz_y /2, 0), relative to the current position of the robot
@@ -300,7 +300,7 @@ void VoxelMap::reset(const double& resolution){
 
 /* Core methods */
 
-void VoxelMap::updateLocalMap(){
+void OccMap::updateLocalMap(){
 
   try {
     // map to base_link
@@ -320,18 +320,6 @@ void VoxelMap::updateLocalMap(){
     return;
   }
 
-  // // Update local map origin, which is the location of the local map origin IN the global map frame
-  // mp_.local_map_origin_ = Eigen::Vector3d(
-  //   md_.bl_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
-  //   md_.bl_to_map.block<3,1>(0,3)(1) - (mp_.local_map_size_(1) / 2.0), 
-  //   md_.bl_to_map.block<3,1>(0,3)(2) - (mp_.local_map_size_(2) / 2.0));
-
-  // // Update local map max position based on current UAV position
-  // mp_.local_map_max_ = Eigen::Vector3d(
-  //   md_.bl_to_map.block<3,1>(0,3)(0) + (mp_.local_map_size_(0) / 2.0), 
-  //   md_.bl_to_map.block<3,1>(0,3)(1) + (mp_.local_map_size_(1) / 2.0), 
-  //   md_.bl_to_map.block<3,1>(0,3)(2) + (mp_.local_map_size_(2) / 2.0));
-  
   // Update local map origin, which is the location of the local map origin IN the global map frame
   mp_.local_map_origin_ = Eigen::Vector3d(
     md_.bl_to_map.block<3,1>(0,3)(0) - (mp_.local_map_size_(0) / 2.0), 
@@ -425,7 +413,7 @@ void VoxelMap::updateLocalMap(){
   }
 }
 
-void VoxelMap::getMapSlice(const double& slice_z_cm, 
+void OccMap::getMapSlice(const double& slice_z_cm, 
   const double& thickness, std::vector<bool>& bool_map) 
 {
   if (occ_pcd_in_lcl_frame_->points.empty()){
@@ -491,7 +479,7 @@ void VoxelMap::getMapSlice(const double& slice_z_cm,
 
 /** Timer callbacks */
 
-void VoxelMap::vizMapTimerCB()
+void OccMap::vizMapTimerCB()
 {
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
@@ -501,7 +489,7 @@ void VoxelMap::vizMapTimerCB()
   publishLocalMapBounds(); // publish boundaries of local map volume
 }
 
-void VoxelMap::updateLocalMapTimerCB()
+void OccMap::updateLocalMapTimerCB()
 {
   if (isTimeout(md_.last_cloud_cb_time, 0.5)){
     logger_->logWarnThrottle(strFmt("cloud message timeout exceeded 0.5s: (%f, %f)",  
@@ -536,11 +524,11 @@ void VoxelMap::updateLocalMapTimerCB()
   }
   local_map_updated_ = true;
 
-  // tm_slice_map_.stop(verbose_print_);
+  // tm_slice_map_.stop(print_timer_);
 
 }
 
-void VoxelMap::pubLocalMapTFTimerCB()
+void OccMap::pubLocalMapTFTimerCB()
 {
   // broadcast tf link from global map frame to local map origin 
   geometry_msgs::msg::TransformStamped gbl_to_lcl_origin_tf;
@@ -561,7 +549,7 @@ void VoxelMap::pubLocalMapTFTimerCB()
   tf_broadcaster_->sendTransform(gbl_to_lcl_origin_tf);
 }
 
-void VoxelMap::checkCollisionsTimerCB()
+void OccMap::checkCollisionsTimerCB()
 {
   // // Get nearest obstacle position
   // Eigen::Vector3d occ_nearest;
@@ -579,7 +567,7 @@ void VoxelMap::checkCollisionsTimerCB()
 
 /** Subscriber callbacks */
 
-rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vector<rclcpp::Parameter> & parameters)
+rcl_interfaces::msg::SetParametersResult OccMap::updateParamCB(const std::vector<rclcpp::Parameter> & parameters)
 {
   std::string param_ns = "voxel_map";
 
@@ -595,7 +583,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
 
     /* Noise filter*/
 
-    if (param.get_name() == param_ns+".noise_search_radius")
+    if (param.get_name() == "noise_search_radius")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -607,7 +595,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
       noise_search_radius_ = param.as_double();
     }
 
-    if (param.get_name() == param_ns+".noise_min_neighbors")
+    if (param.get_name() == "noise_min_neighbors")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_INTEGER)
       {
@@ -621,7 +609,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
     
     /* Occupancy mapping */
 
-    if (param.get_name() == param_ns+".occ_map.prob_miss_log")
+    if (param.get_name() == "occ_map.prob_miss_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -634,7 +622,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
       bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == param_ns+".occ_map.prob_hit_log")
+    if (param.get_name() == "occ_map.prob_hit_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -647,7 +635,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
       bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == param_ns+".occ_map.clamp_min_log")
+    if (param.get_name() == "occ_map.clamp_min_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -660,7 +648,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
       bonxai_options_.clamp_min_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == param_ns+".occ_map.clamp_max_log")
+    if (param.get_name() == "occ_map.clamp_max_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -673,7 +661,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
       bonxai_options_.clamp_max_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == param_ns+".occ_map.occupancy_threshold_log")
+    if (param.get_name() == "occ_map.occupancy_threshold_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -687,7 +675,7 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
     }
 
     /* Inflation */
-    if (param.get_name() == param_ns+".occ_map.static_inflation")
+    if (param.get_name() == "occ_map.static_inflation")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
@@ -708,22 +696,15 @@ rcl_interfaces::msg::SetParametersResult VoxelMap::updateParamCB(const std::vect
   return result;
 }
 
-void VoxelMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
+void OccMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 {
   std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
 
-  bonxai_map_ = std::make_unique<BonxaiT>(mp_.resolution_);
+  bonxai_map_ = std::make_unique<Bonxai::ProbabilisticMap>(mp_.resolution_);
   logger_->logWarn("Reset map as requested by user!");
 }
 
-void VoxelMap::odomCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
-{
-  cur_pos_pt_ = pcl::PointXYZ(msg->pose.pose.position.x, 
-                              msg->pose.pose.position.y, 
-                              msg->pose.pose.position.z);
-}
-
-void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
   md_.last_cloud_cb_time = node_->get_clock()->now().seconds();
 
@@ -794,33 +775,7 @@ void VoxelMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // tm_bonxai_insert_.stop(false);
 }
 
-/** Publishers */
-
-void VoxelMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd)
-{
-  bool publish_point_cloud =
-      (occ_map_pub_->get_subscription_count() +
-       occ_map_pub_->get_intra_process_subscription_count() > 0);
-
-  if (!publish_point_cloud ){
-    return;
-  }
-
-  if (pcd->points.empty()){
-    logger_->logErrorThrottle("local map is empty. Not publishing occupancy grid.", 1.0);
-    return;
-  }
-
-  sensor_msgs::msg::PointCloud2 cloud_msg;
-  pcl::toROSMsg(*pcd, cloud_msg);
-  
-  cloud_msg.header.stamp = node_->get_clock()->now();
-  cloud_msg.header.frame_id = mp_.global_map_frame;
-
-  occ_map_pub_->publish(cloud_msg);
-}
-
-void VoxelMap::publishCollisionSphere(
+void OccMap::publishCollisionSphere(
   const Eigen::Vector3d &pos, const double& dist_to_obs, 
   const double& fatal_radius, const double& warn_radius)
 {
@@ -866,21 +821,7 @@ void VoxelMap::publishCollisionSphere(
 }
 
 
-// void VoxelMap::publishSliceMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& slice_map)
-// {
-//   if (slice_map_pub_.get_subscription_count() > 0){
-//     sensor_msgs::msg::PointCloud2 cloud_msg;
-//     pcl::toROSMsg(*slice_map, cloud_msg);
-
-//     cloud_msg.header.frame_id = "local_map_frame";
-//     cloud_msg.header.stamp = node_->get_clock()->now();
-//     slice_map_pub_->publish(cloud_msg);
-//     // logger_->logInfo(strFmt("Published occupancy grid with %ld voxels", occ_pcd_in_lcl_frame_.points.size()));
-//   }
-  
-// }
-
-void VoxelMap::publishLocalMapBounds()
+void OccMap::publishLocalMapBounds()
 {
   geometry_msgs::msg::PolygonStamped local_map_poly;
   local_map_poly.header.frame_id = mp_.global_map_frame;
@@ -909,33 +850,4 @@ void VoxelMap::publishLocalMapBounds()
   local_map_bounds_pub_->publish(local_map_poly);
 }
 
-void VoxelMap::pcd2MsgToMap(const sensor_msgs::msg::PointCloud2 &msg)
-{
-  // // Input Point cloud is assumed to be in frame id of the sensor
-  // if (msg.data.empty()){
-  //   logger_->logWarnThrottle("Empty point cloud received!", 1.0);
-  //   return;
-  // }
-
-  // // Get point cloud from ROS message
-  // pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  // pcl::fromROSMsg(msg, *pcd);
-
-  // auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  // pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
-
-  // // Transform point cloud from camera frame to global_map_frame (the global reference frame)
-  // pcl::transformPointCloud(*pcd, *pcd_in_map_frame, md_.cam_to_map);
-  // pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
-
-  // // Getting the Translation from the sensor to the Global Reference Frame
-  // const pcl::PointXYZ sensor_origin(
-  //   md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
-
-  // tm_bonxai_insert_.start();
-  // // Add point cloud to bonxai_maps_
-  // bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, mp_.max_range);
-  // tm_bonxai_insert_.stop(false);
-}
-
-}  // namespace voxel_map
+}  // namespace occ_map

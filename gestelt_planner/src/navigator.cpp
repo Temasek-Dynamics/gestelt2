@@ -33,7 +33,7 @@ Navigator::Navigator()
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
 
-  initParams();
+  getParams();
 
 	// Create callback groups
   planning_cb_group_ = this->create_callback_group(
@@ -197,7 +197,7 @@ void Navigator::initPubSubTimer()
                                             others_cb_group_);
 
 	plan_fe_timer_ = this->create_wall_timer((1.0/fe_planner_freq_) *1000ms, 
-                                            std::bind(&Navigator::planFETimerCB, this), 
+                                            std::bind(&Navigator::planTimerCB, this), 
                                             planning_cb_group_);
 
 	// gen_voro_map_timer_ = this->create_wall_timer((1.0/gen_voro_map_freq_) *1000ms, 
@@ -209,7 +209,7 @@ void Navigator::initPubSubTimer()
                                                   others_cb_group_);
 }
 
-void Navigator::initParams()
+void Navigator::getParams()
 {
   std::string param_ns = "navigator";
   
@@ -239,7 +239,7 @@ void Navigator::initParams()
 
   /* Space time A* planner */
   this->declare_parameter(param_ns+".planner.goal_tolerance", 0.1);
-  this->declare_parameter(param_ns+".planner.verbose_print", false);
+  this->declare_parameter(param_ns+".planner.print_timer", false);
   this->declare_parameter(param_ns+".planner.plan_once", false);
   this->declare_parameter(param_ns+".planner.t_unit", 0.1);
   this->declare_parameter(param_ns+".planner.output_json_filepath", "");
@@ -338,7 +338,7 @@ void Navigator::initParams()
   /* A* Planner */
   double goal_tol = this->get_parameter(param_ns+".planner.goal_tolerance").as_double();
   sqr_goal_tol_ = goal_tol * goal_tol;
-  verbose_print_ = this->get_parameter(param_ns+".planner.verbose_print").as_bool();
+  print_timer_ = this->get_parameter(param_ns+".planner.print_timer").as_bool();
   plan_once_ = this->get_parameter(param_ns+".planner.plan_once").as_bool();
   t_unit_ = this->get_parameter(param_ns+".planner.t_unit").as_double();
   output_json_filepath_ = this->get_parameter(param_ns+".planner.output_json_filepath").as_string();
@@ -487,7 +487,7 @@ void Navigator::sendMPCCmdTimerCB()
 	lin_mpc_cmd_pub_->publish(cmd_msg);
 }
 
-void Navigator::planFETimerCB()
+void Navigator::planTimerCB()
 {
   // Check if waypoint queue is empty
   if (waypoints_.empty()){
@@ -510,7 +510,7 @@ void Navigator::planFETimerCB()
   currently_planning_ = true;
 
   // Plan from current position to next waypoint
-  if (!planCommlessMPC(goal)){
+  if (!plan(goal)){
     tm_voro_gen_.stop(false);
     tm_front_end_plan_.stop(false);
     tm_sfc_.stop(false);
@@ -584,7 +584,7 @@ void Navigator::genVoroMapTimerCB()
 
 /* Core methods */
 
-bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
+bool Navigator::plan(const Eigen::Vector3d& goal_pos){
   // logger_->logInfo(strFmt(" Drone %d: Before planner", drone_id_));
 
   if (plan_once_ && plan_complete_){
@@ -715,8 +715,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   // map_ready_for_cons_ = false;
   // prod_map_cv_.notify_one();
 
-  tm_front_end_plan_.stop(verbose_print_);
-  tm_front_end_plan_.getWallAvg(verbose_print_);
+  tm_front_end_plan_.stop(print_timer_);
+  tm_front_end_plan_.getWallAvg(print_timer_);
 
   if (!fe_plan_success)
   {
@@ -793,8 +793,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   tm_sfc_.start();
   bool gen_sfc_success = 
     poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
-  tm_sfc_.stop(verbose_print_);
-  tm_sfc_.getWallAvg(verbose_print_);
+  tm_sfc_.stop(print_timer_);
+  tm_sfc_.getWallAvg(print_timer_);
 
 
   // logger_->logInfo(strFmt("   Drone %d: After generateSFC", drone_id_));
@@ -985,8 +985,8 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
   mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
 
   bool mpc_success = mpc_controller_->run();
-  tm_mpc_.stop(verbose_print_);
-  tm_mpc_.getWallAvg(verbose_print_);
+  tm_mpc_.stop(print_timer_);
+  tm_mpc_.getWallAvg(print_timer_);
 
   if (!mpc_success){ // Successful MPC solve
     logger_->logError("MPC Solve failure!");
@@ -1182,7 +1182,7 @@ bool Navigator::planCommlessMPC(const Eigen::Vector3d& goal_pos){
 
   pubMPCPath(mpc_pred_pos_); // Publish MPC path for visualization
 
-  tm_plan_pipeline_.stop(verbose_print_);
+  tm_plan_pipeline_.stop(print_timer_);
 
   // logger_->logInfo(strFmt(" Drone %d: After planner", drone_id_));
 
@@ -1321,7 +1321,7 @@ void Navigator::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr 
     // Transform from global to map frame
     Eigen::Vector3d src_pt(msg->pose.position.x, msg->pose.position.y, point_goal_height_);
     Eigen::Vector3d tgt_pt;
-    if (!globalToMap(src_pt, tgt_pt)){
+    if (!worldToMap(src_pt, tgt_pt)){
       logger_->logError(strFmt("Failed to transform goals from '%s' frame to %s frame, ignoring goal request.", 
         global_frame_.c_str(), map_frame_.c_str()));
       return;
@@ -1365,7 +1365,7 @@ void Navigator::goalsSubCB(const gestelt_interfaces::msg::Goals::UniquePtr msg)
       for (auto& wp : msg->waypoints) {
         Eigen::Vector3d src_pt(wp.position.x, wp.position.y, wp.position.z);
         Eigen::Vector3d tgt_pt;
-        if (!globalToMap(src_pt, tgt_pt)){
+        if (!worldToMap(src_pt, tgt_pt)){
           logger_->logError(strFmt("Failed to transform goals from '%s' frame to %s frame, ignoring goal request.", 
             global_frame_.c_str(), map_frame_.c_str()));
           return;

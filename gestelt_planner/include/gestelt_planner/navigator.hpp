@@ -211,7 +211,7 @@ public:
   /* Initialize planner and map */
   void init();
 
-  void initParams();
+  void getParams();
 
   void initPubSubTimer();
 
@@ -224,7 +224,7 @@ public:
    * @return true planning succeeded
    * @return false planning failed
    */
-  bool planCommlessMPC(const Eigen::Vector3d& goal_pos);
+  bool plan(const Eigen::Vector3d& goal_pos);
 
 private:
   /* Timer callbacks */
@@ -233,7 +233,7 @@ private:
   void pubStateTimerCB();
 
   /* Timer for front-end planner*/
-  void planFETimerCB();
+  void planTimerCB();
 
   /* Generate voronoi map timer callback*/
   void genVoroMapTimerCB();
@@ -332,7 +332,7 @@ private:
 private:
 
   /* Convert point from world to fixed map origin*/
-  bool globalToMap(const Eigen::Vector3d& src_pt, Eigen::Vector3d& tgt_pt)
+  bool worldToMap(const Eigen::Vector3d& src_pt, Eigen::Vector3d& tgt_pt)
   {
 
     // Get other agent's frame to map_frame transform
@@ -495,7 +495,7 @@ private:
   double point_goal_height_{1.5}; // Height used for point goal topic
   
   bool plan_once_{false}; // Used for testing, only runs the planner once
-  bool verbose_print_{false};  // enables printing of planning time
+  bool print_timer_{false};  // enables printing of planning time
   
   std::string output_json_filepath_;  // Output filepath for JSON file
   bool json_output_{false};  // output path to json file
