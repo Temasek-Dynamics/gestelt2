@@ -25,7 +25,7 @@ Panels:
         - /d21
         - /d31
       Splitter Ratio: 0.5941176414489746
-    Tree Height: 707
+    Tree Height: 361
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -44,7 +44,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: 3d_occ_map
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -792,7 +792,7 @@ Visualization Manager:
               Enabled: true
               Name: agent_id_text
               Namespaces:
-                {}
+                agent_id: true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -3115,15 +3115,15 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 20.982818603515625
+      Distance: 20.680665969848633
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -4.142985820770264
-        Y: 1.013962745666504
+        X: -4.125637531280518
+        Y: 0.8310346603393555
         Z: 2.7992638933937997e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
@@ -3133,7 +3133,7 @@ Visualization Manager:
       Pitch: 1.5597963333129883
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.125535249710083
+      Yaw: 3.140535354614258
     Saved: ~
 Window Geometry:
   Displays:
