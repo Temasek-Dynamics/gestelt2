@@ -25,6 +25,8 @@
 
 #include "occ_map/occ_map.hpp"
 
+#include "occ_map/cost_values.hpp"
+
 #include "tf2_ros/create_timer_ros.h"
 
 namespace occ_map
@@ -56,9 +58,43 @@ OccMap::OccMap(
   init();
 }
 
-OccMap::~OccMap()
-{
+OccMap::~OccMap(){
 }
+
+int OccMap::getCostIdx(const Eigen::Vector3d &idx)
+{
+  Bonxai::CoordT coord = {idx(0), idx(1), idx(2)};
+
+  if (bonxai_map_->isOccupied(coord)){
+    return LETHAL_OBSTACLE;
+  }
+
+  if (bonxai_map_->isUnknown(coord)){
+    return NO_INFORMATION;
+  }
+
+  if (bonxai_map_->isFree(coord)){
+    return FREE_SPACE;
+  }
+}
+
+int OccMap::getCost(const Eigen::Vector3d &pos)
+{
+  const auto coord = bonxai_map_->grid().posToCoord(pos);
+
+  if (bonxai_map_->isOccupied(coord)){
+    return LETHAL_OBSTACLE;
+  }
+
+  if (bonxai_map_->isUnknown(coord)){
+    return NO_INFORMATION;
+  }
+
+  if (bonxai_map_->isFree(coord)){
+    return FREE_SPACE;
+  }
+}
+
 
 void OccMap::init() 
 {
@@ -129,7 +165,6 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   tf_buffer_->setCreateTimerInterface(timer_interface);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
-
   /* Initialize Subscribers */
   cloud_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
     "cloud", rclcpp::SensorDataQoS(), std::bind(&OccMap::cloudCB, this, _1) );
@@ -149,7 +184,6 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
     std::bind(&OccMap::vizMapTimerCB, this), callback_group_);
   update_local_map_timer_ = create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
     std::bind(&OccMap::updateLocalMapTimerCB, this), callback_group_);
-
 
   // Set up Bonxai data structure
   bonxai_map_ = std::make_unique<Bonxai::ProbabilisticMap>(mp_.resolution_);
@@ -475,14 +509,125 @@ void OccMap::vizMapTimerCB()
 
 void OccMap::updateLocalMapTimerCB()
 {
-
   updateLocalMap(); // Update local map voxels
 
   local_map_updated_ = true;
-
 }
 
 /** Subscriber callbacks */
+
+void OccMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
+{
+  std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
+
+  bonxai_map_ = std::make_unique<Bonxai::ProbabilisticMap>(mp_.resolution_);
+  logger_->logWarn("Reset map as requested by user!");
+}
+
+void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+{
+  if (isTimeout(md_.last_cloud_cb_time, 0.5)){
+    logger_->logWarnThrottle(strFmt("cloud message timeout exceeded 0.5s: (%f, %f)",  
+                                      md_.last_cloud_cb_time, get_clock()->now().seconds()), 1.0);
+  }
+
+  md_.last_cloud_cb_time = get_clock()->now().seconds();
+
+  // Input Point cloud is assumed to be in frame id of the sensor
+  if (msg->data.empty()){
+    logger_->logWarnThrottle("Empty point cloud received!", 1.0);
+    return;
+  }
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  // Get point cloud from ROS message
+  pcl::fromROSMsg(*msg, *pcd);
+
+  // Some code here taken from bonxai_ros/bonxai_server.cpp
+
+  // remove NaN and Inf values
+  size_t filtered_index = 0;
+  for (const auto& point : (*pcd).points) {
+    if (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) {
+      (*pcd).points[filtered_index++] = point;
+    }
+  }
+  (*pcd).resize(filtered_index);
+
+  // Get camera to map frame TF
+  try {
+    auto tf_cam_to_map = tf_buffer_->lookupTransform(
+      mp_.global_map_frame, mp_.camera_frame,
+      msg->header.stamp,
+      rclcpp::Duration::from_seconds(1.0));
+
+      md_.cam_to_map = tf2::transformToEigen(
+        tf_cam_to_map.transform).matrix().cast<double>();
+
+      // md_.map_to_cam = md_.cam_to_map.inverse();
+  } 
+  catch (const tf2::TransformException & ex) {
+    logger_->logError(strFmt("Could not get transform from camera frame '%s' to map frame '%s': %s",
+			mp_.camera_frame.c_str(), mp_.global_map_frame.c_str(), ex.what()));
+
+    return;
+  }
+
+  if (!InGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
+  {
+    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary. Skip PCD insertion.", 
+       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
+    return;
+  }
+
+  auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
+
+  // Transform point cloud from camera frame to global_map_frame 
+  pcl::transformPointCloud(*pcd, *pcd_in_map_frame, md_.cam_to_map);
+
+  // Getting the Translation from the sensor to the Global Reference Frame
+  const pcl::PointXYZ sensor_origin(
+    md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
+
+  z_filter_cloud_in_.setInputCloud(pcd_in_map_frame);
+  z_filter_cloud_in_.filter(*pcd_in_map_frame);
+
+  // tm_bonxai_insert_.start();
+  // Add point cloud to bonxai_maps_
+  std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
+  bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, mp_.max_range);
+  // tm_bonxai_insert_.stop(false);
+}
+
+void OccMap::publishLocalMapBounds()
+{
+  geometry_msgs::msg::PolygonStamped local_map_poly;
+  local_map_poly.header.frame_id = mp_.global_map_frame;
+  local_map_poly.header.stamp = get_clock()->now();
+
+  geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;
+  min_corner.x = mp_.local_map_origin_(0);
+  min_corner.y = mp_.local_map_origin_(1);
+
+  corner_0.x = mp_.local_map_max_(0);
+  corner_0.y = mp_.local_map_origin_(1);
+
+  corner_1.x = mp_.local_map_origin_(0);
+  corner_1.y = mp_.local_map_max_(1);
+
+  max_corner.x = mp_.local_map_max_(0);
+  max_corner.y = mp_.local_map_max_(1);
+
+  min_corner.z = corner_0.z = corner_1.z = max_corner.z = mp_.local_map_origin_(2);
+
+  local_map_poly.polygon.points.push_back(min_corner);
+  local_map_poly.polygon.points.push_back(corner_0);
+  local_map_poly.polygon.points.push_back(max_corner);
+  local_map_poly.polygon.points.push_back(corner_1);
+
+  local_map_bounds_pub_->publish(local_map_poly);
+}
 
 rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::vector<rclcpp::Parameter> & parameters)
 {
@@ -610,119 +755,6 @@ rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::
   }
 
   return result;
-}
-
-void OccMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
-{
-  std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
-
-  bonxai_map_ = std::make_unique<Bonxai::ProbabilisticMap>(mp_.resolution_);
-  logger_->logWarn("Reset map as requested by user!");
-}
-
-void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
-{
-  if (isTimeout(md_.last_cloud_cb_time, 0.5)){
-    logger_->logWarnThrottle(strFmt("cloud message timeout exceeded 0.5s: (%f, %f)",  
-                                      md_.last_cloud_cb_time, get_clock()->now().seconds()), 1.0);
-  }
-
-  md_.last_cloud_cb_time = get_clock()->now().seconds();
-
-  // Input Point cloud is assumed to be in frame id of the sensor
-  if (msg->data.empty()){
-    logger_->logWarnThrottle("Empty point cloud received!", 1.0);
-    return;
-  }
-
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  // Get point cloud from ROS message
-  pcl::fromROSMsg(*msg, *pcd);
-
-  // Some code here taken from bonxai_ros/bonxai_server.cpp
-
-  // remove NaN and Inf values
-  size_t filtered_index = 0;
-  for (const auto& point : (*pcd).points) {
-    if (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) {
-      (*pcd).points[filtered_index++] = point;
-    }
-  }
-  (*pcd).resize(filtered_index);
-
-  // Get camera to map frame TF
-  try {
-    auto tf_cam_to_map = tf_buffer_->lookupTransform(
-      mp_.global_map_frame, mp_.camera_frame,
-      msg->header.stamp,
-      rclcpp::Duration::from_seconds(1.0));
-
-      md_.cam_to_map = tf2::transformToEigen(
-        tf_cam_to_map.transform).matrix().cast<double>();
-
-      // md_.map_to_cam = md_.cam_to_map.inverse();
-  } 
-  catch (const tf2::TransformException & ex) {
-    logger_->logError(strFmt("Could not get transform from camera frame '%s' to map frame '%s': %s",
-			mp_.camera_frame.c_str(), mp_.global_map_frame.c_str(), ex.what()));
-
-    return;
-  }
-
-  if (!InGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
-  {
-    logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary. Skip PCD insertion.", 
-       md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
-    return;
-  }
-
-  auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
-
-  // Transform point cloud from camera frame to global_map_frame 
-  pcl::transformPointCloud(*pcd, *pcd_in_map_frame, md_.cam_to_map);
-
-  // Getting the Translation from the sensor to the Global Reference Frame
-  const pcl::PointXYZ sensor_origin(
-    md_.cam_to_map(0, 3), md_.cam_to_map(1, 3), md_.cam_to_map(2, 3));
-
-  z_filter_cloud_in_.setInputCloud(pcd_in_map_frame);
-  z_filter_cloud_in_.filter(*pcd_in_map_frame);
-
-  // tm_bonxai_insert_.start();
-  // Add point cloud to bonxai_maps_
-  std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
-  bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, mp_.max_range);
-  // tm_bonxai_insert_.stop(false);
-}
-
-void OccMap::publishLocalMapBounds()
-{
-  geometry_msgs::msg::PolygonStamped local_map_poly;
-  local_map_poly.header.frame_id = mp_.global_map_frame;
-  local_map_poly.header.stamp = get_clock()->now();
-
-  geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;
-  min_corner.x = mp_.local_map_origin_(0);
-  min_corner.y = mp_.local_map_origin_(1);
-
-  corner_0.x = mp_.local_map_max_(0);
-  corner_0.y = mp_.local_map_origin_(1);
-
-  corner_1.x = mp_.local_map_origin_(0);
-  corner_1.y = mp_.local_map_max_(1);
-
-  max_corner.x = mp_.local_map_max_(0);
-  max_corner.y = mp_.local_map_max_(1);
-
-  min_corner.z = corner_0.z = corner_1.z = max_corner.z = mp_.local_map_origin_(2);
-
-  local_map_poly.polygon.points.push_back(min_corner);
-  local_map_poly.polygon.points.push_back(corner_0);
-  local_map_poly.polygon.points.push_back(max_corner);
-  local_map_poly.polygon.points.push_back(corner_1);
-
-  local_map_bounds_pub_->publish(local_map_poly);
 }
 
 }  // namespace occ_map

@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include <occ_map/cost_values.hpp>
+#include "occ_map/cost_values.hpp"
 
 using namespace std::chrono_literals;
 using namespace std::chrono; // NOLINT
@@ -27,7 +27,7 @@ void
 AStarPlanner::configure(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr &parent,
     std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
-    std::shared_ptr<Bonxai::ProbabilisticMap> occ_map)
+    std::shared_ptr<occ_map::OccMap> occ_map)
 {
   tf_ = tf;
   name_ = name;

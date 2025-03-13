@@ -30,7 +30,9 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/geometry_utils.hpp"
 
-#include <occ_map/occ_map.hpp>
+#include "occ_map/occ_map.hpp"
+
+#include "astar_planner/astar.hpp"
 
 namespace astar_planner
 {

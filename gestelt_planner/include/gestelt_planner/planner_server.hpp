@@ -262,5 +262,4 @@
  
 } // namespace gestelt_planner
 
-
 #endif // GESTELT_PLANNER__PLANNER_SERVER_HPP_

@@ -54,7 +54,6 @@
 #include <bonxai/pcl_utils.hpp>
 #include <bonxai/probabilistic_map.hpp>
 
-#include "occ_map/cost_values.hpp"
 
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
@@ -79,6 +78,7 @@ namespace occ_map
     Eigen::Vector3i local_map_num_voxels_; //  Size of local occupancy grid (no. of voxels)
 
     double resolution_;   // Also defined as the size of each individual voxel                 
+    double inv_resolution_;   // Also defined as the size of each individual voxel                 
     double agent_inflation_;    // [Comm-less] Dynamic obstacle Inflation in units of meters
     double static_inflation_;    // Static obstacle inflation in units of meters
     int inf_static_vox_;  // Inflation in number of voxels, = inflation_/resolution_ 
@@ -129,9 +129,79 @@ public:
 
   ~OccMap();
 
-  void init();
+  // Get occupancy grid resolution
+  inline double getRes() const{
+    return mp_.resolution_;
+  }
 
-  void getParameters();
+  // Get global map origin (This is defined to be a corner of the global map i.e. (-W/2, -L/2, 0))
+  inline Eigen::Vector3d getGlobalOrigin() const{
+    return mp_.global_map_origin_; 
+  }
+
+  // Get local map origin (This is defined to be a corner of the local map i.e. (-local_W/2, -local_L/2, 0))
+  inline Eigen::Vector3d getLocalMapOrigin() const{
+    return mp_.local_map_origin_;
+  }
+
+  inline Eigen::Vector3d getLocalMapMax() const{
+    return mp_.local_map_max_;
+  }
+
+  inline Eigen::Vector3d getLocalMapOrigin(const double& offset = 0.0) const{
+    return mp_.local_map_origin_ + Eigen::Vector3d::Constant(offset);
+  }
+
+  inline Eigen::Vector3d getLocalMapMax(const double& offset = 0.0) const{
+    return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); 
+  }
+
+  // Get points in local map (in fixed map frame). Used by safe flight corridor generation
+  inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLclObsPts(){
+    std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
+    return lcl_pts_in_global_frame_;
+  }
+
+  // Takes in position [global_map_frame] and check if within global map
+  inline bool inGlobalMap(const Eigen::Vector3d &pos){
+    return (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
+      && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
+      && pos(2) >= 0.0 && pos(2) < mp_.global_map_size_(2));
+  }
+
+  // Takes in position [global_map_frame] and check if within global map
+  inline bool inGlobalMapIdx(const Eigen::Vector3i &idx){
+    const auto pos = idxToPos(idx);
+
+    return (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
+      && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
+      && pos(2) >= 0.0 && pos(2) < mp_.global_map_size_(2));
+  }
+
+  inline bool inLocalMap(const Eigen::Vector3d &pos){
+    return (pos(0) >= mp_.local_map_origin_(0)   && pos(0) < mp_.local_map_max_(0)
+    && pos(1) >= mp_.local_map_origin_(1)  && pos(1) < mp_.local_map_max_(1)
+    && pos(2) >= mp_.local_map_origin_(2)  && pos(2) < mp_.local_map_max_(2));
+  }
+
+  inline Eigen::Vector3i posToIdx(const Eigen::Vector3d &pos){
+    return Eigen::Vector3i{ int32_t(pos(0) * mp_.inv_resolution_) - std::signbit(pos(0)),
+                            int32_t(pos(1) * mp_.inv_resolution_) - std::signbit(pos(1)),
+                            int32_t(pos(2) * mp_.inv_resolution_) - std::signbit(pos(2)) };
+  }
+
+  inline Eigen::Vector3d idxToPos(const Eigen::Vector3i &idx){
+    return Eigen::Vector3d{(static_cast<double>(idx(0)) + 0.5) * mp_.resolution_,
+                            (static_cast<double>(idx(1)) + 0.5) * mp_.resolution_,
+                            (static_cast<double>(idx(2)) + 0.5) * mp_.resolution_};
+  }
+
+  // Takes in position in [global_map_frame] and check if occupied
+  int getCost(const Eigen::Vector3d &pos);
+
+  int getCostIdx(const Eigen::Vector3d &idx);
+  
+  protected:
 
   /**
    * @brief Configure node
@@ -180,6 +250,13 @@ public:
     destroyBond();
   }
 
+
+private:
+
+  void init();
+
+  void getParameters();
+
   /* Core methods */
   
   // Called by planners to update the local map
@@ -197,7 +274,6 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /*Subscriber Callbacks*/
-
   void resetMapCB(const std_msgs::msg::Empty::SharedPtr );
 
   // Subscriber callback to point cloud 
@@ -218,42 +294,11 @@ public:
   */
   void updateLocalMapTimerCB();
 
-  /* Getter methods */
-
-  // Get occupancy grid resolution
-  double getRes() const;
-
-  // Get global map origin (This is defined to be a corner of the global map i.e. (-W/2, -L/2, 0))
-  Eigen::Vector3d getGlobalOrigin() const;
-
-  // Get local map origin (This is defined to be a corner of the local map i.e. (-local_W/2, -local_L/2, 0))
-  Eigen::Vector3d getLocalMapOrigin() const;
-
-  Eigen::Vector3d getLocalMapMax() const;
-
-  Eigen::Vector3d getLocalMapOrigin(const double& offset) const;
-
-  Eigen::Vector3d getLocalMapMax(const double& offset) const;
-
-  // Get points in local map (in fixed map frame). Used by safe flight corridor generation
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLclObsPts();
-
-  // Takes in position in [global_map_frame] and check if occupied
-  int getCost(const Eigen::Vector3d &pos);
-
-/* Checks */
-private: 
-
   // Checks if time elapsed has exceeded a given threshold
-  bool isTimeout(const double& last_state_time, const double& threshold);
-
-  // Takes in position [global_map_frame] and check if within global map
-  bool InGlobalMap(const Eigen::Vector3d &pos);
-
-  // Takes in position [global_map_frame] and check if within local map
-  bool inLocalMap(const Eigen::Vector3d &pos);
-
-private: 
+  inline bool isTimeout(const double& last_state_time, const double& threshold)
+  {
+    return (get_clock()->now().seconds() - last_state_time) >= threshold;
+  } 
 
   bool is_lifecycle_follower_{true};   ///< whether is a child-LifecycleNode or an independent node
 
@@ -280,16 +325,12 @@ private:
   double cloud_in_min_z_{0.0};
   double cloud_in_max_z_{10.0};
 
-  double map_slicing_sample_thickness_; // [m] map slice sampling thickness
-
   bool print_timer_{false}; // Flag to enable printing of debug information such as timers
-  bool dbg_input_entire_map_{false}; // flag to indicate that map will be constructed at the start from the entire pcd map (instead of through incremental sensor data)
 
   double time_vel_{0.1}; // [s] time along velocity vector to mark as occupied
 
   double viz_occ_map_freq_{-1.0}; // Frequency to publish occupancy map visualization
   double update_local_map_freq_{-1.0};  // Frequency to update local map
-  double check_col_freq_{-1.0};  // Frequency to update local map
 
   MappingParameters mp_;  // Parameters used for map
 
@@ -328,7 +369,6 @@ private:
   std::shared_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
   std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
 
-
   /* Flags */
   bool local_map_updated_{false}; // Indicates if first local map update is done 
 
@@ -346,32 +386,6 @@ private:
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 };
-
-/* Getters */
-
-inline double OccMap::getRes() const{ 
-  return mp_.resolution_; }
-
-inline Eigen::Vector3d OccMap::getGlobalOrigin() const{ 
-  return mp_.global_map_origin_; }
-
-inline Eigen::Vector3d OccMap::getLocalMapOrigin() const{ 
-  return mp_.local_map_origin_; }
-
-inline Eigen::Vector3d OccMap::getLocalMapMax() const{ 
-  return mp_.local_map_max_; }
-
-inline Eigen::Vector3d OccMap::getLocalMapOrigin(const double& offset) const{ 
-  return mp_.local_map_origin_ + Eigen::Vector3d::Constant(offset); }
-
-inline Eigen::Vector3d OccMap::getLocalMapMax(const double& offset) const{ 
-  return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); }
-
-inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> OccMap::getLclObsPts()
-{
-  std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
-  return lcl_pts_in_global_frame_;
-}
 
 // inline bool OccMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
 //                             Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb){
@@ -393,57 +407,6 @@ inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> O
 //   return true;
 // }
 
-/* Checks */
-
-inline bool OccMap::isTimeout(const double& last_state_time, const double& threshold){
-  return (get_clock()->now().seconds() - last_state_time) >= threshold;
-} 
-
-inline bool OccMap::InGlobalMap(const Eigen::Vector3d &pos)
-{
-  if (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
-    && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
-    && pos(2) >= 0.0 && pos(2) < mp_.global_map_size_(2))
-  {
-    return true;
-  }
-
-  return false;
-}
-
-inline bool OccMap::inLocalMap(const Eigen::Vector3d &pos)
-{
-  if (pos(0) >= mp_.local_map_origin_(0)   && pos(0) < mp_.local_map_max_(0)
-    && pos(1) >= mp_.local_map_origin_(1)  && pos(1) < mp_.local_map_max_(1)
-    && pos(2) >= mp_.local_map_origin_(2)  && pos(2) < mp_.local_map_max_(2))
-  {
-    return true;
-  }
-
-  return false;
-}
-
-inline int OccMap::getCost(const Eigen::Vector3d &pos)
-{
-    // If not in map or not in octree bounding box. return -1 
-    if (!InGlobalMap(pos)){
-      return LETHAL_OBSTACLE;
-    }
-
-    const auto coord = bonxai_map_->grid().posToCoord(pos);
-
-    if (bonxai_map_->isOccupied(coord)){
-      return LETHAL_OBSTACLE;
-    }
-
-    if (bonxai_map_->isUnknown(coord)){
-      return NO_INFORMATION;
-    }
-
-    if (bonxai_map_->isFree(coord)){
-      return FREE_SPACE;
-    }
-}
 
 }  // namespace occ_map
 
