@@ -119,7 +119,7 @@ public:
 	void init();
 
 private:
-	void getParams();
+	void getParameters();
 	void initPubSubTimers();
 	void initSrv();
 

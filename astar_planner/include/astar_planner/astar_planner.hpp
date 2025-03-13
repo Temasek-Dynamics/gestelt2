@@ -30,9 +30,7 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/geometry_utils.hpp"
 
-#include <bonxai/bonxai.hpp>
-#include <bonxai/pcl_utils.hpp>
-#include <bonxai/probabilistic_map.hpp>
+#include <occ_map/occ_map.hpp>
 
 namespace astar_planner
 {
@@ -110,7 +108,7 @@ protected:
   // TF buffer
   std::shared_ptr<tf2_ros::Buffer> tf_;
 
-  std::shared_ptr<Bonxai::ProbabilisticMap> occ_map_;
+  std::shared_ptr<OccMap::OccMap> occ_map_;
 
   /* Variables */
 

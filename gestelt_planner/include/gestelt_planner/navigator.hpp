@@ -211,7 +211,7 @@ public:
   /* Initialize planner and map */
   void init();
 
-  void getParams();
+  void getParameters();
 
   void initPubSubTimer();
 

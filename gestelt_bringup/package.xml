@@ -11,13 +11,13 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
-  <depend>navigator</depend>
+  <!-- <depend>navigator</depend>
   <depend>fake_map</depend>
   <depend>fake_sensor</depend>
   <depend>trajectory_server</depend>
-  <depend>mavros</depend>
+  <depend>mavros</depend> -->
   
-  <depend>gestelt_mission</depend>
+  <!-- <depend>gestelt_mission</depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -40,7 +40,7 @@ def generate_launch_description():
     #   parameters=dump_params(rosbag_player_params, 'player'),
     # )
 
-    name = "2_drone_test_unsure"
+    name = "4DRONES_10032025_10_46_26"
 
     bag_file = os.path.join(
         os.path.expanduser("~"), 'bag_files',

@@ -33,7 +33,7 @@ Navigator::Navigator()
 {
 	logger_ = std::make_shared<logger_wrapper::LoggerWrapper>(this->get_logger(), this->get_clock());
 
-  getParams();
+  getParameters();
 
 	// Create callback groups
   planning_cb_group_ = this->create_callback_group(
@@ -209,7 +209,7 @@ void Navigator::initPubSubTimer()
                                                   others_cb_group_);
 }
 
-void Navigator::getParams()
+void Navigator::getParameters()
 {
   std::string param_ns = "navigator";
   
@@ -1191,103 +1191,6 @@ bool Navigator::plan(const Eigen::Vector3d& goal_pos){
 }
 
 /* Subscriber callbacks*/
-
-void Navigator::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id)
-{
-  //TODO: Odom is received in the drone's map frame but need to handle 
-  //  if the drones' map frame is not in 'world' frame
-  // if (msg->header.frame_id != "world"){
-  //   logger_->logError("Does not yet handle odom messages with frame_id != 'world'");
-  // }
-
-  /**
-   * Update swarm poses and velocities
-   */
-
-  Eigen::Vector3d pose = Eigen::Vector3d{msg->pose.pose.position.x,  
-                          msg->pose.pose.position.y,  
-                          msg->pose.pose.position.z};
-
-  Eigen::Vector3d vel = Eigen::Vector3d{msg->twist.twist.linear.x, 
-                        msg->twist.twist.linear.y, 
-                        msg->twist.twist.linear.z};
-
-  // Get other agent's frame to map_frame transform
-  try {
-    auto tf = tf_buffer_->lookupTransform(
-      map_frame_, msg->header.frame_id, 
-      tf2::TimePointZero,
-      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.5)));
-    // Set fixed map origin
-    pose(0) += tf.transform.translation.x;
-    pose(1) += tf.transform.translation.y;
-  } 
-  catch (const tf2::TransformException & ex) {
-		RCLCPP_ERROR(
-			this->get_logger(), "Could not get transform from map frame '%s' to agent frame '%s': %s",
-			msg->header.frame_id.c_str(), map_frame_.c_str(), ex.what());
-    return;
-  }
-
-  voxel_map_->updateSwarmState(id, pose, vel);
-
-  if (id == drone_id_){
-    return;
-  }
-
-
-  // /**
-  //  * Clear reservation table and add to it
-  //  */
-
-  // if (!init_voro_maps_){
-  //   return;
-  // }
-
-  // std::lock_guard<std::mutex> rsvn_tbl_guard(rsvn_tbl_mtx_);
-
-  // double t_plan_start = ((double) msg->header.stamp.nanosec) * 1e-9;
-
-  // rsvn_tbl_[id] = RsvnTbl(t_plan_start);
-  // cells_inf_ = (int) std::lround(rsvn_tbl_inflation_/bool_map_3d_.resolution); // Number of cells used for inflation
-
-  // Eigen::Vector3d lcl_map_start_pos = mapToLclMap(pose);
-  // int z_cm =roundToMultInt(mToCm(lcl_map_start_pos(2)), 
-  //                               bool_map_3d_.z_sep_cm,
-  //                               bool_map_3d_.min_height_cm,
-  //                               bool_map_3d_.max_height_cm);
-
-  // // Iterate for a short duration along velocity vector
-  // for (double t = 0; t <= 1.0; t += 0.05 )
-  // {
-  //   Eigen::Vector3d lcl_map_pos = lcl_map_start_pos + t * vel;
-
-  //   IntPoint grid_pos;
-  //   // get map position relative to local origin and set the obstacle 
-  //   {
-  //     std::lock_guard<std::mutex> voro_map_guard(roadmap_mtx_);
-
-  //     bool within_lcl_map = dyn_voro_arr_[z_cm]->posToIdx(
-  //       DblPoint(lcl_map_pos(0), lcl_map_pos(1)), grid_pos);
-  //     if (!within_lcl_map){ // skip current point if not in map
-  //       continue;
-  //     }
-  //   }
-
-  //   // Inflate the cells by the given inflation radius
-  //   for(int x = grid_pos.x - cells_inf_; x <= grid_pos.x + cells_inf_; x++)
-  //   {
-  //     for(int y = grid_pos.y - cells_inf_; y <= grid_pos.y + cells_inf_; y++)
-  //     {
-  //       // Reserve for time interval from previous t to current t, including time buffer
-  //       for (int j = t - t_buffer_; j <= t + t_buffer_; j++) { 
-  //         rsvn_tbl_[id].table.insert(Eigen::Vector4i{x, y, z_cm, j});
-  //       }
-  //     }
-  //   }
-  // }
-
-}
 
 void Navigator::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr& msg)
 {

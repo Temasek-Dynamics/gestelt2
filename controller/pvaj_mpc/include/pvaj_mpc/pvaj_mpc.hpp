@@ -163,7 +163,7 @@ namespace pvaj_mpc
 	public:
 		MPCController(const MPCControllerParams &params)
 		{
-			getParams(params);
+			getParameters(params);
 
 			setProblem();
 
@@ -177,7 +177,7 @@ namespace pvaj_mpc
 		 * 
 		 * @param params 
 		 */
-		void getParams(const MPCControllerParams &params)
+		void getParameters(const MPCControllerParams &params)
 		{
 			drone_id_ = params.drone_id;
 

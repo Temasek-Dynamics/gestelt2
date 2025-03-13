@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <occ_map/cost_values.hpp>
+
 using namespace std::chrono_literals;
 using namespace std::chrono; // NOLINT
 using nav2_util::declare_parameter_if_not_declared;
@@ -114,7 +116,7 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
         std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
   }
 
-  if (tolerance_ == 0 && occ_map_->isOccupied(mx_goal, my_goal))
+  if (tolerance_ == 0 && occ_map_->getCost(mx_goal, my_goal) == occ_map::LETHAL_OBSTACLE)
   {
     throw nav2_core::GoalOccupied(
         "Goal Coordinates of(" + std::to_string(goal.pose.position.x) + ", " +
@@ -186,4 +188,33 @@ AStarPlanner::makePlan(
   return !plan.poses.empty();
 }
 
-};
+rcl_interfaces::msg::SetParametersResult
+NavfnPlanner::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
+{
+  rcl_interfaces::msg::SetParametersResult result;
+  for (auto parameter : parameters) {
+    const auto & type = parameter.get_type();
+    const auto & name = parameter.get_name();
+
+    if (type == ParameterType::PARAMETER_DOUBLE) {
+      if (name == name_ + ".tolerance") {
+        tolerance_ = parameter.as_double();
+      }
+    } else if (type == ParameterType::PARAMETER_BOOL) {
+      if (name == name_ + ".use_astar") {
+        use_astar_ = parameter.as_bool();
+      } else if (name == name_ + ".allow_unknown") {
+        allow_unknown_ = parameter.as_bool();
+      } else if (name == name_ + ".use_final_approach_orientation") {
+        use_final_approach_orientation_ = parameter.as_bool();
+      }
+    }
+  }
+  result.successful = true;
+  return result;
+}
+
+} // namespace astar_planner
+
+#include "pluginlib/class_list_macros.hpp"
+PLUGINLIB_EXPORT_CLASS(nav2_navfn_planner::NavfnPlanner, nav2_core::GlobalPlanner)

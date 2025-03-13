@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(gestelt_core)
+project(astar_planner)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
@@ -20,36 +20,37 @@ set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
-  dynamic_voronoi
-  planner_utils
+  occ_map
+)
+
+set(EXPORTED_DEPENDENCIES
+  
 )
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-add_library(space_time_astar src/space_time_astar.cpp)
-add_library(space_time_astar::space_time_astar ALIAS space_time_astar)
-ament_target_dependencies(space_time_astar 
+add_library(astar_planner src/astar_planner.cpp)
+ament_target_dependencies(astar_planner 
   Eigen3
-  rclcpp
-  planner_utils
-  dynamic_voronoi)
-target_compile_features(space_time_astar PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(space_time_astar PUBLIC
+  ${ROS_LIBRABRIES}
+)
+target_compile_features(astar_planner PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(astar_planner PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(space_time_astar PRIVATE "SPACE_TIME_ASTAR_BUILDING_LIBRARY")
+target_compile_definitions(astar_planner PRIVATE "ASTAR_PLANNER_BUILDING_LIBRARY")
 
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 install(
-  TARGETS space_time_astar
+  TARGETS astar_planner
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
@@ -72,14 +73,14 @@ ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
 ament_export_libraries(
-  space_time_astar
+  astar_planner
 )
 ament_export_targets(
   export_${PROJECT_NAME}
 )
 
 ament_export_dependencies(
-  planner_utils
+  ${EXPORTED_DEPENDENCIES}
 )
 
 ament_package()

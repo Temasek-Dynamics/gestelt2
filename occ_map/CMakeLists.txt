@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(voxel_map)
+project(occ_map)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
@@ -28,10 +28,10 @@ set(ROS_LIBRABRIES
   geometry_msgs
   visualization_msgs
   tf2_ros
-  message_filters
   logger_wrapper
   bonxai
   tf2_eigen
+  nav2_util
   ikd_tree
 )
 
@@ -51,10 +51,9 @@ foreach(dependency IN ITEMS ${EXTERNAL_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-add_library(${PROJECT_NAME} 
-  src/${PROJECT_NAME}.cpp
+add_library(occ_map SHARED
+  src/occ_map.cpp 
 )
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 ament_target_dependencies(${PROJECT_NAME} 
   ${ROS_LIBRABRIES}
 )
@@ -103,10 +102,10 @@ ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
 ament_export_libraries(
-  ${PROJECT_NAME}
+  occ_map
 )
 ament_export_targets(
-  export_${PROJECT_NAME}
+  export_occ_map
 )
 
 ament_export_dependencies(

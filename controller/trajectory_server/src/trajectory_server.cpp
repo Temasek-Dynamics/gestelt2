@@ -38,7 +38,7 @@ TrajectoryServer::TrajectoryServer()
 
 	geofence_ = std::make_unique<Geofence>(logger_);
 
-	getParams();
+	getParameters();
 
 	// start UAV state machine
 	fsm_list::start();
@@ -72,7 +72,7 @@ void TrajectoryServer::init()
 	logger_->logInfo("Initialized");
 }
 
-void TrajectoryServer::getParams()
+void TrajectoryServer::getParameters()
 {
 	/**
 	 * Declare params
