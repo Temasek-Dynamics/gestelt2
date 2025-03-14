@@ -104,21 +104,21 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   // Search takes place in index space. So we first convert 3d real world positions into indices
   if (!occ_map_->inGlobalMap(start))
   {
-    throw nav2_core::StartOutsideMapBounds(
+    throw gestelt_core::StartOutsideMapBounds(
         "Start Coordinates of(" + std::to_string(start(0)) + ", " +
         std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
   }
 
   if (!occ_map_->inGlobalMap(goal))
   {
-    throw nav2_core::GoalOutsideMapBounds(
+    throw gestelt_core::GoalOutsideMapBounds(
         "Goal Coordinates of(" + std::to_string(start(0)) + ", " +
         std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
   }
 
-  if (tolerance_ == 0 && occ_map_->getCost(mx_goal, my_goal) == occ_map::LETHAL_OBSTACLE)
+  if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
-    throw nav2_core::GoalOccupied(
+    throw gestelt_core::GoalOccupied(
         "Goal Coordinates of(" + std::to_string(goal.pose.position.x) + ", " +
         std::to_string(goal.pose.position.y) + ") was in lethal cost");
   }
@@ -127,7 +127,7 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
 
   if (!makePlan(start, goal, tolerance_, cancel_checker, path))
   {
-    throw nav2_core::NoValidPathCouldBeFound(
+    throw gestelt_core::NoValidPathCouldBeFound(
         "Failed to create plan with tolerance of: " + std::to_string(tolerance_));
   }
 }
@@ -167,15 +167,16 @@ AStarPlanner::makePlan(
     return false;
   }
 
-  planned_path = planner_->getPath();
+  // Obtain planned_path in map frame
+  auto planned_path = planner_->getPath();
 
-  for (int i = path_len - 1; i >= 0; --i) {
-    Eigen::Vector3d planned_pos;
-    occ_map_->mapToWorld(planned_path[i], planned_pos);
+  for (int i = 0; i < planned_path.size(); i++) {
+    Eigen::Vector3d planned_pos_world;
+    occ_map_->mapToWorld(planned_path[i], planned_pos_world);
 
-    pose.pose.position.x = planned_pos(0);
-    pose.pose.position.y = planned_pos(1);
-    pose.pose.position.z = planned_pos(2);
+    pose.pose.position.x = planned_pos_world(0);
+    pose.pose.position.y = planned_pos_world(1);
+    pose.pose.position.z = planned_pos_world(2);
 
     pose.pose.orientation.x = 0.0;
     pose.pose.orientation.y = 0.0;
@@ -217,4 +218,4 @@ NavfnPlanner::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameter
 } // namespace astar_planner
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(nav2_navfn_planner::NavfnPlanner, nav2_core::GlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(astar_planner::AStarPlanner, gestelt_core::GlobalPlanner)

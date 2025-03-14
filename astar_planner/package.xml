@@ -13,7 +13,14 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>nav2_util</depend>
+  <depend>pluginlib</depend>
+  <depend>tf2_ros</depend>
 
+  <depend>nav_msgs</depend>
+  
+  <depend>gestelt_core</depend>
   <depend>occ_map</depend>
 
   <export>

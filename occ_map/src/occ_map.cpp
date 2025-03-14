@@ -61,7 +61,7 @@ OccMap::OccMap(
 OccMap::~OccMap(){
 }
 
-int OccMap::getCostIdx(const Eigen::Vector3d &idx)
+int OccMap::getCostIdx(const Eigen::Vector3i &idx)
 {
   Bonxai::CoordT coord = {idx(0), idx(1), idx(2)};
 
@@ -76,6 +76,8 @@ int OccMap::getCostIdx(const Eigen::Vector3d &idx)
   if (bonxai_map_->isFree(coord)){
     return FREE_SPACE;
   }
+
+  return NO_INFORMATION; 
 }
 
 int OccMap::getCost(const Eigen::Vector3d &pos)
@@ -93,6 +95,8 @@ int OccMap::getCost(const Eigen::Vector3d &pos)
   if (bonxai_map_->isFree(coord)){
     return FREE_SPACE;
   }
+  
+  return NO_INFORMATION; 
 }
 
 
@@ -107,6 +111,11 @@ void OccMap::init()
 
   declare_parameter("update_local_map_frequency",  -1.0);
   declare_parameter("viz_map_frequency",  -1.0);
+
+  declare_parameter("world_frame", "world");
+  declare_parameter("map_frame", "local_map");
+  declare_parameter("camera_frame", "camera_link");
+  declare_parameter("base_link_frame", "base_link");
 
   declare_parameter("global_map.size_x", -1.0);
   declare_parameter("global_map.size_y", -1.0);
@@ -148,7 +157,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   try {
     getParameters();
   } catch (const std::exception & e) {
-    logger_->logError(strFmt("Failed to configure costmap! %s.", e.what()));
+    logger_->logError(strFmt("Failed to configure occupancy map! %s.", e.what()));
       
     return nav2_util::CallbackReturn::FAILURE;
   }
@@ -193,9 +202,9 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
 
   occ_pcd_in_lcl_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  occ_pcd_in_lcl_frame_->header.frame_id = mp_.local_map_frame;
+  occ_pcd_in_lcl_frame_->header.frame_id = mp_.map_frame;
   occ_pcd_in_gbl_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  occ_pcd_in_gbl_frame_->header.frame_id = mp_.global_map_frame;
+  occ_pcd_in_gbl_frame_->header.frame_id = mp_.global_frame;
 
   // Global map origin is FIXED at a corner of the global map i.e. (-W/2, -L/2, 0)
   mp_.global_map_origin_ = Eigen::Vector3d(
@@ -244,6 +253,7 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
 
   logger_->logInfo("Checking transform");
 
+  // Check transform from global map to base link frame
   std::string tf_error;
   rclcpp::Rate r(2);
   const auto initial_transform_timeout = rclcpp::Duration::from_seconds(
@@ -251,12 +261,12 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
   const auto initial_transform_timeout_point = now() + initial_transform_timeout;
   while (rclcpp::ok() &&
     !tf_buffer_->canTransform(
-      mp_.global_map_frame, mp_.base_link_frame, tf2::TimePointZero, &tf_error))
+      mp_.global_frame, mp_.base_link_frame, tf2::TimePointZero, &tf_error))
   {
     RCLCPP_INFO(
       get_logger(), "Timed out waiting for transform from %s to %s"
       " to become available, tf error: %s",
-      mp_.base_link_frame.c_str(), mp_.global_map_frame.c_str(), tf_error.c_str());
+      mp_.base_link_frame.c_str(), mp_.global_frame.c_str(), tf_error.c_str());
 
     // Check timeout
     if (now() > initial_transform_timeout_point) {
@@ -264,7 +274,7 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
         get_logger(),
         "Failed to activate %s because "
         "transform from %s to %s did not become available before timeout",
-        get_name(), mp_.base_link_frame.c_str(), mp_.global_map_frame.c_str());
+        get_name(), mp_.base_link_frame.c_str(), mp_.global_frame.c_str());
 
       return nav2_util::CallbackReturn::FAILURE;
     }
@@ -274,6 +284,33 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
     tf_error.clear();
     r.sleep();
   }
+
+  // Get other agent's frame to map_frame transform
+  try {
+    auto tf_res = tf_buffer_->lookupTransform(
+      mp_.map_frame, mp_.global_frame, tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(initial_transform_timeout_)));
+
+    mp_.world_to_map.block<3,3>(0,0) = Eigen::Quaterniond(
+      tf_res.transform.rotation.w,
+      tf_res.transform.rotation.x,
+      tf_res.transform.rotation.y,
+      tf_res.transform.rotation.z).toRotationMatrix();
+    mp_.world_to_map.block<3,1>(0,3) = Eigen::Vector3d(
+      tf_res.transform.translation.x,
+      tf_res.transform.translation.y,
+      tf_res.transform.translation.z);
+
+    mp_.map_to_world = mp_.world_to_map.inverse();
+
+  }
+  catch (const tf2::TransformException & ex) {
+    RCLCPP_ERROR(
+      this->get_logger(), "Could not get transform from global frame '%s' to map frame '%s': %s",
+      mp_.global_frame.c_str(), mp_.map_frame.c_str(), ex.what());
+    return nav2_util::CallbackReturn::FAILURE;
+  }
+
 
   occ_map_pub_->on_activate();
   local_map_bounds_pub_->on_activate();
@@ -334,8 +371,8 @@ void OccMap::getParameters()
   get_parameter("print_timer", print_timer_);
 
   /* Frame IDs */
-  get_parameter("map_frame", mp_.global_map_frame);
-  get_parameter("local_map_frame", mp_.local_map_frame);
+  get_parameter("world_frame", mp_.global_frame);
+  get_parameter("map_frame", mp_.map_frame);
   get_parameter("camera_frame", mp_.camera_frame);
   get_parameter("base_link_frame", mp_.base_link_frame);
 
@@ -389,7 +426,7 @@ void OccMap::updateLocalMap(){
   try {
     // map to base_link
     auto tf_bl_to_map = tf_buffer_->lookupTransform(
-      mp_.global_map_frame, mp_.base_link_frame,
+      mp_.global_frame, mp_.base_link_frame,
       tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
 
@@ -398,7 +435,7 @@ void OccMap::updateLocalMap(){
   } 
   catch (const tf2::TransformException & ex) {
     logger_->logError(strFmt("Could not get transform from base link frame '%s' to map frame '%s': %s",
-			mp_.base_link_frame.c_str(), mp_.global_map_frame.c_str(), ex.what()));
+			mp_.base_link_frame.c_str(), mp_.global_frame.c_str(), ex.what()));
     return;
   }
 
@@ -557,7 +594,7 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // Get camera to map frame TF
   try {
     auto tf_cam_to_map = tf_buffer_->lookupTransform(
-      mp_.global_map_frame, mp_.camera_frame,
+      mp_.global_frame, mp_.camera_frame,
       msg->header.stamp,
       rclcpp::Duration::from_seconds(1.0));
 
@@ -568,12 +605,12 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   } 
   catch (const tf2::TransformException & ex) {
     logger_->logError(strFmt("Could not get transform from camera frame '%s' to map frame '%s': %s",
-			mp_.camera_frame.c_str(), mp_.global_map_frame.c_str(), ex.what()));
+			mp_.camera_frame.c_str(), mp_.global_frame.c_str(), ex.what()));
 
     return;
   }
 
-  if (!InGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
+  if (!inGlobalMap(md_.cam_to_map.block<3,1>(0,3)))
   {
     logger_->logErrorThrottle(strFmt("Camera pose (%.2f, %.2f, %.2f) is not within global map boundary. Skip PCD insertion.", 
        md_.cam_to_map.col(3)(0), md_.cam_to_map.col(3)(1), md_.cam_to_map.col(3)(2)), 1.0);
@@ -581,9 +618,9 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   }
 
   auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcd_in_map_frame->header.frame_id = mp_.global_map_frame;
+  pcd_in_map_frame->header.frame_id = mp_.global_frame;
 
-  // Transform point cloud from camera frame to global_map_frame 
+  // Transform point cloud from camera frame to global_frame 
   pcl::transformPointCloud(*pcd, *pcd_in_map_frame, md_.cam_to_map);
 
   // Getting the Translation from the sensor to the Global Reference Frame
@@ -603,7 +640,7 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 void OccMap::publishLocalMapBounds()
 {
   geometry_msgs::msg::PolygonStamped local_map_poly;
-  local_map_poly.header.frame_id = mp_.global_map_frame;
+  local_map_poly.header.frame_id = mp_.global_frame;
   local_map_poly.header.stamp = get_clock()->now();
 
   geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;

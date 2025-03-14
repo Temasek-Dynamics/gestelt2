@@ -75,6 +75,9 @@ namespace occ_map
     Eigen::Vector3d global_map_size_; //  Size of global occupancy map  (m)
     Eigen::Vector3d local_map_size_; //  Size of local occupancy map (m)
 
+    Eigen::Matrix4d world_to_map{Eigen::Matrix4d::Identity(4, 4)};
+    Eigen::Matrix4d map_to_world{Eigen::Matrix4d::Identity(4, 4)};
+
     Eigen::Vector3i local_map_num_voxels_; //  Size of local occupancy grid (no. of voxels)
 
     double resolution_;   // Also defined as the size of each individual voxel                 
@@ -88,8 +91,8 @@ namespace occ_map
     double max_range; // Max sensor range
 
     /* visualization and computation time display */
-    std::string global_map_frame; // frame id of global map reference 
-    std::string local_map_frame; // frame id of UAV origin 
+    std::string global_frame; // frame id of global map reference 
+    std::string map_frame; // frame id of UAV origin 
     std::string camera_frame; // frame id of camera link
     std::string base_link_frame; // frame id of base_link
   };
@@ -162,14 +165,14 @@ public:
     return lcl_pts_in_global_frame_;
   }
 
-  // Takes in position [global_map_frame] and check if within global map
+  // Takes in position [global_frame] and check if within global map
   inline bool inGlobalMap(const Eigen::Vector3d &pos){
     return (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
       && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
       && pos(2) >= 0.0 && pos(2) < mp_.global_map_size_(2));
   }
 
-  // Takes in position [global_map_frame] and check if within global map
+  // Takes in position [global_frame] and check if within global map
   inline bool inGlobalMapIdx(const Eigen::Vector3i &idx){
     const auto pos = idxToPos(idx);
 
@@ -196,10 +199,18 @@ public:
                             (static_cast<double>(idx(2)) + 0.5) * mp_.resolution_};
   }
 
-  // Takes in position in [global_map_frame] and check if occupied
+  void mapToWorld(const Eigen::Vector3d& pos_map, Eigen::Vector3d& pos_world){
+    pos_world = (mp_.map_to_world * pos_map.homogeneous()).hnormalized(); 
+  }
+
+  void worldToMap(const Eigen::Vector3d& pos_world, Eigen::Vector3d& pos_map){
+    pos_map = (mp_.world_to_map * pos_world.homogeneous()).hnormalized();  
+  }
+
+  // Takes in position in [global_frame] and check if occupied
   int getCost(const Eigen::Vector3d &pos);
 
-  int getCostIdx(const Eigen::Vector3d &idx);
+  int getCostIdx(const Eigen::Vector3i &idx);
   
   protected:
 
@@ -230,7 +241,7 @@ public:
 
   /**
    * @brief as a child-LifecycleNode :
-   * Costmap2DROS may be launched by another Lifecycle Node as a composed module
+   * OccMap may be launched by another Lifecycle Node as a composed module
    * If composed, its parents will handle the shutdown, which includes this module
    */
   void on_rcl_preshutdown() override

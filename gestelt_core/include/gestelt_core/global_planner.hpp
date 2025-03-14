@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_CORE__GLOBAL_PLANNER_HPP_
-#define NAV2_CORE__GLOBAL_PLANNER_HPP_
+#ifndef GESTELT_CORE__GLOBAL_PLANNER_HPP_
+#define GESTELT_CORE__GLOBAL_PLANNER_HPP_
 
 #include <memory>
 #include <string>
@@ -23,11 +23,9 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 
-#include <bonxai/bonxai.hpp>
-#include <bonxai/pcl_utils.hpp>
-#include <bonxai/probabilistic_map.hpp>
+#include <occ_map/occ_map.hpp>
 
-namespace nav2_core
+namespace gestelt_core
 {
 
 /**
@@ -48,12 +46,12 @@ public:
    * @param  parent pointer to user's node
    * @param  name The name of this planner
    * @param  tf A pointer to a TF buffer
-   * @param  costmap_ros A pointer to the costmap
+   * @param  occ_map A pointer to the occupancy map
    */
   virtual void configure(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
     std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
-    std::shared_ptr<Bonxai::ProbabilisticMap> occ_map) = 0;
+    std::shared_ptr<occ_map::OccMap> occ_map) = 0;
 
   /**
    * @brief Method to cleanup resources used on shutdown.
@@ -83,6 +81,6 @@ public:
     std::function<bool()> cancel_checker) = 0;
 };
 
-}  // namespace nav2_core
+}  // namespace gestelt_core
 
-#endif  // NAV2_CORE__GLOBAL_PLANNER_HPP_
+#endif  // GESTELT_CORE__GLOBAL_PLANNER_HPP_

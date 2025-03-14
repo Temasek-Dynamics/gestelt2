@@ -19,41 +19,46 @@ find_package(Eigen3 REQUIRED)
 set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
+  pluginlib
   rclcpp
-  dynamic_voronoi
-  planner_utils
+  rclcpp_lifecycle
+  nav2_util
+  nav_msgs
+  geometry_msgs
+  tf2_ros
+  occ_map
 )
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-add_library(space_time_astar src/space_time_astar.cpp)
-add_library(space_time_astar::space_time_astar ALIAS space_time_astar)
-ament_target_dependencies(space_time_astar 
-  Eigen3
-  rclcpp
-  planner_utils
-  dynamic_voronoi)
-target_compile_features(space_time_astar PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(space_time_astar PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-
-# Causes the visibility macros to use dllexport rather than dllimport,
-# which is appropriate when building the dll but not consuming it.
-target_compile_definitions(space_time_astar PRIVATE "SPACE_TIME_ASTAR_BUILDING_LIBRARY")
-
-install(
-  DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
+add_library(gestelt_core INTERFACE)
+target_include_directories(gestelt_core
+  INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
-install(
-  TARGETS space_time_astar
-  EXPORT export_${PROJECT_NAME}
+target_link_libraries(gestelt_core INTERFACE
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
+  nav2_util::nav2_util_core
+  tf2_ros::tf2_ros
+  ${geometry_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
+  occ_map
+)
+
+install(TARGETS gestelt_core
+  EXPORT gestelt_core
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
@@ -71,15 +76,11 @@ endif()
 ament_export_include_directories(
   "include/${PROJECT_NAME}"
 )
-ament_export_libraries(
-  space_time_astar
+ament_export_dependencies(
+  ${ROS_LIBRABRIES}
 )
 ament_export_targets(
-  export_${PROJECT_NAME}
-)
-
-ament_export_dependencies(
-  planner_utils
+  gestelt_core
 )
 
 ament_package()

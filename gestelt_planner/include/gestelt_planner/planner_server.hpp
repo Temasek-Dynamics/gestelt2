@@ -59,7 +59,7 @@
     */
    ~PlannerServer();
  
-   using PlannerMap = std::unordered_map<std::string, nav2_core::GlobalPlanner::Ptr>;
+   using PlannerMap = std::unordered_map<std::string, gestelt_core::GlobalPlanner::Ptr>;
  
    /**
     * @brief Method to get plan from the desired plugin
@@ -130,12 +130,6 @@
     */
    template<typename T>
    bool isCancelRequested(std::unique_ptr<nav2_util::SimpleActionServer<T>> & action_server);
- 
-   /**
-    * @brief Wait for costmap to be valid with updated sensor data or repopulate after a
-    * clearing recovery. Blocks until true without timeout.
-    */
-   void waitForCostmap();
  
    /**
     * @brief Check if an action server has a preemption request and replaces the goal
@@ -246,11 +240,6 @@
  
    // TF buffer
    std::shared_ptr<tf2_ros::Buffer> tf_;
- 
-   // Global Costmap
-//    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
-//    std::unique_ptr<nav2_util::NodeThread> costmap_thread_;
-//    nav2_costmap_2d::Costmap2D * costmap_;
  
    // Publishers for the path
    rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr plan_publisher_;

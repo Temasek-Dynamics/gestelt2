@@ -24,8 +24,8 @@
 
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "nav2_core/global_planner.hpp"
-#include "nav2_core/planner_exceptions.hpp"
+#include "gestelt_core/global_planner.hpp"
+#include "gestelt_core/planner_exceptions.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/geometry_utils.hpp"
@@ -41,7 +41,7 @@ namespace astar_planner
  * @class GlobalPlanner
  * @brief Abstract interface for global planners to adhere to with pluginlib
  */
-class AStarPlanner : public nav2_core::GlobalPlanner
+class AStarPlanner : public gestelt_core::GlobalPlanner
 {
 public:
   AStarPlanner();
@@ -51,7 +51,7 @@ public:
   void configure(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
     std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
-    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
+    std::shared_ptr<occ_map::OccMap> occ_map) override;
 
   /**
    * @brief Cleanup lifecycle node

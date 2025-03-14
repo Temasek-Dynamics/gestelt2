@@ -20,42 +20,67 @@ set(ROS_LIBRABRIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
+  rclcpp_lifecycle
+  pluginlib
+  nav2_util
+  tf2_ros
+  nav_msgs
+  gestelt_core
   occ_map
-)
-
-set(EXPORTED_DEPENDENCIES
-  
 )
 
 foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-add_library(astar_planner src/astar_planner.cpp)
-ament_target_dependencies(astar_planner 
-  Eigen3
-  ${ROS_LIBRABRIES}
+add_library(astar_planner SHARED
+  src/astar_planner.cpp
+  src/astar.cpp
 )
-target_compile_features(astar_planner PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(astar_planner PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
+target_include_directories(astar_planner
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+)
+target_link_libraries(astar_planner PUBLIC
+  Eigen3::Eigen
+  
+  ${geometry_msgs_TARGETS}
+  nav2_util::nav2_util_core
+  ${nav_msgs_TARGETS}
+  rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
+  tf2_ros::tf2_ros
+
+  gestelt_core
+  occ_map
+
+
+)
+target_link_libraries(astar_planner PRIVATE
+  pluginlib::pluginlib
+)
+
+pluginlib_export_plugin_description_file(gestlet_core global_planner_plugin.xml)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(astar_planner PRIVATE "ASTAR_PLANNER_BUILDING_LIBRARY")
 
-install(
-  DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
-)
-install(
-  TARGETS astar_planner
+install(TARGETS astar_planner
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
+)
+install(FILES global_planner_plugin.xml
+  DESTINATION share/${PROJECT_NAME}
+)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -69,18 +94,15 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_include_directories(
-  "include/${PROJECT_NAME}"
-)
-ament_export_libraries(
-  astar_planner
-)
-ament_export_targets(
-  export_${PROJECT_NAME}
-)
-
+ament_export_include_directories(include/${PROJECT_NAME})
+ament_export_libraries(astar_planner)
 ament_export_dependencies(
-  ${EXPORTED_DEPENDENCIES}
+  geometry_msgs
+  nav2_util
+  nav_msgs
+  rclcpp
+  rclcpp_lifecycle
+  tf2_ros
 )
-
+ament_export_targets(astar_planner)
 ament_package()
