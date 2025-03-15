@@ -24,7 +24,6 @@
 
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "gestelt_core/global_planner.hpp"
 #include "gestelt_core/planner_exceptions.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nav2_util/lifecycle_node.hpp"

@@ -52,9 +52,8 @@ target_link_libraries(astar_planner PUBLIC
   rclcpp_lifecycle::rclcpp_lifecycle
   tf2_ros::tf2_ros
 
-  gestelt_core
-  occ_map
-
+  gestelt_core::gestelt_core
+  occ_map::occ_map
 
 )
 target_link_libraries(astar_planner PRIVATE
@@ -68,7 +67,7 @@ pluginlib_export_plugin_description_file(gestlet_core global_planner_plugin.xml)
 target_compile_definitions(astar_planner PRIVATE "ASTAR_PLANNER_BUILDING_LIBRARY")
 
 install(TARGETS astar_planner
-  EXPORT export_${PROJECT_NAME}
+  EXPORT astar_planner
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin

@@ -34,6 +34,7 @@ foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
 endforeach()
 
 add_library(gestelt_core INTERFACE)
+add_library(gestelt_core::gestelt_core ALIAS gestelt_core)
 target_include_directories(gestelt_core
   INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -57,7 +58,8 @@ install(TARGETS gestelt_core
   RUNTIME DESTINATION bin
 )
 
-install(DIRECTORY include/
+install(
+  DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 
@@ -73,9 +75,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_include_directories(
-  "include/${PROJECT_NAME}"
-)
+ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_dependencies(
   ${ROS_LIBRABRIES}
 )

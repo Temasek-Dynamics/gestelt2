@@ -26,20 +26,11 @@ set(ROS_LIBRABRIES
   sensor_msgs
   nav_msgs
   geometry_msgs
-  visualization_msgs
   tf2_ros
   logger_wrapper
   bonxai
   tf2_eigen
   nav2_util
-  ikd_tree
-)
-
-set(EXPORTED_DEPENDENCIES
-  PCL
-  pcl_conversions
-  bonxai
-  tf2_eigen
   ikd_tree
 )
 
@@ -54,6 +45,7 @@ endforeach()
 add_library(occ_map SHARED
   src/occ_map.cpp 
 )
+add_library(occ_map::occ_map ALIAS occ_map)
 ament_target_dependencies(${PROJECT_NAME} 
   ${ROS_LIBRABRIES}
 )
@@ -80,7 +72,7 @@ install(
 )
 install(
   TARGETS ${PROJECT_NAME}
-  EXPORT export_${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -105,11 +97,16 @@ ament_export_libraries(
   occ_map
 )
 ament_export_targets(
-  export_occ_map
+  occ_map
 )
 
 ament_export_dependencies(
-  ${EXPORTED_DEPENDENCIES}
+  PCL
+  pcl_conversions
+  bonxai
+  tf2_eigen
+  ikd_tree
+  logger_wrapper
 )
 
 ament_package()

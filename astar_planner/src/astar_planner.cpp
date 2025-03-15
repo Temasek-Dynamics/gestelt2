@@ -1,5 +1,7 @@
 #include "astar_planner/astar_planner.hpp"
 
+#include "gestelt_core/global_planner.hpp"
+
 #include <chrono>
 
 #include "occ_map/cost_values.hpp"
