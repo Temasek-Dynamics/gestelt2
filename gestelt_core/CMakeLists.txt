@@ -16,7 +16,7 @@ endif()
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(ROS_LIBRABRIES
+set(ROS_LIBRARIES
 	ament_cmake
 	ament_cmake_ros
   pluginlib
@@ -29,7 +29,7 @@ set(ROS_LIBRABRIES
   occ_map
 )
 
-foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+foreach(dependency IN ITEMS ${ROS_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -48,7 +48,7 @@ target_link_libraries(gestelt_core INTERFACE
   tf2_ros::tf2_ros
   ${geometry_msgs_TARGETS}
   ${nav_msgs_TARGETS}
-  occ_map
+  occ_map::occ_map
 )
 
 install(TARGETS gestelt_core
@@ -77,7 +77,7 @@ endif()
 
 ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_dependencies(
-  ${ROS_LIBRABRIES}
+  ${ROS_LIBRARIES}
 )
 ament_export_targets(
   gestelt_core

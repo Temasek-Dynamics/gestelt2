@@ -1,5 +1,5 @@
 <library path="astar_planner">
 	<class type="astar_planner::AStarPlanner" base_class_type="gestelt_core::GlobalPlanner">
-	  <description></description>
+	  <description>A* planner plugin</description>
 	</class>
 </library>

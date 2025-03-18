@@ -1,7 +1,5 @@
 #include "astar_planner/astar_planner.hpp"
 
-#include "gestelt_core/global_planner.hpp"
-
 #include <chrono>
 
 #include "occ_map/cost_values.hpp"
@@ -14,7 +12,7 @@ namespace astar_planner
 {
 
 AStarPlanner::AStarPlanner()
-    : tf_(nullptr), costmap_(nullptr)
+    : tf_(nullptr), occ_map_(nullptr)
 {
 }
 
@@ -34,7 +32,7 @@ AStarPlanner::configure(
   tf_ = tf;
   name_ = name;
 
-  global_frame_ = occ_map->getGlobalFrameID();
+  occ_map_ = occ_map;
 
   node_ = parent;
   auto node = parent.lock();
@@ -55,6 +53,8 @@ AStarPlanner::configure(
   node->get_parameter(name + ".max_iterations", max_iterations_);
   declare_parameter_if_not_declared(node, name + ".tie_breaker", rclcpp::ParameterValue(1.001));
   node->get_parameter(name + ".tie_breaker", tie_breaker_);
+  declare_parameter_if_not_declared(node, name + ".allow_unknown", rclcpp::ParameterValue(true));
+  node->get_parameter(name + ".allow_unknown", allow_unknown_);
   declare_parameter_if_not_declared(node, name + ".cost_function_type", rclcpp::ParameterValue(2));
   node->get_parameter(name + ".cost_function_type", cost_function_type_);
 
@@ -70,8 +70,8 @@ AStarPlanner::activate()
       name_.c_str());
   // Add callback for dynamic parameters
   auto node = node_.lock();
-  dyn_params_handler_ = node->add_on_set_parameters_callback(
-      std::bind(&AStarPlanner::dynamicParametersCallback, this, _1));
+  // dyn_params_handler_ = node->add_on_set_parameters_callback(
+  //     std::bind(&AStarPlanner::dynamicParametersCallback, this, _1));
 }
 
 void
@@ -114,15 +114,16 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   if (!occ_map_->inGlobalMap(goal))
   {
     throw gestelt_core::GoalOutsideMapBounds(
-        "Goal Coordinates of(" + std::to_string(start(0)) + ", " +
-        std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
+      "Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+      std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + ") was outside bounds");
+
   }
 
   if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
     throw gestelt_core::GoalOccupied(
-        "Goal Coordinates of(" + std::to_string(goal.pose.position.x) + ", " +
-        std::to_string(goal.pose.position.y) + ") was in lethal cost");
+        "Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + ") was in lethal cost");
   }
 
   nav_msgs::msg::Path path;
@@ -132,12 +133,14 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
     throw gestelt_core::NoValidPathCouldBeFound(
         "Failed to create plan with tolerance of: " + std::to_string(tolerance_));
   }
+
+  return path;
 }
 
 bool
 AStarPlanner::makePlan(
-    const geometry_msgs::msg::Pose &start,
-    const geometry_msgs::msg::Pose &goal, double tolerance,
+    const Eigen::Vector3d &start,
+    const Eigen::Vector3d &goal, double tolerance,
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path &plan)
 {
@@ -145,36 +148,53 @@ AStarPlanner::makePlan(
   plan.poses.clear();
 
   plan.header.stamp = clock_->now();
-  plan.header.frame_id = global_frame_;
+  plan.header.frame_id = occ_map_->getGlobalFrameID();
 
   Eigen::Vector3d map_start, map_goal;
 
   occ_map_->worldToMap(start, map_start);
   occ_map_->worldToMap(goal, map_goal);
 
+  RCLCPP_INFO(
+    logger_, "AStarPlanner::makePlan in map_frame from (%.2f, %.2f, %.2f) to "
+    "(%.2f, %.2f, %.2f).", 
+    map_start(0), map_start(1), map_start(2),
+    map_goal(0), map_goal(1), map_goal(2));
+
   // clear the starting cell within the costmap because we know it can't be an obstacle
   // clearRobotCell(map_start);
 
-  std::unique_lock<gestelt_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
+  std::unique_lock<occ_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
 
-  planner_->setCostMap(occ_map_);
-
-  lock.unlock();
+  planner_->setCostmap(occ_map_);
 
   planner_->setStart(map_goal);
   planner_->setGoal(map_start);
 
-  int path_len = planner_->computePath(max_iterations_);
+  int path_len = planner_->computePath(max_iterations_, cancel_checker);
   if (path_len == 0) {
     return false;
   }
 
-  // Obtain planned_path in map frame
-  auto planned_path = planner_->getPath();
+  lock.unlock();
 
-  for (int i = 0; i < planned_path.size(); i++) {
+  RCLCPP_INFO(
+    logger_, "Size of path: %d", path_len);
+
+  // Obtain planned path in map frame
+  auto map_planned_path = planner_->getPath();
+
+  for (size_t i = 0; i < map_planned_path.size(); i++) {
     Eigen::Vector3d planned_pos_world;
-    occ_map_->mapToWorld(planned_path[i], planned_pos_world);
+    occ_map_->mapToWorld(map_planned_path[i], planned_pos_world);
+
+    geometry_msgs::msg::PoseStamped pose;
+
+    RCLCPP_INFO(
+      logger_, "  [%ld]: Map: (%f, %f, %f), World: (%f, %f, %f)", 
+      i,
+      map_planned_path[i](0), map_planned_path[i](1), map_planned_path[i](2),
+      planned_pos_world(0), planned_pos_world(1), planned_pos_world(2));
 
     pose.pose.position.x = planned_pos_world(0);
     pose.pose.position.y = planned_pos_world(1);
@@ -191,31 +211,31 @@ AStarPlanner::makePlan(
   return !plan.poses.empty();
 }
 
-rcl_interfaces::msg::SetParametersResult
-NavfnPlanner::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
-{
-  rcl_interfaces::msg::SetParametersResult result;
-  for (auto parameter : parameters) {
-    const auto & type = parameter.get_type();
-    const auto & name = parameter.get_name();
+// rcl_interfaces::msg::SetParametersResult
+// NavfnPlanner::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
+// {
+//   rcl_interfaces::msg::SetParametersResult result;
+//   for (auto parameter : parameters) {
+//     const auto & type = parameter.get_type();
+//     const auto & name = parameter.get_name();
 
-    if (type == ParameterType::PARAMETER_DOUBLE) {
-      if (name == name_ + ".tolerance") {
-        tolerance_ = parameter.as_double();
-      }
-    } else if (type == ParameterType::PARAMETER_BOOL) {
-      if (name == name_ + ".use_astar") {
-        use_astar_ = parameter.as_bool();
-      } else if (name == name_ + ".allow_unknown") {
-        allow_unknown_ = parameter.as_bool();
-      } else if (name == name_ + ".use_final_approach_orientation") {
-        use_final_approach_orientation_ = parameter.as_bool();
-      }
-    }
-  }
-  result.successful = true;
-  return result;
-}
+//     if (type == ParameterType::PARAMETER_DOUBLE) {
+//       if (name == name_ + ".tolerance") {
+//         tolerance_ = parameter.as_double();
+//       }
+//     } else if (type == ParameterType::PARAMETER_BOOL) {
+//       if (name == name_ + ".use_astar") {
+//         use_astar_ = parameter.as_bool();
+//       } else if (name == name_ + ".allow_unknown") {
+//         allow_unknown_ = parameter.as_bool();
+//       } else if (name == name_ + ".use_final_approach_orientation") {
+//         use_final_approach_orientation_ = parameter.as_bool();
+//       }
+//     }
+//   }
+//   result.successful = true;
+//   return result;
+// }
 
 } // namespace astar_planner
 

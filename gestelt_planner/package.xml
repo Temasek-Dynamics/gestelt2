@@ -12,37 +12,21 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
+  <depend>geometry_msgs</depend>
+  <depend>lifecycle_msgs</depend>
+  <depend>nav2_util</depend>
+  <depend>nav2_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>pluginlib</depend>
   <depend>rclcpp</depend>
-
-  <!-- transformations -->
+  <depend>rclcpp_components</depend>
+  <depend>rclcpp_lifecycle</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
 
-  <!-- Messages -->
-  <depend>std_msgs</depend>
-  <depend>tf2_geometry_msgs</depend>
-  <depend>nav_msgs</depend>
-  <depend>visualization_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>gestelt_interfaces</depend>
-  <depend>minco_interfaces</depend>
-  <depend>mavros_msgs</depend>
-  
-  <!-- Mapping and planning -->
-  <depend>voxel_map</depend>
-  <depend>dynamic_voronoi</depend>
-  <depend>space_time_astar</depend>
-  <depend>planner_utils</depend>
-  <depend>polytope_sfc_gen</depend>
+  <depend>gestelt_core</depend>
+  <depend>occ_map</depend>
 
-  <!-- Controller -->
-  <depend>minco_traj_gen</depend>
-  <depend>pvaj_mpc</depend>
-
-  <!-- Utils -->
-  <depend>logger_wrapper</depend>
-  <depend>viz_helper</depend>
-  
   <export>
     <build_type>ament_cmake</build_type>
   </export>

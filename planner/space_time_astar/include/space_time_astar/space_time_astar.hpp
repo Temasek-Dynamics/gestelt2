@@ -223,7 +223,7 @@ private:
   std::vector<VCell_T> path_idx_vt_; // (LOCAL FRAME) Final planned Path in terms of indices
   std::vector<VCell_T> path_idx_smoothed_t_; // (LOCAL FRAME) Final planned Path in terms of indices
 
-  std::unordered_map<VCell, double> g_cost_v_;  // Cost-to-come hash map
+  std::unordered_map<VCell, double> cost_to_come_v_;  // Cost-to-come hash map
   std::unordered_map<VCell_T, VCell_T> came_from_vt_; // Predecessor hash map
   PriorityQueue<VCell_T, double> open_list_vt_; // Min priority queue 
   std::unordered_set<VCell_T> closed_list_vt_; // All closed nodes

@@ -16,66 +16,75 @@ endif()
 set(EXTERNAL_LIBRARIES
 	eigen3_cmake_module
 	Eigen3
-  # nlohmann_json
 )
 
-set(ROS_LIBRABRIES
+set(ROS_LIBRARIES
 	ament_cmake
-	ament_cmake_ros
   rclcpp
-  # transformations
+  rclcpp_components
+
+  nav2_msgs
+  geometry_msgs
+  lifecycle_msgs
+  nav2_util
+  nav_msgs
+  pluginlib
+  rclcpp
+  rclcpp_lifecycle
   tf2
   tf2_ros
-  # Messages
-  nav_msgs
-  tf2_geometry_msgs
-  geometry_msgs
-  visualization_msgs
-  gestelt_interfaces
-  minco_interfaces
-  mavros_msgs
-  # Mapping and planning
-  voxel_map
-  dynamic_voronoi
-  space_time_astar
-  planner_utils
-  polytope_sfc_gen
-  # Controller
-  pvaj_mpc
-  minco_traj_gen
-  # utils
-  logger_wrapper
-  viz_helper
+
+  gestelt_core
+  occ_map
 )
 
 # find dependencies
-foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
-  find_package(${dependency} REQUIRED)
-endforeach()
-
 foreach(dependency IN ITEMS ${EXTERNAL_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-# Add executable
+foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+  find_package(${dependency} REQUIRED)
+endforeach()
 
-add_executable(navigator_node 
-  src/navigator_node.cpp 
-  src/navigator.cpp)
-ament_target_dependencies(navigator_node 
-  ${ROS_LIBRABRIES}
+set(executable_name planner_server)
+set(library_name ${executable_name}_core)
+
+add_library(${library_name}
+  src/planner_server.cpp
 )
-target_include_directories(navigator_node PUBLIC
+target_compile_features(${library_name} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(${library_name} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_compile_features(navigator_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_link_libraries(navigator_node
+ament_target_dependencies(${library_name}
+  ${ROS_LIBRARIES}
+)
+target_link_libraries(${library_name}
   Eigen3::Eigen
-  # nlohmann_json::nlohmann_json
 )
 
-install(TARGETS navigator_node
-  DESTINATION lib/${PROJECT_NAME})
+add_executable(${executable_name}
+  src/main.cpp
+)
+target_link_libraries(${executable_name} ${library_name} rclcpp::rclcpp)
+
+rclcpp_components_register_nodes(${library_name} "gestelt_planner::PlannerServer")
+
+install(TARGETS ${library_name}
+  EXPORT ${library_name}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(TARGETS ${executable_name}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -89,4 +98,20 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_include_directories(include/${PROJECT_NAME})
+ament_export_libraries(${library_name})
+ament_export_dependencies(
+  geometry_msgs
+  lifecycle_msgs
+  nav2_util
+  nav_msgs
+  pluginlib
+  rclcpp
+  rclcpp_lifecycle
+  tf2
+  tf2_ros
+  occ_map
+)
+ament_export_targets(${library_name})
 ament_package()
+

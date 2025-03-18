@@ -16,7 +16,7 @@ endif()
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(ROS_LIBRABRIES
+set(ROS_LIBRARIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
@@ -25,7 +25,7 @@ set(ROS_LIBRABRIES
   tf2_ros
 )
 # find dependencies
-foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+foreach(dependency IN ITEMS ${ROS_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -35,7 +35,7 @@ add_executable(fake_drone_node
 )
 ament_target_dependencies(fake_drone_node 
   Eigen3
-  ${ROS_LIBRABRIES}
+  ${ROS_LIBRARIES}
 )
 target_include_directories(fake_drone_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

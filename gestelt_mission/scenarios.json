@@ -1,4 +1,17 @@
 {
+  "single_drone_test": {
+    "description": "Single Drone Testing",
+    "map": "empty_20x20",
+    "num_agents": 1,
+    "take_off_height": 1.2,
+    "send_goals": false,
+    "spawns_pos": [
+      [0.0, 0.0, 0.0]
+    ],
+    "goals_pos": [
+      [2.0, 0.15, 1.2]
+    ]
+  },
   "goals_1d_0": {
     "description": "First set of goals for single agent",
     "map": "empty_20x20",

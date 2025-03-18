@@ -33,6 +33,8 @@
 
 #include "astar_planner/astar.hpp"
 
+#include "gestelt_core/global_planner.hpp"
+
 namespace astar_planner
 {
 
@@ -75,8 +77,8 @@ public:
    * @return nav_msgs::Path of the generated path
    */
   nav_msgs::msg::Path createPlan(
-    const geometry_msgs::msg::PoseStamped & start,
-    const geometry_msgs::msg::PoseStamped & goal,
+    const Eigen::Vector3d &start,
+    const Eigen::Vector3d &goal,
     std::function<bool()> cancel_checker) override;
 
 protected:
@@ -91,8 +93,8 @@ protected:
    * @return true if can find the path
    */
   bool makePlan(
-    const geometry_msgs::msg::Pose & start,
-    const geometry_msgs::msg::Pose & goal, double tolerance,
+    const Eigen::Vector3d &start,
+    const Eigen::Vector3d &goal, double tolerance,
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path & plan);
 
@@ -106,29 +108,30 @@ protected:
   // Planner based on ROS1 NavFn algorithm
   std::unique_ptr<AStar> planner_;
 
+  // Logger
+  rclcpp::Logger logger_{rclcpp::get_logger("AStarPlanner")};
+  // Clock
+  rclcpp::Clock::SharedPtr clock_;
+
   // TF buffer
   std::shared_ptr<tf2_ros::Buffer> tf_;
 
-  std::shared_ptr<OccMap::OccMap> occ_map_;
+  std::shared_ptr<occ_map::OccMap> occ_map_;
 
   /* Variables */
 
   // The global frame of the costmap
-  std::string map_frame_, global_frame_, name_;
+  std::string name_;
 
   /* Parameters */
-
+  bool print_runtime_{false};
   // If the goal is obstructed, the tolerance specifies how many meters the planner
   // can relax the constraint in x and y before failing
   double tolerance_{0.5};
-
+  bool allow_unknown_{true};
   int max_iterations_{99999};
-
   double tie_breaker_{1.001};
-
   int cost_function_type_{2};
-
-  bool print_runtime_{false};
 
   // parent node weak ptr
   rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
@@ -140,8 +143,8 @@ protected:
    * @brief Callback executed when a parameter change is detected
    * @param parameters list of changed parameters
    */
-  rcl_interfaces::msg::SetParametersResult
-  dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
+  // rcl_interfaces::msg::SetParametersResult
+  // dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 };
 
 }  // namespace astar_planner

@@ -18,7 +18,7 @@ set(EXTERNAL_LIBRARIES
 	Eigen3
 )
 
-set(ROS_LIBRABRIES
+set(ROS_LIBRARIES
 	ament_cmake
 	ament_cmake_ros
   geometry_msgs
@@ -33,7 +33,7 @@ set(EXPORTED_DEPENDENCIES
 )
 
 # find dependencies
-foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+foreach(dependency IN ITEMS ${ROS_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -46,7 +46,7 @@ endforeach()
 add_library(${PROJECT_NAME} src/${PROJECT_NAME}.cpp)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 ament_target_dependencies(${PROJECT_NAME} 
-  ${ROS_LIBRABRIES}
+  ${ROS_LIBRARIES}
 )
 target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(${PROJECT_NAME} PUBLIC

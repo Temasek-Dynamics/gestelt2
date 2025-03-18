@@ -3,7 +3,7 @@
 <package format="3">
   <name>occ_map</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Occupancy map</description>
   <maintainer email="john_tanguanzhong@hotmail.com">john</maintainer>
   <license>MIT</license>
 
@@ -19,6 +19,7 @@
   <depend>pcl_conversions</depend>
 
   <depend>message_filters</depend>
+  <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_eigen</depend>
 

@@ -18,14 +18,16 @@ set(EXTERNAL_LIBRARIES
 	eigen3_cmake_module
 	Eigen3)
 
-set(ROS_LIBRABRIES
+set(ROS_LIBRARIES
 	ament_cmake
 	ament_cmake_ros
 	rclcpp
+	rclcpp_lifecycle
   pcl_conversions
   sensor_msgs
   nav_msgs
   geometry_msgs
+  tf2
   tf2_ros
   logger_wrapper
   bonxai
@@ -34,7 +36,7 @@ set(ROS_LIBRABRIES
   ikd_tree
 )
 
-foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+foreach(dependency IN ITEMS ${ROS_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -46,21 +48,23 @@ add_library(occ_map SHARED
   src/occ_map.cpp 
 )
 add_library(occ_map::occ_map ALIAS occ_map)
-ament_target_dependencies(${PROJECT_NAME} 
-  ${ROS_LIBRABRIES}
-)
-target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_include_directories(${PROJECT_NAME} PUBLIC
+target_compile_features(occ_map PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_include_directories(occ_map PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-target_link_libraries(${PROJECT_NAME}
+ament_target_dependencies(
+  occ_map
+  ${ROS_LIBRARIES}
+)
+target_link_libraries(
+  occ_map
   ${PCL_LIBRARIES}
   Eigen3::Eigen
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
-target_compile_definitions(${PROJECT_NAME} PRIVATE "${PROJECT_NAME}_BUILDING_LIBRARY")
+target_compile_definitions(occ_map PRIVATE "OCC_MAP_BUILDING_LIBRARY")
 
 ############
 # Install ##
@@ -70,13 +74,18 @@ install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
+
 install(
-  TARGETS ${PROJECT_NAME}
-  EXPORT ${PROJECT_NAME}
+  TARGETS occ_map
+  EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
+
+# install(TARGETS occ_map
+#   DESTINATION lib/${PROJECT_NAME}
+# )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -97,7 +106,7 @@ ament_export_libraries(
   occ_map
 )
 ament_export_targets(
-  occ_map
+  export_${PROJECT_NAME}
 )
 
 ament_export_dependencies(

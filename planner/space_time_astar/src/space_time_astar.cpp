@@ -40,7 +40,7 @@ void SpaceTimeAStar::reset()
     marked_bubble_cells_.clear();
 
     // Space time Voronoi planning data structs
-    g_cost_v_.clear();
+    cost_to_come_v_.clear();
     came_from_vt_.clear();
     open_list_vt_.clear();
     closed_list_vt_.clear();
@@ -222,7 +222,7 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
 
     came_from_vt_[start_node] = start_node; // keep track of parents
     VCell start_node_3d(start_node_2d.x, start_node_2d.y, start_z_cm); 
-    g_cost_v_[start_node_3d] = 0; // cost to come
+    cost_to_come_v_[start_node_3d] = 0; // cost to come
 
     open_list_vt_.put(start_node, 0); // start_node has 0 f-cost
 
@@ -374,13 +374,13 @@ bool SpaceTimeAStar::generatePlan(const Eigen::Vector3d& start_pos_3d,
             //     continue;
             // }
 
-            double tent_g_cost = g_cost_v_[cur_node_3d] + cost_function(cur_node, nb_node);
+            double tent_g_cost = cost_to_come_v_[cur_node_3d] + cost_function(cur_node, nb_node);
 
             // If g_cost is not found or tentative cost is better than previously computed cost, then update costs
-            if (g_cost_v_.find(nb_node_3d) == g_cost_v_.end() 
-                || tent_g_cost < g_cost_v_[nb_node_3d])
+            if (cost_to_come_v_.find(nb_node_3d) == cost_to_come_v_.end() 
+                || tent_g_cost < cost_to_come_v_[nb_node_3d])
             {
-                g_cost_v_[nb_node_3d] = tent_g_cost;
+                cost_to_come_v_[nb_node_3d] = tent_g_cost;
                 // The tie_breaker is used to assign a larger weight to the h_cost and favour expanding nodes closer towards the goal
                 // f_cost = g_cost (cost to come) + h_cost (cost to go)
                 double f_cost = tent_g_cost + astar_params_.tie_breaker * cost_function(nb_node, goal_node);

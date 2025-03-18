@@ -16,7 +16,7 @@ endif()
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(ROS_LIBRABRIES
+set(ROS_LIBRARIES
 	ament_cmake
 	# builtin_interfaces
 	rclcpp
@@ -30,7 +30,7 @@ set(ROS_LIBRABRIES
 	minco_traj_gen
 	logger_wrapper)
 
-foreach(dependency IN ITEMS ${ROS_LIBRABRIES})
+foreach(dependency IN ITEMS ${ROS_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 

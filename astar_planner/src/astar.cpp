@@ -1,27 +1,20 @@
 #include "astar_planner/astar.hpp"
 
+#include "gestelt_core/planner_exceptions.hpp"
+
 #include "occ_map/cost_values.hpp"
 
 namespace astar_planner
 {
 
-/**
- * @brief  Constructs the planner
- * @param nx The x size of the map
- * @param ny The y size of the map
- * @param nz The z size of the map
- */
 AStar::AStar()
-{
-}
+{}
 
-~AStar::AStar()
-{
-
-}
+AStar::~AStar()
+{}
 
 void AStar::setCostmap(std::shared_ptr<occ_map::OccMap> occ_map, 
-    bool allow_unknown = true)
+                        bool allow_unknown)
 {
     allow_unknown_ = allow_unknown;
     occ_map_ = occ_map;
@@ -37,17 +30,28 @@ void AStar::setStart(const Eigen::Vector3d& start){
     start_pos_ = start;
 }
 
-int AStar::computePath(const int& max_iterations){
+int AStar::computePath(const int& max_iterations, 
+    std::function<bool()> cancelChecker) {
+
     if (!set_costmap_){
-        std::cout << "AStar: Costmap not initialized yet!" << std::endl;
+        throw gestelt_core::PlannerException("Costmap not set for A* planner");
         return 0;
     }
 
-    const auto start_idx = occ_map->posToIdx(start_pos_);
-    const auto goal_idx = occ_map->posToIdx(goal_pos_);
+    const auto start_idx = occ_map_->posToIdx(start_pos_);
+    const auto goal_idx = occ_map_->posToIdx(goal_pos_);
+
+    std::cout << "AStar::computePath in idx frame from " 
+            << start_idx.transpose() << " to " << goal_idx.transpose() << std::endl;
+        
+    // RCLCPP_INFO(
+    //     logger_, "AStar::computePath in map_frame from (%.2f, %.2f, %.2f) to "
+    //     "(%.2f, %.2f, %.2f).", 
+    //     start_idx(0), start_idx(1), start_idx(2),
+    //     goal_idx(0), goal_idx(1), goal_idx(2));
 
     came_from_[start_idx] = start_idx;
-    g_cost_[start_idx] = 0.0;
+    cost_to_come_[start_idx] = 0.0;
 
     open_list_.put(start_idx, 0.0);
 
@@ -55,8 +59,12 @@ int AStar::computePath(const int& max_iterations){
 
     while (!open_list_.empty())
     {
+        if (cancelChecker()){
+            throw gestelt_core::PlannerCancelled("Planner was cancelled");
+            return 0;
+        }
         if (num_iter >= max_iterations){
-            std::cout << "AStar reached maximum iterations!" << std::endl;
+            throw gestelt_core::PlannerTimedOut("Planner reached maximum iterations");
             return 0;
         }
         
@@ -71,14 +79,14 @@ int AStar::computePath(const int& max_iterations){
 
         for (auto nb_idx : getNeighbours(cur_idx))
         {
-            double tent_g_cost = g_cost_[cur_idx] + euclid_dist(cur_idx, nb_idx);
+            double tent_g_cost = cost_to_come_[cur_idx] + L1Dist(cur_idx, nb_idx);
          
-            if (!g_cost_.count(nb_idx) || tent_g_cost < g_cost_[nb_idx])
+            if (!cost_to_come_.count(nb_idx) || tent_g_cost < cost_to_come_[nb_idx])
             {
-                g_cost_[nb_idx] = tent_g_cost;
+                cost_to_come_[nb_idx] = tent_g_cost;
 
-                double f_cost = g_cost_[nb_idx] 
-                    + h_weight_ * euclid_dist(nb_idx, goal_idx);
+                double f_cost = cost_to_come_[nb_idx] 
+                    + h_weight_ * L1Dist(nb_idx, goal_idx);
 
                 if (!closed_list_.count(nb_idx)) 
                 {
@@ -94,7 +102,7 @@ int AStar::computePath(const int& max_iterations){
     return 0;
 }
 
-std::vector<Eigen::Vector3i> getNeighbours(const Eigen::Vector3i& idx)
+std::vector<Eigen::Vector3i> AStar::getNeighbours(const Eigen::Vector3i& idx)
 {
     std::vector<Eigen::Vector3i> neighbours;
 
@@ -110,11 +118,11 @@ std::vector<Eigen::Vector3i> getNeighbours(const Eigen::Vector3i& idx)
                     continue;
                 }
                 
-                Eigen::Vector3i nb_idx{ idx(0) + dx*occ_map_->getRes(), 
-                                        idx(1) + dy*occ_map_->getRes(), 
-                                        idx(2) + dz*occ_map_->getRes()};
+                Eigen::Vector3i nb_idx( idx(0) + dx * occ_map_->getRes(), 
+                                        idx(1) + dy * occ_map_->getRes(), 
+                                        idx(2) + dz * occ_map_->getRes());
 
-                if (!inGlobalMapIdx(nb_idx)){
+                if (!occ_map_->inGlobalMapIdx(nb_idx)){
                     continue;
                 }
 
@@ -124,7 +132,7 @@ std::vector<Eigen::Vector3i> getNeighbours(const Eigen::Vector3i& idx)
                     continue;
                 }
 
-                if (!allow_unknown && cost == occ_map::NO_INFORMATION){
+                if (!allow_unknown_ && cost == occ_map::NO_INFORMATION){
                     continue;
                 }
 
@@ -137,16 +145,7 @@ std::vector<Eigen::Vector3i> getNeighbours(const Eigen::Vector3i& idx)
 
 }
 
-double euclid_dist(const Eigen::Vector3i& a, const Eigen::Vector3i& b)
-{
-    double dx = abs(a.x() - b.x());
-    double dy = abs(a.y() - b.y());
-    double dz = abs(a.z() - b.z());
-  
-    return sqrt(dx*dx + dy*dy + dz*dz);
-}
-
-std::vector<Eigen::Vector3i> tracePath(const Eigen::Vector3i& goal_idx)
+std::vector<Eigen::Vector3i> AStar::tracePath(const Eigen::Vector3i& goal_idx)
 {
     std::vector<Eigen::Vector3i> planned_path_idx;
 
@@ -167,9 +166,9 @@ std::vector<Eigen::Vector3i> tracePath(const Eigen::Vector3i& goal_idx)
     return planned_path_idx;
 }
 
-std::vector<Eigen::Vector3d> getPath()
+std::vector<Eigen::Vector3d> AStar::getPath()
 {
-    std::vector<Eigen::Vector3i> planned_path_pos;
+    std::vector<Eigen::Vector3d> planned_path_pos;
 
     for (const auto& pt : planned_path_idx_){
         planned_path_pos.push_back(occ_map_->idxToPos(pt));

@@ -32,6 +32,7 @@
 
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/node_utils.hpp"
+#include "nav2_util/robot_utils.hpp"
 
 #include <pcl/point_cloud.h>
 #include <pcl/common/transforms.h>
@@ -54,7 +55,6 @@
 #include <bonxai/pcl_utils.hpp>
 #include <bonxai/probabilistic_map.hpp>
 
-
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
 
@@ -64,55 +64,6 @@ using namespace std::placeholders;
 
 namespace occ_map
 {
-  /* Fixed constants used during mapping*/
-  struct MappingParameters
-  {
-    // Local and global map are bounded 3d boxes
-    Eigen::Vector3d global_map_origin_; // Origin of map (Set to be the corner of the map)
-    Eigen::Vector3d local_map_origin_; // Origin of local map (Set to be the corner of the map) w.r.t map frame
-    Eigen::Vector3d local_map_max_; // max position of local map (Set to be the corner of the map)
-    
-    Eigen::Vector3d global_map_size_; //  Size of global occupancy map  (m)
-    Eigen::Vector3d local_map_size_; //  Size of local occupancy map (m)
-
-    Eigen::Matrix4d world_to_map{Eigen::Matrix4d::Identity(4, 4)};
-    Eigen::Matrix4d map_to_world{Eigen::Matrix4d::Identity(4, 4)};
-
-    Eigen::Vector3i local_map_num_voxels_; //  Size of local occupancy grid (no. of voxels)
-
-    double resolution_;   // Also defined as the size of each individual voxel                 
-    double inv_resolution_;   // Also defined as the size of each individual voxel                 
-    double agent_inflation_;    // [Comm-less] Dynamic obstacle Inflation in units of meters
-    double static_inflation_;    // Static obstacle inflation in units of meters
-    int inf_static_vox_;  // Inflation in number of voxels, = inflation_/resolution_ 
-    int inf_dyn_vox_; // Inflation in number of voxels
-
-    double pose_timeout_; // Timeout for pose update before emergency stop is activated
-    double max_range; // Max sensor range
-
-    /* visualization and computation time display */
-    std::string global_frame; // frame id of global map reference 
-    std::string map_frame; // frame id of UAV origin 
-    std::string camera_frame; // frame id of camera link
-    std::string base_link_frame; // frame id of base_link
-  };
-
-  /* Dynamic data used during mapping */
-  struct MappingData
-  {
-    // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map frame
-    Eigen::Matrix4d cam_to_map{Eigen::Matrix4d::Identity(4, 4)};
-
-    // Inverse of cam_to_map
-    Eigen::Matrix4d map_to_cam{Eigen::Matrix4d::Identity(4, 4)};
-
-    // [DYNAMIC]: Homogenous Transformation matrix of fbase_link to map frame
-    Eigen::Matrix4d bl_to_map{Eigen::Matrix4d::Identity(4, 4)};
-
-    double last_cloud_cb_time{-1.0}; // True if cloud and odom has timed out
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
 
 class OccMap : public nav2_util::LifecycleNode
 {
@@ -128,35 +79,68 @@ public:
   explicit OccMap(
     const std::string & name,
     const std::string & parent_namespace,
+    const std::string & local_namespace,
     const bool & use_sim_time);
 
   ~OccMap();
 
   // Get occupancy grid resolution
   inline double getRes() const{
-    return mp_.resolution_;
+    return resolution_;
   }
 
   // Get global map origin (This is defined to be a corner of the global map i.e. (-W/2, -L/2, 0))
   inline Eigen::Vector3d getGlobalOrigin() const{
-    return mp_.global_map_origin_; 
+    return global_map_origin_; 
   }
 
   // Get local map origin (This is defined to be a corner of the local map i.e. (-local_W/2, -local_L/2, 0))
   inline Eigen::Vector3d getLocalMapOrigin() const{
-    return mp_.local_map_origin_;
+    return local_map_origin_;
   }
 
   inline Eigen::Vector3d getLocalMapMax() const{
-    return mp_.local_map_max_;
+    return local_map_max_;
   }
 
   inline Eigen::Vector3d getLocalMapOrigin(const double& offset = 0.0) const{
-    return mp_.local_map_origin_ + Eigen::Vector3d::Constant(offset);
+    return local_map_origin_ + Eigen::Vector3d::Constant(offset);
   }
 
   inline Eigen::Vector3d getLocalMapMax(const double& offset = 0.0) const{
-    return mp_.local_map_max_ - Eigen::Vector3d::Constant(offset); 
+    return local_map_max_ - Eigen::Vector3d::Constant(offset); 
+  }
+
+  /**
+   * @brief  Get the costmap's use_radius_ parameter, corresponding to
+   * whether the footprint for the robot is a circle with radius robot_radius_
+   * or an arbitrarily defined footprint in footprint_.
+   * @return  use_radius_
+   */
+  bool getUseRadius() {return use_radius_;}
+
+  std::shared_ptr<tf2_ros::Buffer> getTfBuffer() {return tf_buffer_;}
+
+  bool getRobotPose(geometry_msgs::msg::PoseStamped & global_pose)
+  {
+    return nav2_util::getCurrentPose(
+      global_pose, *tf_buffer_,
+      global_frame_, base_link_frame_, transform_tolerance_);
+  }
+
+  bool transformPoseToGlobalFrame(
+    const geometry_msgs::msg::PoseStamped & input_pose,
+    geometry_msgs::msg::PoseStamped & transformed_pose)
+  {
+    if (input_pose.header.frame_id == global_frame_) {
+      transformed_pose = input_pose;
+      return true;
+    } 
+    else {
+      return nav2_util::transformPoseInTargetFrame(
+        input_pose, transformed_pose, *tf_buffer_,
+        global_frame_, transform_tolerance_);
+    }
   }
 
   // Get points in local map (in fixed map frame). Used by safe flight corridor generation
@@ -167,52 +151,82 @@ public:
 
   // Takes in position [global_frame] and check if within global map
   inline bool inGlobalMap(const Eigen::Vector3d &pos){
-    return (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
-      && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
-      && pos(2) >= 0.0 && pos(2) < mp_.global_map_size_(2));
+    return (pos(0) >= -global_map_size_(0)/2 && pos(0) < global_map_size_(0)/2
+      && pos(1) >= -global_map_size_(1)/2 && pos(1) < global_map_size_(1)/2
+      && pos(2) >= 0.0 && pos(2) < global_map_size_(2));
   }
 
   // Takes in position [global_frame] and check if within global map
   inline bool inGlobalMapIdx(const Eigen::Vector3i &idx){
     const auto pos = idxToPos(idx);
 
-    return (pos(0) >= -mp_.global_map_size_(0)/2 && pos(0) < mp_.global_map_size_(0)/2
-      && pos(1) >= -mp_.global_map_size_(1)/2 && pos(1) < mp_.global_map_size_(1)/2
-      && pos(2) >= 0.0 && pos(2) < mp_.global_map_size_(2));
+    return (pos(0) >= -global_map_size_(0)/2 && pos(0) < global_map_size_(0)/2
+      && pos(1) >= -global_map_size_(1)/2 && pos(1) < global_map_size_(1)/2
+      && pos(2) >= 0.0 && pos(2) < global_map_size_(2));
   }
 
   inline bool inLocalMap(const Eigen::Vector3d &pos){
-    return (pos(0) >= mp_.local_map_origin_(0)   && pos(0) < mp_.local_map_max_(0)
-    && pos(1) >= mp_.local_map_origin_(1)  && pos(1) < mp_.local_map_max_(1)
-    && pos(2) >= mp_.local_map_origin_(2)  && pos(2) < mp_.local_map_max_(2));
+    return (pos(0) >= local_map_origin_(0)   && pos(0) < local_map_max_(0)
+    && pos(1) >= local_map_origin_(1)  && pos(1) < local_map_max_(1)
+    && pos(2) >= local_map_origin_(2)  && pos(2) < local_map_max_(2));
   }
 
   inline Eigen::Vector3i posToIdx(const Eigen::Vector3d &pos){
-    return Eigen::Vector3i{ int32_t(pos(0) * mp_.inv_resolution_) - std::signbit(pos(0)),
-                            int32_t(pos(1) * mp_.inv_resolution_) - std::signbit(pos(1)),
-                            int32_t(pos(2) * mp_.inv_resolution_) - std::signbit(pos(2)) };
+    return Eigen::Vector3i{ int32_t(pos(0) * inv_resolution_) - std::signbit(pos(0)),
+                            int32_t(pos(1) * inv_resolution_) - std::signbit(pos(1)),
+                            int32_t(pos(2) * inv_resolution_) - std::signbit(pos(2)) };
   }
 
   inline Eigen::Vector3d idxToPos(const Eigen::Vector3i &idx){
-    return Eigen::Vector3d{(static_cast<double>(idx(0)) + 0.5) * mp_.resolution_,
-                            (static_cast<double>(idx(1)) + 0.5) * mp_.resolution_,
-                            (static_cast<double>(idx(2)) + 0.5) * mp_.resolution_};
+    return Eigen::Vector3d{(static_cast<double>(idx(0)) + 0.5) * resolution_,
+                            (static_cast<double>(idx(1)) + 0.5) * resolution_,
+                            (static_cast<double>(idx(2)) + 0.5) * resolution_};
   }
 
-  void mapToWorld(const Eigen::Vector3d& pos_map, Eigen::Vector3d& pos_world){
-    pos_world = (mp_.map_to_world * pos_map.homogeneous()).hnormalized(); 
+  bool mapToWorld(const Eigen::Vector3d& pos_map, Eigen::Vector3d& pos_world){
+    pos_world = (map_to_world_mat_ * pos_map.homogeneous()).hnormalized(); 
+
+    return true;
   }
 
-  void worldToMap(const Eigen::Vector3d& pos_world, Eigen::Vector3d& pos_map){
-    pos_map = (mp_.world_to_map * pos_world.homogeneous()).hnormalized();  
+  bool worldToMap(const Eigen::Vector3d& pos_world, Eigen::Vector3d& pos_map){
+    if (!inGlobalMap(pos_world)){
+      return false;
+    }
+
+    pos_map = (world_to_map_mat_ * pos_world.homogeneous()).hnormalized();  
+
+    return true;
   }
 
-  // Takes in position in [global_frame] and check if occupied
+  /**
+   * @brief Gets the cost of a given position in map coordinates
+   * 
+   * @param pos 
+   * @return int 
+   */
   int getCost(const Eigen::Vector3d &pos);
 
+    /**
+   * @brief Gets the cost of a given position in pixel coordinates
+   * 
+   * @param pos 
+   * @return int 
+   */
   int getCostIdx(const Eigen::Vector3i &idx);
+
+  std::string getGlobalFrameID() const{
+    return global_frame_;
+  }
+
+  // Provide a typedef to ease future code maintenance
+  typedef std::recursive_mutex mutex_t;
+  mutex_t * getMutex()
+  {
+    return access_;
+  }
   
-  protected:
+protected:
 
   /**
    * @brief Configure node
@@ -260,7 +274,6 @@ public:
 
     destroyBond();
   }
-
 
 private:
 
@@ -325,8 +338,12 @@ private:
   /* Params */
   int drone_id_{0}; //Drone ID
 
-  bool initial_transform_timeout_{false};
-  bool transform_tolerance_{false};
+  bool print_timer_{false}; // Flag to enable printing of debug information such as timers
+
+  double initial_transform_timeout_{0.0};
+  double transform_tolerance_{0.0};
+
+  bool use_radius_{true};
 
   // Noise filter
   double noise_search_radius_{0.3}; // Radius to search for neighbouring points
@@ -336,14 +353,44 @@ private:
   double cloud_in_min_z_{0.0};
   double cloud_in_max_z_{10.0};
 
-  bool print_timer_{false}; // Flag to enable printing of debug information such as timers
-
   double time_vel_{0.1}; // [s] time along velocity vector to mark as occupied
 
   double viz_occ_map_freq_{-1.0}; // Frequency to publish occupancy map visualization
   double update_local_map_freq_{-1.0};  // Frequency to update local map
 
-  MappingParameters mp_;  // Parameters used for map
+  std::string global_frame_; // frame id of global map reference 
+  std::string map_frame_; // frame id of UAV origin 
+  std::string camera_frame_; // frame id of camera link
+  std::string base_link_frame_; // frame id of base_link
+
+  // Local and global map are bounded 3d boxes
+  Eigen::Vector3d global_map_origin_; // Origin of map (Set to be the corner of the map)
+  Eigen::Vector3d local_map_origin_; // Origin of local map (Set to be the corner of the map) w.r.t map frame
+  Eigen::Vector3d local_map_max_; // max position of local map (Set to be the corner of the map)
+  
+  Eigen::Vector3d global_map_size_; //  Size of global occupancy map  (m)
+  Eigen::Vector3d local_map_size_; //  Size of local occupancy map (m)
+
+  Eigen::Matrix4d world_to_map_mat_{Eigen::Matrix4d::Identity(4, 4)};
+  Eigen::Matrix4d map_to_world_mat_{Eigen::Matrix4d::Identity(4, 4)};
+
+  double resolution_;   // Also defined as the size of each individual voxel                 
+  double inv_resolution_;   // Also defined as the size of each individual voxel                 
+  double inflation_;    // Static obstacle inflation in map units
+  int inflation_voxels_;  // Inflation in number of voxel 
+
+  double max_range_; // Max sensor range
+
+  // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map frame
+  Eigen::Matrix4d cam_to_map_mat_{Eigen::Matrix4d::Identity(4, 4)};
+
+  // Inverse of cam_to_map
+  // Eigen::Matrix4d map_to_cam{Eigen::Matrix4d::Identity(4, 4)};
+
+  // [DYNAMIC]: Homogenous Transformation matrix of fbase_link to map frame
+  Eigen::Matrix4d bl_to_map_mat_{Eigen::Matrix4d::Identity(4, 4)};
+
+  double last_cloud_cb_time_{-1.0}; // True if cloud and odom has timed out
 
   Bonxai::ProbabilisticMap::Options bonxai_options_; // Bonxai probabilistic map options
 
@@ -368,7 +415,6 @@ private:
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
 
   /* Data structures for maps */
-  MappingData md_;  // Mapping data
 
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_lcl_frame_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_gbl_frame_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
@@ -384,6 +430,8 @@ private:
   bool local_map_updated_{false}; // Indicates if first local map update is done 
 
   /* Mutexes */
+  mutex_t * access_;
+
   std::mutex bonxai_map_mtx_;  // Mutex lock for bonxai map
   std::mutex lcl_occ_map_mtx_;  // Mutex lock for occ_pcd_in_lcl_frame_
 
@@ -397,27 +445,6 @@ private:
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 };
-
-// inline bool OccMap::getNearestOccupiedCell(const Eigen::Vector3d &pos, 
-//                             Eigen::Vector3d& occ_nearest, double& dist_to_nearest_nb){
-//   int nearest_num_nb = 1;
-//   pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
-//   std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
-//   std::vector<float> nb_radius_vec;
-
-//   kdtree_->Nearest_Search(search_point, nearest_num_nb, nb_points, nb_radius_vec);
-
-//   if (nb_points.empty()){
-//     return false;
-//   }
-
-//   dist_to_nearest_nb = sqrt(nb_radius_vec[0]);
-
-//   occ_nearest = Eigen::Vector3d{nb_points[0].x, nb_points[0].y, nb_points[0].z};
-
-//   return true;
-// }
-
 
 }  // namespace occ_map
 
