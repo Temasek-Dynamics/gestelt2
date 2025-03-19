@@ -18,15 +18,11 @@ from gestelt_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
 from rclpy.duration import Duration
 
-"""
-Basic navigation demo to go to pose.
-"""
+from  gestelt_commander.scenario import *
 
-def main():
-    rclpy.init()
 
-    navigator = BasicNavigator()
 
+def planPath(navigator):
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'world'
     initial_pose.header.stamp = navigator.get_clock().now().to_msg()
@@ -35,21 +31,8 @@ def main():
     initial_pose.pose.position.z = 0.5
     initial_pose.pose.orientation.w = 1.0
 
-    # Activate navigation, if not autostarted. This should be called after setInitialPose()
-    # or this will initialize at the origin of the map and update the costmap with bogus readings.
-    # If autostart, you should `waitUntilNav2Active()` instead.
-    # navigator.lifecycleStartup()
-
     # Wait for navigation to fully activate, since autostarting nav2
     navigator.waitUntilNav2Active(navigator='planner_server', localizer='robot_localization')
-
-    # If desired, you can change or load the map as well
-    # navigator.changeMap('/path/to/map.yaml')
-
-    # You may use the navigator to clear or obtain costmaps
-    # navigator.clearAllCostmaps()  # also have clearLocalCostmap() and clearGlobalCostmap()
-    # global_costmap = navigator.getGlobalCostmap()
-    # local_costmap = navigator.getLocalCostmap()
 
     # Go to our demos first goal pose
     goal_pose = PoseStamped()
@@ -107,7 +90,57 @@ def main():
     else:
         print('Goal has an invalid return status!')
 
-    navigator.lifecycleShutdown()
+def main(args=None):
+    rclpy.init(args=args)
+
+    mission = Mission()
+    navigator = BasicNavigator()
+
+    try: 
+        #########
+        # Take off 
+        #########
+        mission.cmdAllDronesPubNamespaced(
+            UAVCommand.Request.COMMAND_TAKEOFF, 
+            UAVState.IDLE,
+            value=mission.scenario.take_off_height)
+        mission.get_logger().info("All drones TAKING OFF")
+        
+        #########
+        # Wait for Hover
+        #########
+        if not mission.waitForReqState(UAVState.HOVERING, max_retries=20):
+            raise Exception("Failed to transition to hover mode")
+        mission.get_logger().info("All drones are in HOVER MODE")
+
+        # Send a goal
+        # planPath(navigator)
+
+        #########
+        # Mission mode
+        #########
+        mission.cmdAllDronesPubNamespaced(
+            UAVCommand.Request.COMMAND_START_MISSION, 
+            UAVState.HOVERING,
+            mode=0)
+        mission.get_logger().info("All drones swtching switching to MISSION MODE")
+
+        #########
+        # Wait for mission
+        #########
+        if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
+            raise Exception("Failed to transition to mission mode")
+        
+        mission.get_logger().info("All drones in MISSION MODE")
+
+        rclpy.spin(mission)
+
+    except Exception as e:
+        print(e)
+
+    mission.destroy_node()
+    # navigator.lifecycleShutdown()
+    rclpy.shutdown()
 
     exit(0)
 

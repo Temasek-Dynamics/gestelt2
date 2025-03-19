@@ -18,31 +18,19 @@ find_package(Eigen3 REQUIRED)
 
 set(ROS_LIBRARIES
 	ament_cmake
-	# builtin_interfaces
 	rclcpp
 	rclpy
 	geometry_msgs
-	mavros_msgs
 	nav_msgs
 	sensor_msgs
 	gestelt_interfaces
-	minco_interfaces
-	minco_traj_gen
+	px4_msgs
+	tf2_ros
 	logger_wrapper)
 
 foreach(dependency IN ITEMS ${ROS_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
-
-set(EXPORTED_DEPENDENCIES
-	ament_cmake
-	rclcpp
-	rosidl_default_runtime
-	Eigen3
-	geometry_msgs
-	sensor_msgs
-	gestelt_interfaces
-	minco_interfaces)
 
 #################
 # Setup targets #
@@ -62,23 +50,34 @@ target_include_directories(frame_transforms PUBLIC
 )
 
 # Trajectory Server
-add_executable(trajectory_server_node src/trajectory_server.cpp src/uavsm.cpp)
-ament_target_dependencies(trajectory_server_node 
-	rclcpp 
-	Eigen3
-	geometry_msgs
-	nav_msgs
-	mavros_msgs
-	sensor_msgs
-	gestelt_interfaces
-	minco_interfaces
-	minco_traj_gen
-	logger_wrapper)
-target_include_directories(trajectory_server_node PUBLIC
+add_library(
+	trajectory_server 
+	src/trajectory_server.cpp 
+	src/uavsm.cpp
+)
+ament_target_dependencies(
+	trajectory_server
+	${ROS_LIBRARIES}
+)
+target_link_libraries(
+	trajectory_server
+	Eigen3::Eigen
+)
+target_include_directories(trajectory_server PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
-target_link_libraries(trajectory_server_node frame_transforms)
+target_link_libraries(trajectory_server frame_transforms)
+
+add_executable(
+	trajectory_server_node 
+	src/main.cpp 
+)
+target_link_libraries(
+	trajectory_server_node 
+	trajectory_server
+	rclcpp::rclcpp
+)
 
 # (For testing) Trajectory Server UAV Command service client 
 add_executable(uav_cmd_srv_client src/uav_cmd_srv_client.cpp )
@@ -95,34 +94,31 @@ target_include_directories(uav_cmd_srv_client PUBLIC
 ############
 install(TARGETS 
 	trajectory_server_node
-	uav_cmd_srv_client 
 DESTINATION lib/${PROJECT_NAME})
 
 # Export information to downstream packages
-ament_export_dependencies(${EXPORTED_DEPENDENCIES})
+# ament_export_dependencies()
 
-ament_export_include_directories(include)
+# ament_export_include_directories(include)
 
-ament_export_targets(export_frame_transforms HAS_LIBRARY_TARGET)
+# ament_export_targets(export_frame_transforms HAS_LIBRARY_TARGET)
 
-ament_export_libraries(frame_transforms)
+# ament_export_libraries(frame_transforms)
 
 # Install header files
-install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
+# install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 
-install(TARGETS frame_transforms
-	EXPORT export_frame_transforms
-	ARCHIVE DESTINATION lib
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin
-	INCLUDES DESTINATION include
-)
+# install(TARGETS frame_transforms
+# 	EXPORT export_frame_transforms
+# 	ARCHIVE DESTINATION lib
+# 	LIBRARY DESTINATION lib
+# 	RUNTIME DESTINATION bin
+# 	INCLUDES DESTINATION include
+# )
 
-# Install config files
-install(DIRECTORY config DESTINATION share/${PROJECT_NAME}/)
+# # Install config files
+# install(DIRECTORY config DESTINATION share/${PROJECT_NAME}/)
 
-# Install tests
-# install(DIRECTORY test DESTINATION share/${PROJECT_NAME}/)
 
 ############
 # Testing ##
@@ -139,17 +135,5 @@ if(BUILD_TESTING)
 	ament_lint_auto_find_test_dependencies()
 endif()
 
-###########
-# Python ##
-###########
-
-# Install Python modules
-# ament_python_install_package(${PROJECT_NAME})
-
-# # Install Python executables
-# install(PROGRAMS
-#   src/.py
-#   DESTINATION lib/${PROJECT_NAME}
-# )
 
 ament_package()

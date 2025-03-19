@@ -17,7 +17,6 @@ Dependencies:
     - PX4-msgs: Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
 - Simulation 
     - PX4-Autopilot: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
-    - mavros: Commit `b49095727a6ff160e1e913b90a4ce50e383e8863`
 - Solvers
     - [OSQP](https://osqp.org/docs/index.html)
     - [OSQP-Eigen](https://github.com/robotology/osqp-eigen)
@@ -50,9 +49,11 @@ cd ~/gestelt_ws/ && colcon build --symlink-install
 5. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
 cd ~/gestelt_ws/PX4-Autopilot/
+# Clean just in case
+make distclean
 bash ./Tools/setup/ubuntu.sh 
 # Make SITL target for simulation
-DONT_RUN=1 make px4_sitl 
+DONT_RUN=1 make px4_sitl gz_x500
 ```
 
 6. (OPTIONAL FOR Micro-XCRE DDS) Install dependencies for communication with FCU 

@@ -1,21 +1,9 @@
 /**:
   ros__parameters:
-    # Available trajectory types: MINCO, MPC
-    trajectory_type: MPC
-
-    # Available interfaces are MAVROS or MICRO_XRCE_DDS
-    fcu_interface: MAVROS
-
     # Safety params
     safety:
       navigator_state_timeout: 0.5  # [s] Timeout for navigator heartbeat
       geofence: # [m] Geofence around world origin
-        # min_x: -18.0
-        # min_y: -18.0
-        # min_z: 0.45
-        # max_x: 18.0
-        # max_y: 18.0
-        # max_z: 4.5
         min_x: -50.0
         min_y: -50.0
         min_z: -0.5

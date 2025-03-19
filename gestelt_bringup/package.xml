@@ -16,8 +16,9 @@
   <depend>nav2_common</depend>
   <depend>gestelt_planner</depend>
   <depend>gestelt_commander</depend>
-  <depend>gestelt_mission</depend>
   
+  <depend>trajectory_server</depend>
+
   <depend>fake_sensor</depend>
   <depend>fake_map</depend>
 

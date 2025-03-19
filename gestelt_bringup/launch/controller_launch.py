@@ -21,7 +21,7 @@ from launch.actions import DeclareLaunchArgument, GroupAction, SetEnvironmentVar
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import LoadComposableNodes, SetParameter
-from launch_ros.actions import Node
+from launch_ros.actions import Node, PushROSNamespace
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from nav2_common.launch import RewrittenYaml
 
@@ -40,6 +40,7 @@ def generate_launch_description():
     log_level = LaunchConfiguration('log_level')
 
     drone_id = LaunchConfiguration('drone_id')
+
 
     stdout_linebuf_envvar = SetEnvironmentVariable(
         'RCUTILS_LOGGING_BUFFERED_STREAM', '1'
@@ -108,52 +109,59 @@ def generate_launch_description():
     camera_frame = ["d", drone_id, "_camera_link"]
 
     # Create our own temporary YAML files that include substitutions
-    param_substitutions = {
-        'autostart': autostart,
-        'occ_map/occ_map.ros__parameters.global_frame': global_frame,
-        'occ_map/occ_map.ros__parameters.map_frame': map_frame,
-        'occ_map/occ_map.ros__parameters.camera_frame': camera_frame,
-        'occ_map/occ_map.ros__parameters.base_link_frame': base_link_frame,
-    }
+    # param_substitutions = {
+    #     'autostart': autostart,
+    #     'occ_map/occ_map.ros__parameters.global_frame': global_frame,
+    #     'occ_map/occ_map.ros__parameters.map_frame': map_frame,
+    #     'occ_map/occ_map.ros__parameters.camera_frame': camera_frame,
+    #     'occ_map/occ_map.ros__parameters.base_link_frame': base_link_frame,
+    # }
 
-    configured_params = ParameterFile(
-        RewrittenYaml(
-            source_file=params_file,
-            root_key=namespace,
-            param_rewrites=param_substitutions,
-            convert_types=True,
-        ),
-        allow_substs=True,
-    )
-
+    # configured_params = ParameterFile(
+    #     RewrittenYaml(
+    #         source_file=params_file,
+    #         root_key=namespace,
+    #         param_rewrites=param_substitutions,
+    #         convert_types=True,
+    #     ),
+    #     allow_substs=True,
+    # )
 
     lifecycle_nodes = [
-        'planner_server',
+        'controller_server',
+        'trajectory_server',
     ]
 
     load_nodes = GroupAction(
         condition=IfCondition(PythonExpression(['not ', use_composition])),
         actions=[
-            SetParameter('use_sim_time', use_sim_time),
+            # SetParameter('use_sim_time', use_sim_time),
+            PushROSNamespace(['d', drone_id]),
             Node(
-                package='gestelt_planner',
-                executable='planner_server',
-                name='planner_server',
+                package='trajectory_server',
+                executable='trajectory_server_node',
+                name='trajectory_server',
                 output='screen',
                 respawn=use_respawn,
                 respawn_delay=2.0,
-                parameters=[configured_params],
+                parameters=[
+                    {'drone_id': drone_id},
+                    {'map_frame': map_frame},
+                    {'base_link_frame': base_link_frame},
+                    {'safety.navigator_state_timeout': 0.5},
+                    {'safety.geofence.min_x': -50.0},
+                    {'safety.geofence.min_y': -50.0},
+                    {'safety.geofence.min_z': -0.5},
+                    {'safety.geofence.max_x': 50.0},
+                    {'safety.geofence.max_y': 50.0},
+                    {'safety.geofence.max_z': 5.0},
+                    {'set_offb_ctrl_freq': 10.0},
+                    {'pub_state_freq': 40.0},
+                    {'state_machine_tick_freq': 30.0},
+                    {'pub_ctrl_freq': 30.0},
+                ],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=remappings,
-            ),
-            Node(
-                package='nav2_lifecycle_manager',
-                executable='lifecycle_manager',
-                name='lifecycle_manager_navigation',
-                output='screen',
-                arguments=['--ros-args', '--log-level', log_level],
-                parameters=[{'autostart': autostart}, 
-                            {'node_names': lifecycle_nodes}],
             ),
         ],
     )

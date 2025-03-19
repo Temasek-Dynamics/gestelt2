@@ -68,7 +68,8 @@ class Scenario:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
 def generate_launch_description():
-    scenario = Scenario(os.path.join(get_package_share_directory('gestelt_mission'), 'scenarios.json'),
+    scenario = Scenario(
+        os.path.join(get_package_share_directory('gestelt_commander'), 'scenarios.json'),
         SCENARIO_NAME
     )
     fake_map_pcd_filepath = os.path.join(
@@ -77,7 +78,8 @@ def generate_launch_description():
     )
 
     px4_gz = os.path.join(
-      os.path.expanduser("~"), 'PX4-Autopilot', "Tools/simulation/gz/simulation-gazebo"
+      os.path.expanduser("~"), 'PX4-Autopilot', 
+      "Tools/simulation/gz/simulation-gazebo"
     )
 
     px4_build_dir = os.path.join(
@@ -145,7 +147,7 @@ def generate_launch_description():
         cmd=[
             'python3', px4_gz,
             '--world', 'default',
-            '--headless',
+            # '--headless',
         ],
         name='gazebo',
         shell=False
@@ -175,11 +177,16 @@ def generate_launch_description():
     )
 
     # Send single test goal
-    test_single_goal_1 = Node(
+    mission_node = Node(
         package='gestelt_commander',
-        executable='test_single_goal_1',
-        emulate_tty=True,
+        executable='test_take_off_goal',
         output='screen',
+        emulate_tty=False,
+        shell=True,
+        parameters = [
+            {'scenario': scenario.name},
+            {'init_delay': 1},
+        ]
     )
 
     # Create the launch description and populate
@@ -198,7 +205,7 @@ def generate_launch_description():
     ld.add_action(xrce_agent)
     ld.add_action(rviz_cmd)
 
-    ld.add_action(test_single_goal_1)
+    ld.add_action(mission_node)
 
     # Generate nodes of SITL drone instances according to scenario
     for drone_id in range(scenario.num_agents):
@@ -212,7 +219,7 @@ def generate_launch_description():
             GroupAction(
                 actions=[
                     IncludeLaunchDescription(
-                        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'drone_sim_launch.py')),
+                        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'bringup_launch.py')),
                         launch_arguments={
                             'namespace': namespace,
                             'use_namespace': use_namespace,
@@ -261,10 +268,10 @@ def generate_launch_description():
                             {'global_frame': global_frame},
                             {'map_frame': map_frame},
                             {'sensor_frame': camera_frame},
+                            
                             {'pcd_map.filepath': fake_map_pcd_filepath},
                             
                             {'tf.listen_to_tf': True},
-                            {'tf.listen_freq': 60.0},
                             
                             {'pcd_voxel_filter.enable': True},
                             {'pcd_voxel_filter.voxel_size': 0.1},
@@ -273,12 +280,35 @@ def generate_launch_description():
                             {'fake_laser.sensor_range': 5.0},
                             {'fake_laser.resolution': 0.1},
 
-                            {'horizontal.laser_line_num': 280},
-                            {'horizontal.laser_range_dgr': 359.0},
-                            {'vertical.laser_line_num': 15},
-                            {'vertical.laser_range_dgr': 40.0},
+                            {'fake_laser.horizontal.laser_line_num': 280},
+                            {'fake_laser.horizontal.laser_range_dgr': 359.0},
+                            {'fake_laser.vertical.laser_line_num': 15},
+                            {'fake_laser.vertical.laser_range_dgr': 40.0},
                         ],
                     ),
+                    # Node(
+                    #     package='trajectory_server',
+                    #     executable='trajectory_server_node',
+                    #     name='trajectory_server',
+                    #     output='screen',
+                    #     respawn_delay=2.0,
+                    #     parameters=[
+                    #         {'drone_id': drone_id},
+                    #         {'map_frame': map_frame},
+                    #         {'base_link_frame': base_link_frame},
+                    #         {'safety.navigator_state_timeout': 0.5},
+                    #         {'safety.geofence.min_x': -50.0},
+                    #         {'safety.geofence.min_y': -50.0},
+                    #         {'safety.geofence.min_z': -0.5},
+                    #         {'safety.geofence.max_x': 50.0},
+                    #         {'safety.geofence.max_y': 50.0},
+                    #         {'safety.geofence.max_z': 5.0},
+                    #         {'set_offb_ctrl_freq': 10.0},
+                    #         {'pub_state_freq': 40.0},
+                    #         {'state_machine_tick_freq': 30.0},
+                    #         {'pub_ctrl_freq': 30.0},
+                    #     ],
+                    # ),
                     ExecuteProcess(
                         name=['px4_sitl_', str(drone_id)],
                         cmd=[
@@ -288,7 +318,8 @@ def generate_launch_description():
                             'PX4_SIM_MODEL=gz_x500',
                             'PX4_GZ_STANDALONE=1',
                             ['PX4_GZ_MODEL_POSE="', 
-                                str(scenario.spawns_pos[drone_id][0]), ',', str(scenario.spawns_pos[drone_id][1]), 
+                                str(scenario.spawns_pos[drone_id][0]), ',', 
+                                str(scenario.spawns_pos[drone_id][1]), 
                                 ',0,0,0,', str(scenario.spawns_pos[drone_id][2]), '"'],
                             # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
                             'ROS_DOMAIN_ID=0',

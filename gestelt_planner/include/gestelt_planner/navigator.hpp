@@ -49,7 +49,6 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
-#include <mavros_msgs/msg/position_target.hpp>
 
 #include <gestelt_interfaces/msg/plan_request.hpp>
 #include <gestelt_interfaces/msg/space_time_path.hpp>

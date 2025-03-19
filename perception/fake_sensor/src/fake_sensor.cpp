@@ -17,12 +17,10 @@ FakeSensor::FakeSensor()
 	this->declare_parameter("tf.listen_to_tf", false);
 	this->declare_parameter("tf.listen_freq", -1.0);
 
-	num_drones_ = this->declare_parameter("num_drones", 1);
-
 	// Frame parameters
 	this->declare_parameter("global_frame", "world");
 	this->declare_parameter("map_frame", "map");
-	this->declare_parameter("sensor_frame", "camera_frame");
+	this->declare_parameter("sensor_frame", "camera_link");
 
 	// Pcd map file parameters
 	this->declare_parameter("pcd_map.filepath", "");
@@ -43,10 +41,9 @@ FakeSensor::FakeSensor()
 	/* Get Parameters */
 	drone_id_ = this->get_parameter("drone_id").as_int();
 	listen_to_tf_ = this->get_parameter("tf.listen_to_tf").as_bool();
-	double tf_listen_freq = this->get_parameter("tf.listen_freq").as_double();
 
 	// Frame parameters
-	global_frame_ = this->get_parameter("map_frame").as_string();
+	global_frame_ = this->get_parameter("global_frame").as_string();
 	map_frame_ = this->get_parameter("map_frame").as_string();
 	sensor_frame_ = this->get_parameter("sensor_frame").as_string();
 
@@ -71,26 +68,6 @@ FakeSensor::FakeSensor()
 
 	auto reentrant_sub_opt = rclcpp::SubscriptionOptions();
 	reentrant_sub_opt.callback_group = reentrant_cb_grp_;
-
-	// Subscribe to odometry individually from each agent
-	swarm_poses_.resize(num_drones_);
-	for (int i = 0; i < num_drones_; i++){
-	  if (i == drone_id_){
-	    continue;
-	  }
-
-	  std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
-	    std::bind(&FakeSensor::swarmOdomCB, this, _1, i);
-
-	  swarm_odom_subs_.push_back(
-	    this->create_subscription<nav_msgs::msg::Odometry>(
-	      "/d"+ std::to_string(i) + "/" + "mavros/local_position/odom", 
-	      rclcpp::SensorDataQoS(), 
-	      bound_callback_func, 
-	      reentrant_sub_opt)
-	  );
-	}
-
 
 	/* Publishers */
     sensor_pc_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 10);
@@ -119,42 +96,43 @@ FakeSensor::FakeSensor()
 	// Load point cloud map from file
 	if (pcl::io::loadPCDFile(map_filepath, *fake_map_cloud_) == -1) 
 	{
-		RCLCPP_ERROR(this->get_logger(), "drone%d has invalid PCD filepath input: %s\n", 
+		RCLCPP_ERROR(this->get_logger(), "Invalid PCD filepath input: %s\n", 
 			drone_id_, map_filepath.c_str());
 		rclcpp::shutdown();
 	}
-	RCLCPP_INFO(this->get_logger(), "drone%d loaded PCD input file from %s\n", 
+	RCLCPP_INFO(this->get_logger(), "Loaded PCD input file from %s\n", 
 		drone_id_, map_filepath.c_str());
 
-	// Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
-	try {
-		auto tf_gbl_to_map = tf_buffer_->lookupTransform(
-			map_frame_, global_frame_,
-			tf2::TimePointZero,
-			tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+	// // Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
+	// try {
+	// 	RCLCPP_INFO(this->get_logger(), "Getting transform from map to global frame");
+	// 	auto tf_res = tf_buffer_->lookupTransform(
+	// 		map_frame_, global_frame_, tf2::TimePointZero,
+	// 		tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
 
-		// Create transformation matrix from global to sensor frame
-		gbl_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
-			tf_gbl_to_map.transform.rotation.w,
-			tf_gbl_to_map.transform.rotation.x,
-			tf_gbl_to_map.transform.rotation.y,
-			tf_gbl_to_map.transform.rotation.z).toRotationMatrix();
-		gbl_to_map_tf_mat_(0, 3) = tf_gbl_to_map.transform.translation.x;
-		gbl_to_map_tf_mat_(1, 3) = tf_gbl_to_map.transform.translation.y;
-		gbl_to_map_tf_mat_(2, 3) = tf_gbl_to_map.transform.translation.z;
-		gbl_to_map_tf_mat_(3, 3) = 1.0;
-	} 
-	catch (const tf2::TransformException & ex) {
-			RCLCPP_ERROR(
-				this->get_logger(), "Could not get transform from global frame(%s) to map_frame_(%s): %s. SHUTTING DOWN.",
-				global_frame_.c_str(), map_frame_.c_str(), ex.what());
-		rclcpp::shutdown();
-		return;
-	}
+	// 	// Create transformation matrix from global to sensor frame
+	// 	gbl_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
+	// 		tf_res.transform.rotation.w,
+	// 		tf_res.transform.rotation.x,
+	// 		tf_res.transform.rotation.y,
+	// 		tf_res.transform.rotation.z).toRotationMatrix();
 
-	// Transform point cloud map from global_frame_ frame to map_frame_
-	pcl::transformPointCloud (*fake_map_cloud_, *fake_map_cloud_, gbl_to_map_tf_mat_);
-  	fake_map_cloud_->header.frame_id = map_frame_;
+	// 	gbl_to_map_tf_mat_.block<3,1>(0,3) = Eigen::Vector3d(
+	// 		tf_res.transform.translation.x,
+	// 		tf_res.transform.translation.y,
+	// 		tf_res.transform.translation.z);
+	// } 
+	// catch (const tf2::TransformException & ex) {
+	// 	RCLCPP_ERROR(
+	// 		this->get_logger(), "Could not get transform from global frame(%s) to map_frame_(%s): %s. SHUTTING DOWN.",
+	// 		global_frame_.c_str(), map_frame_.c_str(), ex.what());
+	// 	rclcpp::shutdown();
+	// 	return;
+	// }
+
+	// // Transform point cloud map from global_frame_ frame to map_frame_
+	// pcl::transformPointCloud (*fake_map_cloud_, *fake_map_cloud_, gbl_to_map_tf_mat_);
+  	fake_map_cloud_->header.frame_id = global_frame_;
 
 	// Set up sensor renderer
 	sensor_renderer_.set_parameters(
@@ -166,20 +144,12 @@ FakeSensor::FakeSensor()
 		vtc_laser_line_num,
 		hrz_laser_line_num);
 
-	/**
-	 * Timers that handles drone state at each time frame 
-	*/
-	if (listen_to_tf_){
-		tf_listen_timer_ = this->create_wall_timer((1.0/tf_listen_freq) *1000ms, 
-								std::bind(&FakeSensor::TFListenCB, this),
-								reentrant_cb_grp_);
-	}
-
 	sensor_update_timer_ = this->create_wall_timer((1.0/sensor_refresh_freq) *1000ms, 
 							std::bind(&FakeSensor::sensorUpdateTimerCB, this),
 							reentrant_cb_grp_);
-}
 
+	RCLCPP_INFO(this->get_logger(), "Initialized");
+}
 
 FakeSensor::~FakeSensor()
 {}
@@ -195,137 +165,55 @@ void FakeSensor::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
 	pose_rcv_ = true;
 }
 
-
-void FakeSensor::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id)
-{
-  // Get other agent's frame to map_frame transform
-  try {
-    auto tf_res = tf_buffer_->lookupTransform(
-		map_frame_, msg->header.frame_id,  
-      tf2::TimePointZero,
-      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.5)));
-
-	tf2::Quaternion q(
-		tf_res.transform.rotation.x,
-		tf_res.transform.rotation.y,
-		tf_res.transform.rotation.z,
-		tf_res.transform.rotation.w
-	);
-	tf2::Vector3 p(
-		tf_res.transform.translation.x,
-		tf_res.transform.translation.y,
-		tf_res.transform.translation.z
-	);
-
-	tf2::Transform transform(q, p);
-
-	tf2::Vector3 pt_in_src_frame(msg->pose.pose.position.x, 
-		msg->pose.pose.position.y, 
-		msg->pose.pose.position.z);
-
-	tf2::Vector3 pt_in_tgt_frame = transform * pt_in_src_frame;
-
-	swarm_poses_[id] = Eigen::Vector3d(pt_in_tgt_frame.x(), pt_in_tgt_frame.y(), pt_in_tgt_frame.z());
-
-  } 
-  catch (const tf2::TransformException & ex) {
-		RCLCPP_ERROR(
-			this->get_logger(), "Could not get transform from agent frame '%s' to map frame '%s': %s",
-			msg->header.frame_id.c_str(), map_frame_.c_str(), ex.what());
-    return;
-  }
-
-}
-
 /* Timer Callbacks*/
-
-void FakeSensor::TFListenCB()
-{
-	try
-    {
-		{
-			std::lock_guard<std::mutex> sensor_tf_mtx_guard(sensor_tf_mutex_);
-			// Get transform from sensor_frame to global frame
-			sensor_to_map_tf_ = tf_buffer_->lookupTransform(
-				map_frame_, sensor_frame_, 
-				tf2::TimePointZero,
-				tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.2)));
-		}
-		cam_tf_valid_ = true;
-    }
-    catch (const tf2::TransformException &ex)
-    {
-		RCLCPP_ERROR(
-			this->get_logger(), "Could not get transform from sensor_frame(%s) to map_frame_(%s): %s",
-			sensor_frame_.c_str(), map_frame_.c_str(), ex.what());
-
-		cam_tf_valid_ = false;
-		return;
-    }
-}
 
 void FakeSensor::sensorUpdateTimerCB()
 {
-
 	if (listen_to_tf_){
-		if (!cam_tf_valid_)
-		{
+
+		// Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
+		try {
+			auto tf_res = tf_buffer_->lookupTransform(
+				sensor_frame_, global_frame_, tf2::TimePointZero,
+				tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+
+			// Create transformation matrix from global to sensor frame
+			sensor_to_gbl_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
+				tf_res.transform.rotation.w,
+				tf_res.transform.rotation.x,
+				tf_res.transform.rotation.y,
+				tf_res.transform.rotation.z).toRotationMatrix();
+
+			sensor_to_gbl_tf_mat_.block<3,1>(0,3) = Eigen::Vector3d(
+				tf_res.transform.translation.x,
+				tf_res.transform.translation.y,
+				tf_res.transform.translation.z);
+		} 
+		catch (const tf2::TransformException & ex) {
+			RCLCPP_ERROR(this->get_logger(), 
+				"Could not get transform from sensor_frame (%d) to global_frame(%d): %s. ",
+				sensor_frame_.c_str(), global_frame_.c_str(), ex.what());
 			return;
 		}
 
-		geometry_msgs::msg::TransformStamped sensor_to_map_tf;
+		Eigen::Matrix3d sensor_rot = sensor_to_gbl_tf_mat_.block<3, 3>(0, 0);
+		Eigen::Vector3d sensor_pos = sensor_to_gbl_tf_mat_.block<3,1>(0,3);
 
-		{
-			std::lock_guard<std::mutex> sensor_tf_mtx_guard(sensor_tf_mutex_);
-			sensor_to_map_tf = sensor_to_map_tf_;
-		}
-
-		Eigen::Matrix3d sensor_ori_in_map_frame(Eigen::Quaterniond(sensor_to_map_tf.transform.rotation.w,
-													sensor_to_map_tf.transform.rotation.x,
-													sensor_to_map_tf.transform.rotation.y,
-													sensor_to_map_tf.transform.rotation.z));
-		Eigen::Vector3d sensor_pos_in_map_frame(
-			sensor_to_map_tf.transform.translation.x, 
-			sensor_to_map_tf.transform.translation.y, 
-			sensor_to_map_tf.transform.translation.z);
-
-		if (sensor_ori_in_map_frame.array().isNaN().any() 
-			|| sensor_pos_in_map_frame.array().isNaN().any()){
+		if (sensor_rot.array().isNaN().any() || sensor_pos.array().isNaN().any()){
 			RCLCPP_ERROR(this->get_logger(), "NaN value in sensor orientation and position");
 			return;
 		}
 
-		// Generate point cloud from position and orientation of sensor
+		// Generate point cloud in global frame using position and orientation of sensor
 		sensor_renderer_.render_sensed_points(
-			sensor_pos_in_map_frame,  // sensor position in map frame
-			sensor_ori_in_map_frame,  // sensor orientation in map frame
+			sensor_pos,  // sensor position in global frame
+			sensor_rot,  // sensor orientation in global frame
 			*sensor_cloud_);
 
-		// add other agent's odom as obstacle points
-		for (int i = 0; i < num_drones_; i++){
-			if (i == drone_id_){
-				continue;
-			}
-			
-			sensor_cloud_->push_back(
-				pcl::PointXYZ(swarm_poses_[i](0), swarm_poses_[i](1), swarm_poses_[i](2)) );
-		}
-
-		// Create transformation matrix from global to sensor frame
-		sensor_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
-			sensor_to_map_tf.transform.rotation.w,
-			sensor_to_map_tf.transform.rotation.x,
-			sensor_to_map_tf.transform.rotation.y,
-			sensor_to_map_tf.transform.rotation.z).toRotationMatrix();
-		sensor_to_map_tf_mat_(0, 3) = sensor_to_map_tf.transform.translation.x;
-		sensor_to_map_tf_mat_(1, 3) = sensor_to_map_tf.transform.translation.y;
-		sensor_to_map_tf_mat_(2, 3) = sensor_to_map_tf.transform.translation.z;
-		sensor_to_map_tf_mat_(3, 3) = 1.0;
-
-		map_to_sensor_tf_mat_ = sensor_to_map_tf_mat_.inverse();
+		gbl_to_sensor_tf_mat_ = sensor_to_gbl_tf_mat_.inverse();
 
 		// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
-		pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, map_to_sensor_tf_mat_);
+		pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, gbl_to_sensor_tf_mat_);
 	}
 	else {
 		if (!pose_rcv_)
@@ -342,10 +230,11 @@ void FakeSensor::sensorUpdateTimerCB()
 				cur_odom_.pose.pose.orientation.x,
 				cur_odom_.pose.pose.orientation.y,
 				cur_odom_.pose.pose.orientation.z).toRotationMatrix();
-			map_to_sensor_tf_mat_(0, 3) = cur_odom_.pose.pose.position.x;
-			map_to_sensor_tf_mat_(1, 3) = cur_odom_.pose.pose.position.y;
-			map_to_sensor_tf_mat_(2, 3) = cur_odom_.pose.pose.position.z;
-			map_to_sensor_tf_mat_(3, 3) = 1.0;
+			map_to_sensor_tf_mat_.block<3,1>(0, 3) = Eigen::Vector3d(
+				cur_odom_.pose.pose.position.x,
+				cur_odom_.pose.pose.position.y,
+				cur_odom_.pose.pose.position.z);
+
 		}
 
 		if (map_to_sensor_tf_mat_.block<3, 3>(0, 0).array().isNaN().any() 

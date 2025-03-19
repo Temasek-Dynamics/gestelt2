@@ -13,7 +13,7 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name), glob('launch/*')),
+        ('share/' + package_name, ['scenarios.json']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,16 +24,12 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'example_nav_to_pose = gestelt_commander.example_nav_to_pose:main',
-            'example_nav_through_poses = gestelt_commander.example_nav_through_poses:main',
-            'example_waypoint_follower = gestelt_commander.example_waypoint_follower:main',
-            'example_follow_path = gestelt_commander.example_follow_path:main',
-            'demo_picking = gestelt_commander.demo_picking:main',
-            'demo_inspection = gestelt_commander.demo_inspection:main',
-            'demo_security = gestelt_commander.demo_security:main',
-            'demo_recoveries = gestelt_commander.demo_recoveries:main',
-            'example_assisted_teleop = gestelt_commander.example_assisted_teleop:main',
+            'mission = gestelt_commander.mission:main',
+            'land = gestelt_commander.land:main',
+            'takeoff = gestelt_commander.takeoff:main',
+            'send_goals = gestelt_commander.send_goals:main',
             'test_single_goal_1 = gestelt_commander.test_single_goal_1:main',
+            'test_take_off_goal = gestelt_commander.test_take_off_goal:main',
         ],
     },
 )

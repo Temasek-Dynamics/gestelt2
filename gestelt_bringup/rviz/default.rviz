@@ -23,10 +23,8 @@ Panels:
         - /d21/state1
         - /d31/state1
         - /d31/state1/odom_ax1
-        - /Path1
-        - /Path1/Status1
-        - /Polygon1/Status1
         - /Polygon1/Topic1
+        - /Odometry1
       Splitter Ratio: 0.5941176414489746
     Tree Height: 707
   - Class: rviz_common/Selection
@@ -74,7 +72,7 @@ Visualization Manager:
       Length: 0.25
       Name: map_frame
       Radius: 0.03999999910593033
-      Reference Frame: map
+      Reference Frame: world
       Value: true
     - Class: rviz_default_plugins/TF
       Enabled: false
@@ -3023,10 +3021,49 @@ Visualization Manager:
         Reliability Policy: Best Effort
         Value: /occ_map/local_map/bounds
       Value: true
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 100
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /odom
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
-    Fixed Frame: map
+    Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:
@@ -3069,25 +3106,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 14.16290283203125
+      Distance: 4.536511421203613
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.3490180969238281
-        Y: -3.137247085571289
-        Z: 3.848305641440675e-05
+        X: 0.9752058982849121
+        Y: -0.24668264389038086
+        Z: 3.895989357260987e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 0.11479725688695908
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.695536136627197
+      Yaw: 3.5855321884155273
     Saved: ~
 Window Geometry:
   Displays:

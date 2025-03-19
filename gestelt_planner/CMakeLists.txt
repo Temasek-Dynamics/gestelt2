@@ -67,7 +67,11 @@ target_link_libraries(${library_name}
 add_executable(${executable_name}
   src/main.cpp
 )
-target_link_libraries(${executable_name} ${library_name} rclcpp::rclcpp)
+target_link_libraries(
+  ${executable_name} 
+  ${library_name} 
+  rclcpp::rclcpp
+)
 
 rclcpp_components_register_nodes(${library_name} "gestelt_planner::PlannerServer")
 

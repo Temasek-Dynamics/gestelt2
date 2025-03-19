@@ -87,9 +87,13 @@ class FakeSensor : public rclcpp::Node
 
         geometry_msgs::msg::TransformStamped sensor_to_map_tf_; // sensor to global frame transform
             
-        Eigen::Matrix4d gbl_to_map_tf_mat_; // global to map TF matrix
-        Eigen::Matrix4d map_to_sensor_tf_mat_; // map to sensor TF matrix
-        Eigen::Matrix4d sensor_to_map_tf_mat_; // map to sensor TF matrix
+        // sensor frame to global frame homogenous transformation matrix
+        Eigen::Matrix4d sensor_to_gbl_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
+        Eigen::Matrix4d gbl_to_sensor_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
+
+        Eigen::Matrix4d gbl_to_map_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; // global to map TF matrix
+        Eigen::Matrix4d map_to_sensor_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; // map to sensor TF matrix
+        Eigen::Matrix4d sensor_to_map_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; // map to sensor TF matrix
 
         nav_msgs::msg::Odometry cur_odom_;// Last received odom 
         
@@ -99,7 +103,6 @@ class FakeSensor : public rclcpp::Node
 
         /* Mutexes */
         std::mutex odom_mutex_; // Mutex for pose_ data
-        std::mutex sensor_tf_mutex_;    // Mutex for sensor_to_map_tf_ transform object
 
         /* Voxel filter for downsampling*/
         std::shared_ptr<pcl::VoxelGrid<pcl::PointXYZ>> vox_grid_{nullptr};

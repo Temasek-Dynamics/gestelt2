@@ -23,8 +23,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     libeigen3-dev \
     ros-jazzy-rmw-cyclonedds-cpp \
     ros-jazzy-nav2-common \
-    ros-jazzy-mavros* \
-    ros-jazzy-mavlink \
     ros-jazzy-message-filters \
     ros-jazzy-geographic-msgs \ 
     ros-jazzy-geometry* \
