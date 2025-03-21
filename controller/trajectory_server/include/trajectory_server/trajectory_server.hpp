@@ -254,13 +254,15 @@ private:
 
 	/* Stored Data */
 	Eigen::Vector3d cur_pos_enu_{0.0, 0.0, 0.0};		// Current position
+	Eigen::Vector3d cur_pos_enu_corr_{0.0, 0.0, 0.0};	// Current position with corrected ground height
 	Eigen::Vector3d cur_vel_enu_{0.0, 0.0, 0.0};		// Current velocity
 	Eigen::Quaterniond cur_ori_enu_{1.0, 0.0, 0.0, 0.0};	// Current orientation (w,x,y,z)
 	Eigen::Vector3d cur_ang_vel_enu_{0.0, 0.0, 0.0};	// Current angular velocity
 
 	Eigen::Vector3d cmd_pos_enu_{0.0, 0.0, 0.0};		// Last commanded position [ENU frame]
-	Eigen::Vector3d cmd_vel_enu_{0.0, 0.0, 0.0};		
-	Eigen::Vector3d cmd_acc_enu_{0.0, 0.0, 0.0};				
+	Eigen::Vector3d cmd_pos_enu_corr_{0.0, 0.0, 0.0}; // Last commanded position with corrected height
+	Eigen::Vector3d cmd_vel_enu_{0.0, 0.0, 0.0};
+	Eigen::Vector3d cmd_acc_enu_{0.0, 0.0, 0.0};
 	Eigen::Vector2d cmd_yaw_yawrate_{0.0, 0.0};
 
 	/* Safety */
@@ -271,12 +273,13 @@ private:
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
-
 	/* FCU interface */
 	int arming_state_; // Arming state
 	int nav_state_; // Navigation state 
 	bool pre_flight_checks_pass_; // Pre flight checks pass
 	bool connected_to_fcu_; // Indicates connection to FCU
+
+	Eigen::Vector3d ground_height_{0.0, 0.0, 0.0};		// Current position
 	
 	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 

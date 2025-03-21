@@ -190,11 +190,11 @@ AStarPlanner::makePlan(
 
     geometry_msgs::msg::PoseStamped pose;
 
-    RCLCPP_INFO(
-      logger_, "  [%ld]: Map: (%f, %f, %f), World: (%f, %f, %f)", 
-      i,
-      map_planned_path[i](0), map_planned_path[i](1), map_planned_path[i](2),
-      planned_pos_world(0), planned_pos_world(1), planned_pos_world(2));
+    // RCLCPP_INFO(
+    //   logger_, "  [%ld]: Map: (%f, %f, %f), World: (%f, %f, %f)", 
+    //   i,
+    //   map_planned_path[i](0), map_planned_path[i](1), map_planned_path[i](2),
+    //   planned_pos_world(0), planned_pos_world(1), planned_pos_world(2));
 
     pose.pose.position.x = planned_pos_world(0);
     pose.pose.position.y = planned_pos_world(1);

@@ -1,0 +1,9 @@
+ # Set just topic name, applies to both
+- topic_name: "depth_camera"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+
+ # Set just topic name, applies to both
+- topic_name: "depth_camera/points"
+  ros_type_name: "sensor_msgs/msg/PointCloud2"
+  gz_type_name: "gz.msgs.PointCloudPacked"

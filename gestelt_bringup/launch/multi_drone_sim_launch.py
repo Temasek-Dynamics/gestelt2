@@ -25,16 +25,6 @@ from launch_ros.actions import Node, PushROSNamespace
 
 SCENARIO_NAME = "single_drone_test"
 
-# SCENARIO_NAME = "forest_dense_1"
-# SCENARIO_NAME = "forest_sparse_1"
-
-# SCENARIO_NAME = "antipodal_swap_4_normal"
-# SCENARIO_NAME = "antipodal_swap_4_sparse"
-# SCENARIO_NAME = "antipodal_swap_4_dense"
-# SCENARIO_NAME = "antipodal_swap_4_empty"
-
-# SCENARIO_NAME = "antipodal_swap_8_normal"
-# SCENARIO_NAME = "antipodal_swap_8_sparse"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -89,6 +79,9 @@ def generate_launch_description():
     # Get the launch directory
     bringup_dir = get_package_share_directory('gestelt_bringup')
     launch_dir = os.path.join(bringup_dir, 'launch')
+
+    ros_gz_bridge_params = os.path.join(
+        bringup_dir, 'params', 'ros_gz_bridge.yaml')
 
     rviz_config_file = LaunchConfiguration('rviz_config_file')
     use_rviz = LaunchConfiguration('use_rviz')
@@ -162,18 +155,16 @@ def generate_launch_description():
         shell=True
     )
 
-    # Fake map
-    fake_map_publisher = Node(
-        package='fake_map',
-        executable='fake_map_publisher_node',
+    # Bridge gazebo and ROS2 topics
+    ros_gz_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
         output='screen',
-        shell=False,
-        name='fake_map_publisher_node',
-        parameters=[
-            {'fake_map.pcd_filepath': fake_map_pcd_filepath},
-            {'fake_map.frame_id': "world"},
-            {'fake_map.publishing_frequency': 1.0},
-        ],
+        emulate_tty=False,
+        shell=True,
+        parameters = [
+            {'config_file': ros_gz_bridge_params},
+        ]
     )
 
     # Send single test goal
@@ -200,8 +191,8 @@ def generate_launch_description():
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_use_rviz_cmd)
 
-    ld.add_action(fake_map_publisher)
     ld.add_action(gazebo)
+    ld.add_action(ros_gz_bridge)
     ld.add_action(xrce_agent)
     ld.add_action(rviz_cmd)
 
@@ -315,7 +306,7 @@ def generate_launch_description():
                             # Environment variables
                             'PX4_SYS_AUTOSTART=4001',
                             'PX4_GZ_WORLD=default',
-                            'PX4_SIM_MODEL=gz_x500',
+                            'PX4_SIM_MODEL=gz_x500_depth',
                             'PX4_GZ_STANDALONE=1',
                             ['PX4_GZ_MODEL_POSE="', 
                                 str(scenario.spawns_pos[drone_id][0]), ',', 

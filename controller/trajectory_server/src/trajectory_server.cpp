@@ -137,8 +137,6 @@ TrajectoryServer::TrajectoryServer()
 	uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>(
 		"uav_command", std::bind(&TrajectoryServer::uavCmdSrvCB, this, _1, _2),
 		rclcpp::ServicesQoS(), others_cb_group_);
-
-	
 }
 
 TrajectoryServer::~TrajectoryServer()
@@ -175,6 +173,15 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 
 	cur_pos_enu_ = transform_static_frame(
 		Eigen::Vector3d(pos.data()), pos_frame_tf);
+
+	if (UAV::is_in_state<Idle>())
+	{
+		// Do nothing
+		ground_height_ = Eigen::Vector3d(0.0, 0.0, cur_pos_enu_(2));
+	}
+
+	// Correct for ground height
+	cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
 	cur_ori_enu_ = transform_orientation(
 		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q), pos_frame_tf);
 	cur_vel_enu_ = transform_static_frame(
@@ -221,9 +228,14 @@ void TrajectoryServer::linMPCCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::U
 	// Message received in ENU frame
 	if (UAV::is_in_state<Mission>())
 	{
-		cmd_pos_enu_ = Eigen::Vector3d(msg->position[0], msg->position[1], msg->position[2]);
-		cmd_vel_enu_ = Eigen::Vector3d(msg->velocity[0], msg->velocity[1], msg->velocity[2]);
-		cmd_acc_enu_ = Eigen::Vector3d(msg->acceleration[0], msg->acceleration[1], msg->acceleration[2]);
+		cmd_pos_enu_ = Eigen::Vector3d(
+			msg->position[0], msg->position[1], msg->position[2]);
+		cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
+
+		cmd_vel_enu_ = Eigen::Vector3d(
+			msg->velocity[0], msg->velocity[1], msg->velocity[2]);
+		cmd_acc_enu_ = Eigen::Vector3d(
+			msg->acceleration[0], msg->acceleration[1], msg->acceleration[2]);
 		// cmd_jerk_enu_ = Eigen::Vector3d(msg->jerk[0], msg->jerk[1], msg->jerk[2]);
 
 		cmd_yaw_yawrate_(0) = msg->yaw;
@@ -330,6 +342,8 @@ void TrajectoryServer::setOffboardTimerCB()
 	}
 	else if (UAV::is_in_state<Hovering>())
 	{
+		uav_state.state = gestelt_interfaces::msg::UAVState::HOVERING;
+
 		// PERIODICALLY: Publish offboard control mode message 
 		publishOffboardCtrlMode(0);	// Position control
 	}
@@ -354,7 +368,7 @@ void TrajectoryServer::setOffboardTimerCB()
 
 void TrajectoryServer::pubCtrlTimerCB()
 {
-	static double take_off_hover_T = 1.0/15.0;// Take off and landing period
+	static double take_off_hover_T = 1.0/5.0;// Take off and landing period
 
 	// Check all states
 	if (UAV::is_in_state<Unconnected>())
@@ -371,18 +385,18 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else if (UAV::is_in_state<TakingOff>())
 	{
-		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
+		publishTrajectorySetpoint(cmd_pos_enu_corr_, cmd_yaw_yawrate_);
 
-			publishTrajectorySetpoint(cmd_pos_enu_, cmd_yaw_yawrate_);
+		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
 	}
 	else if (UAV::is_in_state<Hovering>())
 	{
-		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
+		publishTrajectorySetpoint(cmd_pos_enu_corr_, cmd_yaw_yawrate_);
 
-			publishTrajectorySetpoint(cmd_pos_enu_, cmd_yaw_yawrate_);
+		if (this->get_clock()->now().seconds() - last_cmd_pub_t_ > take_off_hover_T){
 
 			last_cmd_pub_t_ = this->get_clock()->now().seconds();
 		}
@@ -391,7 +405,8 @@ void TrajectoryServer::pubCtrlTimerCB()
 	{
 		switch (fsm_list::fsmtype::current_state_ptr->getControlMode()){
 			case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY:
-				publishTrajectorySetpoint(cmd_pos_enu_, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
+				publishTrajectorySetpoint(
+					cmd_pos_enu_corr_, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
 				break;
 			case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: 
 				logger_->logWarnThrottle("ATTITUDE CONTROL UNIMPLEMENTED", 1.0);
@@ -431,6 +446,7 @@ void TrajectoryServer::pubCtrlTimerCB()
 	}
 	else
 	{
+		logger_->logErrorThrottle("[UNDEFINED STATE] IN pubCtrlTimerCB", 1.0);
 	}
 }
 
@@ -455,10 +471,7 @@ void TrajectoryServer::SMTickTimerCB()
 				px4_msgs::msg::VehicleCommand::ARMING_ACTION_DISARM);
 		}
 
-		cmd_pos_enu_ = Eigen::Vector3d(
-			cur_pos_enu_(0), 
-			cur_pos_enu_(1), 
-			fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()); 
+		cmd_pos_enu_ = cur_pos_enu_corr_;
 
 		cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_enu_); 
 		cmd_yaw_yawrate_(1) = NAN; 
@@ -476,7 +489,12 @@ void TrajectoryServer::SMTickTimerCB()
 	{
 		logger_->logInfoThrottle("[TakingOff]", 1.0);
 
-		if (abs(cur_pos_enu_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) 
+		cmd_pos_enu_ = cur_pos_enu_corr_;
+		cmd_pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
+
+		cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
+
+		if (abs(cur_pos_enu_corr_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) 
 			< take_off_landing_tol_)
 		{
 			sendEvent(Hover_E());
@@ -509,9 +527,9 @@ void TrajectoryServer::pubStateTimerCB()
 
 	odom_msg.child_frame_id = base_link_frame_;
 
-	odom_msg.pose.pose.position.x = cur_pos_enu_(0);
-	odom_msg.pose.pose.position.y = cur_pos_enu_(1);
-	odom_msg.pose.pose.position.z = cur_pos_enu_(2);
+	odom_msg.pose.pose.position.x = cur_pos_enu_corr_(0);
+	odom_msg.pose.pose.position.y = cur_pos_enu_corr_(1);
+	odom_msg.pose.pose.position.z = cur_pos_enu_corr_(2);
 
 	odom_msg.pose.pose.orientation.w = cur_ori_enu_.w();
 	odom_msg.pose.pose.orientation.x = cur_ori_enu_.x();
@@ -535,9 +553,9 @@ void TrajectoryServer::pubStateTimerCB()
 	map_to_base_link_tf.header.frame_id = map_frame_; 
 	map_to_base_link_tf.child_frame_id = base_link_frame_; 
 
-	map_to_base_link_tf.transform.translation.x = cur_pos_enu_(0);
-	map_to_base_link_tf.transform.translation.y = cur_pos_enu_(1);
-	map_to_base_link_tf.transform.translation.z = cur_pos_enu_(2);
+	map_to_base_link_tf.transform.translation.x = cur_pos_enu_corr_(0);
+	map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
+	map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
 
 	map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
 	map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();

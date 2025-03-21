@@ -140,13 +140,16 @@ class Mission(Node):
     def isInReqState(self, id, req_state):
         '''Check if agent is in required state'''
 
+        state_topic = '/d' + str(id) + '/uav_state'
+
         ret, msg = wait_for_message(
                     UAVState,
                     self,
-                    'd' + str(id) + '/uav_state',
+                    state_topic,
                     time_to_wait=1.0)
         
         if not ret:
+            print("Did not receive message from ", state_topic)
             return False
         
         self.uav_states[id] = msg.state
@@ -169,7 +172,7 @@ class Mission(Node):
                         self.get_logger().info(f"Failed to wait for required state: {req_state} ...")
                         return False
                     
-        self.get_logger().info(f"Waiting for required state: {req_state} ...")
+        self.get_logger().info(f"All drones in required state: {req_state} ...")
                     
         return True
     
@@ -248,7 +251,6 @@ class Mission(Node):
         self.get_logger().info(f"Commanded all drones via '/dx/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
-
 
     def cmdAllDronesSrv(self, req_state, command, value=0.0, mode=0):
         """Command all drones using publisher

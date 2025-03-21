@@ -20,8 +20,6 @@ from rclpy.duration import Duration
 
 from  gestelt_commander.scenario import *
 
-
-
 def planPath(navigator):
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'world'
@@ -44,7 +42,7 @@ def planPath(navigator):
     goal_pose.pose.orientation.w = 1.0
 
     # sanity check a valid path exists
-    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=True)
+    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
 
     # navigator.goToPose(goal_pose)
 
@@ -114,7 +112,7 @@ def main(args=None):
         mission.get_logger().info("All drones are in HOVER MODE")
 
         # Send a goal
-        # planPath(navigator)
+        planPath(navigator)
 
         #########
         # Mission mode
@@ -139,7 +137,7 @@ def main(args=None):
         print(e)
 
     mission.destroy_node()
-    # navigator.lifecycleShutdown()
+    navigator.lifecycleShutdown()
     rclpy.shutdown()
 
     exit(0)
