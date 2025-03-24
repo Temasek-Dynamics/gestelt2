@@ -21,10 +21,10 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
 # from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace
+from launch_ros.actions import Node, PushROSNamespace, ComposableNodeContainer
+from launch_ros.descriptions import ComposableNode
 
 SCENARIO_NAME = "single_drone_test"
-
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -204,7 +204,8 @@ def generate_launch_description():
         global_frame = "world" # Fixed
         map_frame = "d" + str(drone_id) + "_map"
         base_link_frame = "d" + str(drone_id) + "_base_link"
-        camera_frame = "d" + str(drone_id) + "_camera_link"
+        # camera_frame = "d" + str(drone_id) + "_camera_link"
+        camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
 
         ld.add_action(
             GroupAction(
@@ -238,66 +239,43 @@ def generate_launch_description():
                         executable = "static_transform_publisher",
                         output="log",
                         arguments = ["0", "0", "0", "0", "0", "0", "1",
-                                     base_link_frame, camera_frame]
+                                     base_link_frame, camera_frame],
                     ),
-                    # Transform from map to base_link frame
-                    Node(
-                        package = "tf2_ros", 
-                        executable = "static_transform_publisher",
-                        output="log",
-                        arguments = ["0", "0", "0", "0", "0", "0", "1",
-                                     map_frame, base_link_frame]
-                    ),
-                    # Fake sensor node: For acting as a simulated depth camera/lidar 
-                    Node(
-                        package='fake_sensor',
-                        executable='fake_sensor_node',
-                        output='screen',
-                        shell=False,
-                        parameters=[
-                            {'drone_id': drone_id},
-                            {'global_frame': global_frame},
-                            {'map_frame': map_frame},
-                            {'sensor_frame': camera_frame},
-                            
-                            {'pcd_map.filepath': fake_map_pcd_filepath},
-                            
-                            {'tf.listen_to_tf': True},
-                            
-                            {'pcd_voxel_filter.enable': True},
-                            {'pcd_voxel_filter.voxel_size': 0.1},
-                            
-                            {'fake_laser.sensor_refresh_frequency': 30.0},
-                            {'fake_laser.sensor_range': 5.0},
-                            {'fake_laser.resolution': 0.1},
-
-                            {'fake_laser.horizontal.laser_line_num': 280},
-                            {'fake_laser.horizontal.laser_range_dgr': 359.0},
-                            {'fake_laser.vertical.laser_line_num': 15},
-                            {'fake_laser.vertical.laser_range_dgr': 40.0},
-                        ],
-                    ),
+                    # # Transform from map to base_link frame
                     # Node(
-                    #     package='trajectory_server',
-                    #     executable='trajectory_server_node',
-                    #     name='trajectory_server',
+                    #     package = "tf2_ros", 
+                    #     executable = "static_transform_publisher",
+                    #     output="log",
+                    #     arguments = ["0", "0", "0", "0", "0", "0", "1",
+                    #                  map_frame, base_link_frame]
+                    # ),
+                    # # Fake sensor node: For acting as a simulated depth camera/lidar 
+                    # Node(
+                    #     package='fake_sensor',
+                    #     executable='fake_sensor_node',
                     #     output='screen',
-                    #     respawn_delay=2.0,
+                    #     shell=False,
                     #     parameters=[
                     #         {'drone_id': drone_id},
+                    #         {'global_frame': global_frame},
                     #         {'map_frame': map_frame},
-                    #         {'base_link_frame': base_link_frame},
-                    #         {'safety.navigator_state_timeout': 0.5},
-                    #         {'safety.geofence.min_x': -50.0},
-                    #         {'safety.geofence.min_y': -50.0},
-                    #         {'safety.geofence.min_z': -0.5},
-                    #         {'safety.geofence.max_x': 50.0},
-                    #         {'safety.geofence.max_y': 50.0},
-                    #         {'safety.geofence.max_z': 5.0},
-                    #         {'set_offb_ctrl_freq': 10.0},
-                    #         {'pub_state_freq': 40.0},
-                    #         {'state_machine_tick_freq': 30.0},
-                    #         {'pub_ctrl_freq': 30.0},
+                    #         {'sensor_frame': camera_frame},
+                            
+                    #         {'pcd_map.filepath': fake_map_pcd_filepath},
+                            
+                    #         {'tf.listen_to_tf': True},
+                            
+                    #         {'pcd_voxel_filter.enable': True},
+                    #         {'pcd_voxel_filter.voxel_size': 0.1},
+                            
+                    #         {'fake_laser.sensor_refresh_frequency': 30.0},
+                    #         {'fake_laser.sensor_range': 5.0},
+                    #         {'fake_laser.resolution': 0.1},
+
+                    #         {'fake_laser.horizontal.laser_line_num': 280},
+                    #         {'fake_laser.horizontal.laser_range_dgr': 359.0},
+                    #         {'fake_laser.vertical.laser_line_num': 15},
+                    #         {'fake_laser.vertical.laser_range_dgr': 40.0},
                     #     ],
                     # ),
                     ExecuteProcess(
@@ -315,7 +293,7 @@ def generate_launch_description():
                             # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
                             'ROS_DOMAIN_ID=0',
                             'PX4_UXRCE_DDS_PORT=8888',
-                            ['PX4_UXRCE_DDS_NS=d', str(drone_id)],
+                            # ['PX4_UXRCE_DDS_NS=d', str(drone_id)],
                             # PX4 Executable
                             os.path.join(px4_build_dir, 'bin/px4'),      # PX4 executable
                             os.path.join(px4_build_dir, 'etc'),          # ?

@@ -49,7 +49,7 @@ occ_map:
         max_range: 5.0   # [m] Maximum range of sensor
 
       # Passthrough filter for input point cloud
-      cloud_in_min_z: 0.15 # [m] Minimum height for point cloud to be included in map
+      cloud_in_min_z: -0.5 # [m] Minimum height for point cloud to be included in map
       cloud_in_max_z: 5.0 # [m] Maximum height for point cloud to be included in map
 
       # Noise filter by checking clusters

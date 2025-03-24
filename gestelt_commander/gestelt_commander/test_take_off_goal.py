@@ -137,7 +137,7 @@ def main(args=None):
         print(e)
 
     mission.destroy_node()
-    navigator.lifecycleShutdown()
+    # navigator.lifecycleShutdown()
     rclpy.shutdown()
 
     exit(0)

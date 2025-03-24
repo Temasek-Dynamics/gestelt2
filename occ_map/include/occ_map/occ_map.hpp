@@ -29,6 +29,7 @@
 #include <Eigen/Eigen>
 
 #include <rclcpp/rclcpp.hpp>
+#include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/node_utils.hpp"
@@ -286,12 +287,6 @@ private:
   // Called by planners to update the local map
   void updateLocalMap();
 
-  /**
-   * @brief Publish map for visualization
-   * 
-   */
-  void publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd);
-
   // Publish local map bounds
   void publishLocalMapBounds();
 
@@ -326,11 +321,14 @@ private:
 
   bool is_lifecycle_follower_{true};   ///< whether is a child-LifecycleNode or an independent node
 
-  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor_;
-  std::unique_ptr<nav2_util::NodeThread> executor_thread_;
+  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor1_;
+  rclcpp::executors::SingleThreadedExecutor::SharedPtr executor2_;
+  std::unique_ptr<nav2_util::NodeThread> executor_thread1_;
+  std::unique_ptr<nav2_util::NodeThread> executor_thread2_;
 
 	/* Callback groups */
-	rclcpp::CallbackGroup::SharedPtr callback_group_;
+	rclcpp::CallbackGroup::SharedPtr mtex_callback_grp1_;
+	rclcpp::CallbackGroup::SharedPtr mtex_callback_grp2_;
 
   std::string name_;
   std::string parent_namespace_;
@@ -419,7 +417,7 @@ private:
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_lcl_frame_; // [LOCAL MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> occ_pcd_in_gbl_frame_; // [MAP FRAME] Occupancy map points formed by Bonxai probabilistic mapping (w.r.t local map origin)
   
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> raw_lcl_pcd_in_global_frame_; // Raw point clouds
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> raw_lcl_pcd_in_gbl_frame_; // Raw point clouds
 
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_in_global_frame_; // Vector of obstacle points used for sfc generation
 

@@ -167,7 +167,9 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
     return nav2_util::CallbackReturn::FAILURE;
   }
 
-  callback_group_ = create_callback_group(
+  mtex_callback_grp1_ = create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive, false);
+  mtex_callback_grp2_ = create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive, false);
 
   // Create the transform-related objects
@@ -175,7 +177,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
     get_node_base_interface(),
     get_node_timers_interface(),
-    callback_group_);
+    mtex_callback_grp1_);
   tf_buffer_->setCreateTimerInterface(timer_interface);
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -195,9 +197,9 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
   /* Initialize ROS Timers */
   viz_map_timer_ = create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
-    std::bind(&OccMap::vizMapTimerCB, this), callback_group_);
+    std::bind(&OccMap::vizMapTimerCB, this), mtex_callback_grp2_);
   update_local_map_timer_ = create_wall_timer((1.0/update_local_map_freq_) *1000ms, 
-    std::bind(&OccMap::updateLocalMapTimerCB, this), callback_group_);
+    std::bind(&OccMap::updateLocalMapTimerCB, this), mtex_callback_grp2_);
 
   // Set up Bonxai data structure
   bonxai_map_ = std::make_unique<Bonxai::ProbabilisticMap>(resolution_);
@@ -241,9 +243,12 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   // tm_update_local_map_.updateID(drone_id_);
   // tm_bonxai_insert_.updateID(drone_id_);
 
-  executor_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
-  executor_->add_callback_group(callback_group_, get_node_base_interface());
-  executor_thread_ = std::make_unique<nav2_util::NodeThread>(executor_);
+  executor1_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  executor1_->add_callback_group(mtex_callback_grp1_, get_node_base_interface());
+  executor_thread1_ = std::make_unique<nav2_util::NodeThread>(executor1_);
+  executor2_ = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  executor2_->add_callback_group(mtex_callback_grp2_, get_node_base_interface());
+  executor_thread2_ = std::make_unique<nav2_util::NodeThread>(executor2_);
 
   logger_->logInfo("Configured");
 
@@ -314,7 +319,6 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
     return nav2_util::CallbackReturn::FAILURE;
   }
 
-
   occ_map_pub_->on_activate();
   local_map_bounds_pub_->on_activate();
 
@@ -348,7 +352,8 @@ OccMap::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
   logger_->logInfo("Cleaning up");
 
-  executor_thread_.reset();
+  executor_thread1_.reset();
+  executor_thread2_.reset();
 
   bonxai_map_.reset();
   kdtree_.reset();
@@ -432,8 +437,8 @@ void OccMap::getParameters()
 
 /* Core methods */
 
-void OccMap::updateLocalMap(){
 
+void OccMap::updateLocalMap(){
   try {
     // map to base_link
     auto tf_bl_to_map = tf_buffer_->lookupTransform(
@@ -468,6 +473,9 @@ void OccMap::updateLocalMap(){
     std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
     bonxai_map_->getOccupiedVoxels(occ_coords);
   }
+
+  std::cout << "occ_coords.size() = " << occ_coords.size() << std::endl;
+
   if (occ_coords.size() <= 1){ // Empty map
     logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
     return;
@@ -477,7 +485,7 @@ void OccMap::updateLocalMap(){
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
 
     // Clear existing local map
-    raw_lcl_pcd_in_global_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    raw_lcl_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
     occ_pcd_in_lcl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
     occ_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
@@ -500,15 +508,18 @@ void OccMap::updateLocalMap(){
         continue;
       }
 
-      raw_lcl_pcd_in_global_frame_->push_back(
+      raw_lcl_pcd_in_gbl_frame_->push_back(
         pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
     }
 
+    std::cout << "raw_lcl_pcd_in_gbl_frame_->points.size() = " << 
+      raw_lcl_pcd_in_gbl_frame_->points.size() << std::endl;
+
     kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
     // Add local occ points in fixed map frame to KDTree
-    kdtree_->Build(raw_lcl_pcd_in_global_frame_->points);
+    kdtree_->Build(raw_lcl_pcd_in_gbl_frame_->points);
 
-    for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_global_frame_->points) // For each point in local bounds
+    for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_gbl_frame_->points) // For each point in local bounds
     {
       Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
 
@@ -533,6 +544,7 @@ void OccMap::updateLocalMap(){
       lcl_pts_in_global_frame_.push_back(pt_in_gbl_frame_eig);
     }
 
+
     occ_pcd_in_lcl_frame_->width = occ_pcd_in_lcl_frame_->points.size();
     occ_pcd_in_lcl_frame_->height = 1;
     occ_pcd_in_lcl_frame_->is_dense = true; 
@@ -543,13 +555,144 @@ void OccMap::updateLocalMap(){
   }
 }
 
+// void OccMap::updateLocalMap(){
+//   try {
+//     // map to base_link
+//     auto tf_bl_to_map = tf_buffer_->lookupTransform(
+//       global_frame_, base_link_frame_,
+//       tf2::TimePointZero,
+//       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
+
+//     bl_to_map_mat_ = tf2::transformToEigen(
+//       tf_bl_to_map.transform).matrix().cast<double>();
+//   } 
+//   catch (const tf2::TransformException & ex) {
+//     logger_->logError(strFmt("Could not get transform from base link frame '%s' to map frame '%s': %s",
+// 			base_link_frame_.c_str(), global_frame_.c_str(), ex.what()));
+//     return;
+//   }
+
+//   // Update local map origin, which is the location of the local map origin IN the global map frame
+//   local_map_origin_ = Eigen::Vector3d(
+//     bl_to_map_mat_.block<3,1>(0,3)(0) - (local_map_size_(0) / 2.0), 
+//     bl_to_map_mat_.block<3,1>(0,3)(1) - (local_map_size_(1) / 2.0), 
+//     0.0);
+
+//   // Update local map max position based on current UAV position
+//   local_map_max_ = Eigen::Vector3d(
+//     bl_to_map_mat_.block<3,1>(0,3)(0) + (local_map_size_(0) / 2.0), 
+//     bl_to_map_mat_.block<3,1>(0,3)(1) + (local_map_size_(1) / 2.0), 
+//     local_map_size_(2));
+
+//   // Get all occupied coordinates 
+//   std::vector<Bonxai::CoordT> occ_coords;
+//   {
+//     std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
+//     bonxai_map_->getOccupiedVoxels(occ_coords);
+//   }
+//   if (occ_coords.size() <= 1){ // Empty map
+//     logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
+//     return;
+//   }
+
+//   {
+//     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
+
+//     // Clear existing local map
+//     raw_lcl_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+
+//     occ_pcd_in_lcl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+//     occ_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+
+//     lcl_pts_in_global_frame_.clear();
+
+//     /**
+//      * Add points within a local bound of the agent
+//      */
+//     for (auto& coord : occ_coords) // For each occupied coordinate
+//     {
+//       // obs_gbl_pos: global obstacle pos
+//       Bonxai::Point3D obs_gbl_pos_pt3d = bonxai_map_->grid().coordToPos(coord);
+
+//       // obs_gbl_pos: With respect to (0,0,0) of world frame
+//       Eigen::Vector3d obs_gbl_pos = Bonxai::ConvertPoint<Eigen::Vector3d>(obs_gbl_pos_pt3d);
+
+//       if (!inLocalMap(obs_gbl_pos)){ 
+//         // Point is outside the local map
+//         continue;
+//       }
+
+//       raw_lcl_pcd_in_gbl_frame_->push_back(
+//         pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
+//     }
+
+//     kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+//     // Add local occ points in fixed map frame to KDTree
+//     kdtree_->Build(raw_lcl_pcd_in_gbl_frame_->points);
+
+//     for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_gbl_frame_->points) // For each point in local bounds
+//     {
+//       Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
+
+//       // pt_in_lcl_frame_eig: With respect to local origins
+//       Eigen::Vector3d pt_in_lcl_frame_eig = pt_in_gbl_frame_eig - local_map_origin_;
+
+//       std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
+//       // Perform radius search for each point and get nunber of points
+//       kdtree_->Radius_Search(pt_in_gbl_frame, noise_search_radius_, nb_points);
+//       if ((int) nb_points.size() < noise_min_neighbors_){
+//         continue;
+//       }
+
+//       // occ_pcd_in_lcl_frame_: Used by map slice and hence dynamic voronoi
+//       occ_pcd_in_lcl_frame_->push_back(
+//         pcl::PointXYZ(pt_in_lcl_frame_eig(0), pt_in_lcl_frame_eig(1), pt_in_lcl_frame_eig(2)));
+
+//       // occ_pcd_in_gbl_frame_: Used for visualization
+//       occ_pcd_in_gbl_frame_->push_back(pt_in_gbl_frame);
+
+//       // lcl_pts_in_global_frame_: Used for SFC
+//       lcl_pts_in_global_frame_.push_back(pt_in_gbl_frame_eig);
+//     }
+
+//     occ_pcd_in_lcl_frame_->width = occ_pcd_in_lcl_frame_->points.size();
+//     occ_pcd_in_lcl_frame_->height = 1;
+//     occ_pcd_in_lcl_frame_->is_dense = true; 
+
+//     occ_pcd_in_gbl_frame_->width = occ_pcd_in_gbl_frame_->points.size();
+//     occ_pcd_in_gbl_frame_->height = 1;
+//     occ_pcd_in_gbl_frame_->is_dense = true; 
+//   }
+// }
+
 /** Timer callbacks */
 
 void OccMap::vizMapTimerCB()
 {
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
-    publishOccMap(occ_pcd_in_gbl_frame_);
+
+    // bool publish_point_cloud =
+    //   (occ_map_pub_->get_subscription_count() +
+    //   occ_map_pub_->get_intra_process_subscription_count() > 0);
+
+    // if (!publish_point_cloud ){
+    //   logger_->logWarn("Not publishing occ_map");
+    //   return;
+    // }
+
+    if (occ_pcd_in_gbl_frame_->points.empty()){
+      logger_->logErrorThrottle("local map is empty. Not publishing occupancy grid.", 1.0);
+      return;
+    }
+
+    sensor_msgs::msg::PointCloud2 cloud_msg;
+    pcl::toROSMsg(*occ_pcd_in_gbl_frame_, cloud_msg);
+
+    cloud_msg.header.stamp = get_clock()->now();
+    cloud_msg.header.frame_id = global_frame_;
+
+    occ_map_pub_->publish(cloud_msg);
   }
 
   publishLocalMapBounds(); // publish boundaries of local map volume
@@ -574,12 +717,16 @@ void OccMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 
 void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
+  std::cout << "cloudCB()" << std::endl;
+
   if (isTimeout(last_cloud_cb_time_, 0.5)){
     logger_->logWarnThrottle(strFmt("cloud message timeout exceeded 0.5s: (%f, %f)",  
                                       last_cloud_cb_time_, get_clock()->now().seconds()), 1.0);
   }
 
   last_cloud_cb_time_ = get_clock()->now().seconds();
+
+  std::cout << "msg->data.size() = " << msg->data.size() << std::endl;
 
   // Input Point cloud is assumed to be in frame id of the sensor
   if (msg->data.empty()){
@@ -591,8 +738,7 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // Get point cloud from ROS message
   pcl::fromROSMsg(*msg, *pcd);
 
-  // Some code here taken from bonxai_ros/bonxai_server.cpp
-
+  // Some code here adapted from bonxai_ros/bonxai_server.cpp
   // remove NaN and Inf values
   size_t filtered_index = 0;
   for (const auto& point : (*pcd).points) {
@@ -601,6 +747,8 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     }
   }
   (*pcd).resize(filtered_index);
+
+  std::cout << "pcd->points.size() = " << pcd->points.size() << std::endl;
 
   // Get camera to map frame TF
   try {
@@ -634,6 +782,8 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // Transform point cloud from camera frame to global_frame 
   pcl::transformPointCloud(*pcd, *pcd_in_map_frame, cam_to_map_mat_);
 
+  std::cout << "pcd_in_map_frame->points.size() = " << pcd_in_map_frame->points.size() << std::endl;
+
   // Getting the Translation from the sensor to the Global Reference Frame
   const pcl::PointXYZ sensor_origin(
     cam_to_map_mat_(0, 3), cam_to_map_mat_(1, 3), cam_to_map_mat_(2, 3));
@@ -644,6 +794,10 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // tm_bonxai_insert_.start();
   // Add point cloud to bonxai_maps_
   std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
+
+  std::cout << "sensor_origin = " << sensor_origin << std::endl;
+  std::cout << "max_range_ = " << max_range_ << std::endl;
+
   bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, max_range_);
   // tm_bonxai_insert_.stop(false);
 }
@@ -804,31 +958,6 @@ rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::
 
   return result;
 }
-
-void OccMap::publishOccMap(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd)
-{
-  bool publish_point_cloud =
-      (occ_map_pub_->get_subscription_count() +
-       occ_map_pub_->get_intra_process_subscription_count() > 0);
-
-  if (!publish_point_cloud ){
-    return;
-  }
-
-  if (pcd->points.empty()){
-    logger_->logErrorThrottle("local map is empty. Not publishing occupancy grid.", 1.0);
-    return;
-  }
-
-  sensor_msgs::msg::PointCloud2 cloud_msg;
-  pcl::toROSMsg(*pcd, cloud_msg);
-  
-  cloud_msg.header.stamp = get_clock()->now();
-  cloud_msg.header.frame_id = global_frame_;
-
-  occ_map_pub_->publish(cloud_msg);
-}
-
 
 
 }  // namespace occ_map

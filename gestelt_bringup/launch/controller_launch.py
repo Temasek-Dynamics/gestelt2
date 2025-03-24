@@ -101,12 +101,16 @@ def generate_launch_description():
     # https://github.com/ros/robot_state_publisher/pull/30
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
-    remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
+    remappings = [
+        # ('/d0/tf', '/tf'), 
+        # ('/tf_static', 'tf_static')
+    ]
 
     global_frame = 'world' # Fixed
     map_frame = ["d", drone_id, "_map"]
     base_link_frame = ["d", drone_id, "_base_link"]
-    camera_frame = ["d", drone_id, "_camera_link"]
+    # camera_frame = ["d", drone_id, "_camera_link"]
+    camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
 
     # Create our own temporary YAML files that include substitutions
     # param_substitutions = {
@@ -136,7 +140,7 @@ def generate_launch_description():
         condition=IfCondition(PythonExpression(['not ', use_composition])),
         actions=[
             # SetParameter('use_sim_time', use_sim_time),
-            PushROSNamespace(['d', drone_id]),
+            # PushROSNamespace(['d', drone_id]),
             Node(
                 package='trajectory_server',
                 executable='trajectory_server_node',
