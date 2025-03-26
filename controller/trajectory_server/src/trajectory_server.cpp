@@ -71,12 +71,6 @@ TrajectoryServer::TrajectoryServer()
 	}
 	drone_id_ = std::stoi(ns.substr(1, ns.size()-1));
 
-	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
-	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
-	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
-	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
-	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
-
 	map_frame_ = this->get_parameter("map_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();

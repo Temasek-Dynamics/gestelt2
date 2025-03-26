@@ -93,15 +93,15 @@ def generate_launch_description():
         'log_level', default_value='info', description='log level'
     )
 
-    remappings_nav = [
-        ('/tf', 'tf'), 
-        ('/tf_static', 'tf_static')
+    remappings = [
+        (['/', namespace, '/tf'], '/tf'), 
+        (['/', namespace, '/tf_static'], '/tf_static'),
     ]
 
-    remappings_ctrl = [
-        ('/d0/tf', '/tf'), 
-        ('/tf_static', 'tf_static')
-    ]
+    # remappings = [
+    #     ('/d0/tf', '/tf'), 
+    #     ('/d0/tf_static', '/tf_static')
+    # ]
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
@@ -121,7 +121,7 @@ def generate_launch_description():
     nav_configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params_file,
-            # root_key=namespace,
+            root_key=namespace,
             param_rewrites=nav_param_substitutions,
             convert_types=True,
         ),
@@ -150,10 +150,11 @@ def generate_launch_description():
         'planner_server',
     ]
 
-    load_nav_nodes = GroupAction(
+    load_all  = GroupAction(
         condition=IfCondition(PythonExpression(['not ', use_composition])),
         actions=[
             SetParameter('use_sim_time', use_sim_time),
+            PushROSNamespace(namespace),
             Node(
                 package='nav2_lifecycle_manager',
                 executable='lifecycle_manager',
@@ -172,16 +173,8 @@ def generate_launch_description():
                 respawn_delay=2.0,
                 parameters=[nav_configured_params],
                 arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings_nav,
+                remappings=remappings,
             ),
-        ],
-    )
-
-    load_ctrl_nodes = GroupAction(
-        condition=IfCondition(PythonExpression(['not ', use_composition])),
-        actions=[
-            SetParameter('use_sim_time', use_sim_time),
-            PushROSNamespace(namespace),
             Node(
                 package='trajectory_server',
                 executable='trajectory_server_node',
@@ -206,10 +199,12 @@ def generate_launch_description():
                     {'pub_ctrl_freq': 30.0},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings_ctrl,
+                remappings=remappings,
             ),
         ],
+
     )
+
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -229,7 +224,8 @@ def generate_launch_description():
 
     # Add the actions to launch all of the navigation nodes
     # ld.add_action(bringup_cmd_group)
-    ld.add_action(load_nav_nodes)
-    ld.add_action(load_ctrl_nodes)
+    # ld.add_action(load_nav_nodes)
+    # ld.add_action(load_ctrl_nodes)
+    ld.add_action(load_all)
 
     return ld

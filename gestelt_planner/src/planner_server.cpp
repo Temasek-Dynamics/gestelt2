@@ -22,6 +22,11 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
       occ_map_(nullptr)
 {
   RCLCPP_INFO(get_logger(), "Creating");
+  
+  RCLCPP_INFO(get_logger(), "get_fully_qualified_name: %s", 
+    this->get_fully_qualified_name());
+  RCLCPP_INFO(get_logger(), "get_namespace: %s", get_namespace());
+  RCLCPP_INFO(get_logger(), "get_name: %s", get_name());
 
   // Declare this node's parameters
   declare_parameter("planner_plugins", default_ids_);
@@ -38,7 +43,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
 
   // Setup the global costmap
   occ_map_ = std::make_shared<occ_map::OccMap>(
-    "occ_map", std::string{get_namespace()}, "",
+    "occ_map", std::string{get_namespace()}, 
     get_parameter("use_sim_time").as_bool());
 
   RCLCPP_INFO(get_logger(), "Created");

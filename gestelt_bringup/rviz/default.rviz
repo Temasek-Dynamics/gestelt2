@@ -6,8 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
-        - /TF1/Frames1
         - /d0_actual1/state1/odom_ax1/Shape1
         - /d0_actual1/state1/agent_id_text1/Topic1
         - /d0_actual1/maps1/voro1/voro_map_1001/Topic1
@@ -21,11 +19,9 @@ Panels:
         - /d01/front_end1/fe_plan_req1/Topic1
         - /d01/front_end1//fe_plan/viz1/Topic1
         - /d01/maps1/local_map/bounds1/Topic1
+        - /Path1
         - /Polygon1/Topic1
-        - /Odometry1
-        - //occ_map/occ_map1
         - //occ_map/occ_map1/Topic1
-        - //depth_camera/points1
       Splitter Ratio: 0.6552706360816956
     Tree Height: 445
   - Class: rviz_common/Selection
@@ -46,7 +42,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: /depth_camera/points
+    SyncSource: /occ_map/occ_map
 Visualization Manager:
   Class: ""
   Displays:
@@ -1315,7 +1311,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /plan
+        Value: /d0/plan
       Value: true
     - Alpha: 1
       Class: rviz_default_plugins/Polygon
@@ -1349,7 +1345,7 @@ Visualization Manager:
         Value: true
       Enabled: true
       Keep: 1
-      Name: Odometry
+      Name: odom
       Position Tolerance: 0.10000000149011612
       Shape:
         Alpha: 1
@@ -1398,7 +1394,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /occ_map
+        Value: /d0/occ_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -1481,7 +1477,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 3.470365285873413
+      Distance: 3.5208725929260254
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1496,10 +1492,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5547968149185181
+      Pitch: 0.17979681491851807
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.385526180267334
+      Yaw: 4.045524597167969
     Saved: ~
 Window Geometry:
   Displays:

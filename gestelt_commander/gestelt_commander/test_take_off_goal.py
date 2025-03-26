@@ -92,7 +92,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     mission_mngr = MissionManager()
-    navigator = BasicNavigator()
+    navigator = BasicNavigator(node_name='basic_navigator', namespace='d0')
 
     try: 
         #########
@@ -110,6 +110,7 @@ def main(args=None):
         if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=20):
             raise Exception("Failed to transition to hover mode")
         mission_mngr.get_logger().info("All drones are in HOVER MODE.")
+        # Reset occupancy map
         mission_mngr.resetOccMap()
 
         time.sleep(2)

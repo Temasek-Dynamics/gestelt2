@@ -158,7 +158,7 @@ def generate_launch_description():
         config_file=ros_gz_bridge_params,
         container_name='ros_gz_container',
         create_own_container=False,
-        namespace='',
+        namespace=namespace,
         use_composition=False,
         use_respawn=False,
         log_level='info',

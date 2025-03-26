@@ -45,16 +45,12 @@ OccMap::OccMap(const rclcpp::NodeOptions & options)
 OccMap::OccMap(
   const std::string & name,
   const std::string & parent_namespace,
-  const std::string & local_namespace,
   const bool & use_sim_time)
 : nav2_util::LifecycleNode(name, "",
     // NodeOption arguments take precedence over the ones provided on the command line
     // use this to make sure the node is placed on the provided namespace
-    // TODO(orduno) Pass a sub-node instead of creating a new node for better handling
-    //              of the namespaces
     rclcpp::NodeOptions().arguments({
-    "--ros-args", "-r", std::string("__ns:=") +
-    nav2_util::add_namespaces(parent_namespace, local_namespace),
+    "--ros-args", "-r", std::string("__ns:=") + parent_namespace,
     "--ros-args", "-r", name + ":" + std::string("__node:=") + name,
     "--ros-args", "-p", "use_sim_time:=" + std::string(use_sim_time ? "true" : "false"),
   })),
@@ -471,7 +467,7 @@ void OccMap::updateLocalMap(){
   }
 
   if (occ_coords.size() <= 1){ // Empty map
-    logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
+    logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 5.0);
     return;
   }
 
@@ -550,12 +546,12 @@ void OccMap::vizMapTimerCB()
       occ_map_pub_->get_intra_process_subscription_count() > 0);
 
     if (!publish_point_cloud ){
-      logger_->logWarn("Not publishing occ_map");
+      logger_->logWarnThrottle("Not publishing occupancy map visualization due to 0 active subscribers.", 5.0);
       return;
     }
 
     if (lcl_pcd_map_->points.empty()){
-      logger_->logErrorThrottle("local map is empty. Not publishing occupancy grid.", 1.0);
+      logger_->logWarnThrottle("Not publishing occupancy map visualization due to empty local map.", 5.0);
       return;
     }
 
