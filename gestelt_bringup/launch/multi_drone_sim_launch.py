@@ -4,7 +4,6 @@ Complete set of nodes for trajectory server
 """
 
 import os
-from datetime import datetime
 import json
 
 from ament_index_python.packages import get_package_share_directory
@@ -20,9 +19,10 @@ from launch.actions import (
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
-# from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace, ComposableNodeContainer
+from launch_ros.actions import Node, PushROSNamespace, ComposableNodeContainer, SetParameter
 from launch_ros.descriptions import ComposableNode
+
+from ros_gz_bridge.actions import RosGzBridge
 
 SCENARIO_NAME = "single_drone_test"
 
@@ -62,10 +62,6 @@ def generate_launch_description():
         os.path.join(get_package_share_directory('gestelt_commander'), 'scenarios.json'),
         SCENARIO_NAME
     )
-    fake_map_pcd_filepath = os.path.join(
-      get_package_share_directory('gestelt_bringup'), 'pcd_maps',
-      scenario.map + '.pcd'
-    )
 
     px4_gz = os.path.join(
       os.path.expanduser("~"), 'PX4-Autopilot', 
@@ -93,7 +89,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='', description='Top-level namespace'
+        'namespace', default_value='d0', description='Top-level namespace'
     )
 
     declare_params_file_cmd = DeclareLaunchArgument(
@@ -135,18 +131,20 @@ def generate_launch_description():
         }.items(),
     )
 
-    """Gazebo"""
-    gazebo = ExecuteProcess(
+    # Run python script provided by PX4-Autopilot repo to ease
+    # running PX4 custom worlds and models in Gazebo
+    start_gazebo_cmd = ExecuteProcess(
         cmd=[
             'python3', px4_gz,
-            '--world', 'default',
+            '--world', 'default_w_obs',
+            # '--interactive',
             # '--headless',
         ],
         name='gazebo',
         shell=False
     )
 
-    # XRCE Agent that will connect to ALL clients
+    # XRCE Agent that will connect to ALL XRCE-DDS clients
     xrce_agent = ExecuteProcess(
         cmd=[[
             'MicroXRCEAgent udp4 -p 8888 -v'
@@ -155,16 +153,26 @@ def generate_launch_description():
         shell=True
     )
 
-    # Bridge gazebo and ROS2 topics
-    ros_gz_bridge = Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        output='screen',
-        emulate_tty=False,
-        shell=True,
-        parameters = [
-            {'config_file': ros_gz_bridge_params},
-        ]
+    ros_gz_bridge_action = RosGzBridge(
+        bridge_name='ros_gz_bridge',
+        config_file=ros_gz_bridge_params,
+        container_name='ros_gz_container',
+        create_own_container=False,
+        namespace='',
+        use_composition=False,
+        use_respawn=False,
+        log_level='info',
+        bridge_params='',
+    )
+
+    # If during startup, gazebo detects that there is another publisher on /clock, 
+    # it will only create the fully qualified /world/<worldname>/clock topic. 
+    # Gazebo would be the only /clock publisher, the sole source of clock information.
+    # Therefore, we should create a unidirectional bridge
+    ros_gz_bridge_unidir_clock = ExecuteProcess(
+        cmd=['ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
+             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        output='log'
     )
 
     # Send single test goal
@@ -191,8 +199,9 @@ def generate_launch_description():
     ld.add_action(declare_rviz_config_file_cmd)
     ld.add_action(declare_use_rviz_cmd)
 
-    ld.add_action(gazebo)
-    ld.add_action(ros_gz_bridge)
+    ld.add_action(start_gazebo_cmd)
+    ld.add_action(ros_gz_bridge_action)
+    ld.add_action(ros_gz_bridge_unidir_clock)
     ld.add_action(xrce_agent)
     ld.add_action(rviz_cmd)
 
@@ -201,10 +210,12 @@ def generate_launch_description():
     # Generate nodes of SITL drone instances according to scenario
     for drone_id in range(scenario.num_agents):
 
+        ns = "d" + str(drone_id)
+
         global_frame = "world" # Fixed
-        map_frame = "d" + str(drone_id) + "_map"
-        base_link_frame = "d" + str(drone_id) + "_base_link"
-        # camera_frame = "d" + str(drone_id) + "_camera_link"
+        map_frame = ns + "_map"
+        base_link_frame = ns + "_base_link"
+        # camera_frame = ns + "_camera_link"
         camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
 
         ld.add_action(
@@ -220,8 +231,6 @@ def generate_launch_description():
                             'autostart': 'True',
                             'use_composition': 'False',
                             'use_respawn': 'False',
-
-                            'drone_id': str(drone_id),
                         }.items(),
                     ),
                     # Transform from global to map frame
@@ -233,51 +242,14 @@ def generate_launch_description():
                                      str(scenario.spawns_pos[drone_id][2]), "0", "0", 
                                      global_frame, map_frame],
                     ),
-                    # Transform from base_link to camera frame
                     Node(
                         package = "tf2_ros", 
                         executable = "static_transform_publisher",
                         output="log",
-                        arguments = ["0", "0", "0", "0", "0", "0", "1",
+                        arguments = ["0.12", "0.03", "-0.242", 
+                                     "1", "0", "0", "0",
                                      base_link_frame, camera_frame],
                     ),
-                    # # Transform from map to base_link frame
-                    # Node(
-                    #     package = "tf2_ros", 
-                    #     executable = "static_transform_publisher",
-                    #     output="log",
-                    #     arguments = ["0", "0", "0", "0", "0", "0", "1",
-                    #                  map_frame, base_link_frame]
-                    # ),
-                    # # Fake sensor node: For acting as a simulated depth camera/lidar 
-                    # Node(
-                    #     package='fake_sensor',
-                    #     executable='fake_sensor_node',
-                    #     output='screen',
-                    #     shell=False,
-                    #     parameters=[
-                    #         {'drone_id': drone_id},
-                    #         {'global_frame': global_frame},
-                    #         {'map_frame': map_frame},
-                    #         {'sensor_frame': camera_frame},
-                            
-                    #         {'pcd_map.filepath': fake_map_pcd_filepath},
-                            
-                    #         {'tf.listen_to_tf': True},
-                            
-                    #         {'pcd_voxel_filter.enable': True},
-                    #         {'pcd_voxel_filter.voxel_size': 0.1},
-                            
-                    #         {'fake_laser.sensor_refresh_frequency': 30.0},
-                    #         {'fake_laser.sensor_range': 5.0},
-                    #         {'fake_laser.resolution': 0.1},
-
-                    #         {'fake_laser.horizontal.laser_line_num': 280},
-                    #         {'fake_laser.horizontal.laser_range_dgr': 359.0},
-                    #         {'fake_laser.vertical.laser_line_num': 15},
-                    #         {'fake_laser.vertical.laser_range_dgr': 40.0},
-                    #     ],
-                    # ),
                     ExecuteProcess(
                         name=['px4_sitl_', str(drone_id)],
                         cmd=[
@@ -293,7 +265,7 @@ def generate_launch_description():
                             # ['PX4_GZ_MODEL_POSE="0,0,0,0,0,0"'],
                             'ROS_DOMAIN_ID=0',
                             'PX4_UXRCE_DDS_PORT=8888',
-                            # ['PX4_UXRCE_DDS_NS=d', str(drone_id)],
+                            ['PX4_UXRCE_DDS_NS=', ns],
                             # PX4 Executable
                             os.path.join(px4_build_dir, 'bin/px4'),      # PX4 executable
                             os.path.join(px4_build_dir, 'etc'),          # ?

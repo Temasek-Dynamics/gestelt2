@@ -38,7 +38,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
 
   // Setup the global costmap
   occ_map_ = std::make_shared<occ_map::OccMap>(
-    "occ_map", std::string{get_namespace()}, "occ_map",
+    "occ_map", std::string{get_namespace()}, "",
     get_parameter("use_sim_time").as_bool());
 
   RCLCPP_INFO(get_logger(), "Created");

@@ -46,7 +46,7 @@ TrajectoryServer::TrajectoryServer()
 	geofence_ = std::make_unique<Geofence>(logger_);
 
 	// Declare params
-	this->declare_parameter("drone_id", 0);
+	this->declare_parameter("namespace", "");
 	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("base_link_frame", "base_link");
 	/* Frequencies for timers and periodic publishers*/
@@ -64,7 +64,19 @@ TrajectoryServer::TrajectoryServer()
 	geofence_->max_z = this->declare_parameter("safety.geofence.max_z", 0.0);
 
 	// Get Params
-	drone_id_ = this->get_parameter("drone_id").as_int();
+	std::string ns = this->get_parameter("namespace").as_string();
+	if (ns.size() < 2){
+		throw std::runtime_error("Invalid namespace provided to trajectory_server, "
+			"should be in the form of 'dX' where X is an integer");
+	}
+	drone_id_ = std::stoi(ns.substr(1, ns.size()-1));
+
+	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
+	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
+	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
+	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
+	std::cout << "DRONE_ID: " << drone_id_ << std::endl;
+
 	map_frame_ = this->get_parameter("map_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
@@ -188,6 +200,33 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 		Eigen::Vector3d(vel.data()), vel_frame_tf);
 	cur_ang_vel_enu_ = transform_static_frame(
 		Eigen::Vector3d(ang_vel.data()), vel_frame_tf);
+
+
+	nav_msgs::msg::Odometry odom_msg;
+
+	odom_msg.header.frame_id = map_frame_;
+	odom_msg.header.stamp = this->get_clock()->now();
+
+	odom_msg.child_frame_id = base_link_frame_;
+
+	odom_msg.pose.pose.position.x = cur_pos_enu_corr_(0);
+	odom_msg.pose.pose.position.y = cur_pos_enu_corr_(1);
+	odom_msg.pose.pose.position.z = cur_pos_enu_corr_(2);
+
+	odom_msg.pose.pose.orientation.w = cur_ori_enu_.w();
+	odom_msg.pose.pose.orientation.x = cur_ori_enu_.x();
+	odom_msg.pose.pose.orientation.y = cur_ori_enu_.y();
+	odom_msg.pose.pose.orientation.z = cur_ori_enu_.z();
+
+	odom_msg.twist.twist.linear.x = cur_vel_enu_(0);
+	odom_msg.twist.twist.linear.y = cur_vel_enu_(1);
+	odom_msg.twist.twist.linear.z = cur_vel_enu_(2);
+
+	odom_msg.twist.twist.angular.x = cur_ang_vel_enu_(0);
+	odom_msg.twist.twist.angular.y = cur_ang_vel_enu_(1);
+	odom_msg.twist.twist.angular.z = cur_ang_vel_enu_(2);
+
+	odom_pub_->publish(odom_msg);
 }
 
 void TrajectoryServer::vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::UniquePtr msg)
@@ -455,14 +494,14 @@ void TrajectoryServer::SMTickTimerCB()
 	// Check all states
 	if (UAV::is_in_state<Unconnected>())
 	{
-		logger_->logWarnThrottle("[Unconnected]", 1.0);
+		logger_->logWarnThrottle("[Unconnected]", 2.5);
 		if (connected_to_fcu_){
 			sendEvent(Idle_E());
 		}
 	}
 	else if (UAV::is_in_state<Idle>())
 	{
-		logger_->logInfoThrottle("[Idle]", 1.0);
+		logger_->logInfoThrottle("[Idle]", 2.5);
 		if (arming_state_ != px4_msgs::msg::VehicleStatus::ARMING_STATE_DISARMED)
 		{ 
 			// Disarm vehicle
@@ -506,11 +545,11 @@ void TrajectoryServer::SMTickTimerCB()
 	}
 	else if (UAV::is_in_state<Mission>())
 	{
-		logger_->logInfoThrottle("[Mission]", 2.0);
+		logger_->logInfoThrottle("[Mission]", 5.0);
 	}
 	else if (UAV::is_in_state<EmergencyStop>())
 	{
-		logger_->logInfoThrottle("[EmergencyStop]", 2.0);
+		logger_->logInfoThrottle("[EmergencyStop]", 1.0);
 	}
 	else
 	{
@@ -520,31 +559,7 @@ void TrajectoryServer::SMTickTimerCB()
 
 void TrajectoryServer::pubStateTimerCB()
 {
-	nav_msgs::msg::Odometry odom_msg;
 
-	odom_msg.header.frame_id = map_frame_;
-	odom_msg.header.stamp = this->get_clock()->now();
-
-	odom_msg.child_frame_id = base_link_frame_;
-
-	odom_msg.pose.pose.position.x = cur_pos_enu_corr_(0);
-	odom_msg.pose.pose.position.y = cur_pos_enu_corr_(1);
-	odom_msg.pose.pose.position.z = cur_pos_enu_corr_(2);
-
-	odom_msg.pose.pose.orientation.w = cur_ori_enu_.w();
-	odom_msg.pose.pose.orientation.x = cur_ori_enu_.x();
-	odom_msg.pose.pose.orientation.y = cur_ori_enu_.y();
-	odom_msg.pose.pose.orientation.z = cur_ori_enu_.z();
-
-	odom_msg.twist.twist.linear.x = cur_vel_enu_(0);
-	odom_msg.twist.twist.linear.y = cur_vel_enu_(1);
-	odom_msg.twist.twist.linear.z = cur_vel_enu_(2);
-
-	odom_msg.twist.twist.angular.x = cur_ang_vel_enu_(0);
-	odom_msg.twist.twist.angular.y = cur_ang_vel_enu_(1);
-	odom_msg.twist.twist.angular.z = cur_ang_vel_enu_(2);
-
-	odom_pub_->publish(odom_msg);
 
 	// broadcast tf link from global map frame to local map origin 
 	geometry_msgs::msg::TransformStamped map_to_base_link_tf;

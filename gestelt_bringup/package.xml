@@ -22,6 +22,8 @@
   <depend>fake_sensor</depend>
   <depend>fake_map</depend>
 
+  <depend>ros_gz_bridge</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

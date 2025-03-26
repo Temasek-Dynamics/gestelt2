@@ -103,27 +103,30 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
     std::function<bool()> cancel_checker)
 {
 
-  // Search takes place in index space. So we first convert 3d real world positions into indices
   if (!occ_map_->inGlobalMap(start))
   {
+    std::cout << "start: " << start.transpose() << std::endl;
+    std::cout << "global_map_size: " << occ_map_->getGlobalMapSize().transpose() << std::endl;
     throw gestelt_core::StartOutsideMapBounds(
         "Start Coordinates of(" + std::to_string(start(0)) + ", " +
-        std::to_string(start(1)) + "," + std::to_string(start(2)) + ") was outside bounds");
+        std::to_string(start(1)) + "," + std::to_string(start(2)) + 
+        ") was outside bounds");
   }
 
   if (!occ_map_->inGlobalMap(goal))
   {
     throw gestelt_core::GoalOutsideMapBounds(
       "Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
-      std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + ") was outside bounds");
-
+      std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
+      ") was outside bounds");
   }
 
   if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
     throw gestelt_core::GoalOccupied(
         "Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
-        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + ") was in lethal cost");
+        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
+        ") was in lethal cost");
   }
 
   nav_msgs::msg::Path path;
@@ -156,8 +159,8 @@ AStarPlanner::makePlan(
   occ_map_->worldToMap(goal, map_goal);
 
   RCLCPP_INFO(
-    logger_, "AStarPlanner::makePlan in map_frame from (%.2f, %.2f, %.2f) to "
-    "(%.2f, %.2f, %.2f).", 
+    logger_, "AStarPlanner::makePlan in map_frame from " 
+    "(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f).", 
     map_start(0), map_start(1), map_start(2),
     map_goal(0), map_goal(1), map_goal(2));
 
@@ -166,7 +169,7 @@ AStarPlanner::makePlan(
 
   std::unique_lock<occ_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
 
-  planner_->setCostmap(occ_map_);
+  planner_->setCostmap(occ_map_, true);
 
   planner_->setStart(map_goal);
   planner_->setGoal(map_start);
@@ -178,8 +181,7 @@ AStarPlanner::makePlan(
 
   lock.unlock();
 
-  RCLCPP_INFO(
-    logger_, "Size of path: %d", path_len);
+  RCLCPP_INFO(logger_, "Size of path: %d", path_len);
 
   // Obtain planned path in map frame
   auto map_planned_path = planner_->getPath();

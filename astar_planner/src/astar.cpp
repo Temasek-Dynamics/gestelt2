@@ -38,8 +38,12 @@ int AStar::computePath(const int& max_iterations,
         return 0;
     }
 
+
     const auto start_idx = occ_map_->posToIdx(start_pos_);
     const auto goal_idx = occ_map_->posToIdx(goal_pos_);
+
+    std::cout << "AStar::computePath in map frame from " 
+    << start_pos_.transpose() << " to " << goal_pos_.transpose() << std::endl;
 
     std::cout << "AStar::computePath in idx frame from " 
             << start_idx.transpose() << " to " << goal_idx.transpose() << std::endl;
@@ -69,7 +73,7 @@ int AStar::computePath(const int& max_iterations,
         }
         
         auto cur_idx = open_list_.get();
-        
+    
         if (cur_idx == goal_idx)
         {
             planned_path_idx_ = tracePath(cur_idx);
@@ -88,16 +92,23 @@ int AStar::computePath(const int& max_iterations,
                 double f_cost = cost_to_come_[nb_idx] 
                     + h_weight_ * L1Dist(nb_idx, goal_idx);
 
-                if (!closed_list_.count(nb_idx)) 
-                {
-                    came_from_[nb_idx] = cur_idx;
-                    open_list_.put(nb_idx, f_cost);
-                }
+                came_from_[nb_idx] = cur_idx;
+                open_list_.put(nb_idx, f_cost);
+
+                // if (!closed_list_.count(nb_idx)) 
+                // {
+                //     came_from_[nb_idx] = cur_idx;
+                //     open_list_.put(nb_idx, f_cost);
+                // }
             }
         }
 
         num_iter++;
     }
+
+    std::cout << "num_iter: " << num_iter << std::endl;
+
+    throw gestelt_core::PlannerException("Open list is empty. No more valid nodes to search");
 
     return 0;
 }
@@ -113,14 +124,12 @@ std::vector<Eigen::Vector3i> AStar::getNeighbours(const Eigen::Vector3i& idx)
         {
             for (int dz = -1; dz <= 1; dz++)
             {
-                // Skip it's own position
                 if (dx == 0 && dy == 0 && dz == 0){
+                    // Skip it's own position
                     continue;
                 }
                 
-                Eigen::Vector3i nb_idx( idx(0) + dx * occ_map_->getRes(), 
-                                        idx(1) + dy * occ_map_->getRes(), 
-                                        idx(2) + dz * occ_map_->getRes());
+                Eigen::Vector3i nb_idx(idx(0)+dx, idx(1)+dy, idx(2)+dz);
 
                 if (!occ_map_->inGlobalMapIdx(nb_idx)){
                     continue;
@@ -142,7 +151,6 @@ std::vector<Eigen::Vector3i> AStar::getNeighbours(const Eigen::Vector3i& idx)
     }
 
     return neighbours;
-
 }
 
 std::vector<Eigen::Vector3i> AStar::tracePath(const Eigen::Vector3i& goal_idx)

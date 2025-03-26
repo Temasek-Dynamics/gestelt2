@@ -9,6 +9,8 @@ from rclpy.node import Node
 from rclpy.wait_for_message import wait_for_message
 
 from geometry_msgs.msg import Pose
+from std_msgs.msg import Empty
+
 from gestelt_interfaces.msg import PlanRequest, Goals, UAVState, AllUAVCommand
 from gestelt_interfaces.srv import UAVCommand
 
@@ -45,7 +47,7 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-class Mission(Node):
+class MissionManager(Node):
     def __init__(self, no_scenario=False):
         super().__init__('mission_node')
 
@@ -105,10 +107,15 @@ class Mission(Node):
 
         """Publishers"""
 
+        self.occ_map_pubs_ = []
         self.goals_pubs_ = []
+
         for id in range(self.scenario.num_agents):
             self.goals_pubs_.append(self.create_publisher(
                                     Goals, 'd' + str(id) + '/goals', 
+                                    rclpy.qos.qos_profile_services_default))
+            self.occ_map_pubs_.append(self.create_publisher(
+                                    Empty, '/occ_map/reset_map', 
                                     rclpy.qos.qos_profile_services_default))
 
         """Set goals_pos"""
@@ -211,7 +218,6 @@ class Mission(Node):
         self.get_logger().info(f"Commanded all drones via '/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
-
 
     def cmdAllDronesPubNamespaced(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones using publisher
@@ -338,8 +344,15 @@ class Mission(Node):
 
         return goal_msg
 
-
     def pubGoals(self):
         # Publish goals to all drones
         for id in range(self.scenario.num_agents):
             self.goals_pubs_[id].publish(self.plan_req_msgs[id])
+
+
+    def resetOccMap(self):
+        """Reset occupancy map
+        """
+
+        for id in range(self.scenario.num_agents):
+            self.occ_map_pubs_[id].publish(Empty())

@@ -36,8 +36,8 @@ def planPath(navigator):
     goal_pose = PoseStamped()
     goal_pose.header.frame_id = 'world'
     goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 2.5
-    goal_pose.pose.position.y = -0.77
+    goal_pose.pose.position.x = 5.0
+    goal_pose.pose.position.y = 0.0
     goal_pose.pose.position.z = 0.5
     goal_pose.pose.orientation.w = 1.0
 
@@ -91,52 +91,56 @@ def planPath(navigator):
 def main(args=None):
     rclpy.init(args=args)
 
-    mission = Mission()
+    mission_mngr = MissionManager()
     navigator = BasicNavigator()
 
     try: 
         #########
         # Take off 
         #########
-        mission.cmdAllDronesPubNamespaced(
+        mission_mngr.cmdAllDronesPubNamespaced(
             UAVCommand.Request.COMMAND_TAKEOFF, 
             UAVState.IDLE,
-            value=mission.scenario.take_off_height)
-        mission.get_logger().info("All drones TAKING OFF")
+            value=mission_mngr.scenario.take_off_height)
+        mission_mngr.get_logger().info("All drones TAKING OFF")
         
         #########
         # Wait for Hover
         #########
-        if not mission.waitForReqState(UAVState.HOVERING, max_retries=20):
+        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=20):
             raise Exception("Failed to transition to hover mode")
-        mission.get_logger().info("All drones are in HOVER MODE")
+        mission_mngr.get_logger().info("All drones are in HOVER MODE.")
+        mission_mngr.resetOccMap()
+
+        time.sleep(2)
 
         # Send a goal
+        mission_mngr.get_logger().info("Planning path.")
         planPath(navigator)
 
         #########
-        # Mission mode
+        # MissionManager mode
         #########
-        mission.cmdAllDronesPubNamespaced(
+        mission_mngr.cmdAllDronesPubNamespaced(
             UAVCommand.Request.COMMAND_START_MISSION, 
             UAVState.HOVERING,
             mode=0)
-        mission.get_logger().info("All drones swtching switching to MISSION MODE")
+        mission_mngr.get_logger().info("All drones swtching switching to MISSION MODE")
 
         #########
-        # Wait for mission
+        # Wait for mission_mngr
         #########
-        if not mission.waitForReqState(UAVState.MISSION, max_retries=20):
-            raise Exception("Failed to transition to mission mode")
+        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=20):
+            raise Exception("Failed to transition to mission_mngr mode")
         
-        mission.get_logger().info("All drones in MISSION MODE")
+        mission_mngr.get_logger().info("All drones in MISSION MODE")
 
-        rclpy.spin(mission)
+        rclpy.spin(mission_mngr)
 
     except Exception as e:
         print(e)
 
-    mission.destroy_node()
+    mission_mngr.destroy_node()
     # navigator.lifecycleShutdown()
     rclpy.shutdown()
 

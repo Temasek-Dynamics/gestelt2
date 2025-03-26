@@ -132,15 +132,15 @@ void OccMap::init()
   declare_parameter("local_map.size_z", 10.0);
 
   /* Probabilistic map*/
-  declare_parameter("occ_map.resolution", 0.1);
-  declare_parameter("occ_map.static_inflation", 0.2);
-  declare_parameter("occ_map.max_range", 5.0);
+  declare_parameter("prob_map.resolution", 0.1);
+  declare_parameter("prob_map.static_inflation", 0.2);
+  declare_parameter("prob_map.max_range", 5.0);
 
-  declare_parameter("occ_map.prob_miss_log", 0.4);
-  declare_parameter("occ_map.prob_hit_log", 0.7);
-  declare_parameter("occ_map.clamp_min_log", 0.12);
-  declare_parameter("occ_map.clamp_max_log", 0.97);
-  declare_parameter("occ_map.occupancy_threshold_log", 0.5);
+  declare_parameter("prob_map.prob_miss_log", 0.4);
+  declare_parameter("prob_map.prob_hit_log", 0.7);
+  declare_parameter("prob_map.clamp_min_log", 0.12);
+  declare_parameter("prob_map.clamp_max_log", 0.97);
+  declare_parameter("prob_map.occupancy_threshold_log", 0.5);
 
   /* Passthrough filter for input point cloud */
   declare_parameter("cloud_in_passthrough.min_z", 0.0);
@@ -183,7 +183,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
   /* Initialize Subscribers */
   cloud_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
-    "cloud", rclcpp::SensorDataQoS(), std::bind(&OccMap::cloudCB, this, _1) );
+    "depth_camera/points", rclcpp::SensorDataQoS(), std::bind(&OccMap::cloudCB, this, _1) );
 
   /* Initialize Publishers */
   occ_map_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(
@@ -193,7 +193,8 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   
   /* Initialize Subscribers */
   reset_map_sub_ = create_subscription<std_msgs::msg::Empty>(
-    "reset_map", 10, std::bind(&OccMap::resetMapCB, this, _1) );
+    "reset_map", rclcpp::ServicesQoS(), 
+    std::bind(&OccMap::resetMapCB, this, _1) );
 
   /* Initialize ROS Timers */
   viz_map_timer_ = create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
@@ -208,16 +209,13 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
   kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
 
-  occ_pcd_in_lcl_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  occ_pcd_in_lcl_frame_->header.frame_id = map_frame_;
-  occ_pcd_in_gbl_frame_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  occ_pcd_in_gbl_frame_->header.frame_id = global_frame_;
+  lcl_pcd_map_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
   // Global map origin is FIXED at a corner of the global map i.e. (-W/2, -L/2, 0)
-  global_map_origin_ = Eigen::Vector3d(
-    -global_map_size_(0) / 2.0, 
-    -global_map_size_(1) / 2.0, 
-    0.0);
+  global_map_size_idx_ = Eigen::Vector3i(
+    (int)global_map_size_(0) * inv_resolution_, 
+    (int)global_map_size_(1) * inv_resolution_, 
+    (int)global_map_size_(2) * inv_resolution_);
 
   /* LOCAL MAP COORDINATES ARE NOT FIXED! */
   // Local map min is at a corner of the local map i.e. (uav_pos_x - local_sz_x /2, uav_pos_y - local_sz_y /2, 0), relative to the current position of the robot
@@ -361,8 +359,7 @@ OccMap::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   tf_listener_.reset();
   tf_buffer_.reset();
 
-  occ_pcd_in_lcl_frame_.reset();
-  occ_pcd_in_gbl_frame_.reset();
+  lcl_pcd_map_.reset();
 
   logger_->logInfo("Cleaned up");
 
@@ -401,20 +398,20 @@ void OccMap::getParameters()
   get_parameter("update_local_map_frequency",  update_local_map_freq_);
   get_parameter("viz_map_frequency", viz_occ_map_freq_);
 
-  get_parameter("occ_map.resolution", resolution_);
-  get_parameter("occ_map.static_inflation", inflation_);
-  get_parameter("occ_map.max_range_", max_range_);
+  get_parameter("prob_map.resolution", resolution_);
+  get_parameter("prob_map.static_inflation", inflation_);
+  get_parameter("prob_map.max_range", max_range_);
 
   inv_resolution_ = 1.0 / resolution_;
   inflation_voxels_ = std::ceil(inflation_/resolution_);
 
   /* Probabilistic map*/
   double prob_miss, prob_hit, clamp_min, clamp_max, occupancy_threshold;
-  get_parameter("occ_map.prob_miss_log", prob_miss);
-  get_parameter("occ_map.prob_hit_log", prob_hit);
-  get_parameter("occ_map.clamp_min_log", clamp_min);
-  get_parameter("occ_map.clamp_max_log", clamp_max);
-  get_parameter("occ_map.occupancy_threshold_log", occupancy_threshold);
+  get_parameter("prob_map.prob_miss_log", prob_miss);
+  get_parameter("prob_map.prob_hit_log", prob_hit);
+  get_parameter("prob_map.clamp_min_log", clamp_min);
+  get_parameter("prob_map.clamp_max_log", clamp_max);
+  get_parameter("prob_map.occupancy_threshold_log", occupancy_threshold);
 
   bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(prob_miss);
   bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(prob_hit);
@@ -437,12 +434,11 @@ void OccMap::getParameters()
 
 /* Core methods */
 
-
 void OccMap::updateLocalMap(){
   try {
     // map to base_link
     auto tf_bl_to_map = tf_buffer_->lookupTransform(
-      global_frame_, base_link_frame_,
+      map_frame_, base_link_frame_,
       tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
 
@@ -451,7 +447,7 @@ void OccMap::updateLocalMap(){
   } 
   catch (const tf2::TransformException & ex) {
     logger_->logError(strFmt("Could not get transform from base link frame '%s' to map frame '%s': %s",
-			base_link_frame_.c_str(), global_frame_.c_str(), ex.what()));
+			base_link_frame_.c_str(), map_frame_.c_str(), ex.what()));
     return;
   }
 
@@ -474,8 +470,6 @@ void OccMap::updateLocalMap(){
     bonxai_map_->getOccupiedVoxels(occ_coords);
   }
 
-  std::cout << "occ_coords.size() = " << occ_coords.size() << std::endl;
-
   if (occ_coords.size() <= 1){ // Empty map
     logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
     return;
@@ -484,23 +478,17 @@ void OccMap::updateLocalMap(){
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
 
-    // Clear existing local map
-    raw_lcl_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    lcl_pcd_map_raw_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    lcl_pcd_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
 
-    occ_pcd_in_lcl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    occ_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    lcl_pts_map_.clear();
 
-    lcl_pts_in_global_frame_.clear();
-
-    /**
-     * Add points within a local bound of the agent
-     */
-    for (auto& coord : occ_coords) // For each occupied coordinate
+    // Only add points within local bound of base_link
+    for (auto& coord : occ_coords) 
     {
       // obs_gbl_pos: global obstacle pos
       Bonxai::Point3D obs_gbl_pos_pt3d = bonxai_map_->grid().coordToPos(coord);
-
-      // obs_gbl_pos: With respect to (0,0,0) of world frame
+      // obs_gbl_pos: With respect to (0,0,0) of global frame
       Eigen::Vector3d obs_gbl_pos = Bonxai::ConvertPoint<Eigen::Vector3d>(obs_gbl_pos_pt3d);
 
       if (!inLocalMap(obs_gbl_pos)){ 
@@ -508,23 +496,21 @@ void OccMap::updateLocalMap(){
         continue;
       }
 
-      raw_lcl_pcd_in_gbl_frame_->push_back(
+      lcl_pcd_map_raw_->push_back(
         pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
     }
 
-    std::cout << "raw_lcl_pcd_in_gbl_frame_->points.size() = " << 
-      raw_lcl_pcd_in_gbl_frame_->points.size() << std::endl;
-
     kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
     // Add local occ points in fixed map frame to KDTree
-    kdtree_->Build(raw_lcl_pcd_in_gbl_frame_->points);
+    kdtree_->Build(lcl_pcd_map_raw_->points);
 
-    for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_gbl_frame_->points) // For each point in local bounds
+    // For each point in local bounds
+    for (auto& pt_in_gbl_frame : lcl_pcd_map_raw_->points) 
     {
       Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
 
-      // pt_in_lcl_frame_eig: With respect to local origins
-      Eigen::Vector3d pt_in_lcl_frame_eig = pt_in_gbl_frame_eig - local_map_origin_;
+      // // pt_in_lcl_frame_eig: With respect to local origins
+      // Eigen::Vector3d pt_in_lcl_frame_eig = pt_in_gbl_frame_eig - local_map_origin_;
 
       std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
       // Perform radius search for each point and get nunber of points
@@ -533,137 +519,24 @@ void OccMap::updateLocalMap(){
         continue;
       }
 
-      // occ_pcd_in_lcl_frame_: Used by map slice and hence dynamic voronoi
-      occ_pcd_in_lcl_frame_->push_back(
-        pcl::PointXYZ(pt_in_lcl_frame_eig(0), pt_in_lcl_frame_eig(1), pt_in_lcl_frame_eig(2)));
+      // lcl_pts_map_: Used for SFC
+      lcl_pts_map_.push_back(pt_in_gbl_frame_eig);
 
-      // occ_pcd_in_gbl_frame_: Used for visualization
-      occ_pcd_in_gbl_frame_->push_back(pt_in_gbl_frame);
-
-      // lcl_pts_in_global_frame_: Used for SFC
-      lcl_pts_in_global_frame_.push_back(pt_in_gbl_frame_eig);
+      // lcl_pcd_map_: Used for visualization
+      lcl_pcd_map_->push_back(pt_in_gbl_frame);
     }
 
+    lcl_pcd_map_raw_->header.frame_id = map_frame_;
+    lcl_pcd_map_raw_->width = lcl_pcd_map_raw_->points.size();
+    lcl_pcd_map_raw_->height = 1;
+    lcl_pcd_map_raw_->is_dense = true; 
 
-    occ_pcd_in_lcl_frame_->width = occ_pcd_in_lcl_frame_->points.size();
-    occ_pcd_in_lcl_frame_->height = 1;
-    occ_pcd_in_lcl_frame_->is_dense = true; 
-
-    occ_pcd_in_gbl_frame_->width = occ_pcd_in_gbl_frame_->points.size();
-    occ_pcd_in_gbl_frame_->height = 1;
-    occ_pcd_in_gbl_frame_->is_dense = true; 
+    lcl_pcd_map_->header.frame_id = map_frame_;
+    lcl_pcd_map_->width = lcl_pcd_map_->points.size();
+    lcl_pcd_map_->height = 1;
+    lcl_pcd_map_->is_dense = true; 
   }
 }
-
-// void OccMap::updateLocalMap(){
-//   try {
-//     // map to base_link
-//     auto tf_bl_to_map = tf_buffer_->lookupTransform(
-//       global_frame_, base_link_frame_,
-//       tf2::TimePointZero,
-//       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
-
-//     bl_to_map_mat_ = tf2::transformToEigen(
-//       tf_bl_to_map.transform).matrix().cast<double>();
-//   } 
-//   catch (const tf2::TransformException & ex) {
-//     logger_->logError(strFmt("Could not get transform from base link frame '%s' to map frame '%s': %s",
-// 			base_link_frame_.c_str(), global_frame_.c_str(), ex.what()));
-//     return;
-//   }
-
-//   // Update local map origin, which is the location of the local map origin IN the global map frame
-//   local_map_origin_ = Eigen::Vector3d(
-//     bl_to_map_mat_.block<3,1>(0,3)(0) - (local_map_size_(0) / 2.0), 
-//     bl_to_map_mat_.block<3,1>(0,3)(1) - (local_map_size_(1) / 2.0), 
-//     0.0);
-
-//   // Update local map max position based on current UAV position
-//   local_map_max_ = Eigen::Vector3d(
-//     bl_to_map_mat_.block<3,1>(0,3)(0) + (local_map_size_(0) / 2.0), 
-//     bl_to_map_mat_.block<3,1>(0,3)(1) + (local_map_size_(1) / 2.0), 
-//     local_map_size_(2));
-
-//   // Get all occupied coordinates 
-//   std::vector<Bonxai::CoordT> occ_coords;
-//   {
-//     std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
-//     bonxai_map_->getOccupiedVoxels(occ_coords);
-//   }
-//   if (occ_coords.size() <= 1){ // Empty map
-//     logger_->logWarnThrottle("Skipping update of local map. Bonxai map is empty!", 1.0);
-//     return;
-//   }
-
-//   {
-//     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
-
-//     // Clear existing local map
-//     raw_lcl_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-
-//     occ_pcd_in_lcl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-//     occ_pcd_in_gbl_frame_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-
-//     lcl_pts_in_global_frame_.clear();
-
-//     /**
-//      * Add points within a local bound of the agent
-//      */
-//     for (auto& coord : occ_coords) // For each occupied coordinate
-//     {
-//       // obs_gbl_pos: global obstacle pos
-//       Bonxai::Point3D obs_gbl_pos_pt3d = bonxai_map_->grid().coordToPos(coord);
-
-//       // obs_gbl_pos: With respect to (0,0,0) of world frame
-//       Eigen::Vector3d obs_gbl_pos = Bonxai::ConvertPoint<Eigen::Vector3d>(obs_gbl_pos_pt3d);
-
-//       if (!inLocalMap(obs_gbl_pos)){ 
-//         // Point is outside the local map
-//         continue;
-//       }
-
-//       raw_lcl_pcd_in_gbl_frame_->push_back(
-//         pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
-//     }
-
-//     kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
-//     // Add local occ points in fixed map frame to KDTree
-//     kdtree_->Build(raw_lcl_pcd_in_gbl_frame_->points);
-
-//     for (auto& pt_in_gbl_frame : raw_lcl_pcd_in_gbl_frame_->points) // For each point in local bounds
-//     {
-//       Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
-
-//       // pt_in_lcl_frame_eig: With respect to local origins
-//       Eigen::Vector3d pt_in_lcl_frame_eig = pt_in_gbl_frame_eig - local_map_origin_;
-
-//       std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
-//       // Perform radius search for each point and get nunber of points
-//       kdtree_->Radius_Search(pt_in_gbl_frame, noise_search_radius_, nb_points);
-//       if ((int) nb_points.size() < noise_min_neighbors_){
-//         continue;
-//       }
-
-//       // occ_pcd_in_lcl_frame_: Used by map slice and hence dynamic voronoi
-//       occ_pcd_in_lcl_frame_->push_back(
-//         pcl::PointXYZ(pt_in_lcl_frame_eig(0), pt_in_lcl_frame_eig(1), pt_in_lcl_frame_eig(2)));
-
-//       // occ_pcd_in_gbl_frame_: Used for visualization
-//       occ_pcd_in_gbl_frame_->push_back(pt_in_gbl_frame);
-
-//       // lcl_pts_in_global_frame_: Used for SFC
-//       lcl_pts_in_global_frame_.push_back(pt_in_gbl_frame_eig);
-//     }
-
-//     occ_pcd_in_lcl_frame_->width = occ_pcd_in_lcl_frame_->points.size();
-//     occ_pcd_in_lcl_frame_->height = 1;
-//     occ_pcd_in_lcl_frame_->is_dense = true; 
-
-//     occ_pcd_in_gbl_frame_->width = occ_pcd_in_gbl_frame_->points.size();
-//     occ_pcd_in_gbl_frame_->height = 1;
-//     occ_pcd_in_gbl_frame_->is_dense = true; 
-//   }
-// }
 
 /** Timer callbacks */
 
@@ -672,25 +545,25 @@ void OccMap::vizMapTimerCB()
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
 
-    // bool publish_point_cloud =
-    //   (occ_map_pub_->get_subscription_count() +
-    //   occ_map_pub_->get_intra_process_subscription_count() > 0);
+    bool publish_point_cloud =
+      (occ_map_pub_->get_subscription_count() +
+      occ_map_pub_->get_intra_process_subscription_count() > 0);
 
-    // if (!publish_point_cloud ){
-    //   logger_->logWarn("Not publishing occ_map");
-    //   return;
-    // }
+    if (!publish_point_cloud ){
+      logger_->logWarn("Not publishing occ_map");
+      return;
+    }
 
-    if (occ_pcd_in_gbl_frame_->points.empty()){
+    if (lcl_pcd_map_->points.empty()){
       logger_->logErrorThrottle("local map is empty. Not publishing occupancy grid.", 1.0);
       return;
     }
 
     sensor_msgs::msg::PointCloud2 cloud_msg;
-    pcl::toROSMsg(*occ_pcd_in_gbl_frame_, cloud_msg);
+    pcl::toROSMsg(*lcl_pcd_map_, cloud_msg);
 
     cloud_msg.header.stamp = get_clock()->now();
-    cloud_msg.header.frame_id = global_frame_;
+    cloud_msg.header.frame_id = map_frame_;
 
     occ_map_pub_->publish(cloud_msg);
   }
@@ -717,16 +590,12 @@ void OccMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
 
 void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 {
-  std::cout << "cloudCB()" << std::endl;
-
   if (isTimeout(last_cloud_cb_time_, 0.5)){
     logger_->logWarnThrottle(strFmt("cloud message timeout exceeded 0.5s: (%f, %f)",  
                                       last_cloud_cb_time_, get_clock()->now().seconds()), 1.0);
   }
 
   last_cloud_cb_time_ = get_clock()->now().seconds();
-
-  std::cout << "msg->data.size() = " << msg->data.size() << std::endl;
 
   // Input Point cloud is assumed to be in frame id of the sensor
   if (msg->data.empty()){
@@ -748,23 +617,19 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   }
   (*pcd).resize(filtered_index);
 
-  std::cout << "pcd->points.size() = " << pcd->points.size() << std::endl;
-
   // Get camera to map frame TF
   try {
     auto tf_cam_to_map = tf_buffer_->lookupTransform(
-      global_frame_, camera_frame_,
+      map_frame_, camera_frame_,
       msg->header.stamp,
       rclcpp::Duration::from_seconds(1.0));
 
       cam_to_map_mat_ = tf2::transformToEigen(
         tf_cam_to_map.transform).matrix().cast<double>();
-
-      // md_.map_to_cam = cam_to_map_mat_.inverse();
   } 
   catch (const tf2::TransformException & ex) {
     logger_->logError(strFmt("Could not get transform from camera frame '%s' to map frame '%s': %s",
-			camera_frame_.c_str(), global_frame_.c_str(), ex.what()));
+			camera_frame_.c_str(), map_frame_.c_str(), ex.what()));
 
     return;
   }
@@ -777,12 +642,10 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   }
 
   auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcd_in_map_frame->header.frame_id = global_frame_;
+  pcd_in_map_frame->header.frame_id = map_frame_;
 
   // Transform point cloud from camera frame to global_frame 
   pcl::transformPointCloud(*pcd, *pcd_in_map_frame, cam_to_map_mat_);
-
-  std::cout << "pcd_in_map_frame->points.size() = " << pcd_in_map_frame->points.size() << std::endl;
 
   // Getting the Translation from the sensor to the Global Reference Frame
   const pcl::PointXYZ sensor_origin(
@@ -794,9 +657,6 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // tm_bonxai_insert_.start();
   // Add point cloud to bonxai_maps_
   std::lock_guard<std::mutex> mtx_grd(bonxai_map_mtx_);
-
-  std::cout << "sensor_origin = " << sensor_origin << std::endl;
-  std::cout << "max_range_ = " << max_range_ << std::endl;
 
   bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, max_range_);
   // tm_bonxai_insert_.stop(false);
@@ -872,81 +732,81 @@ rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::
     
     /* Occupancy mapping */
 
-    if (param.get_name() == "occ_map.prob_miss_log")
+    if (param.get_name() == "prob_map.prob_miss_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         result.successful = false;
-        result.reason = "occ_map.prob_miss_log must be a double";
+        result.reason = "prob_map.prob_miss_log must be a double";
         break;
       }
-      logger_->logInfo("Updated 'occ_map.prob_miss_log' parameters");
+      logger_->logInfo("Updated 'prob_map.prob_miss_log' parameters");
       update_bonxai = true;
       bonxai_options_.prob_miss_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == "occ_map.prob_hit_log")
+    if (param.get_name() == "prob_map.prob_hit_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         result.successful = false;
-        result.reason = "occ_map.prob_hit_log must be a double";
+        result.reason = "prob_map.prob_hit_log must be a double";
         break;
       }
-      logger_->logInfo("Updated 'occ_map.prob_hit_log' parameters");
+      logger_->logInfo("Updated 'prob_map.prob_hit_log' parameters");
       update_bonxai = true;
       bonxai_options_.prob_hit_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == "occ_map.clamp_min_log")
+    if (param.get_name() == "prob_map.clamp_min_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         result.successful = false;
-        result.reason = "occ_map.clamp_min_log must be a double";
+        result.reason = "prob_map.clamp_min_log must be a double";
         break;
       }
-      logger_->logInfo("Updated 'occ_map.clamp_min_log' parameters");
+      logger_->logInfo("Updated 'prob_map.clamp_min_log' parameters");
       update_bonxai = true;
       bonxai_options_.clamp_min_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == "occ_map.clamp_max_log")
+    if (param.get_name() == "prob_map.clamp_max_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         result.successful = false;
-        result.reason = "occ_map.clamp_max_log must be a double";
+        result.reason = "prob_map.clamp_max_log must be a double";
         break;
       }
-      logger_->logInfo("Updated 'occ_map.clamp_max_log' parameters");
+      logger_->logInfo("Updated 'prob_map.clamp_max_log' parameters");
       update_bonxai = true;
       bonxai_options_.clamp_max_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
     
-    if (param.get_name() == "occ_map.occupancy_threshold_log")
+    if (param.get_name() == "prob_map.occupancy_threshold_log")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         result.successful = false;
-        result.reason = "occ_map.occupancy_threshold_log must be a double";
+        result.reason = "prob_map.occupancy_threshold_log must be a double";
         break;
       }
-      logger_->logInfo("Updated 'occ_map.occupancy_threshold_log' parameters");
+      logger_->logInfo("Updated 'prob_map.occupancy_threshold_log' parameters");
       update_bonxai = true;
       bonxai_options_.occupancy_threshold_log = Bonxai::ProbabilisticMap::logods(param.as_double());
     }
 
     /* Inflation */
-    if (param.get_name() == "occ_map.static_inflation")
+    if (param.get_name() == "prob_map.static_inflation")
     {
       if (param.get_type() != rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         result.successful = false;
-        result.reason = "occ_map.static_inflation must be a double";
+        result.reason = "prob_map.static_inflation must be a double";
         break;
       }
-      logger_->logInfo("Updated 'occ_map.static_inflation' parameters");
+      logger_->logInfo("Updated 'prob_map.static_inflation' parameters");
       inflation_ = param.as_double();
       inflation_voxels_ = std::ceil(inflation_/resolution_);
     }

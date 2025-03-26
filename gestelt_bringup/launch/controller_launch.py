@@ -102,15 +102,15 @@ def generate_launch_description():
     # TODO(orduno) Substitute with `PushNodeRemapping`
     #              https://github.com/ros2/launch_ros/issues/56
     remappings = [
-        # ('/d0/tf', '/tf'), 
-        # ('/tf_static', 'tf_static')
+        ('/d0/tf', '/tf'), 
+        ('/tf_static', 'tf_static')
     ]
 
     global_frame = 'world' # Fixed
     map_frame = ["d", drone_id, "_map"]
     base_link_frame = ["d", drone_id, "_base_link"]
     # camera_frame = ["d", drone_id, "_camera_link"]
-    camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
+    # camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
 
     # Create our own temporary YAML files that include substitutions
     # param_substitutions = {
@@ -139,8 +139,8 @@ def generate_launch_description():
     load_nodes = GroupAction(
         condition=IfCondition(PythonExpression(['not ', use_composition])),
         actions=[
-            # SetParameter('use_sim_time', use_sim_time),
-            # PushROSNamespace(['d', drone_id]),
+            SetParameter('use_sim_time', use_sim_time),
+            PushROSNamespace(['d', drone_id]),
             Node(
                 package='trajectory_server',
                 executable='trajectory_server_node',
@@ -149,7 +149,7 @@ def generate_launch_description():
                 respawn=use_respawn,
                 respawn_delay=2.0,
                 parameters=[
-                    {'drone_id': drone_id},
+                    {'namespace': namespace},
                     {'map_frame': map_frame},
                     {'base_link_frame': base_link_frame},
                     {'safety.navigator_state_timeout': 0.5},

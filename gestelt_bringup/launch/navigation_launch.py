@@ -115,22 +115,21 @@ def generate_launch_description():
     # Create our own temporary YAML files that include substitutions
     param_substitutions = {
         'autostart': autostart,
-        'occ_map/occ_map.ros__parameters.global_frame': global_frame,
-        'occ_map/occ_map.ros__parameters.map_frame': map_frame,
-        'occ_map/occ_map.ros__parameters.camera_frame': camera_frame,
-        'occ_map/occ_map.ros__parameters.base_link_frame': base_link_frame,
+        'occ_map.ros__parameters.global_frame': global_frame,
+        'occ_map.ros__parameters.map_frame': map_frame,
+        'occ_map.ros__parameters.camera_frame': camera_frame,
+        'occ_map.ros__parameters.base_link_frame': base_link_frame,
     }
 
     configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params_file,
-            root_key=namespace,
+            # root_key=namespace,
             param_rewrites=param_substitutions,
             convert_types=True,
         ),
         allow_substs=True,
     )
-
 
     lifecycle_nodes = [
         'planner_server',
