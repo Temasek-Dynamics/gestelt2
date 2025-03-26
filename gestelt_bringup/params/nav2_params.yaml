@@ -12,7 +12,7 @@ planner_server:
       allow_unknown: true
       cost_function_type: 2
 
-occ_map:
+global_occ_map:
   ros__parameters:
 
     print_timer: false       # If enabled, print debug information such as timing information
@@ -51,3 +51,6 @@ occ_map:
     # Noise filter by checking clusters
     noise_search_radius: 0.17  # Radius to search for neighbouring points
     noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point
+
+
+local_occ_map:

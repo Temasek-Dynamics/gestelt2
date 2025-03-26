@@ -112,10 +112,14 @@ def generate_launch_description():
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
         'autostart': autostart,
-        'occ_map.ros__parameters.global_frame': global_frame,
-        'occ_map.ros__parameters.map_frame': map_frame,
-        'occ_map.ros__parameters.camera_frame': camera_frame,
-        'occ_map.ros__parameters.base_link_frame': base_link_frame,
+        'global_occ_map.ros__parameters.global_frame': global_frame,
+        'global_occ_map.ros__parameters.map_frame': map_frame,
+        'global_occ_map.ros__parameters.camera_frame': camera_frame,
+        'global_occ_map.ros__parameters.base_link_frame': base_link_frame,
+        'local_occ_map.ros__parameters.global_frame': global_frame,
+        'local_occ_map.ros__parameters.map_frame': map_frame,
+        'local_occ_map.ros__parameters.camera_frame': camera_frame,
+        'local_occ_map.ros__parameters.base_link_frame': base_link_frame,
     }
 
     nav_configured_params = ParameterFile(

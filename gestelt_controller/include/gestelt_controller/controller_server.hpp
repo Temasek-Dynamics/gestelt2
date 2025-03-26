@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_CONTROLLER__CONTROLLER_SERVER_HPP_
-#define NAV2_CONTROLLER__CONTROLLER_SERVER_HPP_
+#ifndef GESTELT_CONTROLLER__CONTROLLER_SERVER_HPP_
+#define GESTELT_CONTROLLER__CONTROLLER_SERVER_HPP_
 
 #include <memory>
 #include <string>
@@ -22,25 +22,33 @@
 #include <vector>
 #include <mutex>
 
-#include "nav2_core/controller.hpp"
-#include "nav2_core/progress_checker.hpp"
-#include "nav2_core/goal_checker.hpp"
-#include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "gestelt_core/progress_checker.hpp"
+#include "gestelt_core/goal_checker.hpp"
+
 #include "tf2_ros/transform_listener.h"
 #include "nav2_msgs/action/follow_path.hpp"
 #include "nav2_msgs/msg/speed_limit.hpp"
+
+#include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
+
 #include "nav_2d_utils/odom_subscriber.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/simple_action_server.hpp"
 #include "nav2_util/robot_utils.hpp"
 #include "nav2_util/twist_publisher.hpp"
+
 #include "pluginlib/class_loader.hpp"
 #include "pluginlib/class_list_macros.hpp"
 
-namespace nav2_controller
-{
+#include "occ_map/occ_map.hpp"
 
+#include "gestelt_core/controller.hpp"
+
+namespace gestelt_controller
+{
 class ProgressChecker;
+
 /**
  * @class nav2_controller::ControllerServer
  * @brief This class hosts variety of plugins of different algorithms to
@@ -158,24 +166,13 @@ protected:
    * @param path Path received from action server
    */
   void setPlannerPath(const nav_msgs::msg::Path & path);
-  /**
-   * @brief Calculates velocity and publishes to "cmd_vel" topic
-   */
-  void computeAndPublishVelocity();
+
   /**
    * @brief Calls setPlannerPath method with an updated path received from
    * action server
    */
   void updateGlobalPath();
-  /**
-   * @brief Calls velocity publisher to publish the velocity on "cmd_vel" topic
-   * @param velocity Twist velocity to be published
-   */
-  void publishVelocity(const geometry_msgs::msg::TwistStamped & velocity);
-  /**
-   * @brief Calls velocity publisher to publish zero velocity
-   */
-  void publishZeroVelocity();
+
   /**
    * @brief Called on goal exit
    */
@@ -185,37 +182,13 @@ protected:
    * @return true or false
    */
   bool isGoalReached();
+
   /**
    * @brief Obtain current pose of the robot
    * @param pose To store current pose of the robot
    * @return true if able to obtain current pose of the robot, else false
    */
   bool getRobotPose(geometry_msgs::msg::PoseStamped & pose);
-
-  /**
-   * @brief get the thresholded velocity
-   * @param velocity The current velocity from odometry
-   * @param threshold The minimum velocity to return non-zero
-   * @return double velocity value
-   */
-  double getThresholdedVelocity(double velocity, double threshold)
-  {
-    return (std::abs(velocity) > threshold) ? velocity : 0.0;
-  }
-
-  /**
-   * @brief get the thresholded Twist
-   * @param Twist The current Twist from odometry
-   * @return Twist Twist after thresholds applied
-   */
-  nav_2d_msgs::msg::Twist2D getThresholdedTwist(const nav_2d_msgs::msg::Twist2D & twist)
-  {
-    nav_2d_msgs::msg::Twist2D twist_thresh;
-    twist_thresh.x = getThresholdedVelocity(twist.x, min_x_velocity_threshold_);
-    twist_thresh.y = getThresholdedVelocity(twist.y, min_y_velocity_threshold_);
-    twist_thresh.theta = getThresholdedVelocity(twist.theta, min_theta_velocity_threshold_);
-    return twist_thresh;
-  }
 
   /**
    * @brief Callback executed when a parameter change is detected
@@ -228,14 +201,15 @@ protected:
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr dyn_params_handler_;
   std::mutex dynamic_params_lock_;
 
-  // The controller needs a costmap node
-  std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
-  std::unique_ptr<nav2_util::NodeThread> costmap_thread_;
+  // The controller needs a local occupancy map
+  std::shared_ptr<occ_map::OccMap> occ_map_;
+  std::unique_ptr<nav2_util::NodeThread> occ_map_thread_;
 
   // Publishers and subscribers
-  std::unique_ptr<nav_2d_utils::OdomSubscriber> odom_sub_;
-  std::unique_ptr<nav2_util::TwistPublisher> vel_publisher_;
-  rclcpp::Subscription<nav2_msgs::msg::SpeedLimit>::SharedPtr speed_limit_sub_;
+
+	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr 
+    cmd_pub_;
 
   // Progress Checker Plugin
   pluginlib::ClassLoader<nav2_core::ProgressChecker> progress_checker_loader_;
@@ -265,32 +239,23 @@ protected:
   std::string controller_ids_concat_, current_controller_;
 
   double controller_frequency_;
-  double min_x_velocity_threshold_;
-  double min_y_velocity_threshold_;
-  double min_theta_velocity_threshold_;
 
-  double failure_tolerance_;
   bool use_realtime_priority_;
-  bool publish_zero_velocity_;
-  rclcpp::Duration costmap_update_timeout_;
+
+  rclcpp::Time last_valid_cmd_time_;
 
   // Whether we've published the single controller warning yet
   geometry_msgs::msg::PoseStamped end_pose_;
-
-  // Last time the controller generated a valid command
-  rclcpp::Time last_valid_cmd_time_;
 
   // Current path container
   nav_msgs::msg::Path current_path_;
 
 private:
-  /**
-    * @brief Callback for speed limiting messages
-    * @param msg Shared pointer to nav2_msgs::msg::SpeedLimit
-    */
-  void speedLimitCallback(const nav2_msgs::msg::SpeedLimit::SharedPtr msg);
+
+
 };
+
 
 }  // namespace nav2_controller
 
-#endif  // NAV2_CONTROLLER__CONTROLLER_SERVER_HPP_
+#endif  // GESTELT_CONTROLLER__CONTROLLER_SERVER_HPP_

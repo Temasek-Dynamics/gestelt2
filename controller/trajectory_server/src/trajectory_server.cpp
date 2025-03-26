@@ -55,7 +55,6 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	/* Safety */
-	nav_state_timeout_ = this->declare_parameter("safety.navigator_state_timeout", 0.5);
 	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
 	geofence_->min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
 	geofence_->min_z = this->declare_parameter("safety.geofence.min_z", 0.0);
@@ -91,22 +90,22 @@ TrajectoryServer::TrajectoryServer()
 
 	/* Publishers */
 	vehicle_command_pub_ = this->create_publisher<px4_msgs::msg::VehicleCommand>(
-		"fmu/in/vehicle_command", 10);
+		"fmu/in/vehicle_command", 5);
 	offboard_control_mode_pub_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>(
-		"fmu/in/offboard_control_mode", 10);
+		"fmu/in/offboard_control_mode", 5);
 	trajectory_setpoint_pub_ = this->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
-		"fmu/in/trajectory_setpoint", 10);
+		"fmu/in/trajectory_setpoint", 5);
 	actuator_cmd_pub_ = this->create_publisher<px4_msgs::msg::ActuatorMotors>(
-		"fmu/in/actuator_motors", 10);
+		"fmu/in/actuator_motors", 5);
 	torque_setpoint_pub_ = this->create_publisher<px4_msgs::msg::VehicleTorqueSetpoint>(
-		"fmu/in/vehicle_torque_setpoint", 10);
+		"fmu/in/vehicle_torque_setpoint", 5);
 	thrust_setpoint_pub_ = this->create_publisher<px4_msgs::msg::VehicleThrustSetpoint>(
-		"fmu/in/vehicle_thrust_setpoint", 10);
+		"fmu/in/vehicle_thrust_setpoint", 5);
 
-	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::SensorDataQoS());
 
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
-		"uav_state", 10);
+		"uav_state", 5);
 
 	/* Subscribers */
 	fcu_odom_sub_ = this->create_subscription<px4_msgs::msg::VehicleOdometry>(
@@ -117,12 +116,8 @@ TrajectoryServer::TrajectoryServer()
 		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
-	navigator_state_sub_ = this->create_subscription<gestelt_interfaces::msg::NavState>(
-		"navigator/state", rclcpp::SensorDataQoS(),
-		std::bind(&TrajectoryServer::navStateSubCB, this, _1), fcu_sub_opt);
-
 	lin_mpc_cmd_sub_ = this->create_subscription<px4_msgs::msg::TrajectorySetpoint>(
-		"navigator/intmd_cmd", rclcpp::SensorDataQoS(),
+		"intmd_cmd", rclcpp::SensorDataQoS(),
 		std::bind(&TrajectoryServer::linMPCCmdSubCB, this, _1), fcu_sub_opt);
 
 	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
@@ -240,22 +235,6 @@ void TrajectoryServer::vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::Un
 }
 
 
-void TrajectoryServer::navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg)
-{
-	// process msg
-	// msg->state
-	// gestelt_interfaces::msg::NavState::IDLE
-	// gestelt_interfaces::msg::NavState::PLANNING
-	// gestelt_interfaces::msg::NavState::PLANNING_TIMEOUT
-
-	// if (msg->state == gestelt_interfaces::msg::NavState::PLANNING_TIMEOUT){
-	// 	// Set to landing
-	// 	sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
-	// }
-
-	last_nav_heartbeat_ = this->get_clock()->now().seconds();
-}
-
 void TrajectoryServer::linMPCCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg)
 {
 	// Message received in ENU frame
@@ -319,13 +298,6 @@ void TrajectoryServer::allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVComma
 
 void TrajectoryServer::setOffboardTimerCB()
 {
-	if (last_nav_heartbeat_ - this->get_clock()->now().seconds() > nav_state_timeout_)
-	{
-		// Set to landing
-		logger_->logErrorThrottle("Navigator heartbeat timeout!", 1.0);
-		sendUAVCommandEvent(gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND, 0, 0);
-	}
-
 	gestelt_interfaces::msg::UAVState uav_state;
 
 	// Check all states

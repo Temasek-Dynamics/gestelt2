@@ -21,7 +21,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
       costmap_update_timeout_(1s),
       occ_map_(nullptr)
 {
-  RCLCPP_INFO(get_logger(), "Creating");
+  RCLCPP_INFO(get_logger(), "Creating planner server");
   
   RCLCPP_INFO(get_logger(), "get_fully_qualified_name: %s", 
     this->get_fully_qualified_name());
@@ -43,10 +43,9 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
 
   // Setup the global costmap
   occ_map_ = std::make_shared<occ_map::OccMap>(
-    "occ_map", std::string{get_namespace()}, 
+    "global_occ_map", std::string{get_namespace()}, 
     get_parameter("use_sim_time").as_bool());
 
-  RCLCPP_INFO(get_logger(), "Created");
 }
 
 PlannerServer::~PlannerServer()
@@ -145,8 +144,6 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
     std::chrono::milliseconds(500),
     true, server_options);
 
-  RCLCPP_INFO(get_logger(), "Configured");
-
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -184,8 +181,6 @@ PlannerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
   // create bond connection
   createBond();
 
-  RCLCPP_INFO(get_logger(), "Activated");
-
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -217,8 +212,6 @@ PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   // destroy bond connection
   destroyBond();
 
-  RCLCPP_INFO(get_logger(), "Deactivated");
-
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -229,7 +222,6 @@ PlannerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 
   action_server_pose_.reset();
   action_server_poses_.reset();
-  plan_publisher_.reset();
   tf_.reset();
 
   occ_map_->cleanup();
@@ -243,7 +235,7 @@ PlannerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   occ_map_thread_.reset();
   occ_map_.reset();
 
-  RCLCPP_INFO(get_logger(), "Cleaned up");
+  plan_publisher_.reset();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }

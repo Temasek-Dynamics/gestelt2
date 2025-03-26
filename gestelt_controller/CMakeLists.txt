@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(nav2_controller)
+project(gestelt_controller)
 
 find_package(ament_cmake REQUIRED)
 find_package(angles REQUIRED)
@@ -7,7 +7,6 @@ find_package(geometry_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(nav2_common REQUIRED)
-find_package(nav2_costmap_2d REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
 find_package(nav_2d_msgs REQUIRED)
@@ -36,7 +35,6 @@ target_include_directories(${library_name}
 target_link_libraries(${library_name} PUBLIC
   ${geometry_msgs_TARGETS}
   nav2_core::nav2_core
-  nav2_costmap_2d::nav2_costmap_2d_core
   ${nav2_msgs_TARGETS}
   nav2_util::nav2_util_core
   ${nav_2d_msgs_TARGETS}
@@ -114,7 +112,6 @@ target_include_directories(simple_goal_checker
 target_link_libraries(simple_goal_checker PUBLIC
   ${geometry_msgs_TARGETS}
   nav2_core::nav2_core
-  nav2_costmap_2d::nav2_costmap_2d_core
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   ${rcl_interfaces_TARGETS}
@@ -134,7 +131,6 @@ target_include_directories(stopped_goal_checker
 )
 target_link_libraries(stopped_goal_checker PUBLIC
   ${geometry_msgs_TARGETS}
-  nav2_costmap_2d::nav2_costmap_2d_core
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   ${rcl_interfaces_TARGETS}
@@ -159,7 +155,7 @@ if(BUILD_TESTING)
   add_subdirectory(plugins/test)
 endif()
 
-rclcpp_components_register_nodes(${library_name} "nav2_controller::ControllerServer")
+rclcpp_components_register_nodes(${library_name} "gestelt_controller::ControllerServer")
 
 install(TARGETS simple_progress_checker pose_progress_checker simple_goal_checker stopped_goal_checker ${library_name}
   EXPORT ${library_name}
@@ -185,7 +181,6 @@ ament_export_libraries(simple_progress_checker
 ament_export_dependencies(
   geometry_msgs
   nav2_core
-  nav2_costmap_2d
   nav2_msgs
   nav2_util
   nav_2d_msgs

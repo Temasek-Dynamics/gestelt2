@@ -52,7 +52,6 @@
 #include <gestelt_interfaces/srv/uav_command.hpp>
 #include <gestelt_interfaces/msg/all_uav_command.hpp>
 #include <gestelt_interfaces/msg/uav_state.hpp>
-#include <gestelt_interfaces/msg/nav_state.hpp>
 
 #include <logger_wrapper/logger_wrapper.hpp>
 
@@ -190,7 +189,6 @@ private:
 	void odometrySubCB(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::UniquePtr msg);
 	void linMPCCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg);
-	void navStateSubCB(const gestelt_interfaces::msg::NavState::UniquePtr msg);
 
 	/* Service callbacks */
 	void uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Request> request,
@@ -231,7 +229,6 @@ private:
 	/* Subscribers */
 	rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr fcu_odom_sub_;
 	rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
-	rclcpp::Subscription<gestelt_interfaces::msg::NavState>::SharedPtr navigator_state_sub_;
 	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
 	rclcpp::Subscription<px4_msgs::msg::TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
 
@@ -250,7 +247,6 @@ private:
 	double pub_state_freq_; // [Hz] Frequency to publish odometry
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
-	double nav_state_timeout_; // [Hz] Frequency of state machine ticks
 
 	/* Stored Data */
 	Eigen::Vector3d cur_pos_enu_{0.0, 0.0, 0.0};		// Current position
@@ -283,7 +279,6 @@ private:
 	
 	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 
-	double last_nav_heartbeat_{0.0}; // Time since last navigator heartbeat 
 }; // class TrajectoryServer
 
 #endif //TRAJECTORY_SERVER_HPP_

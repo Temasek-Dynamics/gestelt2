@@ -259,6 +259,7 @@ protected:
   rclcpp::Duration costmap_update_timeout_;
   std::string planner_ids_concat_;
 
+  // The planner needs an occupancy map
   std::shared_ptr<occ_map::OccMap> occ_map_;
   std::unique_ptr<nav2_util::NodeThread> occ_map_thread_;
 
