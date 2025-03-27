@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     ros-jazzy-geographic-msgs \ 
     ros-jazzy-geometry* \
     ros-jazzy-tf2* \
+    ros-jazzy-nav-2d-utils \
     ros-jazzy-depth-image-proc \
     geographiclib-tools \
     libgeographiclib-dev \

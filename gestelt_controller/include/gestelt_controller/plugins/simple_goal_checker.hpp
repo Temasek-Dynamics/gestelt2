@@ -32,8 +32,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef NAV2_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
-#define NAV2_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
+#ifndef GESTELT_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
+#define GESTELT_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
 
 #include <memory>
 #include <string>
@@ -41,10 +41,10 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "nav2_core/goal_checker.hpp"
+#include "gestelt_core/goal_checker.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 
 /**
@@ -54,15 +54,14 @@ namespace nav2_controller
  * This class can be stateful if the stateful parameter is set to true (which it is by default).
  * This means that the goal checker will not check if the xy position matches again once it is found to be true.
  */
-class SimpleGoalChecker : public nav2_core::GoalChecker
+class SimpleGoalChecker : public gestelt_core::GoalChecker
 {
 public:
   SimpleGoalChecker();
   // Standard GoalChecker Interface
   void initialize(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-    const std::string & plugin_name,
-    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
+    const std::string & plugin_name) override;
   void reset() override;
   bool isGoalReached(
     const geometry_msgs::msg::Pose & query_pose, const geometry_msgs::msg::Pose & goal_pose,
@@ -88,6 +87,6 @@ protected:
   dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 };
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-#endif  // NAV2_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_
+#endif  // GESTELT_CONTROLLER__PLUGINS__SIMPLE_GOAL_CHECKER_HPP_

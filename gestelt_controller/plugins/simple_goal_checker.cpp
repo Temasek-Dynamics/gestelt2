@@ -36,7 +36,7 @@
 #include <string>
 #include <limits>
 #include <vector>
-#include "nav2_controller/plugins/simple_goal_checker.hpp"
+#include "gestelt_controller/plugins/simple_goal_checker.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "angles/angles.h"
 #include "nav2_util/node_utils.hpp"
@@ -49,7 +49,7 @@
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 
 SimpleGoalChecker::SimpleGoalChecker()
@@ -63,8 +63,7 @@ SimpleGoalChecker::SimpleGoalChecker()
 
 void SimpleGoalChecker::initialize(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  const std::string & plugin_name,
-  const std::shared_ptr<nav2_costmap_2d::Costmap2DROS>/*costmap_ros*/)
+  const std::string & plugin_name)
 {
   plugin_name_ = plugin_name;
   auto node = parent.lock();
@@ -165,6 +164,6 @@ SimpleGoalChecker::dynamicParametersCallback(std::vector<rclcpp::Parameter> para
   return result;
 }
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-PLUGINLIB_EXPORT_CLASS(nav2_controller::SimpleGoalChecker, nav2_core::GoalChecker)
+PLUGINLIB_EXPORT_CLASS(gestelt_controller::SimpleGoalChecker, gestelt_core::GoalChecker)

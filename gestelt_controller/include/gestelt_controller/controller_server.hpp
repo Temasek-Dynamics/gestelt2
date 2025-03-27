@@ -15,6 +15,8 @@
 #ifndef GESTELT_CONTROLLER__CONTROLLER_SERVER_HPP_
 #define GESTELT_CONTROLLER__CONTROLLER_SERVER_HPP_
 
+#include <Eigen/Eigen>
+
 #include <memory>
 #include <string>
 #include <thread>
@@ -29,14 +31,14 @@
 #include "nav2_msgs/action/follow_path.hpp"
 #include "nav2_msgs/msg/speed_limit.hpp"
 
+#include "px4_msgs/msg/trajectory_setpoint.hpp"
+
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 
-#include "nav_2d_utils/odom_subscriber.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 #include "nav2_util/simple_action_server.hpp"
 #include "nav2_util/robot_utils.hpp"
-#include "nav2_util/twist_publisher.hpp"
 
 #include "pluginlib/class_loader.hpp"
 #include "pluginlib/class_list_macros.hpp"
@@ -50,24 +52,24 @@ namespace gestelt_controller
 class ProgressChecker;
 
 /**
- * @class nav2_controller::ControllerServer
+ * @class gestelt_controller::ControllerServer
  * @brief This class hosts variety of plugins of different algorithms to
  * complete control tasks from the exposed FollowPath action server.
  */
 class ControllerServer : public nav2_util::LifecycleNode
 {
 public:
-  using ControllerMap = std::unordered_map<std::string, nav2_core::Controller::Ptr>;
-  using GoalCheckerMap = std::unordered_map<std::string, nav2_core::GoalChecker::Ptr>;
-  using ProgressCheckerMap = std::unordered_map<std::string, nav2_core::ProgressChecker::Ptr>;
+  using ControllerMap = std::unordered_map<std::string, gestelt_core::Controller::Ptr>;
+  using GoalCheckerMap = std::unordered_map<std::string, gestelt_core::GoalChecker::Ptr>;
+  using ProgressCheckerMap = std::unordered_map<std::string, gestelt_core::ProgressChecker::Ptr>;
 
   /**
-   * @brief Constructor for nav2_controller::ControllerServer
+   * @brief Constructor for gestelt_controller::ControllerServer
    * @param options Additional options to control creation of the node.
    */
   explicit ControllerServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
   /**
-   * @brief Destructor for nav2_controller::ControllerServer
+   * @brief Destructor for gestelt_controller::ControllerServer
    */
   ~ControllerServer();
 
@@ -75,7 +77,7 @@ protected:
   /**
    * @brief Configures controller parameters and member variables
    *
-   * Configures controller plugin and costmap; Initialize odom subscriber,
+   * Configures controller plugin and occupancy map; Initialize odom subscriber,
    * velocity publisher and follow path action server.
    * @param state LifeCycle Node's state
    * @return Success or Failure
@@ -86,7 +88,7 @@ protected:
   /**
    * @brief Activates member variables
    *
-   * Activates controller, costmap, velocity publisher and follow path action
+   * Activates controller, occupancy map, velocity publisher and follow path action
    * server
    * @param state LifeCycle Node's state
    * @return Success or Failure
@@ -95,7 +97,7 @@ protected:
   /**
    * @brief Deactivates member variables
    *
-   * Deactivates follow path action server, controller, costmap and velocity
+   * Deactivates follow path action server, controller, occupancy map and velocity
    * publisher. Before calling deactivate state, velocity is being set to zero.
    * @param state LifeCycle Node's state
    * @return Success or Failure
@@ -104,7 +106,7 @@ protected:
   /**
    * @brief Calls clean up states and resets member variables.
    *
-   * Controller and costmap clean up state is called, and resets rest of the
+   * Controller and occupancy map clean up state is called, and resets rest of the
    * variables
    * @param state LifeCycle Node's state
    * @return Success or Failure
@@ -130,7 +132,7 @@ protected:
    * Provides global path to controller received from action client. Twist
    * velocities for the robot are calculated and published using controller at
    * the specified rate till the goal is reached.
-   * @throw nav2_core::PlannerException
+   * @throw gestelt_core::PlannerException
    */
   void computeControl();
 
@@ -168,6 +170,11 @@ protected:
   void setPlannerPath(const nav_msgs::msg::Path & path);
 
   /**
+   * @brief Calculates velocity and publishes to intmd_cmd topic
+   */
+  void computeAndPublishControl();
+
+  /**
    * @brief Calls setPlannerPath method with an updated path received from
    * action server
    */
@@ -190,6 +197,9 @@ protected:
    */
   bool getRobotPose(geometry_msgs::msg::PoseStamped & pose);
 
+
+  void odometrySubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
+
   /**
    * @brief Callback executed when a parameter change is detected
    * @param event ParameterEvent message
@@ -208,11 +218,10 @@ protected:
   // Publishers and subscribers
 
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-  rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr 
-    cmd_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr cmd_pub_;
 
   // Progress Checker Plugin
-  pluginlib::ClassLoader<nav2_core::ProgressChecker> progress_checker_loader_;
+  pluginlib::ClassLoader<gestelt_core::ProgressChecker> progress_checker_loader_;
   ProgressCheckerMap progress_checkers_;
   std::vector<std::string> default_progress_checker_ids_;
   std::vector<std::string> default_progress_checker_types_;
@@ -221,7 +230,7 @@ protected:
   std::string progress_checker_ids_concat_, current_progress_checker_;
 
   // Goal Checker Plugin
-  pluginlib::ClassLoader<nav2_core::GoalChecker> goal_checker_loader_;
+  pluginlib::ClassLoader<gestelt_core::GoalChecker> goal_checker_loader_;
   GoalCheckerMap goal_checkers_;
   std::vector<std::string> default_goal_checker_ids_;
   std::vector<std::string> default_goal_checker_types_;
@@ -230,7 +239,7 @@ protected:
   std::string goal_checker_ids_concat_, current_goal_checker_;
 
   // Controller Plugins
-  pluginlib::ClassLoader<nav2_core::Controller> lp_loader_;
+  pluginlib::ClassLoader<gestelt_core::Controller> lp_loader_;
   ControllerMap controllers_;
   std::vector<std::string> default_ids_;
   std::vector<std::string> default_types_;
@@ -238,11 +247,20 @@ protected:
   std::vector<std::string> controller_types_;
   std::string controller_ids_concat_, current_controller_;
 
-  double controller_frequency_;
+
+  bool publish_zero_velocity_;
+  rclcpp::Duration occ_map_update_timeout_;
+  double failure_tolerance_{0.0};
+
+  double controller_frequency_{0.0};
 
   bool use_realtime_priority_;
 
   rclcpp::Time last_valid_cmd_time_;
+
+  Eigen::Vector3d cur_pos_; // Current position
+  Eigen::Vector3d cur_vel_; // Current velocity vector
+  geometry_msgs::msg::Twist cur_twist_; // Current twist
 
   // Whether we've published the single controller warning yet
   geometry_msgs::msg::PoseStamped end_pose_;
@@ -252,10 +270,9 @@ protected:
 
 private:
 
-
 };
 
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
 #endif  // GESTELT_CONTROLLER__CONTROLLER_SERVER_HPP_

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_controller/plugins/pose_progress_checker.hpp"
+#include "gestelt_controller/plugins/pose_progress_checker.hpp"
 #include <cmath>
 #include <string>
 #include <memory>
@@ -27,7 +27,7 @@
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 
 void PoseProgressChecker::initialize(
@@ -92,6 +92,6 @@ PoseProgressChecker::dynamicParametersCallback(std::vector<rclcpp::Parameter> pa
   return result;
 }
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-PLUGINLIB_EXPORT_CLASS(nav2_controller::PoseProgressChecker, nav2_core::ProgressChecker)
+PLUGINLIB_EXPORT_CLASS(gestelt_controller::PoseProgressChecker, gestelt_core::ProgressChecker)

@@ -125,7 +125,7 @@ protected:
    */
   nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &state) override;
 
-  void waitForCostmap();
+  void waitForOccMap();
 
   using ActionToPose = nav2_msgs::action::ComputePathToPose;
   using ActionToPoseResult = ActionToPose::Result;
@@ -162,7 +162,7 @@ protected:
       typename std::shared_ptr<const typename T::Goal> goal);
 
   /**
-   * @brief Get the starting pose from costmap or message, if valid
+   * @brief Get the starting pose from occupancy map or message, if valid
    * @param action_server Action server to terminate if required
    * @param goal Goal to find start from
    * @param start The starting pose to use
@@ -174,7 +174,7 @@ protected:
       geometry_msgs::msg::PoseStamped &start);
 
   /**
-   * @brief Transform start and goal poses into the costmap
+   * @brief Transform start and goal poses into the occupancy map
    * global frame for path planning plugins to utilize
    * @param start The starting pose to transform
    * @param goal Goal pose to transform
@@ -256,7 +256,7 @@ protected:
   std::vector<std::string> planner_ids_;
   std::vector<std::string> planner_types_;
   double max_planner_duration_;
-  rclcpp::Duration costmap_update_timeout_;
+  rclcpp::Duration occ_map_update_timeout_;
   std::string planner_ids_concat_;
 
   // The planner needs an occupancy map

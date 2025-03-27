@@ -5,7 +5,7 @@ find_package(ament_cmake REQUIRED)
 find_package(angles REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
-find_package(nav2_core REQUIRED)
+find_package(gestelt_core REQUIRED)
 find_package(nav2_common REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(nav2_util REQUIRED)
@@ -17,6 +17,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(px4_msgs REQUIRED)
 
 nav2_package()
 
@@ -32,14 +33,16 @@ target_include_directories(${library_name}
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
+ament_target_dependencies(${library_name} PUBLIC
+  nav_2d_utils
+  px4_msgs
+)
 target_link_libraries(${library_name} PUBLIC
   ${geometry_msgs_TARGETS}
-  nav2_core::nav2_core
+  gestelt_core::gestelt_core
   ${nav2_msgs_TARGETS}
   nav2_util::nav2_util_core
   ${nav_2d_msgs_TARGETS}
-  nav_2d_utils::conversions
-  nav_2d_utils::tf_help
   pluginlib::pluginlib
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
@@ -70,16 +73,18 @@ target_include_directories(simple_progress_checker
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
+ament_target_dependencies(simple_progress_checker PUBLIC
+  nav_2d_utils
+)
 target_link_libraries(simple_progress_checker PUBLIC
   ${geometry_msgs_TARGETS}
-  nav2_core::nav2_core
+  gestelt_core::gestelt_core
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   ${rcl_interfaces_TARGETS}
 )
 target_link_libraries(simple_progress_checker PRIVATE
   nav2_util::nav2_util_core
-  nav_2d_utils::conversions
   pluginlib::pluginlib
 )
 
@@ -88,6 +93,9 @@ target_include_directories(pose_progress_checker
   PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+)
+ament_target_dependencies(pose_progress_checker PUBLIC
+  nav_2d_utils
 )
 target_link_libraries(pose_progress_checker PUBLIC
   ${geometry_msgs_TARGETS}
@@ -99,7 +107,6 @@ target_link_libraries(pose_progress_checker PUBLIC
 target_link_libraries(pose_progress_checker PRIVATE
   angles::angles
   nav2_util::nav2_util_core
-  nav_2d_utils::conversions
   pluginlib::pluginlib
 )
 
@@ -109,9 +116,12 @@ target_include_directories(simple_goal_checker
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
+ament_target_dependencies(simple_goal_checker PUBLIC
+  nav_2d_utils
+)
 target_link_libraries(simple_goal_checker PUBLIC
   ${geometry_msgs_TARGETS}
-  nav2_core::nav2_core
+  gestelt_core::gestelt_core
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   ${rcl_interfaces_TARGETS}
@@ -129,6 +139,9 @@ target_include_directories(stopped_goal_checker
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
+ament_target_dependencies(stopped_goal_checker PUBLIC
+  nav_2d_utils
+)
 target_link_libraries(stopped_goal_checker PUBLIC
   ${geometry_msgs_TARGETS}
   rclcpp::rclcpp
@@ -140,20 +153,6 @@ target_link_libraries(stopped_goal_checker PRIVATE
   nav2_util::nav2_util_core
   pluginlib::pluginlib
 )
-
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  set(ament_cmake_copyright_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
-
-  find_package(ament_cmake_gtest REQUIRED)
-
-  ament_find_gtest()
-
-  add_subdirectory(test)
-  add_subdirectory(plugins/test)
-endif()
 
 rclcpp_components_register_nodes(${library_name} "gestelt_controller::ControllerServer")
 
@@ -180,7 +179,7 @@ ament_export_libraries(simple_progress_checker
   ${library_name})
 ament_export_dependencies(
   geometry_msgs
-  nav2_core
+  gestelt_core
   nav2_msgs
   nav2_util
   nav_2d_msgs
@@ -192,6 +191,6 @@ ament_export_dependencies(
   tf2_ros
 )
 ament_export_targets(${library_name})
-pluginlib_export_plugin_description_file(nav2_core plugins.xml)
+pluginlib_export_plugin_description_file(gestelt_core plugins.xml)
 
 ament_package()

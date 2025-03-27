@@ -188,7 +188,7 @@ private:
 	void allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
 	void odometrySubCB(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::UniquePtr msg);
-	void linMPCCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg);
+	void intmdCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg);
 
 	/* Service callbacks */
 	void uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Request> request,

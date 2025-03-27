@@ -58,7 +58,7 @@ AStarPlanner::configure(
   declare_parameter_if_not_declared(node, name + ".cost_function_type", rclcpp::ParameterValue(2));
   node->get_parameter(name + ".cost_function_type", cost_function_type_);
 
-  // Create a planner based on the new costmap size
+  // Create a planner 
   planner_ = std::make_unique<AStar>();
 }
 
@@ -164,12 +164,12 @@ AStarPlanner::makePlan(
     map_start(0), map_start(1), map_start(2),
     map_goal(0), map_goal(1), map_goal(2));
 
-  // clear the starting cell within the costmap because we know it can't be an obstacle
+  // clear the starting cell within the occupancy map because we know it can't be an obstacle
   // clearRobotCell(map_start);
 
   std::unique_lock<occ_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
 
-  planner_->setCostmap(occ_map_, true);
+  planner_->setOccMap(occ_map_, true);
 
   planner_->setStart(map_goal);
   planner_->setGoal(map_start);

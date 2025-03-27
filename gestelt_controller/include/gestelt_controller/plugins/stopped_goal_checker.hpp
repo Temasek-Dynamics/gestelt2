@@ -32,8 +32,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef NAV2_CONTROLLER__PLUGINS__STOPPED_GOAL_CHECKER_HPP_
-#define NAV2_CONTROLLER__PLUGINS__STOPPED_GOAL_CHECKER_HPP_
+#ifndef GESTELT_CONTROLLER__PLUGINS__STOPPED_GOAL_CHECKER_HPP_
+#define GESTELT_CONTROLLER__PLUGINS__STOPPED_GOAL_CHECKER_HPP_
 
 #include <memory>
 #include <string>
@@ -41,9 +41,9 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
-#include "nav2_controller/plugins/simple_goal_checker.hpp"
+#include "gestelt_controller/plugins/simple_goal_checker.hpp"
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 
 /**
@@ -57,8 +57,7 @@ public:
   // Standard GoalChecker Interface
   void initialize(
     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-    const std::string & plugin_name,
-    const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
+    const std::string & plugin_name) override;
   bool isGoalReached(
     const geometry_msgs::msg::Pose & query_pose, const geometry_msgs::msg::Pose & goal_pose,
     const geometry_msgs::msg::Twist & velocity) override;
@@ -80,6 +79,6 @@ protected:
   dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 };
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-#endif  // NAV2_CONTROLLER__PLUGINS__STOPPED_GOAL_CHECKER_HPP_
+#endif  // GESTELT_CONTROLLER__PLUGINS__STOPPED_GOAL_CHECKER_HPP_

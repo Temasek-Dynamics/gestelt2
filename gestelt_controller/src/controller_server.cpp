@@ -32,20 +32,21 @@ using namespace std::chrono_literals;
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
-namespace gestelt_controller{
+namespace gestelt_controller
+{
 
 ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("controller_server", "", options),
   progress_checker_loader_("gestelt_core", "gestelt_core::ProgressChecker"),
   default_progress_checker_ids_{"progress_checker"},
-  default_progress_checker_types_{"nav2_controller::SimpleProgressChecker"},
+  default_progress_checker_types_{"gestelt_controller::SimpleProgressChecker"},
   goal_checker_loader_("gestelt_core", "gestelt_core::GoalChecker"),
   default_goal_checker_ids_{"goal_checker"},
-  default_goal_checker_types_{"nav2_controller::SimpleGoalChecker"},
+  default_goal_checker_types_{"gestelt_controller::SimpleGoalChecker"},
   lp_loader_("gestelt_core", "gestelt_core::Controller"),
   default_ids_{"FollowPath"},
   default_types_{"dwb_core::DWBLocalPlanner"},
-  costmap_update_timeout_(300ms)
+  occ_map_update_timeout_(300ms)
 {
   RCLCPP_INFO(get_logger(), "Creating controller server");
 
@@ -65,9 +66,9 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
   declare_parameter("failure_tolerance", rclcpp::ParameterValue(0.0));
   declare_parameter("use_realtime_priority", rclcpp::ParameterValue(false));
   declare_parameter("publish_zero_velocity", rclcpp::ParameterValue(true));
-  declare_parameter("costmap_update_timeout", 0.30);  // 300ms
+  declare_parameter("occ_map_update_timeout", 0.30);  // 300ms
 
-  // Setup the global costmap
+  // Setup the local occupancy map
   occ_map_ = std::make_shared<occ_map::OccMap>(
     "local_occ_map", std::string{get_namespace()}, 
     get_parameter("use_sim_time").as_bool());
@@ -128,7 +129,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
   get_parameter("use_realtime_priority", use_realtime_priority_);
 
   occ_map_->configure();
-  // Launch a thread to run the costmap node
+  // Launch a thread to run the occupancy map node
   occ_map_thread_ = std::make_unique<nav2_util::NodeThread>(occ_map_);
 
   for (size_t i = 0; i != progress_checker_ids_.size(); i++) {
@@ -167,7 +168,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
       RCLCPP_INFO(
         get_logger(), "Created goal checker : %s of type %s",
         goal_checker_ids_[i].c_str(), goal_checker_types_[i].c_str());
-      goal_checker->initialize(node, goal_checker_ids_[i], costmap_ros_);
+      goal_checker->initialize(node, goal_checker_ids_[i]);
       goal_checkers_.insert({goal_checker_ids_[i], goal_checker});
     } catch (const pluginlib::PluginlibException & ex) {
       RCLCPP_FATAL(
@@ -196,7 +197,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
         controller_ids_[i].c_str(), controller_types_[i].c_str());
       controller->configure(
         node, controller_ids_[i],
-        costmap_ros_->getTfBuffer(), costmap_ros_);
+        occ_map_->getTfBuffer(), occ_map_);
       controllers_.insert({controller_ids_[i], controller});
     } catch (const pluginlib::PluginlibException & ex) {
       RCLCPP_FATAL(
@@ -281,7 +282,7 @@ ControllerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
     it->second->deactivate();
   }
 
-  costmap_ros_->deactivate();
+  occ_map_->deactivate();
 
   cmd_pub_->on_deactivate();
 
@@ -469,7 +470,7 @@ void ControllerServer::computeControl()
 
       updateGlobalPath();
 
-      computeAndPublishVelocity();
+      computeAndPublishControl();
 
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
@@ -564,7 +565,7 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
     get_logger(),
     "Providing path to the controller %s", current_controller_.c_str());
   if (path.poses.empty()) {
-    throw nav2_core::InvalidPath("Path is empty.");
+    throw gestelt_core::InvalidPath("Path is empty.");
   }
   controllers_[current_controller_]->setPlan(path);
 
@@ -579,6 +580,236 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
   current_path_ = path;
 }
 
+void ControllerServer::computeAndPublishControl()
+{
+  geometry_msgs::msg::PoseStamped pose;
+
+  if (!getRobotPose(pose)) {
+    throw gestelt_core::ControllerTFError("Failed to obtain robot pose");
+  }
+
+  if (!progress_checkers_[current_progress_checker_]->check(pose)) {
+    throw gestelt_core::FailedToMakeProgress("Failed to make progress");
+  }
+
+  // Trajectory setpoint is in ENU frame 
+  // (Transforming to NED frame is done by trajectory server)
+  px4_msgs::msg::TrajectorySetpoint traj_sp;
+
+  try {
+    traj_sp =
+      controllers_[current_controller_]->computeVelocityCommands(
+      pose,
+      cur_vel_,
+      goal_checkers_[current_goal_checker_].get());
+    
+    last_valid_cmd_time_ = now();
+    traj_sp.timestamp = last_valid_cmd_time_.nanoseconds() / 1000; // In microseconds
+    // Only no valid control exception types are valid to attempt to have control patience, as
+    // other types will not be resolved with more attempts
+  } catch (gestelt_core::NoValidControl & e) {
+    if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
+      RCLCPP_WARN(this->get_logger(), "%s", e.what());
+      traj_sp.position = {(float) pose.pose.position.x , (float) pose.pose.position.y, (float) pose.pose.position.z};
+      traj_sp.velocity = {0.0, 0.0, 0.0};
+      traj_sp.acceleration = {0.0, 0.0, 0.0};
+      traj_sp.yaw = NAN;
+      traj_sp.yawspeed = NAN;
+      traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+      if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
+        failure_tolerance_ != -1.0)
+      {
+        throw gestelt_core::PatienceExceeded("Controller patience exceeded");
+      }
+    } else {
+      throw gestelt_core::NoValidControl(e.what());
+    }
+  }
+
+  std::shared_ptr<Action::Feedback> feedback = std::make_shared<Action::Feedback>();
+  feedback->speed = Eigen::Vector3d(
+    traj_sp.velocity[0], traj_sp.velocity[1], traj_sp.velocity[2]).norm();
+    
+  nav_msgs::msg::Path & current_path = current_path_;
+  auto find_closest_pose_idx =
+    [&pose, &current_path]() {
+      size_t closest_pose_idx = 0;
+      double curr_min_dist = std::numeric_limits<double>::max();
+      for (size_t curr_idx = 0; curr_idx < current_path.poses.size(); ++curr_idx) {
+        double curr_dist = nav2_util::geometry_utils::euclidean_distance(
+          pose, current_path.poses[curr_idx]);
+        if (curr_dist < curr_min_dist) {
+          curr_min_dist = curr_dist;
+          closest_pose_idx = curr_idx;
+        }
+      }
+      return closest_pose_idx;
+    };
+
+  feedback->distance_to_goal =
+    nav2_util::geometry_utils::calculate_path_length(current_path_, find_closest_pose_idx());
+
+  action_server_->publish_feedback(feedback);
+
+  RCLCPP_DEBUG(get_logger(), "Publishing command at time %.2f", now().seconds());
+  
+  cmd_pub_->publish(traj_sp);
+}
+
+void ControllerServer::updateGlobalPath()
+{
+  if (action_server_->is_preempt_requested()) {
+    RCLCPP_INFO(get_logger(), "Passing new path to controller.");
+    auto goal = action_server_->accept_pending_goal();
+    std::string current_controller;
+    if (findControllerId(goal->controller_id, current_controller)) {
+      current_controller_ = current_controller;
+    } else {
+      RCLCPP_INFO(
+        get_logger(), "Terminating action, invalid controller %s requested.",
+        goal->controller_id.c_str());
+      action_server_->terminate_current();
+      return;
+    }
+    std::string current_goal_checker;
+    if (findGoalCheckerId(goal->goal_checker_id, current_goal_checker)) {
+      current_goal_checker_ = current_goal_checker;
+    } else {
+      RCLCPP_INFO(
+        get_logger(), "Terminating action, invalid goal checker %s requested.",
+        goal->goal_checker_id.c_str());
+      action_server_->terminate_current();
+      return;
+    }
+    std::string current_progress_checker;
+    if (findProgressCheckerId(goal->progress_checker_id, current_progress_checker)) {
+      if (current_progress_checker_ != current_progress_checker) {
+        RCLCPP_INFO(
+          get_logger(), "Change of progress checker %s requested, resetting it",
+          goal->progress_checker_id.c_str());
+        current_progress_checker_ = current_progress_checker;
+        progress_checkers_[current_progress_checker_]->reset();
+      }
+    } else {
+      RCLCPP_INFO(
+        get_logger(), "Terminating action, invalid progress checker %s requested.",
+        goal->progress_checker_id.c_str());
+      action_server_->terminate_current();
+      return;
+    }
+    setPlannerPath(goal->path);
+  }
+}
+
+void ControllerServer::onGoalExit()
+{
+  if (publish_zero_velocity_) {
+    px4_msgs::msg::TrajectorySetpoint traj_sp;
+    traj_sp.position = {(float) pose.pose.position.x , (float) pose.pose.position.y, (float) pose.pose.position.z};
+    traj_sp.velocity = {0.0, 0.0, 0.0};
+    traj_sp.acceleration = {0.0, 0.0, 0.0};
+    traj_sp.yaw = NAN;
+    traj_sp.yawspeed = NAN;
+    traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+    cmd_pub_->publish(traj_sp);
+  }
+
+  // Reset the state of the controllers after the task has ended
+  ControllerMap::iterator it;
+  for (it = controllers_.begin(); it != controllers_.end(); ++it) {
+    it->second->reset();
+  }
+}
+
+bool ControllerServer::isGoalReached()
+{
+  geometry_msgs::msg::PoseStamped pose;
+
+  if (!getRobotPose(pose)) {
+    return false;
+  }
+
+  geometry_msgs::msg::PoseStamped transformed_end_pose;
+  rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
+  nav_2d_utils::transformPose(
+    occ_map_->getTfBuffer(), occ_map_->getGlobalFrameID(),
+    end_pose_, transformed_end_pose, tolerance);
+
+  return goal_checkers_[current_goal_checker_]->isGoalReached(
+    pose.pose, transformed_end_pose.pose,
+    cur_twist_);
+}
 
 
-};
+bool ControllerServer::getRobotPose(geometry_msgs::msg::PoseStamped & pose)
+{
+  geometry_msgs::msg::PoseStamped current_pose;
+  if (!occ_map_->getRobotPose(current_pose)) {
+    return false;
+  }
+  pose = current_pose;
+  return true;
+}
+
+rcl_interfaces::msg::SetParametersResult
+ControllerServer::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
+{
+  rcl_interfaces::msg::SetParametersResult result;
+
+  for (auto parameter : parameters) {
+    const auto & type = parameter.get_type();
+    const auto & name = parameter.get_name();
+
+    // If we are trying to change the parameter of a plugin we can just skip it at this point
+    // as they handle parameter changes themselves and don't need to lock the mutex
+    if (name.find('.') != std::string::npos) {
+      continue;
+    }
+
+    if (!dynamic_params_lock_.try_lock()) {
+      RCLCPP_WARN(
+        get_logger(),
+        "Unable to dynamically change Parameters while the controller is currently running");
+      result.successful = false;
+      result.reason =
+        "Unable to dynamically change Parameters while the controller is currently running";
+      return result;
+    }
+
+    if (type == ParameterType::PARAMETER_DOUBLE) {
+      if (name == "controller_frequency") {
+        controller_frequency_ = parameter.as_double();
+      } else if (name == "failure_tolerance") {
+        failure_tolerance_ = parameter.as_double();
+      }
+    }
+
+    dynamic_params_lock_.unlock();
+  }
+
+  result.successful = true;
+  return result;
+}
+
+void ControllerServer::odometrySubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
+{
+  cur_pos_ = Eigen::Vector3d(
+    msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z
+  );
+
+  cur_vel_ = Eigen::Vector3d(
+    msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z
+  );
+
+  cur_twist_ = msg->twist.twist;
+  
+}
+
+} // namespace gestelt_controller
+
+#include "rclcpp_components/register_node_macro.hpp"
+
+// Register the component with class_loader.
+// This acts as a sort of entry point, allowing the component to be discoverable when its library
+// is being loaded into a running process.
+RCLCPP_COMPONENTS_REGISTER_NODE(gestelt_controller::ControllerServer)

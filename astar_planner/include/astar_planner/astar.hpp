@@ -74,12 +74,11 @@ public:
 
   /**
    * @brief  Set up the cost array for the planner, usually from ROS
-   * @param cmap The costmap
-   * @param isROS Whether or not the costmap is coming in in ROS format
+   * @param occ_map The occupancy map
    * @param allow_unknown Whether or not the planner should be allowed to plan through
    *   unknown space
    */
-  void setCostmap(std::shared_ptr<occ_map::OccMap> occ_map, 
+  void setOccMap(std::shared_ptr<occ_map::OccMap> occ_map, 
       bool allow_unknown = true);
 
   /**
@@ -131,7 +130,7 @@ private:
   /* Params */
   bool allow_unknown_{true};
 
-  bool set_costmap_{false};
+  bool set_occ_map_{false};
 
   double h_weight_{1.0};
 

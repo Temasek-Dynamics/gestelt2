@@ -18,7 +18,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
       gp_loader_("gestelt_core", "gestelt_core::GlobalPlanner"),
       default_ids_{"GridBased"},
       default_types_{"astar_planner::AStarPlanner"},
-      costmap_update_timeout_(1s),
+      occ_map_update_timeout_(1s),
       occ_map_(nullptr)
 {
   RCLCPP_INFO(get_logger(), "Creating planner server");
@@ -32,7 +32,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
   declare_parameter("planner_plugins", default_ids_);
   declare_parameter("expected_planner_frequency", 1.0);
   declare_parameter("action_server_result_timeout", 10.0);
-  declare_parameter("costmap_update_timeout", 1.0);
+  declare_parameter("occ_map_update_timeout", 1.0);
 
   get_parameter("planner_plugins", planner_ids_);
   if (planner_ids_ == default_ids_) {
@@ -41,7 +41,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
     }
   }
 
-  // Setup the global costmap
+  // Setup the global occupancy map
   occ_map_ = std::make_shared<occ_map::OccMap>(
     "global_occ_map", std::string{get_namespace()}, 
     get_parameter("use_sim_time").as_bool());
@@ -123,9 +123,9 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   rcl_action_server_options_t server_options = rcl_action_server_get_default_options();
   server_options.result_timeout.nanoseconds = RCL_S_TO_NS(action_server_result_timeout);
 
-  double costmap_update_timeout_dbl;
-  get_parameter("costmap_update_timeout", costmap_update_timeout_dbl);
-  costmap_update_timeout_ = rclcpp::Duration::from_seconds(costmap_update_timeout_dbl);
+  double occ_map_update_timeout_dbl;
+  get_parameter("occ_map_update_timeout", occ_map_update_timeout_dbl);
+  occ_map_update_timeout_ = rclcpp::Duration::from_seconds(occ_map_update_timeout_dbl);
 
   // Create the action servers for path planning to a pose and through poses
   action_server_pose_ = std::make_unique<ActionServerToPose>(
@@ -194,7 +194,7 @@ PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   plan_publisher_->on_deactivate();
 
   /*
-   * The costmap is also a lifecycle node, so it may have already fired on_deactivate
+   * The occupancy map is also a lifecycle node, so it may have already fired on_deactivate
    * via rcl preshutdown cb. Despite the rclcpp docs saying on_shutdown callbacks fire
    * in the order added, the preshutdown callbacks clearly don't per se, due to using an
    * unordered_set iteration. Once this issue is resolved, we can maybe make a stronger
@@ -259,7 +259,7 @@ bool PlannerServer::isServerInactive(
   return false;
 }
 
-void PlannerServer::waitForCostmap()
+void PlannerServer::waitForOccMap()
 {
   // Do nothing for now
 }
@@ -356,7 +356,7 @@ void PlannerServer::computePlanThroughPoses()
       return;
     }
 
-    waitForCostmap();
+    waitForOccMap();
 
     getPreemptedGoalIfRequested(action_server_poses_, goal);
 
@@ -489,7 +489,7 @@ PlannerServer::computePlan()
     }
 
 
-    waitForCostmap();
+    waitForOccMap();
 
     getPreemptedGoalIfRequested(action_server_pose_, goal);
 
@@ -685,7 +685,7 @@ void PlannerServer::isPathValid(
         RCLCPP_ERROR(
           get_logger(), "isPathValid with setting use_radius to false not implemented yet");
 
-        // occ_map::Footprint footprint = costmap_ros_->getRobotFootprint();
+        // occ_map::Footprint footprint = occ_map_->getRobotFootprint();
         // auto theta = tf2::getYaw(request->path.poses[i].pose.orientation);
         // cost = static_cast<unsigned int>(collision_checker_->footprintCostAtPose(
         //     position.x, position.y, theta, footprint));

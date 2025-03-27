@@ -111,8 +111,12 @@ public:
     return local_map_max_ - Eigen::Vector3d::Constant(offset); 
   }
 
+  inline double getTransformTolerance() const {
+    return transform_tolerance_;
+  }
+
   /**
-   * @brief  Get the costmap's use_radius_ parameter, corresponding to
+   * @brief  Get the occupancy map's use_radius_ parameter, corresponding to
    * whether the footprint for the robot is a circle with radius robot_radius_
    * or an arbitrarily defined footprint in footprint_.
    * @return  use_radius_
@@ -346,7 +350,7 @@ private:
   bool print_timer_{false}; // Flag to enable printing of debug information such as timers
 
   double initial_transform_timeout_{0.0};
-  double transform_tolerance_{0.0};
+  double transform_tolerance_{0.5};
 
   bool use_radius_{true};
 

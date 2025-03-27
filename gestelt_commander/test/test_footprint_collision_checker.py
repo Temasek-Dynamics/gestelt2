@@ -44,7 +44,7 @@ class TestFootprintCollisionChecker(unittest.TestCase):
         occupancyGrid_.data = map_data
         costmap_ = PyCostmap2D(occupancyGrid_)
         fcc_ = FootprintCollisionChecker()
-        fcc_.setCostmap(costmap_)
+        fcc_.setOccMap(costmap_)
         self.assertEqual(fcc_.pointCost(1, 1), 0)
         self.assertRaises(IndexError, fcc_.pointCost, 11, 11)
 
@@ -63,7 +63,7 @@ class TestFootprintCollisionChecker(unittest.TestCase):
         occupancyGrid_.data = map_data
         costmap_ = PyCostmap2D(occupancyGrid_)
         fcc_ = FootprintCollisionChecker()
-        fcc_.setCostmap(costmap_)
+        fcc_.setOccMap(costmap_)
         self.assertEqual(fcc_.worldToMapValidated(0, 5), (None, None))
         self.assertEqual(fcc_.worldToMapValidated(5, 0), (None, None))
         self.assertEqual(fcc_.worldToMapValidated(5, 5), (0, 0))
@@ -84,7 +84,7 @@ class TestFootprintCollisionChecker(unittest.TestCase):
         occupancyGrid_.data = map_data
         costmap_ = PyCostmap2D(occupancyGrid_)
         fcc_ = FootprintCollisionChecker()
-        fcc_.setCostmap(costmap_)
+        fcc_.setOccMap(costmap_)
         self.assertRaises(IndexError, fcc_.lineCost, 0, 15, 0, 9, 1)
         self.assertEqual(fcc_.lineCost(0, 9, 0, 9, 1), 0.0)
 
@@ -102,7 +102,7 @@ class TestFootprintCollisionChecker(unittest.TestCase):
         occupancyGrid_.data = map_data
         costmap_ = PyCostmap2D(occupancyGrid_)
         fcc_ = FootprintCollisionChecker()
-        fcc_.setCostmap(costmap_)
+        fcc_.setOccMap(costmap_)
         # Create square footprint 1m x 1m
         footprint = Polygon()
         point = Point32()
@@ -137,7 +137,7 @@ class TestFootprintCollisionChecker(unittest.TestCase):
         occupancyGrid_.data = map_data
         costmap_ = PyCostmap2D(occupancyGrid_)
         fcc_ = FootprintCollisionChecker()
-        fcc_.setCostmap(costmap_)
+        fcc_.setOccMap(costmap_)
         self.assertEqual(fcc_.footprintCostAtPose(4.0, 4.0, 0.0, footprint), 100)
         # Append a point that is outside the map
         point = Point32()

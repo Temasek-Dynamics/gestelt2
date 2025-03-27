@@ -37,7 +37,7 @@
 #include <memory>
 #include <limits>
 #include <vector>
-#include "nav2_controller/plugins/stopped_goal_checker.hpp"
+#include "gestelt_controller/plugins/stopped_goal_checker.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_util/node_utils.hpp"
 
@@ -47,7 +47,7 @@ using std::fabs;
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 
 StoppedGoalChecker::StoppedGoalChecker()
@@ -57,11 +57,10 @@ StoppedGoalChecker::StoppedGoalChecker()
 
 void StoppedGoalChecker::initialize(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-  const std::string & plugin_name,
-  const std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
+  const std::string & plugin_name)
 {
   plugin_name_ = plugin_name;
-  SimpleGoalChecker::initialize(parent, plugin_name, costmap_ros);
+  SimpleGoalChecker::initialize(parent, plugin_name);
 
   auto node = parent.lock();
 
@@ -134,6 +133,6 @@ StoppedGoalChecker::dynamicParametersCallback(std::vector<rclcpp::Parameter> par
   return result;
 }
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-PLUGINLIB_EXPORT_CLASS(nav2_controller::StoppedGoalChecker, nav2_core::GoalChecker)
+PLUGINLIB_EXPORT_CLASS(gestelt_controller::StoppedGoalChecker, gestelt_core::GoalChecker)

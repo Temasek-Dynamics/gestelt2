@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_controller/plugins/simple_progress_checker.hpp"
+#include "gestelt_controller/plugins/simple_progress_checker.hpp"
 #include <cmath>
 #include <string>
 #include <memory>
@@ -26,7 +26,7 @@
 using rcl_interfaces::msg::ParameterType;
 using std::placeholders::_1;
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 void SimpleProgressChecker::initialize(
   const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
@@ -113,6 +113,6 @@ SimpleProgressChecker::dynamicParametersCallback(std::vector<rclcpp::Parameter> 
   return result;
 }
 
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-PLUGINLIB_EXPORT_CLASS(nav2_controller::SimpleProgressChecker, nav2_core::ProgressChecker)
+PLUGINLIB_EXPORT_CLASS(gestelt_controller::SimpleProgressChecker, gestelt_core::ProgressChecker)

@@ -23,7 +23,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav2_util/lifecycle_node.hpp"
 
-#include <occ_map/occ_map.hpp>
+#include "occ_map/occ_map.hpp"
 
 namespace gestelt_core
 {

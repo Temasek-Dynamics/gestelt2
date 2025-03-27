@@ -13,13 +13,13 @@ AStar::AStar()
 AStar::~AStar()
 {}
 
-void AStar::setCostmap(std::shared_ptr<occ_map::OccMap> occ_map, 
+void AStar::setOccMap(std::shared_ptr<occ_map::OccMap> occ_map, 
                         bool allow_unknown)
 {
     allow_unknown_ = allow_unknown;
     occ_map_ = occ_map;
 
-    set_costmap_ = true;
+    set_occ_map_ = true;
 }
 
 void AStar::setGoal(const Eigen::Vector3d& goal){
@@ -33,8 +33,8 @@ void AStar::setStart(const Eigen::Vector3d& start){
 int AStar::computePath(const int& max_iterations, 
     std::function<bool()> cancelChecker) {
 
-    if (!set_costmap_){
-        throw gestelt_core::PlannerException("Costmap not set for A* planner");
+    if (!set_occ_map_){
+        throw gestelt_core::PlannerException("Occupancy map not set for A* planner");
         return 0;
     }
 

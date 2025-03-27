@@ -120,7 +120,7 @@ protected:
 
   /* Variables */
 
-  // The global frame of the costmap
+  // The global frame of the occupancy map
   std::string name_;
 
   /* Parameters */

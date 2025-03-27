@@ -2,7 +2,7 @@ planner_server:
   ros__parameters:
     expected_planner_frequency: 20.0
     planner_plugins: ["GridBased"]
-    costmap_update_timeout: 1.0
+    occ_map_update_timeout: 1.0
     GridBased:
       plugin: "astar_planner::AStarPlanner"
       print_runtime: true

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_CONTROLLER__PLUGINS__POSE_PROGRESS_CHECKER_HPP_
-#define NAV2_CONTROLLER__PLUGINS__POSE_PROGRESS_CHECKER_HPP_
+#ifndef GESTELT_CONTROLLER__PLUGINS__POSE_PROGRESS_CHECKER_HPP_
+#define GESTELT_CONTROLLER__PLUGINS__POSE_PROGRESS_CHECKER_HPP_
 
 #include <string>
 #include <vector>
 #include "rclcpp/rclcpp.hpp"
-#include "nav2_controller/plugins/simple_progress_checker.hpp"
+#include "gestelt_controller/plugins/simple_progress_checker.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
-namespace nav2_controller
+namespace gestelt_controller
 {
 /**
 * @class PoseProgressChecker
@@ -62,6 +62,6 @@ protected:
   rcl_interfaces::msg::SetParametersResult
   dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 };
-}  // namespace nav2_controller
+}  // namespace gestelt_controller
 
-#endif  // NAV2_CONTROLLER__PLUGINS__POSE_PROGRESS_CHECKER_HPP_
+#endif  // GESTELT_CONTROLLER__PLUGINS__POSE_PROGRESS_CHECKER_HPP_

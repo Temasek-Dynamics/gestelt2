@@ -118,7 +118,7 @@ TrajectoryServer::TrajectoryServer()
 
 	lin_mpc_cmd_sub_ = this->create_subscription<px4_msgs::msg::TrajectorySetpoint>(
 		"intmd_cmd", rclcpp::SensorDataQoS(),
-		std::bind(&TrajectoryServer::linMPCCmdSubCB, this, _1), fcu_sub_opt);
+		std::bind(&TrajectoryServer::intmdCmdSubCB, this, _1), fcu_sub_opt);
 
 	all_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
 		"all_uav_command", rclcpp::ServicesQoS(),
@@ -235,7 +235,7 @@ void TrajectoryServer::vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::Un
 }
 
 
-void TrajectoryServer::linMPCCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg)
+void TrajectoryServer::intmdCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg)
 {
 	// Message received in ENU frame
 	if (UAV::is_in_state<Mission>())
