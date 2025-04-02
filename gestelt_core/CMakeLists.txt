@@ -40,16 +40,21 @@ target_include_directories(gestelt_core
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
-target_link_libraries(gestelt_core INTERFACE
-  pluginlib::pluginlib
-  rclcpp::rclcpp
-  rclcpp_lifecycle::rclcpp_lifecycle
-  nav2_util::nav2_util_core
-  tf2_ros::tf2_ros
-  ${geometry_msgs_TARGETS}
-  ${nav_msgs_TARGETS}
-  occ_map::occ_map
+ament_target_dependencies(
+  gestelt_core INTERFACE
+  ${ROS_LIBRARIES}
 )
+
+# target_link_libraries(gestelt_core INTERFACE
+#   pluginlib::pluginlib
+#   rclcpp::rclcpp
+#   rclcpp_lifecycle::rclcpp_lifecycle
+#   nav2_util::nav2_util_core
+#   tf2_ros::tf2_ros
+#   ${geometry_msgs_TARGETS}
+#   ${nav_msgs_TARGETS}
+#   occ_map::occ_map
+# )
 
 install(TARGETS gestelt_core
   EXPORT gestelt_core
