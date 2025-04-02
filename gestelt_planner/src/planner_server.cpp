@@ -536,42 +536,42 @@ PlannerServer::computePlan()
 
   } catch (gestelt_core::InvalidPlanner & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::INVALID_PLANNER;
+    // result->error_code = ActionToPoseResult::INVALID_PLANNER;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::StartOccupied & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::START_OCCUPIED;
+    // result->error_code = ActionToPoseResult::START_OCCUPIED;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::GoalOccupied & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::GOAL_OCCUPIED;
+    // result->error_code = ActionToPoseResult::GOAL_OCCUPIED;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::NoValidPathCouldBeFound & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::NO_VALID_PATH;
+    // result->error_code = ActionToPoseResult::NO_VALID_PATH;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::PlannerTimedOut & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::TIMEOUT;
+    // result->error_code = ActionToPoseResult::TIMEOUT;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::StartOutsideMapBounds & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::START_OUTSIDE_MAP;
+    // result->error_code = ActionToPoseResult::START_OUTSIDE_MAP;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::GoalOutsideMapBounds & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::GOAL_OUTSIDE_MAP;
+    // result->error_code = ActionToPoseResult::GOAL_OUTSIDE_MAP;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::PlannerTFError & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::TF_ERROR;
+    // result->error_code = ActionToPoseResult::TF_ERROR;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::PlannerCancelled &) {
     RCLCPP_INFO(get_logger(), "Goal was canceled. Canceling planning action.");
     action_server_pose_->terminate_all();
   } catch (std::exception & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
-    result->error_code = ActionToPoseResult::UNKNOWN;
+    // result->error_code = ActionToPoseResult::UNKNOWN;
     action_server_pose_->terminate_current(result);
   }
 }
