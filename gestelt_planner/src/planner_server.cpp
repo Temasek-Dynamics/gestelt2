@@ -23,10 +23,10 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
 {
   RCLCPP_INFO(get_logger(), "Creating planner server");
   
-  RCLCPP_INFO(get_logger(), "get_fully_qualified_name: %s", 
-    get_fully_qualified_name());
-  RCLCPP_INFO(get_logger(), "get_namespace: %s", get_namespace());
-  RCLCPP_INFO(get_logger(), "get_name: %s", get_name());
+  // RCLCPP_INFO(get_logger(), "get_fully_qualified_name: %s", 
+  //   get_fully_qualified_name());
+  // RCLCPP_INFO(get_logger(), "get_namespace: %s", get_namespace());
+  // RCLCPP_INFO(get_logger(), "get_name: %s", get_name());
 
   // Declare this node's parameters
   declare_parameter("planner_plugins", default_ids_);
