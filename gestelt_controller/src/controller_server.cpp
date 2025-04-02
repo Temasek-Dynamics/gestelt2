@@ -592,14 +592,27 @@ void ControllerServer::computeAndPublishControl()
     throw gestelt_core::FailedToMakeProgress("Failed to make progress");
   }
 
+  Eigen::Vector3d cur_pos = Eigen::Vector3d(
+    pose.pose.position.x, 
+    pose.pose.position.y, 
+    pose.pose.position.z
+  );
+  Eigen::Quaterniond cur_ori = Eigen::Quaterniond(
+    pose.pose.orientation.w,
+    pose.pose.orientation.x,
+    pose.pose.orientation.y,
+    pose.pose.orientation.z
+  );
+
   // Trajectory setpoint is in ENU frame 
   // (Transforming to NED frame is done by trajectory server)
   px4_msgs::msg::TrajectorySetpoint traj_sp;
 
   try {
     traj_sp =
-      controllers_[current_controller_]->computeVelocityCommands(
-      pose,
+      controllers_[current_controller_]->computeCommands(
+      cur_pos,
+      cur_ori,
       cur_vel_,
       goal_checkers_[current_goal_checker_].get());
     
@@ -705,7 +718,7 @@ void ControllerServer::onGoalExit()
 {
   if (publish_zero_velocity_) {
     px4_msgs::msg::TrajectorySetpoint traj_sp;
-    traj_sp.position = {(float) pose.pose.position.x , (float) pose.pose.position.y, (float) pose.pose.position.z};
+    traj_sp.position = {(float) cur_pos_(0) , (float) cur_pos_(1), (float) cur_pos_(2)};
     traj_sp.velocity = {0.0, 0.0, 0.0};
     traj_sp.acceleration = {0.0, 0.0, 0.0};
     traj_sp.yaw = NAN;

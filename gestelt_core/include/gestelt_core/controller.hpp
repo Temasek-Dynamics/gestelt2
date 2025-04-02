@@ -101,11 +101,11 @@ public:
   virtual void setPlan(const nav_msgs::msg::Path & path) = 0;
 
   /**
-   * @brief Controller computeVelocityCommands - calculates the best command given the current pose and velocity
+   * @brief Controller computeCommands - calculates the best command given the current pose and velocity
    *
    * It is presumed that the global plan is already set.
    *
-   * This is mostly a wrapper for the protected computeVelocityCommands
+   * This is mostly a wrapper for the protected computeCommands
    * function which has additional debugging info.
    *
    * @param pose Current robot pose
@@ -113,14 +113,15 @@ public:
    * @param goal_checker Pointer to the current goal checker the task is utilizing
    * @return The best command for the robot to drive
    */
-  virtual geometry_msgs::msg::TwistStamped computeVelocityCommands(
-    const geometry_msgs::msg::PoseStamped & pose,
-    const geometry_msgs::msg::Twist & velocity,
+  virtual px4_msgs::msg::TrajectorySetpoint computeCommands(
+    const Eigen::Vector3d & pose,
+    const Eigen::Quaterniond & orientation,
+    const Eigen::Vector3d & velocity,
     gestelt_core::GoalChecker * goal_checker) = 0;
 
   /**
    * @brief Cancel the current control action
-   * @return True if the cancellation was successful. If false is returned, computeVelocityCommands
+   * @return True if the cancellation was successful. If false is returned, computeCommands
    * will be called until cancel returns true.
    */
   virtual bool cancel()
