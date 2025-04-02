@@ -425,46 +425,46 @@ void PlannerServer::computePlanThroughPoses()
 
   } catch (gestelt_core::InvalidPlanner & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::INVALID_PLANNER;
+    // result->error_code = ActionThroughPosesResult::INVALID_PLANNER;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::StartOccupied & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::START_OCCUPIED;
+    // result->error_code = ActionThroughPosesResult::START_OCCUPIED;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::GoalOccupied & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::GOAL_OCCUPIED;
+    // result->error_code = ActionThroughPosesResult::GOAL_OCCUPIED;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::NoValidPathCouldBeFound & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::NO_VALID_PATH;
+    // result->error_code = ActionThroughPosesResult::NO_VALID_PATH;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::PlannerTimedOut & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::TIMEOUT;
+    // result->error_code = ActionThroughPosesResult::TIMEOUT;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::StartOutsideMapBounds & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::START_OUTSIDE_MAP;
+    // result->error_code = ActionThroughPosesResult::START_OUTSIDE_MAP;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::GoalOutsideMapBounds & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::GOAL_OUTSIDE_MAP;
+    // result->error_code = ActionThroughPosesResult::GOAL_OUTSIDE_MAP;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::PlannerTFError & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::TF_ERROR;
+    // result->error_code = ActionThroughPosesResult::TF_ERROR;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::NoViapointsGiven & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::NO_VIAPOINTS_GIVEN;
+    // result->error_code = ActionThroughPosesResult::NO_VIAPOINTS_GIVEN;
     action_server_poses_->terminate_current(result);
   } catch (gestelt_core::PlannerCancelled &) {
     RCLCPP_INFO(get_logger(), "Goal was canceled. Canceling planning action.");
     action_server_poses_->terminate_all();
   } catch (std::exception & ex) {
     exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    result->error_code = ActionThroughPosesResult::UNKNOWN;
+    // result->error_code = ActionThroughPosesResult::UNKNOWN;
     action_server_poses_->terminate_current(result);
   }
   
