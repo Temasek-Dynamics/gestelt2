@@ -45,9 +45,8 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
     libasio-dev \
     libeigen3-dev \
     ros-$ROS_DISTRO-navigation2 \
+    ros-$ROS_DISTRO-nav-2d-utils \
     ros-$ROS_DISTRO-message-filters \
-    ros-$ROS_DISTRO-geographic-msgs \ 
-    ros-$ROS_DISTRO-nav-2d-utils
 
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
