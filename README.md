@@ -21,26 +21,38 @@ Dependencies:
     - [OSQP](https://osqp.org/docs/index.html)
     - [OSQP-Eigen](https://github.com/robotology/osqp-eigen)
 
-2. Install ROS2 and associated dependencies
-- ROS 2 Jazzy
-```bash
-# Install ROS2 at https://docs.ros.org/en/jazzy/Installation.html 
-
-# Install external package dependencies
-sudo apt install -y libeigen3-dev build-essential python3-vcstool tmux
-
-# Install ROS2 Package dependencies
-sudo apt install -y ros-jazzy-pcl-ros ros-jazzy-pcl-conversions ros-jazzy-message-filters
-```
-
-3. Clone additional dependencies 
+1. Clone dependencies 
 ```bash
 cd ~/gestelt_ws/src/gestelt2
-vcs import < simulation.repos --recursive
-vcs import < thirdparty.repos --recursive
+vcs import < simulation.repos --recursive --debug
+vcs import < thirdparty.repos --recursive --debug
+```
+2. Install ROS2 and associated dependencies
+```bash
+# Install ROS2 at https://docs.ros.org/en/humble/Installation.html 
+
+# Install Package dependencies
+sudo apt-get update && sudo apt-get install --no-install-recommends -y \
+    vim \
+    curl \
+    wget \
+    tmux \
+    build-essential \
+    software-properties-common \
+    python3-pip \
+    python3-vcstool \
+    nlohmann-json3-dev \
+    libasio-dev \
+    libeigen3-dev \
+    ros-$ROS_DISTRO-nav2-common \
+    ros-$ROS_DISTRO-message-filters \
+    ros-$ROS_DISTRO-geographic-msgs \ 
+    ros-$ROS_DISTRO-geometry* \
+    ros-$ROS_DISTRO-tf2* \
+    ros-$ROS_DISTRO-nav-2d-utils
 ```
 
-4. Building the workspace
+3. Building the workspace
 ```bash
 # Assuming your workspace is named as follows
 cd ~/gestelt_ws/ && colcon build --symlink-install

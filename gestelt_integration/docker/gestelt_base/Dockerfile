@@ -21,17 +21,18 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     nlohmann-json3-dev \
     libasio-dev \
     libeigen3-dev \
-    ros-jazzy-rmw-cyclonedds-cpp \
     ros-jazzy-nav2-common \
     ros-jazzy-message-filters \
     ros-jazzy-geographic-msgs \ 
     ros-jazzy-geometry* \
     ros-jazzy-tf2* \
     ros-jazzy-nav-2d-utils \
+    
     ros-jazzy-depth-image-proc \
     geographiclib-tools \
     libgeographiclib-dev \
     libgeographiclib26 \
+    ros-jazzy-rmw-cyclonedds-cpp \
     zenoh-bridge-ros2dds \
     && rm -rf /var/lib/apt/lists/*
 
