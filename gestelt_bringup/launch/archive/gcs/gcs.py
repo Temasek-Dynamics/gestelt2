@@ -12,7 +12,7 @@ from launch.actions import ExecuteProcess
 
 from launch.substitutions import FindExecutable
 
-from launch_ros.actions import Node, PushROSNamespace
+from launch_ros.actions import Node, PushRosNamespace
 
 def generate_launch_description():
 

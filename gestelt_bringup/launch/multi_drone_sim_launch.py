@@ -19,7 +19,7 @@ from launch.actions import (
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
-from launch_ros.actions import Node, PushROSNamespace, ComposableNodeContainer, SetParameter
+from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
 from launch_ros.descriptions import ComposableNode
 
 from ros_gz_bridge.actions import RosGzBridge

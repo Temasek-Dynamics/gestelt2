@@ -11,7 +11,7 @@ import json
 from ament_index_python.packages import get_package_share_directory
 
 from launch_ros.substitutions import FindPackageShare
-from launch_ros.actions import Node, PushROSNamespace
+from launch_ros.actions import Node, PushRosNamespace
 
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, GroupAction, ExecuteProcess
@@ -73,7 +73,7 @@ def generateFakeDrone(id, spawn_pos, pcd_filepath, num_drones):
 
     return GroupAction(
       actions=[
-          PushROSNamespace('d' + str(id)),
+          PushRosNamespace('d' + str(id)),
           fake_drone_complete_launchfile,
         ]
     )

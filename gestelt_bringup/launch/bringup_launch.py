@@ -26,7 +26,7 @@ from launch.actions import (
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
-from launch_ros.actions import Node, SetParameter, PushROSNamespace
+from launch_ros.actions import Node, SetParameter, PushRosNamespace
 from launch_ros.descriptions import ParameterFile
 from nav2_common.launch import ReplaceString, RewrittenYaml
 
@@ -135,7 +135,7 @@ def generate_launch_description():
     # Specify the actions
     # bringup_cmd_group = GroupAction(
     #     [
-    #         PushROSNamespace(condition=IfCondition(use_namespace), namespace=namespace),
+    #         PushRosNamespace(condition=IfCondition(use_namespace), namespace=namespace),
 
     #         Node(
     #             condition=IfCondition(use_composition),
@@ -158,27 +158,27 @@ def generate_launch_description():
         condition=IfCondition(PythonExpression(['not ', use_composition])),
         actions=[
             SetParameter('use_sim_time', use_sim_time),
-            PushROSNamespace(namespace),
-            Node(
-                package='nav2_lifecycle_manager',
-                executable='lifecycle_manager',
-                name='lifecycle_manager_navigation',
-                output='screen',
-                arguments=['--ros-args', '--log-level', log_level],
-                parameters=[{'autostart': autostart}, 
-                            {'node_names': lifecycle_nodes}],
-            ),
-            Node(
-                package='gestelt_planner',
-                executable='planner_server',
-                name='planner_server',
-                output='screen',
-                respawn=use_respawn,
-                respawn_delay=2.0,
-                parameters=[nav_configured_params],
-                arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings,
-            ),
+            # PushRosNamespace(namespace),
+            # Node(
+            #     package='nav2_lifecycle_manager',
+            #     executable='lifecycle_manager',
+            #     name='lifecycle_manager_navigation',
+            #     output='screen',
+            #     arguments=['--ros-args', '--log-level', log_level],
+            #     parameters=[{'autostart': autostart}, 
+            #                 {'node_names': lifecycle_nodes}],
+            # ),
+            # Node(
+            #     package='gestelt_planner',
+            #     executable='planner_server',
+            #     name='planner_server',
+            #     output='screen',
+            #     respawn=use_respawn,
+            #     respawn_delay=2.0,
+            #     parameters=[nav_configured_params],
+            #     arguments=['--ros-args', '--log-level', log_level],
+            #     remappings=remappings,
+            # ),
             Node(
                 package='trajectory_server',
                 executable='trajectory_server_node',

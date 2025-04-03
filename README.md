@@ -10,8 +10,8 @@ The architecture below illustrates the high-level architecture of Gestelt using 
 
 Dependencies:
 - System
-    - Ubuntu 24.04 (Noble)
-    - ROS2 Jazzy
+    - Ubuntu 22.04 (Jammy)
+    - ROS2 Humble
 - Communications
     - eProsima/Micro-XRCE-DDS-Agent: Tag `v2.4.3`
     - PX4-msgs: Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
@@ -29,7 +29,7 @@ vcs import < thirdparty.repos --recursive --debug
 ```
 2. Install ROS2 and associated dependencies
 ```bash
-# Install ROS2 at https://docs.ros.org/en/humble/Installation.html 
+# Install the Desktop version of ROS2 at https://docs.ros.org/en/humble/Installation.html 
 
 # Install Package dependencies
 sudo apt-get update && sudo apt-get install --no-install-recommends -y \

@@ -19,7 +19,7 @@ from launch.actions import (
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
-from launch_ros.actions import Node, PushROSNamespace, ComposableNodeContainer, SetParameter
+from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
 from launch_ros.descriptions import ComposableNode
 
 SCENARIO_NAME = "single_drone_test"
@@ -92,7 +92,7 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='false',
         description='Use simulation (Gazebo) clock if true',
     )
 
@@ -120,7 +120,7 @@ def generate_launch_description():
     # XRCE Agent that will connect to ALL XRCE-DDS clients
     xrce_agent = ExecuteProcess(
         cmd=[[
-            'MicroXRCEAgent udp4 -p 8888 -v'
+            'MicroXRCEAgent serial --dev /dev/ttyTHS1 -b 921600'
         ]],
         name='microxrceagent',
         shell=True
