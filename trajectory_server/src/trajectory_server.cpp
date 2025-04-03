@@ -135,9 +135,10 @@ TrajectoryServer::TrajectoryServer()
 		std::bind(&TrajectoryServer::pubStateTimerCB, this), others_cb_group_);
 												
 	/* Services */
+	rmw_qos_profile_t qos_profile = rmw_qos_profile_services_default;
+
 	uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>(
-		"uav_command", std::bind(&TrajectoryServer::uavCmdSrvCB, this, _1, _2),
-		rclcpp::ServicesQoS(), others_cb_group_);
+		"uav_command", std::bind(&TrajectoryServer::uavCmdSrvCB, this, _1, _2), qos_profile, others_cb_group_);
 }
 
 TrajectoryServer::~TrajectoryServer()

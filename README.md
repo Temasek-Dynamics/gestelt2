@@ -50,7 +50,6 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
 
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
-
 sudo apt-get install -y ros-$ROS_DISTRO-pcl*
 
 ```
