@@ -9,7 +9,7 @@ def main(args=None):
         #########
         # Take off 
         #########
-        mission_mngr.cmdAllDronesPubGlobal(
+        mission_mngr.cmdAllDronesPubNamespaced(
             UAVCommand.Request.COMMAND_TAKEOFF, 
             UAVState.IDLE,
             value=mission_mngr.scenario.take_off_height)
