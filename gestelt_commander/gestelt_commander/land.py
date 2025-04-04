@@ -6,7 +6,7 @@ def main(args=None):
     mission = Mission()
 
     # Landing
-    mission.cmdAllDronesPub(
+    mission.cmdAllDronesPubGlobal(
         UAVCommand.Request.COMMAND_LAND)
     print("All drones LANDING")
 

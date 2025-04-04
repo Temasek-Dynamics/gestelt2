@@ -183,7 +183,7 @@ class MissionManager(Node):
                     
         return True
     
-    def cmdAllDronesPub(self, command, req_state=None, value=0.0, mode=0):
+    def cmdAllDronesPubGlobal(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones using publisher
 
         Args:

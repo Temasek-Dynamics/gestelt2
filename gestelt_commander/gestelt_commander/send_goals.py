@@ -20,7 +20,7 @@ def main(args=None):
         #########
         # Mission mode
         #########
-        mission.cmdAllDronesPub(
+        mission.cmdAllDronesPubGlobal(
             UAVCommand.Request.COMMAND_START_MISSION, 
             None,
             mode=0)

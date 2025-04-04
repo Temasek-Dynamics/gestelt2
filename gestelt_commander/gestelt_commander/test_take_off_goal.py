@@ -18,7 +18,7 @@ from gestelt_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
 from rclpy.duration import Duration
 
-from  gestelt_commander.scenario import *
+from gestelt_commander.scenario import *
 
 def planPath(navigator):
     initial_pose = PoseStamped()
