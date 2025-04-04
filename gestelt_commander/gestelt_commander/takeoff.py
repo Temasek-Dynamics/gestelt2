@@ -11,7 +11,7 @@ def main(args=None):
         #########
         mission_mngr.cmdAllDronesPubGlobal(
             UAVCommand.Request.COMMAND_TAKEOFF, 
-            None,
+            UAVState.IDLE,
             value=mission_mngr.scenario.take_off_height)
         mission_mngr.get_logger().info("All drones TAKING OFF")
         
