@@ -78,12 +78,12 @@ class MissionManager(Node):
         """Publisher to all UAVs"""
 
         """Publisher to all UAVs"""
-        self.all_uav_cmd_pub_global = self.create_publisher(
+        self.uav_cmd_global_pub = self.create_publisher(
             AllUAVCommand, '/global_uav_command', rclpy.qos.qos_profile_services_default)
 
-        self.all_uav_cmd_pubs = []
+        self.uav_cmd_pubs = []
         for id in range(self.scenario.num_agents):
-            self.all_uav_cmd_pubs.append(self.create_publisher(
+            self.uav_cmd_pubs.append(self.create_publisher(
                                     AllUAVCommand, '/d' + str(id) + '/uav_command', 
                                     rclpy.qos.qos_profile_services_default))
 
@@ -145,12 +145,15 @@ class MissionManager(Node):
 
         state_topic = '/d' + str(id) + '/uav_state'
 
+
         ret, msg = wait_for_message(
                     UAVState,
                     self,
                     state_topic,
                     time_to_wait=1.0)
         
+        print(f"Received message {msg} from {state_topic}")
+
         if not ret:
             print("Did not receive message from ", state_topic)
             return False
@@ -210,7 +213,7 @@ class MissionManager(Node):
         msg.value = value
         msg.mode = mode
 
-        self.all_uav_cmd_pub_global.publish(msg)
+        self.uav_cmd_global_pub.publish(msg)
         self.get_logger().info(f"Commanded all drones via '/global_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
@@ -246,8 +249,8 @@ class MissionManager(Node):
         msg.value = value
         msg.mode = mode
 
-        for i in range(3):
-            for uav_cmd_pub in self.all_uav_cmd_pubs:
+        for i in range(self.scenario.num_agents):
+            for uav_cmd_pub in self.uav_cmd_pubs:
                 uav_cmd_pub.publish(msg)
 
         self.get_logger().info(f"Commanded all drones via '/dx/uav_command': (cmd:{command}, value:{value}, mode:{mode})")
