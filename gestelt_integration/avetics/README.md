@@ -10,7 +10,21 @@ User: nvidia, pass: nvidia
 - Onboard computer: Nvidia Orin NX
 - Flight Controller Unit:
 - Network adaptor: Viumesh
-- 
+
+
+## Zenoh
+1. Using the standalone plugin from https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds
+```bash
+echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" | sudo tee -a /etc/apt/sources.list > /dev/null
+sudo apt update
+sudo apt install zenoh-bridge-dds
+
+# On drone
+zenoh-bridge-ros2dds -c /home/nvidia/gestelt_ws/src/gestelt2/gestelt_network/zenoh_d0_cfg.json5
+
+# On host
+zenoh-bridge-ros2dds -c /home/john/gestelt_ws/src/gestelt_network/zenoh_host_cfg.json5
+```
 
 
 ## Networking
@@ -28,9 +42,6 @@ For Drone 0:
 - We use host address as default gateway so we can access the internet
 
 <img src="images/drone0_network_settings.png" alt="Gestelt Architecture" style="width: 500px;"/>
-
-
-
 
 GCS: 192.168.17.100
 GCS-Viumesh: 192.168.17.1
@@ -105,3 +116,6 @@ sudo iptables --table nat --list
 References:
 1. https://serverfault.com/questions/152363/bridging-wlan0-to-eth0
 2. https://medium.com/@sydasif78/setting-up-a-dhcp-server-on-ubuntu-a-guide-for-network-engineer-d620c5d7afb2
+
+
+

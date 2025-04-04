@@ -11,20 +11,20 @@ def main(args=None):
         #########
         mission_mngr.cmdAllDronesPubGlobal(
             UAVCommand.Request.COMMAND_TAKEOFF, 
-            UAVState.IDLE,
+            None,
             value=mission_mngr.scenario.take_off_height)
         mission_mngr.get_logger().info("All drones TAKING OFF")
         
-        #########
-        # Wait for Hover
-        #########
-        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=20):
-            raise Exception("Failed to transition to hover mode")
-        mission_mngr.get_logger().info("All drones are in HOVER MODE.")
-        # Reset occupancy map
-        mission_mngr.resetOccMap()
+        # #########
+        # # Wait for Hover
+        # #########
+        # if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=20):
+        #     raise Exception("Failed to transition to hover mode")
+        # mission_mngr.get_logger().info("All drones are in HOVER MODE.")
+        # # Reset occupancy map
+        # mission_mngr.resetOccMap()
 
-        time.sleep(2)
+        # time.sleep(2)
 
         # # Send a goal
         # mission_mngr.get_logger().info("Planning path.")

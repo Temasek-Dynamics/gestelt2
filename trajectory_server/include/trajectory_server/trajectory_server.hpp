@@ -185,14 +185,15 @@ private:
 	void publishActuatorCmds(const Eigen::Vector4d& motor_in );
 
 	/* Subscriber callbacks */
-	void allUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
+	void globalUAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
+	void UAVCmdSubCB(const gestelt_interfaces::msg::AllUAVCommand::UniquePtr msg);
 	void odometrySubCB(const px4_msgs::msg::VehicleOdometry::UniquePtr msg);
 	void vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::UniquePtr msg);
 	void intmdCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::UniquePtr msg);
 
 	/* Service callbacks */
-	void uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Request> request,
-		std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Response>  response);
+	// void uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Request> request,
+	// 	std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Response>  response);
 
 	/* Helper methods */
 
@@ -229,11 +230,12 @@ private:
 	/* Subscribers */
 	rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr fcu_odom_sub_;
 	rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status_sub_;
-	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr all_uav_cmd_sub_;
+	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr global_uav_cmd_sub_;
+	rclcpp::Subscription<gestelt_interfaces::msg::AllUAVCommand>::SharedPtr uav_cmd_sub_;
 	rclcpp::Subscription<px4_msgs::msg::TrajectorySetpoint>::SharedPtr lin_mpc_cmd_sub_;
 
 	/* Service Server */
-	rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
+	// rclcpp::Service<gestelt_interfaces::srv::UAVCommand>::SharedPtr uav_cmd_srv_;
 
 	/* Params */
 	int drone_id_{0};

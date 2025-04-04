@@ -66,7 +66,7 @@ class MissionManager(Node):
         time.sleep(self.init_delay)
 
         if (no_scenario):
-            self.get_logger().info("No scenario required! Only initializing publisher to '/all_uav_command'")
+            self.get_logger().info("No scenario required! Only initializing publisher to '/global_uav_command'")
             return
 
         """ Read scenario JSON to get goal positions """
@@ -79,17 +79,13 @@ class MissionManager(Node):
 
         """Publisher to all UAVs"""
         self.all_uav_cmd_pub_global = self.create_publisher(
-            AllUAVCommand, '/all_uav_command', rclpy.qos.qos_profile_services_default)
+            AllUAVCommand, '/global_uav_command', rclpy.qos.qos_profile_services_default)
 
         self.all_uav_cmd_pubs = []
         for id in range(self.scenario.num_agents):
             self.all_uav_cmd_pubs.append(self.create_publisher(
-                                    AllUAVCommand, '/d' + str(id) + '/all_uav_command', 
+                                    AllUAVCommand, '/d' + str(id) + '/uav_command', 
                                     rclpy.qos.qos_profile_services_default))
-
-        # self.all_uav_cmd_pub = self.create_publisher(
-        #     AllUAVCommand, '/all_uav_command', 
-        #     rclpy.qos.qos_profile_services_default)
 
         '''Initialize data structures'''
         self.uav_states = []
@@ -197,7 +193,7 @@ class MissionManager(Node):
         """
         retry_num = 0
         
-        self.get_logger().info(f"Commanding all drones via topic '/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
+        self.get_logger().info(f"Commanding all drones via topic '/global_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
         
         # Publish to all drones
         # Wait for drone states to be req_state before triggering state transition
@@ -215,7 +211,7 @@ class MissionManager(Node):
         msg.mode = mode
 
         self.all_uav_cmd_pub_global.publish(msg)
-        self.get_logger().info(f"Commanded all drones via '/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
+        self.get_logger().info(f"Commanded all drones via '/global_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
 
@@ -233,7 +229,7 @@ class MissionManager(Node):
         """
         retry_num = 0
         
-        self.get_logger().info(f"Commanding all drones via topic '/dx/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
+        self.get_logger().info(f"Commanding all drones via topic '/dx/uav_command': (cmd:{command}, value:{value}, mode:{mode})")
         
         # Publish to all drones
         # Wait for drone states to be req_state before triggering state transition
@@ -254,7 +250,7 @@ class MissionManager(Node):
             for uav_cmd_pub in self.all_uav_cmd_pubs:
                 uav_cmd_pub.publish(msg)
 
-        self.get_logger().info(f"Commanded all drones via '/dx/all_uav_command': (cmd:{command}, value:{value}, mode:{mode})")
+        self.get_logger().info(f"Commanded all drones via '/dx/uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
         return True
 
