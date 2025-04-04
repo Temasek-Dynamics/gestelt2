@@ -145,17 +145,16 @@ class MissionManager(Node):
 
         state_topic = '/d' + str(id) + '/uav_state'
 
-
         ret, msg = wait_for_message(
                     UAVState,
                     self,
                     state_topic,
                     time_to_wait=1.0)
         
-        print(f"Received message {msg} from {state_topic}")
-
-        if not ret:
-            print("Did not receive message from ", state_topic)
+        if ret:
+            self.get_logger().info(f"Received message {msg} from {state_topic}")
+        else:
+            self.get_logger().error(f"Did not receive message from {state_topic}")
             return False
         
         self.uav_states[id] = msg.state
