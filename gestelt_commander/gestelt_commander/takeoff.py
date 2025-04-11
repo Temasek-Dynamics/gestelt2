@@ -15,6 +15,13 @@ def main(args=None):
             value=mission_mngr.scenario.take_off_height)
         mission_mngr.get_logger().info("All drones TAKING OFF")
         
+        time.sleep(5)
+        mission_mngr.get_logger().info("Triggering LANDING")
+
+        mission_mngr.cmdAllDronesPubGlobal(
+            UAVCommand.Request.COMMAND_LAND)
+        mission_mngr.get_logger().info("All drones LANDING")
+
         # #########
         # # Wait for Hover
         # #########
@@ -50,12 +57,13 @@ def main(args=None):
         rclpy.spin(mission_mngr)
 
     except Exception as e:
-        print(e)
+        mission_mngr.get_logger().info(e)
 
     mission_mngr.destroy_node()
     # navigator.lifecycleShutdown()
     rclpy.shutdown()
 
     exit(0)
+
 if __name__ == '__main__':
     main()

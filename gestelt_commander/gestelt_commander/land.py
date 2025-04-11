@@ -1,19 +1,25 @@
-from  gestelt_commander.scenario import *
+from gestelt_commander.scenario import *
 
 def main(args=None):
     rclpy.init(args=args)
 
-    mission = Mission()
+    mission_mngr = MissionManager()
 
-    # Landing
-    mission.cmdAllDronesPubGlobal(
-        UAVCommand.Request.COMMAND_LAND)
-    print("All drones LANDING")
+    try: 
+        # Landing
+        mission_mngr.cmdAllDronesPubGlobal(
+            UAVCommand.Request.COMMAND_LAND)
+        mission_mngr.get_logger().info("All drones LANDING")
 
-    rclpy.spin(mission)
+        rclpy.spin(mission_mngr)
 
-    mission.destroy_node()
+    except Exception as e:
+        mission_mngr.get_logger().info(e)
+
+    mission_mngr.destroy_node()
     rclpy.shutdown()
+
+    exit(0)
 
 if __name__ == '__main__':
     main()
