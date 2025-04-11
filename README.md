@@ -63,8 +63,8 @@ cd ~/gestelt_ws/ && colcon build --symlink-install
 5. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
 git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
+cd ~/PX4-Autopilot
 git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28 
-cd ~/gestelt_ws/PX4-Autopilot/
 # Clean just in case
 make distclean
 bash ./Tools/setup/ubuntu.sh 
