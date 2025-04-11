@@ -47,11 +47,14 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
     ros-$ROS_DISTRO-navigation2 \
     ros-$ROS_DISTRO-nav-2d-utils \
     ros-$ROS_DISTRO-message-filters \
-    ros-$ROS_DISTRO-ros-gz-bridge
 
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
 sudo apt-get install -y ros-$ROS_DISTRO-pcl*
+
+# [FOR DOING SIMULATIONS]
+sudo apt-get update && sudo apt-get install --no-install-recommends -y \
+    ros-$ROS_DISTRO-ros-gz-bridge
 
 ```
 

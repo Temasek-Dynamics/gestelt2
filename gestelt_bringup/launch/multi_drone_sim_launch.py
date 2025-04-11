@@ -22,7 +22,7 @@ from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
 from launch_ros.descriptions import ComposableNode
 
-from ros_gz_bridge.actions import RosGzBridge
+# from ros_gz_bridge.actions import RosGzBridge
 
 SCENARIO_NAME = "single_drone_test"
 
@@ -136,7 +136,8 @@ def generate_launch_description():
     start_gazebo_cmd = ExecuteProcess(
         cmd=[
             'python3', px4_gz,
-            '--world', 'default_w_obs',
+            '--world', 'default',
+            # '--world', 'default_w_obs',
             # '--interactive',
             # '--headless',
         ],
@@ -153,27 +154,41 @@ def generate_launch_description():
         shell=True
     )
 
-    ros_gz_bridge_action = RosGzBridge(
-        bridge_name='ros_gz_bridge',
-        config_file=ros_gz_bridge_params,
-        container_name='ros_gz_container',
-        create_own_container=False,
-        namespace=namespace,
-        use_composition=False,
-        use_respawn=False,
-        log_level='info',
-        bridge_params='',
+    ros_gz_bridge_action = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            "/depth_camera@sensor_msgs/msg/Image[ignition.msgs.Image",
+            "/depth_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
+            "/camera@sensor_msgs/msg/Image@ignition.msgs.Image",
+            "/camera_info@sensor_msgs/msg/CameraInfo@ignition.msgs.CameraInfo",
+            # Clock message is necessary for the diff_drive_controller to accept commands https://github.com/ros-controls/gz_ros2_control/issues/106
+            "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock",
+        ],
+        output="screen",
     )
+
+    # ros_gz_bridge_action = RosGzBridge(
+    #     bridge_name='ros_gz_bridge',
+    #     config_file=ros_gz_bridge_params,
+    #     container_name='ros_gz_container',
+    #     create_own_container=False,
+    #     namespace=namespace,
+    #     use_composition=False,
+    #     use_respawn=False,
+    #     log_level='info',
+    #     bridge_params='',
+    # )
 
     # If during startup, gazebo detects that there is another publisher on /clock, 
     # it will only create the fully qualified /world/<worldname>/clock topic. 
     # Gazebo would be the only /clock publisher, the sole source of clock information.
     # Therefore, we should create a unidirectional bridge
-    ros_gz_bridge_unidir_clock = ExecuteProcess(
-        cmd=['ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
-             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-        output='log'
-    )
+    # ros_gz_bridge_unidir_clock = ExecuteProcess(
+    #     cmd=['ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
+    #          '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+    #     output='log'
+    # )
 
     # Send single test goal
     mission_node = Node(
@@ -201,7 +216,7 @@ def generate_launch_description():
 
     ld.add_action(start_gazebo_cmd)
     ld.add_action(ros_gz_bridge_action)
-    ld.add_action(ros_gz_bridge_unidir_clock)
+    # ld.add_action(ros_gz_bridge_unidir_clock)
     ld.add_action(xrce_agent)
     ld.add_action(rviz_cmd)
 
