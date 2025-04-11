@@ -46,7 +46,8 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
     libeigen3-dev \
     ros-$ROS_DISTRO-navigation2 \
     ros-$ROS_DISTRO-nav-2d-utils \
-    ros-$ROS_DISTRO-message-filters 
+    ros-$ROS_DISTRO-message-filters \
+    ros-$ROS_DISTRO-ros-gz-bridge
 
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
@@ -58,6 +59,7 @@ sudo apt-get install -y ros-$ROS_DISTRO-pcl*
 ```bash
 # Assuming your workspace is named as follows
 cd ~/gestelt_ws/ && colcon build --symlink-install
+cd ~/gestelt_ws/ && colcon build --symlink-install --packages-up-to gestelt_bringup
 ```
 
 5. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
@@ -98,10 +100,11 @@ To enable repeatability of experiments. We make use of scenarios which are confi
 ## With mock drones
 To run a simulation without a dynamical model i.e. to test the path planning logic.
 ```bash
-ros2 launch gestelt_bringup multi_fake_drones.py
+
 ``` 
 
 ## With PX4-SITL 
+To run a simulation with a dynamical model (with physics).
 ```bash
-ros2 launch gestelt_bringup multi_sitl_drones.py
+ros2 launch gestelt_bringup multi_drone_sim_launch.py 
 ```
