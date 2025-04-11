@@ -10,6 +10,21 @@ User: nvidia, pass: nvidia
 - Onboard computer: Nvidia Orin NX
 - Flight Controller Unit:
 - Network adaptor: Viumesh
+- VIO: Vilota VK180Pro (forward facing) and VK180 (Backward facing)
+
+## Start up vilota VIO
+```bash
+ros2 run vision vio_bridge_px4
+# 1 (VK180Pro)
+# 1 (Forward Facing)
+# 0 -10 0 (Roll, Pitch, Yaw)
+```
+
+To access Vilota camera settings:
+- Vilota IP (VK180Pro): 10.42.0.64
+- Vilota IP (VK180): 10.42.0.65
+
+To debug on nuttx shell use `listener vehicle_visual_odometry`
 
 
 ## Zenoh

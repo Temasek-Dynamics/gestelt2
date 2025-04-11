@@ -102,13 +102,8 @@ def generate_launch_description():
         description='Full path to the RVIZ config file to use',
     )
 
-    declare_use_rviz_cmd = DeclareLaunchArgument(
-        'use_rviz', default_value='False', description='Whether to start RVIZ'
-    )
-
     rviz_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
-        condition=IfCondition(use_rviz),
         launch_arguments={
             'namespace': namespace,
             'use_namespace': use_namespace,
@@ -148,55 +143,8 @@ def generate_launch_description():
     ld.add_action(declare_use_sim_time_cmd)
 
     ld.add_action(declare_rviz_config_file_cmd)
-    ld.add_action(declare_use_rviz_cmd)
 
-    ld.add_action(xrce_agent)
     ld.add_action(rviz_cmd)
-
     # ld.add_action(mission_node)
-
-    drone_id = 0
-    ns = "d" + str(drone_id)
-
-    global_frame = "world" # Fixed
-    map_frame = ns + "_map"
-    base_link_frame = ns + "_base_link"
-    camera_frame = ns + "_camera_link"
-
-    ld.add_action(
-        GroupAction(
-            actions=[
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(os.path.join(launch_dir, 'bringup_launch.py')),
-                    launch_arguments={
-                        'namespace': namespace,
-                        'use_namespace': use_namespace,
-                        'use_sim_time': use_sim_time,
-                        'params_file': params_file,
-                        'autostart': 'True',
-                        'use_composition': 'False',
-                        'use_respawn': 'False',
-                    }.items(),
-                ),
-                # Transform from global to map frame
-                Node( 
-                    package = "tf2_ros", 
-                    executable = "static_transform_publisher",
-                    output = "log",
-                    arguments = [str(scenario.spawns_pos[drone_id][0]), str(scenario.spawns_pos[drone_id][1]), "0", 
-                                    str(scenario.spawns_pos[drone_id][2]), "0", "0", 
-                                    global_frame, map_frame],
-                ),
-                Node(
-                    package = "tf2_ros", 
-                    executable = "static_transform_publisher",
-                    output="log",
-                    arguments = ["0.12", "0.03", "-0.242", 
-                                    "1", "0", "0", "0",
-                                    base_link_frame, camera_frame],
-                ),
-            ]
-        )
-    )
 
     return ld
