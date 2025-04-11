@@ -3,7 +3,7 @@
     "description": "Single Drone Testing",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.5,
+    "take_off_height": 1.0,
     "send_goals": false,
     "spawns_pos": [
       [0.0, 0.0, 0.0]

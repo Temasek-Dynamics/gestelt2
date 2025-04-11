@@ -9,18 +9,24 @@ def main(args=None):
         #########
         # Take off 
         #########
-        mission_mngr.cmdAllDronesPubNamespaced(
+        mission_mngr.cmdAllDronesPubGlobal(
             UAVCommand.Request.COMMAND_TAKEOFF, 
-            UAVState.IDLE,
+            None,
             value=mission_mngr.scenario.take_off_height)
         mission_mngr.get_logger().info("All drones TAKING OFF")
-        
-        time.sleep(5)
-        mission_mngr.get_logger().info("Triggering LANDING")
 
-        mission_mngr.cmdAllDronesPubGlobal(
-            UAVCommand.Request.COMMAND_LAND)
-        mission_mngr.get_logger().info("All drones LANDING")
+        # mission_mngr.cmdAllDronesPubNamespaced(
+        #     UAVCommand.Request.COMMAND_TAKEOFF, 
+        #     UAVState.IDLE,
+        #     value=mission_mngr.scenario.take_off_height)
+        # mission_mngr.get_logger().info("All drones TAKING OFF")
+        
+        # time.sleep(5)
+        # mission_mngr.get_logger().info("Triggering LANDING")
+
+        # mission_mngr.cmdAllDronesPubGlobal(
+        #     UAVCommand.Request.COMMAND_LAND)
+        # mission_mngr.get_logger().info("All drones LANDING")
 
         # #########
         # # Wait for Hover
