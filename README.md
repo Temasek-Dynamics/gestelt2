@@ -46,7 +46,7 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
     libeigen3-dev \
     ros-$ROS_DISTRO-navigation2 \
     ros-$ROS_DISTRO-nav-2d-utils \
-    ros-$ROS_DISTRO-message-filters \
+    ros-$ROS_DISTRO-message-filters 
 
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
@@ -62,6 +62,8 @@ cd ~/gestelt_ws/ && colcon build --symlink-install
 
 5. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
+git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
+git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28 
 cd ~/gestelt_ws/PX4-Autopilot/
 # Clean just in case
 make distclean
