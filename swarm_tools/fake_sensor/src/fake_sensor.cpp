@@ -96,12 +96,10 @@ FakeSensor::FakeSensor()
 	// Load point cloud map from file
 	if (pcl::io::loadPCDFile(map_filepath, *fake_map_cloud_) == -1) 
 	{
-		RCLCPP_ERROR(this->get_logger(), "Invalid PCD filepath input: %s\n", 
-			drone_id_, map_filepath.c_str());
+		RCLCPP_ERROR(this->get_logger(), "Invalid PCD filepath input: %s\n", map_filepath.c_str());
 		rclcpp::shutdown();
 	}
-	RCLCPP_INFO(this->get_logger(), "Loaded PCD input file from %s\n", 
-		drone_id_, map_filepath.c_str());
+	RCLCPP_INFO(this->get_logger(), "Loaded PCD input file from %s\n", map_filepath.c_str());
 
 	// // Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
 	// try {
@@ -191,7 +189,7 @@ void FakeSensor::sensorUpdateTimerCB()
 		} 
 		catch (const tf2::TransformException & ex) {
 			RCLCPP_ERROR(this->get_logger(), 
-				"Could not get transform from sensor_frame (%d) to global_frame(%d): %s. ",
+				"Could not get transform from sensor_frame (%s) to global_frame(%s): %s. ",
 				sensor_frame_.c_str(), global_frame_.c_str(), ex.what());
 			return;
 		}
