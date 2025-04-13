@@ -80,7 +80,7 @@ public:
   /**
    * @brief Compute the best command given the current pose and velocity, with possible debug information
    *
-   * Same as above computeVelocityCommands, but with debug results.
+   * Same as above computeCommands, but with debug results.
    * If the results pointer is not null, additional information about the twists
    * evaluated will be in results after the call.
    *
@@ -89,7 +89,7 @@ public:
    * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
    * @return          Best command
    */
-  geometry_msgs::msg::TwistStamped computeVelocityCommands(
+  geometry_msgs::msg::TwistStamped computeCommands(
     const geometry_msgs::msg::PoseStamped & pose,
     const geometry_msgs::msg::Twist & velocity,
     gestelt_core::GoalChecker * /*goal_checker*/) override;
@@ -133,103 +133,6 @@ protected:
     geometry_msgs::msg::PoseStamped & out_pose) const;
 
   /**
-   * @brief Get lookahead distance
-   * @param cmd the current speed to use to compute lookahead point
-   * @return lookahead distance
-   */
-  double getLookAheadDistance(const geometry_msgs::msg::Twist &);
-
-  /**
-   * @brief Creates a PointStamped message for visualization
-   * @param carrot_pose Input carrot point as a PoseStamped
-   * @return CarrotMsg a carrot point marker, PointStamped
-   */
-  std::unique_ptr<geometry_msgs::msg::PointStamped> createCarrotMsg(
-    const geometry_msgs::msg::PoseStamped & carrot_pose);
-
-  /**
-   * @brief Whether robot should rotate to rough path heading
-   * @param carrot_pose current lookahead point
-   * @param angle_to_path Angle of robot output relatie to carrot marker
-   * @return Whether should rotate to path heading
-   */
-  bool shouldRotateToPath(
-    const geometry_msgs::msg::PoseStamped & carrot_pose, double & angle_to_path);
-
-  /**
-   * @brief Whether robot should rotate to final goal orientation
-   * @param carrot_pose current lookahead point
-   * @return Whether should rotate to goal heading
-   */
-  bool shouldRotateToGoalHeading(const geometry_msgs::msg::PoseStamped & carrot_pose);
-
-  /**
-   * @brief Create a smooth and kinematically smoothed rotation command
-   * @param linear_vel linear velocity
-   * @param angular_vel angular velocity
-   * @param angle_to_path Angle of robot output relatie to carrot marker
-   * @param curr_speed the current robot speed
-   */
-  void rotateToHeading(
-    double & linear_vel, double & angular_vel,
-    const double & angle_to_path, const geometry_msgs::msg::Twist & curr_speed);
-
-  /**
-   * @brief Whether collision is imminent
-   * @param robot_pose Pose of robot
-   * @param carrot_pose Pose of carrot
-   * @param linear_vel linear velocity to forward project
-   * @param angular_vel angular velocity to forward project
-   * @param carrot_dist Distance to the carrot for PP
-   * @return Whether collision is imminent
-   */
-  bool isCollisionImminent(
-    const geometry_msgs::msg::PoseStamped &,
-    const double &, const double &,
-    const double &);
-
-  /**
-   * @brief checks for collision at projected pose
-   * @param x Pose of pose x
-   * @param y Pose of pose y
-   * @param theta orientation of Yaw
-   * @return Whether in collision
-   */
-  bool inCollision(
-    const double & x,
-    const double & y,
-    const double & theta);
-  /**
-   * @brief Cost at a point
-   * @param x Pose of pose x
-   * @param y Pose of pose y
-   * @return Cost of pose in costmap
-   */
-  double costAtPose(const double & x, const double & y);
-
-  double approachVelocityScalingFactor(
-    const nav_msgs::msg::Path & path
-  ) const;
-
-  void applyApproachVelocityScaling(
-    const nav_msgs::msg::Path & path,
-    double & linear_vel
-  ) const;
-
-  /**
-   * @brief apply regulation constraints to the system
-   * @param linear_vel robot command linear velocity input
-   * @param lookahead_dist optimal lookahead distance
-   * @param curvature curvature of path
-   * @param speed Speed of robot
-   * @param pose_cost cost at this pose
-   */
-  void applyConstraints(
-    const double & curvature, const geometry_msgs::msg::Twist & speed,
-    const double & pose_cost, const nav_msgs::msg::Path & path,
-    double & linear_vel, double & sign);
-
-  /**
    * @brief Find the intersection a circle and a line segment.
    * This assumes the circle is centered at the origin.
    * If no intersection is found, a floating point error will occur.
@@ -244,27 +147,6 @@ protected:
     double r);
 
   /**
-   * @brief Get lookahead point
-   * @param lookahead_dist Optimal lookahead distance
-   * @param path Current global path
-   * @return Lookahead point
-   */
-  geometry_msgs::msg::PoseStamped getLookAheadPoint(const double &, const nav_msgs::msg::Path &);
-
-  /**
-   * @brief checks for the cusp position
-   * @param pose Pose input to determine the cusp position
-   * @return robot distance from the cusp
-   */
-  double findVelocitySignChange(const nav_msgs::msg::Path & transformed_plan);
-
-  /**
-   * Get the greatest extent of the costmap in meters from the center.
-   * @return max of distance from center in meters to edge of costmap
-   */
-  double getCostmapMaxExtent() const;
-
-  /**
    * @brief Callback executed when a parameter change is detected
    * @param event ParameterEvent message
    */
@@ -277,41 +159,11 @@ protected:
   std::shared_ptr<occ_map::OccMap> occ_map_;
   rclcpp::Logger logger_ {rclcpp::get_logger("LinearMPCController")};
   rclcpp::Clock::SharedPtr clock_;
-
-  double desired_linear_vel_, base_desired_linear_vel_;
-  double lookahead_dist_;
-  double rotate_to_heading_angular_vel_;
-  double max_lookahead_dist_;
-  double min_lookahead_dist_;
-  double lookahead_time_;
-  bool use_velocity_scaled_lookahead_dist_;
+  
   tf2::Duration transform_tolerance_;
-  double min_approach_linear_velocity_;
-  double approach_velocity_scaling_dist_;
-  double control_duration_;
-  double max_allowed_time_to_collision_up_to_carrot_;
-  bool use_collision_detection_;
-  bool use_regulated_linear_velocity_scaling_;
-  bool use_cost_regulated_linear_velocity_scaling_;
-  double cost_scaling_dist_;
-  double cost_scaling_gain_;
-  double inflation_cost_scaling_factor_;
-  double regulated_linear_scaling_min_radius_;
-  double regulated_linear_scaling_min_speed_;
-  bool use_rotate_to_heading_;
-  double max_angular_accel_;
-  double rotate_to_heading_min_angle_;
-  double goal_dist_tol_;
-  bool allow_reversing_;
-  double max_robot_pose_search_dist_;
-  bool use_interpolation_;
 
   nav_msgs::msg::Path global_plan_;
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PointStamped>>
-  carrot_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> carrot_arc_pub_;
-  collision_checker_;
 
   // Dynamic parameters handler
   std::mutex mutex_;

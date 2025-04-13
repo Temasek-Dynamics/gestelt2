@@ -20,7 +20,7 @@ AStarPlanner::~AStarPlanner()
 {
   RCLCPP_INFO(
       logger_, "Destroying plugin %s of type AStarPlanner",
-      name_.c_str());
+      plugin_name_.c_str());
 }
 
 void
@@ -30,18 +30,21 @@ AStarPlanner::configure(
     std::shared_ptr<occ_map::OccMap> occ_map)
 {
   tf_ = tf;
-  name_ = name;
+  plugin_name_ = name;
 
   occ_map_ = occ_map;
 
   node_ = parent;
   auto node = parent.lock();
+  if (!node) {
+    throw gestelt_core::PlannerException("Unable to lock node!");
+  }
   clock_ = node->get_clock();
   logger_ = node->get_logger();
 
   RCLCPP_INFO(
       logger_, "Configuring plugin %s of type AStarPlanner",
-      name_.c_str());
+      plugin_name_.c_str());
 
   // Initialize parameters
   // Declare this plugin's parameters
@@ -67,7 +70,7 @@ AStarPlanner::activate()
 {
   RCLCPP_INFO(
       logger_, "Activating plugin %s of type AStarPlanner",
-      name_.c_str());
+      plugin_name_.c_str());
   // Add callback for dynamic parameters
   auto node = node_.lock();
   // dyn_params_handler_ = node->add_on_set_parameters_callback(
@@ -79,7 +82,7 @@ AStarPlanner::deactivate()
 {
   RCLCPP_INFO(
       logger_, "Deactivating plugin %s of type AStarPlanner",
-      name_.c_str());
+      plugin_name_.c_str());
   auto node = node_.lock();
   if (dyn_params_handler_ && node)
   {
@@ -93,7 +96,7 @@ AStarPlanner::cleanup()
 {
   RCLCPP_INFO(
       logger_, "Cleaning up plugin %s of type AStarPlanner",
-      name_.c_str());
+      plugin_name_.c_str());
   planner_.reset();
 }
 
@@ -222,15 +225,15 @@ AStarPlanner::makePlan(
 //     const auto & name = parameter.get_name();
 
 //     if (type == ParameterType::PARAMETER_DOUBLE) {
-//       if (name == name_ + ".tolerance") {
+//       if (name == plugin_name_ + ".tolerance") {
 //         tolerance_ = parameter.as_double();
 //       }
 //     } else if (type == ParameterType::PARAMETER_BOOL) {
-//       if (name == name_ + ".use_astar") {
+//       if (name == plugin_name_ + ".use_astar") {
 //         use_astar_ = parameter.as_bool();
-//       } else if (name == name_ + ".allow_unknown") {
+//       } else if (name == plugin_name_ + ".allow_unknown") {
 //         allow_unknown_ = parameter.as_bool();
-//       } else if (name == name_ + ".use_final_approach_orientation") {
+//       } else if (name == plugin_name_ + ".use_final_approach_orientation") {
 //         use_final_approach_orientation_ = parameter.as_bool();
 //       }
 //     }

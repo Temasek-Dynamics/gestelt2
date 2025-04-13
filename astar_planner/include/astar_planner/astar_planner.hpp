@@ -121,7 +121,7 @@ protected:
   /* Variables */
 
   // The global frame of the occupancy map
-  std::string name_;
+  std::string plugin_name_;
 
   /* Parameters */
   bool print_runtime_{false};
