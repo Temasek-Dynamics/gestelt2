@@ -14,8 +14,12 @@ from launch.actions import (
     IncludeLaunchDescription, 
     GroupAction, 
     ExecuteProcess, 
-    DeclareLaunchArgument
+    DeclareLaunchArgument,
+    EmitEvent,
+    RegisterEventHandler
 )
+from launch.events import Shutdown
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 
@@ -80,7 +84,6 @@ def generate_launch_description():
         bringup_dir, 'params', 'ros_gz_bridge.yaml')
 
     rviz_config_file = LaunchConfiguration('rviz_config_file')
-    use_rviz = LaunchConfiguration('use_rviz')
 
     # Declare parameters
     namespace = LaunchConfiguration('namespace')
@@ -100,7 +103,7 @@ def generate_launch_description():
 
     declare_use_namespace_cmd = DeclareLaunchArgument(
         'use_namespace',
-        default_value='false',
+        default_value='true',
         description='Whether to apply a namespace to the navigation stack',
     )
 
@@ -116,19 +119,28 @@ def generate_launch_description():
         description='Full path to the RVIZ config file to use',
     )
 
-    declare_use_rviz_cmd = DeclareLaunchArgument(
-        'use_rviz', default_value='True', description='Whether to start RVIZ'
-    )
+    # start_rviz_cmd = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
+    #     launch_arguments={
+    #         'namespace': namespace,
+    #         # 'use_namespace': use_namespace,
+    #         'use_sim_time': use_sim_time,
+    #         'rviz_config': rviz_config_file,
+    #     }.items(),
+    # )
 
-    rviz_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
-        condition=IfCondition(use_rviz),
-        launch_arguments={
-            'namespace': namespace,
-            'use_namespace': use_namespace,
-            'use_sim_time': use_sim_time,
-            'rviz_config': rviz_config_file,
-        }.items(),
+    start_rviz_cmd = Node(
+        package='rviz2',
+        executable='rviz2',
+        arguments=['-d', rviz_config_file],
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
+    )
+    exit_event_handler = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=start_rviz_cmd,
+            on_exit=EmitEvent(event=Shutdown(reason='rviz exited')),
+        ),
     )
 
     # Run python script provided by PX4-Autopilot repo to ease
@@ -157,13 +169,16 @@ def generate_launch_description():
     ros_gz_bridge_action = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
-        arguments=[
-            "/depth_camera@sensor_msgs/msg/Image[ignition.msgs.Image",
-            "/depth_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
-            "/camera@sensor_msgs/msg/Image@ignition.msgs.Image",
-            "/camera_info@sensor_msgs/msg/CameraInfo@ignition.msgs.CameraInfo",
-            # Clock message is necessary for the diff_drive_controller to accept commands https://github.com/ros-controls/gz_ros2_control/issues/106
-            "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock",
+        # arguments=[
+        #     "/depth_camera@sensor_msgs/msg/Image[ignition.msgs.Image",
+        #     "/depth_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
+        #     "/camera@sensor_msgs/msg/Image[ignition.msgs.Image",
+        #     "/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo",
+        #     # Clock message is necessary for the diff_drive_controller to accept commands https://github.com/ros-controls/gz_ros2_control/issues/106
+        #     "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock",
+        # ],
+        parameters=[
+            {'config_file' : ros_gz_bridge_params},
         ],
         output="screen",
     )
@@ -212,13 +227,13 @@ def generate_launch_description():
     ld.add_action(declare_use_sim_time_cmd)
 
     ld.add_action(declare_rviz_config_file_cmd)
-    ld.add_action(declare_use_rviz_cmd)
 
     ld.add_action(start_gazebo_cmd)
     ld.add_action(ros_gz_bridge_action)
     # ld.add_action(ros_gz_bridge_unidir_clock)
     ld.add_action(xrce_agent)
-    ld.add_action(rviz_cmd)
+    ld.add_action(start_rviz_cmd)
+    ld.add_action(exit_event_handler)
 
     ld.add_action(mission_node)
 
@@ -236,6 +251,35 @@ def generate_launch_description():
         ld.add_action(
             GroupAction(
                 actions=[
+                    # Transform from global to map frame
+                    Node( 
+                        package = "tf2_ros", 
+                        executable = "static_transform_publisher",
+                        output = "log",
+                        arguments = [str(scenario.spawns_pos[drone_id][0]), 
+                                    str(scenario.spawns_pos[drone_id][1]), 
+                                    "0", 
+                                    str(scenario.spawns_pos[drone_id][2]), 
+                                    "0", "0", 
+                                    global_frame, map_frame],
+                    ),
+                    # Transform from base link to camera frame
+                    Node(
+                        package = "tf2_ros", 
+                        executable = "static_transform_publisher",
+                        output="log",
+                        arguments = ["0.12", "0.03", "-0.242", 
+                                     "1", "0", "0", "0",
+                                     base_link_frame, camera_frame],
+                    ),
+                ]
+            )
+        )
+
+
+        ld.add_action(
+            GroupAction(
+                actions=[
                     IncludeLaunchDescription(
                         PythonLaunchDescriptionSource(os.path.join(launch_dir, 'bringup_launch.py')),
                         launch_arguments={
@@ -247,23 +291,6 @@ def generate_launch_description():
                             'use_composition': 'False',
                             'use_respawn': 'False',
                         }.items(),
-                    ),
-                    # Transform from global to map frame
-                    Node( 
-                        package = "tf2_ros", 
-                        executable = "static_transform_publisher",
-                        output = "log",
-                        arguments = [str(scenario.spawns_pos[drone_id][0]), str(scenario.spawns_pos[drone_id][1]), "0", 
-                                     str(scenario.spawns_pos[drone_id][2]), "0", "0", 
-                                     global_frame, map_frame],
-                    ),
-                    Node(
-                        package = "tf2_ros", 
-                        executable = "static_transform_publisher",
-                        output="log",
-                        arguments = ["0.12", "0.03", "-0.242", 
-                                     "1", "0", "0", "0",
-                                     base_link_frame, camera_frame],
                     ),
                     ExecuteProcess(
                         name=['px4_sitl_', str(drone_id)],

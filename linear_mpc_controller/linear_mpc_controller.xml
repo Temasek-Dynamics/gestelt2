@@ -1,6 +1,7 @@
 <class_libraries>
     <library path="linear_mpc_controller">
-        <class type="linear_mpc_controller::LinearMPCController" base_class_type="gestelt_core::Controller">
+        <class type="linear_mpc_controller::LinearMPCController" 
+            base_class_type="gestelt_core::Controller">
             <description>
                 linear_mpc_controller
             </description>

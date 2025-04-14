@@ -55,7 +55,7 @@ def generate_launch_description():
 
     declare_use_namespace_cmd = DeclareLaunchArgument(
         'use_namespace',
-        default_value='false',
+        default_value='true',
         description='Whether to apply a namespace to the navigation stack',
     )
 
@@ -102,6 +102,9 @@ def generate_launch_description():
     #     ('/d0/tf', '/tf'), 
     #     ('/d0/tf_static', '/tf_static')
     # ]
+
+    remappings = [
+    ]
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
@@ -158,7 +161,7 @@ def generate_launch_description():
         condition=IfCondition(PythonExpression(['not ', use_composition])),
         actions=[
             SetParameter('use_sim_time', use_sim_time),
-            # PushRosNamespace(namespace),
+            PushRosNamespace(condition=IfCondition(use_namespace), namespace=namespace),
             # Node(
             #     package='nav2_lifecycle_manager',
             #     executable='lifecycle_manager',

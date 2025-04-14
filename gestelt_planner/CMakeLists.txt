@@ -18,7 +18,7 @@ set(EXTERNAL_LIBRARIES
 	Eigen3
 )
 
-set(ROS_LIBRARIES
+set(ROS_DEPENDENCIES
 	ament_cmake
   rclcpp
   rclcpp_components
@@ -43,7 +43,7 @@ foreach(dependency IN ITEMS ${EXTERNAL_LIBRARIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
-foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -58,7 +58,7 @@ target_include_directories(${library_name} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 ament_target_dependencies(${library_name}
-  ${ROS_LIBRARIES}
+  ${ROS_DEPENDENCIES}
 )
 target_link_libraries(${library_name}
   Eigen3::Eigen

@@ -19,13 +19,13 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 # find_package(nlohmann_json REQUIRED)
 
-set(ROS_LIBRARIES
+set(ROS_DEPENDENCIES
 	ament_cmake
 	ament_cmake_ros
 	rclcpp
   pcl_conversions)
 
-foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 

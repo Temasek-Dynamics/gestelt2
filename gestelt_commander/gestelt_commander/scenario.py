@@ -152,7 +152,8 @@ class MissionManager(Node):
                     time_to_wait=1.0)
         
         if ret:
-            self.get_logger().info(f"Received message {msg} from {state_topic}")
+            pass
+            # self.get_logger().info(f"Received message {msg} from {state_topic}")
         else:
             self.get_logger().error(f"Did not receive message from {state_topic}")
             return False

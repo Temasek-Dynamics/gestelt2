@@ -126,7 +126,8 @@ namespace pvaj_mpc
 
 	struct MPCControllerParams
 	{
-		int drone_id{-1};
+		double ctrl_samp_freq{20.0}; 
+		int plan_samp_intv{1};
 
 		// Yaw control
 		bool yaw_ctrl_flag{true};
@@ -179,7 +180,8 @@ namespace pvaj_mpc
 		 */
 		void getParameters(const MPCControllerParams &params)
 		{
-			drone_id_ = params.drone_id;
+			ctrl_samp_freq_ = params.ctrl_samp_freq;
+			plan_samp_intv_ = params.plan_samp_intv;
 
 			// Yaw control
 			yaw_ctrl_flag_ = params.yaw_ctrl_flag;
@@ -319,7 +321,7 @@ namespace pvaj_mpc
 				// 	fps_ = 0;
 				// }
 
-				// std::cerr   << "[MPC] D" << drone_id_ << ": " <<
+				// std::cerr   << "[MPC]" << ": " <<
 				// 				"Successful run()" << std::endl;
 
 				return true;
@@ -816,7 +818,10 @@ namespace pvaj_mpc
 		mpc_osqp_t mpc_; // MPC data
 		// int fps_;
 
-		// Yaw control params
+		double ctrl_samp_freq_; // [Hz] frequency to send MPC command
+		double plan_samp_intv_; // [] Uses every N point on global plan as reference path
+
+ 		// Yaw control params
 		bool yaw_ctrl_flag_{true};
 
 		// Controller params
@@ -826,10 +831,6 @@ namespace pvaj_mpc
 		Eigen::VectorXd X_0_, X_r_; // Current position and reference position
 
 	private:
-		int drone_id_{-1};
-
-
-
 		// Vector of set of hyper planes, (n, 4) sized matrix with each row 
 		// containing hyperplane coefficients. Each element is a different step 
 		// of the MPC problem

@@ -17,9 +17,6 @@ Dependencies:
     - PX4-msgs: Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
 - Simulation 
     - PX4-Autopilot: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
-- Solvers
-    - [OSQP](https://osqp.org/docs/index.html)
-    - [OSQP-Eigen](https://github.com/robotology/osqp-eigen)
 
 1. Clone dependencies 
 ```bash

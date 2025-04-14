@@ -115,6 +115,10 @@ public:
     return transform_tolerance_;
   }
 
+  inline double getLocalMapMaxExtent() const {
+    return local_map_size_(0);
+  }
+
   /**
    * @brief  Get the occupancy map's use_radius_ parameter, corresponding to
    * whether the footprint for the robot is a circle with radius robot_radius_
@@ -147,8 +151,30 @@ public:
     }
   }
 
-  // Get points in local map (in fixed map frame). Used by safe flight corridor generation
-  inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLclObsPts(){
+  bool transformPoseToTargetFrame(
+    const std::string& target_frame,
+    const geometry_msgs::msg::PoseStamped & input_pose,
+    geometry_msgs::msg::PoseStamped & transformed_pose)
+  {
+
+    if (input_pose.header.frame_id == target_frame) {
+      transformed_pose = input_pose;
+      return true;
+    }
+    else {
+      return nav2_util::transformPoseInTargetFrame(
+        input_pose, transformed_pose, *tf_buffer_,
+        target_frame, transform_tolerance_);
+    }
+  }
+
+  /**
+   * @brief Get local points in map frame (in fixed map frame).
+   * Used by safe flight corridor generation
+   * 
+   * @return std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> 
+   */
+  inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLocalPtsInMapFrame(){
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
     return lcl_pts_map_;
   }
@@ -226,6 +252,10 @@ public:
    * @return int 
    */
   int getCostIdx(const Eigen::Vector3i &idx);
+
+  std::string getMapFrameID() const{
+    return map_frame_;
+  }
 
   std::string getGlobalFrameID() const{
     return global_frame_;
@@ -367,8 +397,8 @@ private:
   double viz_occ_map_freq_{-1.0}; // Frequency to publish occupancy map visualization
   double update_local_map_freq_{-1.0};  // Frequency to update local map
 
-  std::string global_frame_; // frame id of global map reference 
-  std::string map_frame_; // frame id of UAV origin 
+  std::string global_frame_; // frame id of global/inertial reference 
+  std::string map_frame_; // frame id of fixed map frame
   std::string camera_frame_; // frame id of camera link
   std::string base_link_frame_; // frame id of base_link
 
@@ -425,7 +455,7 @@ private:
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_map_; 
 
   // Vector of obstacle points used for sfc generation
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_map_; 
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_map_; // Local obstacle points in map frame
 
   std::shared_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
   std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 

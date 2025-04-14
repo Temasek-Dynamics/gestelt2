@@ -16,7 +16,7 @@ endif()
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(ROS_LIBRARIES
+set(ROS_DEPENDENCIES
 	ament_cmake
 	ament_cmake_ros
   rclcpp
@@ -29,7 +29,7 @@ set(ROS_LIBRARIES
   occ_map
 )
 
-foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -46,7 +46,7 @@ target_include_directories(${library_name}
 )
 ament_target_dependencies(
   ${library_name}
-  ${ROS_LIBRARIES}
+  ${ROS_DEPENDENCIES}
 )
 target_link_libraries(
   ${library_name} 
@@ -88,7 +88,7 @@ endif()
 ament_export_include_directories(include/${PROJECT_NAME})
 ament_export_libraries(${library_name})
 ament_export_dependencies(
-  ${ROS_LIBRARIES}
+  ${ROS_DEPENDENCIES}
 )
 ament_export_targets(${library_name})
 ament_package()

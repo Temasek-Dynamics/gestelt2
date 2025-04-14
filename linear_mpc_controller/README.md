@@ -2,6 +2,34 @@
 
 Linear MPC Controller with Safe Flight Corridor implemented as a controller plugin.
 
+## Dependencies
+- Solvers
+    - [OSQP](https://osqp.org/docs/index.html)
+    - [OSQP-Eigen](https://github.com/robotology/osqp-eigen)
+
+Installation: 
+```bash
+# OSQP
+git clone https://github.com/osqp/osqp.git
+cd osqp 
+mkdir build 
+cd build 
+cmake -G "Unix Makefiles" .. 
+sudo cmake --build . --target install
+
+# OSQP-Eigen
+git clone https://github.com/robotology/osqp-eigen.git 
+cd osqp-eigen 
+mkdir build 
+cd build 
+cmake ../ 
+make 
+sudo make install 
+
+# Add directory to bash
+echo 'export OsqpEigen_DIR=/usr/local/lib/cmake/OsqpEigen/' >> ~/.bashrc 
+```
+
 ## Configuration
 
 | Parameter | Description | 

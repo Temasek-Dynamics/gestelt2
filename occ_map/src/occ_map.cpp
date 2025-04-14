@@ -482,18 +482,15 @@ void OccMap::updateLocalMap(){
     // Only add points within local bound of base_link
     for (auto& coord : occ_coords) 
     {
-      // obs_gbl_pos: global obstacle pos
-      Bonxai::Point3D obs_gbl_pos_pt3d = bonxai_map_->grid().coordToPos(coord);
-      // obs_gbl_pos: With respect to (0,0,0) of global frame
-      Eigen::Vector3d obs_gbl_pos = Bonxai::ConvertPoint<Eigen::Vector3d>(obs_gbl_pos_pt3d);
+      // obs_pos_map: obstacle pos in fixed map frame i.e. with respect to (0,0,0) of fixed map frame
+      Eigen::Vector3d obs_pos_map = Bonxai::ConvertPoint<Eigen::Vector3d>(bonxai_map_->grid().coordToPos(coord));
 
-      if (!inLocalMap(obs_gbl_pos)){ 
-        // Point is outside the local map
+      if (!inLocalMap(obs_pos_map)){  // Point is outside the local map
         continue;
       }
 
       lcl_pcd_map_raw_->push_back(
-        pcl::PointXYZ(obs_gbl_pos(0), obs_gbl_pos(1), obs_gbl_pos(2)));
+        pcl::PointXYZ(obs_pos_map(0), obs_pos_map(1), obs_pos_map(2)));
     }
 
     kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
@@ -501,25 +498,25 @@ void OccMap::updateLocalMap(){
     kdtree_->Build(lcl_pcd_map_raw_->points);
 
     // For each point in local bounds
-    for (auto& pt_in_gbl_frame : lcl_pcd_map_raw_->points) 
+    for (auto& obs_pt_map : lcl_pcd_map_raw_->points) 
     {
-      Eigen::Vector3d pt_in_gbl_frame_eig = Eigen::Vector3d(pt_in_gbl_frame.x, pt_in_gbl_frame.y, pt_in_gbl_frame.z);
+      Eigen::Vector3d obs_pt_map_eig = Eigen::Vector3d(obs_pt_map.x, obs_pt_map.y, obs_pt_map.z);
 
       // // pt_in_lcl_frame_eig: With respect to local origins
-      // Eigen::Vector3d pt_in_lcl_frame_eig = pt_in_gbl_frame_eig - local_map_origin_;
+      // Eigen::Vector3d pt_in_lcl_frame_eig = obs_pt_map_eig - local_map_origin_;
 
       std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
       // Perform radius search for each point and get nunber of points
-      kdtree_->Radius_Search(pt_in_gbl_frame, noise_search_radius_, nb_points);
+      kdtree_->Radius_Search(obs_pt_map, noise_search_radius_, nb_points);
       if ((int) nb_points.size() < noise_min_neighbors_){
         continue;
       }
 
       // lcl_pts_map_: Used for SFC
-      lcl_pts_map_.push_back(pt_in_gbl_frame_eig);
+      lcl_pts_map_.push_back(obs_pt_map_eig);
 
       // lcl_pcd_map_: Used for visualization
-      lcl_pcd_map_->push_back(pt_in_gbl_frame);
+      lcl_pcd_map_->push_back(obs_pt_map);
     }
 
     lcl_pcd_map_raw_->header.frame_id = map_frame_;

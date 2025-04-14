@@ -567,7 +567,6 @@ private:
   /* MPC */
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller
 
-
   std::vector<Eigen::Vector3d> mpc_pred_u_prev_; // Predicted MPC control trajectory (JERK)
   std::vector<Eigen::Vector3d> mpc_pred_pos_prev_; // Predicted MPC position trajectory
   std::vector<Eigen::Vector3d> mpc_pred_vel_prev_; // Predicted MPC velocity trajectory

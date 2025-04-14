@@ -1,17 +1,27 @@
-// Copyright (c) 2020 Shrijit Singh
-// Copyright (c) 2020 Samsung Research America
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/****************************************************************************
+ * MIT License
+ *  
+ *	Copyright (c) 2024 John Tan. All rights reserved.
+ *
+ *	Permission is hereby granted, free of charge, to any person obtaining a copy
+ *	of this software and associated documentation files (the "Software"), to deal
+ *	in the Software without restriction, including without limitation the rights
+ *	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *	copies of the Software, and to permit persons to whom the Software is
+ *	furnished to do so, subject to the following conditions:
+ *
+ *	The above copyright notice and this permission notice shall be included in all
+ *	copies or substantial portions of the Software.
+ *
+ *	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *	SOFTWARE.
+ *
+ ****************************************************************************/
 
 #ifndef LINEAR_MPC_CONTROLLER__LINEAR_MPC_CONTROLLER_HPP_
 #define LINEAR_MPC_CONTROLLER__LINEAR_MPC_CONTROLLER_HPP_
@@ -22,13 +32,23 @@
 #include <algorithm>
 #include <mutex>
 
+#include <Eigen/Eigen>
+
 #include "gestelt_core/controller.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "pluginlib/class_loader.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "nav2_util/odometry_utils.hpp"
 #include "nav2_util/geometry_utils.hpp"
-#include "geometry_msgs/msg/pose2_d.hpp"
+
+#include "linear_mpc_controller/poly_sfc_gen.hpp"
+#include "linear_mpc_controller/pvaj_mpc.hpp"
+
+#include "occ_map/occ_map.hpp"
+
+// Messages for SFC visualization
+#include <decomp_ros_msgs/msg/ellipsoid_array.hpp>
+#include <decomp_ros_msgs/msg/polyhedron_array.hpp>
 
 namespace linear_mpc_controller
 {
@@ -89,25 +109,17 @@ public:
    * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
    * @return          Best command
    */
-  geometry_msgs::msg::TwistStamped computeCommands(
-    const geometry_msgs::msg::PoseStamped & pose,
-    const geometry_msgs::msg::Twist & velocity,
-    gestelt_core::GoalChecker * /*goal_checker*/) override;
+  px4_msgs::msg::TrajectorySetpoint computeCommands(
+    const Eigen::Vector3d & pose,
+    const Eigen::Quaterniond & orientation,
+    const Eigen::Vector3d & velocity,
+    gestelt_core::GoalChecker * goal_checker) override;
 
   /**
    * @brief gestelt_core setPlan - Sets the global plan
    * @param path The global plan
    */
   void setPlan(const nav_msgs::msg::Path & path) override;
-
-  /**
-   * @brief Limits the maximum linear speed of the robot.
-   * @param speed_limit expressed in absolute value (in m/s)
-   * or in percentage from maximum robot speed.
-   * @param percentage Setting speed limit in percentage if true
-   * or in absolute values in false case.
-   */
-  void setSpeedLimit(const double & speed_limit, const bool & percentage) override;
 
 protected:
   /**
@@ -117,41 +129,70 @@ protected:
    * @param pose pose to transform
    * @return Path in new frame
    */
-  nav_msgs::msg::Path transformGlobalPlan(
+  nav_msgs::msg::Path transformPlanFromGlobalToMap(
     const geometry_msgs::msg::PoseStamped & pose);
 
-  /**
-   * @brief Transform a pose to another frame.
-   * @param frame Frame ID to transform to
-   * @param in_pose Pose input to transform
-   * @param out_pose transformed output
-   * @return bool if successful
-   */
-  bool transformPose(
-    const std::string frame,
-    const geometry_msgs::msg::PoseStamped & in_pose,
-    geometry_msgs::msg::PoseStamped & out_pose) const;
+  template<typename Iter, typename Getter>
+  inline Iter first_after_integrated_distance(Iter begin, Iter end, Getter getCompareVal)
+  {
+    if (begin == end) {
+      return end;
+    }
+    Getter dist = 0.0;
+    for (Iter it = begin; it != end - 1; it++) {
+      dist += euclidean_distance(*it, *(it + 1));
+      if (dist > getCompareVal) {
+        return it + 1;
+      }
+    }
+    return end;
+  }
 
   /**
-   * @brief Find the intersection a circle and a line segment.
-   * This assumes the circle is centered at the origin.
-   * If no intersection is found, a floating point error will occur.
-   * @param p1 first endpoint of line segment
-   * @param p2 second endpoint of line segment
-   * @param r radius of circle
-   * @return point of intersection
+   * @brief Get the euclidean distance between 2 geometry_msgs::Points
+   * @param pos1 First point
+   * @param pos1 Second point
+   * @param is_3d True if a true L2 distance is desired (default false)
+   * @return double L2 distance
    */
-  static geometry_msgs::msg::Point circleSegmentIntersection(
-    const geometry_msgs::msg::Point & p1,
-    const geometry_msgs::msg::Point & p2,
-    double r);
+  inline double euclidean_distance(
+    const geometry_msgs::msg::PoseStamped & pos1,
+    const geometry_msgs::msg::PoseStamped & pos2)
+  {
+    double dx = pos1.pose.position.x - pos2.pose.position.x;
+    double dy = pos1.pose.position.y - pos2.pose.position.y;
+    double dz = pos1.pose.position.z - pos2.pose.position.z;
+
+    return std::hypot(dx, dy, dz);
+  }
 
   /**
-   * @brief Callback executed when a parameter change is detected
-   * @param event ParameterEvent message
+   * Find element in iterator with the minimum calculated value
    */
-  rcl_interfaces::msg::SetParametersResult
-  dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
+  template<typename Iter, typename Getter>
+  inline Iter min_by(Iter begin, Iter end, Getter getCompareVal)
+  {
+    if (begin == end) {
+      return end;
+    }
+    auto lowest = getCompareVal(*begin);
+    Iter lowest_it = begin;
+    for (Iter it = ++begin; it != end; ++it) {
+      auto comp = getCompareVal(*it);
+      if (comp < lowest) {
+        lowest = comp;
+        lowest_it = it;
+      }
+    }
+    return lowest_it;
+  }
+  
+  // /**
+  //  * @brief Callback executed when a parameter change is detected
+  //  * @param event ParameterEvent message
+  //  */
+  // rcl_interfaces::msg::SetParametersResult
+  // dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters);
 
   rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
   std::shared_ptr<tf2_ros::Buffer> tf_;
@@ -160,10 +201,18 @@ protected:
   rclcpp::Logger logger_ {rclcpp::get_logger("LinearMPCController")};
   rclcpp::Clock::SharedPtr clock_;
   
-  tf2::Duration transform_tolerance_;
+  // Params
+  int yaw_lookahead_dist_{5};
+  double max_robot_pose_search_dist_{1.0};
+  // tf2::Duration transform_tolerance_;
 
-  nav_msgs::msg::Path global_plan_;
+  // Data
+  nav_msgs::msg::Path global_plan_; // Global plan in global frame
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<decomp_ros_msgs::msg::PolyhedronArray>> sfc_pub_;
+
+  std::unique_ptr<sfc::PolytopeSFC> sfc_gen_; // Polytope safe flight corridor generator
+  std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller
 
   // Dynamic parameters handler
   std::mutex mutex_;

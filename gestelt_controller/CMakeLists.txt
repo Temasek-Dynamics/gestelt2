@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(gestelt_controller)
 
-set(ROS_LIBRARIES
+set(ROS_DEPENDENCIES
   ament_cmake
   angles
   geometry_msgs
@@ -21,7 +21,7 @@ set(ROS_LIBRARIES
   px4_msgs
 )
 
-foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -45,7 +45,7 @@ ament_target_dependencies(${library_name} PUBLIC
 )
 ament_target_dependencies(
   ${library_name} PUBLIC
-  ${ROS_LIBRARIES}
+  ${ROS_DEPENDENCIES}
 )
 # target_link_libraries(${library_name} PUBLIC
 #   ${geometry_msgs_TARGETS}

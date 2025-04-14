@@ -20,6 +20,7 @@
   <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>occ_map</depend>
+  <depend>px4_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

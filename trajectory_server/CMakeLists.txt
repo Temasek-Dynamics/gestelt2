@@ -16,7 +16,7 @@ endif()
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(ROS_LIBRARIES
+set(ROS_DEPENDENCIES
 	ament_cmake
 	rclcpp
 	rclpy
@@ -28,7 +28,7 @@ set(ROS_LIBRARIES
 	tf2_ros
 	logger_wrapper)
 
-foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -57,7 +57,7 @@ add_library(
 )
 ament_target_dependencies(
 	trajectory_server
-	${ROS_LIBRARIES}
+	${ROS_DEPENDENCIES}
 )
 target_link_libraries(
 	trajectory_server

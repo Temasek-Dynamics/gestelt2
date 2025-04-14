@@ -20,6 +20,7 @@
   <depend>trajectory_server</depend>
 
   <depend>astar_planner</depend>
+  <depend>linear_mpc_controller</depend>
 
   <depend>fake_sensor</depend>
   <depend>fake_map</depend>

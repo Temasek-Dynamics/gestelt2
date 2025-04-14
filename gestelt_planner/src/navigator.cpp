@@ -295,7 +295,6 @@ void Navigator::getParameters()
 	/**
 	 * Get params
 	 */
-
   drone_id_ = this->get_parameter("drone_id").as_int();
   num_drones_ = this->get_parameter(param_ns+".num_drones").as_int();
   pub_state_freq_ = this->get_parameter(param_ns+".pub_state_frequency").as_double();
@@ -792,7 +791,7 @@ bool Navigator::plan(const Eigen::Vector3d& goal_pos){
 
   tm_sfc_.start();
   bool gen_sfc_success = 
-    poly_sfc_gen_->generateSFC(voxel_map_->getLclObsPts(), fe_path_smoothed_);
+    poly_sfc_gen_->generateSFC(voxel_map_->getLocalPtsInMapFrame(), fe_path_smoothed_);
   tm_sfc_.stop(print_timer_);
   tm_sfc_.getWallAvg(print_timer_);
 
@@ -810,7 +809,7 @@ bool Navigator::plan(const Eigen::Vector3d& goal_pos){
   std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> polyhedrons 
     = poly_sfc_gen_->getPolyVec();
 
-  poly_sfc_pub_->publish(poly_sfc_gen_->getSFCMsg());
+  poly_sfc_pub_->publish(poly_sfc_gen_->toSFCMsg());
 
   // logger_->logInfo(strFmt(" Size of SFC: %d, Size of smoothed path: %d", 
   //                   polyhedrons.size(), fe_path_smoothed_.size()));

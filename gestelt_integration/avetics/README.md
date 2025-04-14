@@ -41,7 +41,6 @@ zenoh-bridge-ros2dds -c /home/nvidia/gestelt_ws/src/gestelt2/gestelt_network/zen
 zenoh-bridge-ros2dds -c /home/john/gestelt_ws/src/gestelt_network/zenoh_host_cfg.json5
 ```
 
-
 ## Networking
 
 ### Accesing router

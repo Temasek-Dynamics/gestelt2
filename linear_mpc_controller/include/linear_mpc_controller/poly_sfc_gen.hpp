@@ -42,16 +42,11 @@ namespace sfc
 {
 
 struct PolytopeSFCParams{
-  /* SFC Generation */
-  std::string map_frame{"map"};
+  double bbox_x{1.0}; // [m] Bounding box x
+  double bbox_y{2.0}; // [m] Bounding box y
+  double bbox_z{1.0}; // [m] Bounding box z
 
-  // Liu SFC Params
-  double bbox_x{1.0}; // Bounding box x
-  double bbox_y{2.0}; // Bounding box y
-  double bbox_z{1.0}; // Bounding box z
-
-  int sfc_samp_intv{5}; // SFC sampling interval of front-end path
-
+  int plan_samp_intv{5}; // SFC sampling interval of front-end path
 }; // struct PolytopeSFCParams
 
 class PolytopeSFC 
@@ -59,10 +54,15 @@ class PolytopeSFC
 public: // Public structs
 
   // Constructor
-  PolytopeSFC(const PolytopeSFCParams& sfc_params);
+  PolytopeSFC(const PolytopeSFCParams& sfc_params): params_(sfc_params)
+  {}
 
   // Reset all data structures
-  void reset();
+  void reset()
+  {
+    poly_vec_.clear();
+    poly_constr_vec_.clear();
+  }
 
   /**
    * @brief Generate a spherical safe flight corridor given a path
@@ -72,12 +72,55 @@ public: // Public structs
    * @return false 
    */
   bool generateSFC(const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &obs_pts,
-                   const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d);
+                   const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d)
+  {
+    EllipsoidDecomp3D ellip_decomp_util; // Decomposition util for Liu's method
+    
+    //Using ellipsoid decomposition
+    ellip_decomp_util.set_obs(obs_pts);
+    ellip_decomp_util.set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z)); 
+    ellip_decomp_util.dilate(path_3d); // Set max iteration number of 10, do fix the path
+
+    poly_vec_ = ellip_decomp_util.get_polyhedrons();
+
+    // std::vector<LinearConstraint3D> poly_constr_vec_new;
+
+    // // Construct poly_constr_vec
+    // for (const auto& poly: poly_vec_)
+    // {
+    //     int num_planes = poly.vs_.size(); // Num of planes from polyhedron
+    //     // Constraint: A_poly * x - b_poly <= 0
+    //     MatDNf<3> A_poly(num_planes, 3);        
+    //     VecDf b_poly(num_planes);               
+
+    //     for (int i = 0; i < num_planes; i++) { // For each plane
+    //         A_poly.row(i) = poly.vs_[i].n_;                  // normal (a,b,c) as in ax+by+cz+d
+    //         b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // Scalar d obtained from point.dot(normal)
+    //     }
+    //     poly_constr_vec_new.push_back(LinearConstraint3D(A_poly, b_poly));
+    // }
+
+    // poly_constr_vec_ = poly_constr_vec_new;
+
+    return true;
+  }
 
 public:
 
   /* Getter methods */
-  decomp_ros_msgs::msg::PolyhedronArray getSFCMsg();
+  int getPlanSampleInterval() const
+  {
+    return params_.plan_samp_intv;
+  }
+  
+  decomp_ros_msgs::msg::PolyhedronArray toSFCMsg(std::string frame)
+  {
+    decomp_ros_msgs::msg::PolyhedronArray poly_msg = 
+      polyhedron_array_to_ros(poly_vec_);
+    poly_msg.header.frame_id = frame;
+
+    return poly_msg;
+  }
 
   std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> getPolyVec() const
   {

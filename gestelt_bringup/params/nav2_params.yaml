@@ -12,9 +12,76 @@ planner_server:
       allow_unknown: true
       cost_function_type: 2
 
+controller_server:
+  ros__parameters:
+    controller_frequency: 20.0
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["goal_checker"]
+    controller_plugins: ["FollowPath"]
+
+    # Progress checker parameters
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5
+      movement_time_allowance: 10.0
+    # Goal checker parameters
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: True
+    # DWB parameters
+    FollowPath:
+      plugin: "linear_mpc_controller::LinearMPCController"
+      yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
+      max_robot_pose_search_dist: 6 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
+      sfc:
+        bbox_x: 2.0 # [m] Bounding box in x axis
+        bbox_y: 2.0 # [m] Bounding box in y axis
+        bbox_z: 2.0 # [m] Bounding box in z axis
+        plan_sample_interval: 4 #[] Uses every N point on global plan as the safe flight corridor seed 
+      mpc:
+        ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
+        plan_sample_interval: 1 # [] Uses every N point on global plan as reference path
+        # Yaw control
+        yaw_ctrl_flag: true # Control the yaw
+        # MPC parameters
+        horizon: 15
+        time_step: 0.1 #[s]
+        # Objective Weights
+        R_p: 1000.0 # Error from reference position
+        R_v: 0.0  # Velocity magnitude
+        R_a: 0.0  # Acceleration magnitude
+        R_u: 0.0  # Control magnitude
+        R_u_con: 0.2  # Continuity in controls
+        R_pN: 2000.0 # Terminal position
+        R_vN: 1000.0 # Terminal velocity
+        R_aN: 1000.0 # Terminal acceleration
+        
+        # State bounds
+        vx_min:     -0.25
+        vy_min:     -0.25
+        vz_min:     -0.25
+        vx_max:      0.25
+        vy_max:      0.25
+        vz_max:      0.25
+
+        ax_min:     -30.0
+        ay_min:     -30.0
+        az_min:     -30.0
+        ax_max:      30.0
+        ay_max:      30.0
+        az_max:      30.0
+
+        ux_min:     -60.0
+        uy_min:     -60.0
+        uz_min:     -60.0
+        ux_max:      60.0
+        uy_max:      60.0
+        uz_max:      60.0
+
 global_occ_map:
   ros__parameters:
-
     print_timer: false       # If enabled, print debug information such as timing information
 
     update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map

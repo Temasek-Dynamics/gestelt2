@@ -18,7 +18,7 @@ set(EXTERNAL_LIBRARIES
 	eigen3_cmake_module
 	Eigen3)
 
-set(ROS_LIBRARIES
+set(ROS_DEPENDENCIES
 	ament_cmake
 	ament_cmake_ros
 	rclcpp
@@ -36,7 +36,7 @@ set(ROS_LIBRARIES
   ikd_tree
 )
 
-foreach(dependency IN ITEMS ${ROS_LIBRARIES})
+foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
 
@@ -54,7 +54,7 @@ target_include_directories(occ_map PUBLIC
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 ament_target_dependencies(
   occ_map
-  ${ROS_LIBRARIES}
+  ${ROS_DEPENDENCIES}
 )
 target_link_libraries(
   occ_map

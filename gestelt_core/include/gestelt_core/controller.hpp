@@ -43,10 +43,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "pluginlib/class_loader.hpp"
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "gestelt_core/goal_checker.hpp"
+
+#include "px4_msgs/msg/trajectory_setpoint.hpp"
 
 #include "occ_map/occ_map.hpp"
 
@@ -128,15 +128,6 @@ public:
   {
     return true;
   }
-
-  /**
-   * @brief Limits the maximum linear speed of the robot.
-   * @param speed_limit expressed in absolute value (in m/s)
-   * or in percentage from maximum robot speed.
-   * @param percentage Setting speed limit in percentage if true
-   * or in absolute values in false case.
-   */
-  virtual void setSpeedLimit(const double & speed_limit, const bool & percentage) = 0;
 
   /**
    * @brief Reset the state of the controller if necessary after task is exited
