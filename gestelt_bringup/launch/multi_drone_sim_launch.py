@@ -169,41 +169,19 @@ def generate_launch_description():
     ros_gz_bridge_action = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
-        # arguments=[
-        #     "/depth_camera@sensor_msgs/msg/Image[ignition.msgs.Image",
-        #     "/depth_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
-        #     "/camera@sensor_msgs/msg/Image[ignition.msgs.Image",
-        #     "/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo",
-        #     # Clock message is necessary for the diff_drive_controller to accept commands https://github.com/ros-controls/gz_ros2_control/issues/106
-        #     "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock",
-        # ],
+        arguments=[
+            # "/depth_camera@sensor_msgs/msg/Image@gz.msgs.Image",
+            # "/depth_camera/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked",
+            # "/camera@sensor_msgs/msg/Image@gz.msgs.Image",
+            # "/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo",
+            # Clock message is necessary for the diff_drive_controller to accept commands https://github.com/ros-controls/gz_ros2_control/issues/106
+            # "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+        ],
         parameters=[
             {'config_file' : ros_gz_bridge_params},
         ],
-        output="screen",
+        output="own_log",
     )
-
-    # ros_gz_bridge_action = RosGzBridge(
-    #     bridge_name='ros_gz_bridge',
-    #     config_file=ros_gz_bridge_params,
-    #     container_name='ros_gz_container',
-    #     create_own_container=False,
-    #     namespace=namespace,
-    #     use_composition=False,
-    #     use_respawn=False,
-    #     log_level='info',
-    #     bridge_params='',
-    # )
-
-    # If during startup, gazebo detects that there is another publisher on /clock, 
-    # it will only create the fully qualified /world/<worldname>/clock topic. 
-    # Gazebo would be the only /clock publisher, the sole source of clock information.
-    # Therefore, we should create a unidirectional bridge
-    # ros_gz_bridge_unidir_clock = ExecuteProcess(
-    #     cmd=['ros2', 'run', 'ros_gz_bridge', 'parameter_bridge',
-    #          '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-    #     output='log'
-    # )
 
     # Send single test goal
     mission_node = Node(
@@ -246,35 +224,37 @@ def generate_launch_description():
         map_frame = ns + "_map"
         base_link_frame = ns + "_base_link"
         # camera_frame = ns + "_camera_link"
-        camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
+        camera_frame = "x500_depth_0/camera_link/StereoOV7251"
 
-        ld.add_action(
-            GroupAction(
-                actions=[
-                    # Transform from global to map frame
-                    Node( 
-                        package = "tf2_ros", 
-                        executable = "static_transform_publisher",
-                        output = "log",
-                        arguments = [str(scenario.spawns_pos[drone_id][0]), 
-                                    str(scenario.spawns_pos[drone_id][1]), 
-                                    "0", 
-                                    str(scenario.spawns_pos[drone_id][2]), 
-                                    "0", "0", 
-                                    global_frame, map_frame],
-                    ),
-                    # Transform from base link to camera frame
-                    Node(
-                        package = "tf2_ros", 
-                        executable = "static_transform_publisher",
-                        output="log",
-                        arguments = ["0.12", "0.03", "-0.242", 
-                                     "1", "0", "0", "0",
-                                     base_link_frame, camera_frame],
-                    ),
-                ]
-            )
-        )
+        # ld.add_action(
+        #     GroupAction(
+        #         actions=[
+        #             # Transform from global to map frame
+        #             Node( 
+        #                 package = "tf2_ros", 
+        #                 name=ns+'_world_to_map_tf',
+        #                 executable = "static_transform_publisher",
+        #                 output="own_log",
+        #                 arguments = [str(scenario.spawns_pos[drone_id][0]), 
+        #                             str(scenario.spawns_pos[drone_id][1]), 
+        #                             "0", 
+        #                             str(scenario.spawns_pos[drone_id][2]), 
+        #                             "0", "0", 
+        #                             global_frame, map_frame],
+        #             ),
+        #             # Transform from base link to camera frame
+        #             Node(
+        #                 package = "tf2_ros", 
+        #                 name=ns+'_base_link_to_cam_tf',
+        #                 executable = "static_transform_publisher",
+        #                 output="own_log",
+        #                 arguments = ["0.12", "0.03", "-0.242", 
+        #                              "1", "0", "0", "0",
+        #                              base_link_frame, camera_frame],
+        #             ),
+        #         ]
+        #     )
+        # )
 
 
         ld.add_action(
@@ -291,6 +271,28 @@ def generate_launch_description():
                             'use_composition': 'False',
                             'use_respawn': 'False',
                         }.items(),
+                    ),
+                    Node( 
+                        package = "tf2_ros", 
+                        name=ns+'_world_to_map_tf',
+                        executable = "static_transform_publisher",
+                        output="own_log",
+                        arguments = [str(scenario.spawns_pos[drone_id][0]), 
+                                    str(scenario.spawns_pos[drone_id][1]), 
+                                    "0", 
+                                    str(scenario.spawns_pos[drone_id][2]), 
+                                    "0", "0", 
+                                    global_frame, map_frame],
+                    ),
+                    # Transform from base link to camera frame
+                    Node(
+                        package = "tf2_ros", 
+                        name=ns+'_base_link_to_cam_tf',
+                        executable = "static_transform_publisher",
+                        output="own_log",
+                        arguments = ["0.12", "0.03", "-0.242", 
+                                     "1", "0", "0", "0",
+                                     base_link_frame, camera_frame],
                     ),
                     ExecuteProcess(
                         name=['px4_sitl_', str(drone_id)],

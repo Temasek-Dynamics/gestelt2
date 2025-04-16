@@ -22,7 +22,9 @@ from launch.actions import (
     GroupAction,
     IncludeLaunchDescription,
     SetEnvironmentVariable,
+    
 )
+from launch.launch_context import LaunchContext
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
@@ -61,7 +63,7 @@ def generate_launch_description():
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='false',
+        default_value='true',
         description='Use simulation (Gazebo) clock if true',
     )
 
@@ -94,35 +96,27 @@ def generate_launch_description():
     )
 
     remappings = [
-        (['/', namespace, '/tf'], '/tf'), 
-        (['/', namespace, '/tf_static'], '/tf_static'),
-    ]
-
-    # remappings = [
-    #     ('/d0/tf', '/tf'), 
-    #     ('/d0/tf_static', '/tf_static')
-    # ]
-
-    remappings = [
+        # (['/', namespace, '/tf'], '/tf'), 
+        # (['/', namespace, '/tf_static'], '/tf_static'),
     ]
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
     base_link_frame = [namespace, "_base_link"]
     # camera_frame = [namespace, "_camera_link"]
-    camera_frame = "x500_depth_0/OakD-Lite/base_link/StereoOV7251"
+    camera_frame = "x500_depth_0/camera_link/StereoOV7251"
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
         'autostart': autostart,
-        'global_occ_map.ros__parameters.global_frame': global_frame,
-        'global_occ_map.ros__parameters.map_frame': map_frame,
-        'global_occ_map.ros__parameters.camera_frame': camera_frame,
-        'global_occ_map.ros__parameters.base_link_frame': base_link_frame,
-        'local_occ_map.ros__parameters.global_frame': global_frame,
-        'local_occ_map.ros__parameters.map_frame': map_frame,
-        'local_occ_map.ros__parameters.camera_frame': camera_frame,
-        'local_occ_map.ros__parameters.base_link_frame': base_link_frame,
+        'global_frame': global_frame,
+        'map_frame': map_frame,
+        'camera_frame': camera_frame,
+        'base_link_frame': base_link_frame,
+        # 'global_occ_map.ros__parameters.global_frame': global_frame,
+        # 'global_occ_map.ros__parameters.map_frame': map_frame,
+        # 'global_occ_map.ros__parameters.camera_frame': camera_frame,
+        # 'global_occ_map.ros__parameters.base_link_frame': base_link_frame,
     }
 
     nav_configured_params = ParameterFile(
@@ -135,65 +129,60 @@ def generate_launch_description():
         allow_substs=True,
     )
 
-    # Specify the actions
-    # bringup_cmd_group = GroupAction(
-    #     [
-    #         PushRosNamespace(condition=IfCondition(use_namespace), namespace=namespace),
-
-    #         Node(
-    #             condition=IfCondition(use_composition),
-    #             name='gestelt_container',
-    #             package='rclcpp_components',
-    #             executable='component_container_isolated',
-    #             parameters=[nav_configured_params, {'autostart': autostart}],
-    #             arguments=['--ros-args', '--log-level', log_level],
-    #             remappings=remappings,
-    #             output='screen',
-    #         ),
-    #     ]
-    # )
-
     lifecycle_nodes = [
         'planner_server',
+        'controller_server',
     ]
 
-    load_all  = GroupAction(
-        condition=IfCondition(PythonExpression(['not ', use_composition])),
+    load_all_nodes  = GroupAction(
         actions=[
             SetParameter('use_sim_time', use_sim_time),
             PushRosNamespace(condition=IfCondition(use_namespace), namespace=namespace),
-            # Node(
-            #     package='nav2_lifecycle_manager',
-            #     executable='lifecycle_manager',
-            #     name='lifecycle_manager_navigation',
-            #     output='screen',
-            #     arguments=['--ros-args', '--log-level', log_level],
-            #     parameters=[{'autostart': autostart}, 
-            #                 {'node_names': lifecycle_nodes}],
-            # ),
-            # Node(
-            #     package='gestelt_planner',
-            #     executable='planner_server',
-            #     name='planner_server',
-            #     output='screen',
-            #     respawn=use_respawn,
-            #     respawn_delay=2.0,
-            #     parameters=[nav_configured_params],
-            #     arguments=['--ros-args', '--log-level', log_level],
-            #     remappings=remappings,
-            # ),
+
+            Node(
+                package='nav2_lifecycle_manager',
+                executable='lifecycle_manager',
+                name='lifecycle_manager_navigation',
+                output='screen',
+                arguments=['--ros-args', '--log-level', log_level],
+                parameters=[{'autostart': autostart}, 
+                            {'node_names': lifecycle_nodes}],
+            ),
+            Node(
+                package='gestelt_planner',
+                executable='planner_server',
+                name='planner_server',
+                output='screen',
+                # respawn=use_respawn,
+                # respawn_delay=2.0,
+                parameters=[nav_configured_params],
+                arguments=['--ros-args', '--log-level', log_level],
+                remappings=remappings,
+            ),
+
+            Node(
+                package='gestelt_controller',
+                executable='controller_server',
+                name='controller_server',
+                output='screen',
+                # respawn=use_respawn,
+                # respawn_delay=2.0,
+                parameters=[nav_configured_params],
+                arguments=['--ros-args', '--log-level', log_level],
+                remappings=remappings,
+            ),
+
             Node(
                 package='trajectory_server',
                 executable='trajectory_server_node',
                 name='trajectory_server',
                 output='screen',
-                respawn=use_respawn,
-                respawn_delay=2.0,
+                # respawn=use_respawn,
+                # respawn_delay=2.0,
                 parameters=[
                     {'namespace': namespace},
                     {'map_frame': map_frame},
                     {'base_link_frame': base_link_frame},
-                    {'safety.navigator_state_timeout': 0.5},
                     {'safety.geofence.min_x': -50.0},
                     {'safety.geofence.min_y': -50.0},
                     {'safety.geofence.min_z': -0.5},
@@ -230,9 +219,6 @@ def generate_launch_description():
     ld.add_action(declare_log_level_cmd)
 
     # Add the actions to launch all of the navigation nodes
-    # ld.add_action(bringup_cmd_group)
-    # ld.add_action(load_nav_nodes)
-    # ld.add_action(load_ctrl_nodes)
-    ld.add_action(load_all)
+    ld.add_action(load_all_nodes)
 
     return ld

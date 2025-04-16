@@ -74,6 +74,13 @@ bash ./Tools/setup/ubuntu.sh
 DONT_RUN=1 make px4_sitl gz_x500
 ```
 
+Install ROS-GZ bridging
+```bash
+sudo apt-get update && sudo apt-get install -y \
+ros-${ROS_DISTRO}-ros-gz \
+ros-humble-ros-gzharmonic 
+```
+
 6. (OPTIONAL FOR Micro-XCRE DDS) Install dependencies for communication with FCU 
 
 (a) XRCE DDS installation

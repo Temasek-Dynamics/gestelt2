@@ -10,7 +10,7 @@ planner_server:
       max_iterations: 99999
       tie_breaker: 1.001
       allow_unknown: true
-      cost_function_type: 2
+      cost_function_type: 1
 
 controller_server:
   ros__parameters:
@@ -21,20 +21,20 @@ controller_server:
 
     # Progress checker parameters
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
+      plugin: "gestelt_controller::SimpleProgressChecker"
       required_movement_radius: 0.5
       movement_time_allowance: 10.0
     # Goal checker parameters
     goal_checker:
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      plugin: "gestelt_controller::SimpleGoalChecker"
+      xyz_goal_tolerance: 0.25 # [m] 
+      # yaw_goal_tolerance: 0.25 # Not used
       stateful: True
     # DWB parameters
     FollowPath:
       plugin: "linear_mpc_controller::LinearMPCController"
       yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
-      max_robot_pose_search_dist: 6 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
+      max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
         bbox_x: 2.0 # [m] Bounding box in x axis
         bbox_y: 2.0 # [m] Bounding box in y axis
@@ -82,8 +82,12 @@ controller_server:
 
 global_occ_map:
   ros__parameters:
-    print_timer: false       # If enabled, print debug information such as timing information
+    global_frame: "world"
+    map_frame: "map"
+    camera_frame: "camera_link"
+    base_link_frame: "base_link"
 
+    print_timer: false       # If enabled, print debug information such as timing information
     update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
@@ -92,7 +96,7 @@ global_occ_map:
       size_y: 60.0  # [m]
       size_z: 10.0  # [m]
 
-    local_map:  # Local map used by planner
+    local_map:  # Local map used by controllers
       size_x: 20.0  # [m]
       size_y: 20.0  # [m]
       size_z: 5.0   # [m]
@@ -119,5 +123,45 @@ global_occ_map:
     noise_search_radius: 0.17  # Radius to search for neighbouring points
     noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point
 
-
 local_occ_map:
+  ros__parameters:
+    global_frame: "world"
+    map_frame: "map"
+    camera_frame: "camera_link"
+    base_link_frame: "base_link"
+
+    print_timer: false       # If enabled, print debug information such as timing information
+    update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
+    viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
+
+    global_map: 
+      size_x: 30.0  # [m]
+      size_y: 30.0  # [m]
+      size_z: 10.0  # [m]
+
+    local_map:  # Local map used by controllers
+      size_x: 20.0  # [m]
+      size_y: 20.0  # [m]
+      size_z: 5.0   # [m]
+
+    prob_map:  # Occupancy map parameters
+      # Probabilistic map
+      prob_miss_log: 0.35 # 
+      prob_hit_log: 0.78  # 
+      clamp_min_log: 0.12 # 
+      clamp_max_log: 0.90 # 
+      occupancy_threshold_log: 0.5 # 
+
+      resolution: 0.1   # [m] Resolution of voxel
+      static_inflation: 0.2    # [m] Static obstacle inflation
+      ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
+      # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
+      max_range: 5.0   # [m] Maximum range of sensor
+
+    # Passthrough filter for input point cloud
+    cloud_in_min_z: -0.5 # [m] Minimum height for point cloud to be included in map
+    cloud_in_max_z: 5.0 # [m] Maximum height for point cloud to be included in map
+
+    # Noise filter by checking clusters
+    noise_search_radius: 0.17  # Radius to search for neighbouring points
+    noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point

@@ -39,7 +39,7 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
 : nav2_util::LifecycleNode("controller_server", "", options),
   progress_checker_loader_("gestelt_core", "gestelt_core::ProgressChecker"),
   default_progress_checker_id_{"progress_checker"},
-  default_progress_checker_type_{"nav2_controller::SimpleProgressChecker"},
+  default_progress_checker_type_{"gestelt_controller::SimpleProgressChecker"},
   goal_checker_loader_("gestelt_core", "gestelt_core::GoalChecker"),
   default_goal_checker_ids_{"goal_checker"},
   default_goal_checker_types_{"gestelt_controller::SimpleGoalChecker"},
@@ -198,13 +198,15 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
     "odom", rclcpp::SensorDataQoS(), 
     std::bind(&ControllerServer::odometrySubCB, this, _1));
 
+  cmd_pub_ = node->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
+    "intermediate_cmd", rclcpp::SensorDataQoS());
+
   double action_server_result_timeout;
   get_parameter("action_server_result_timeout", action_server_result_timeout);
   rcl_action_server_options_t server_options = rcl_action_server_get_default_options();
   server_options.result_timeout.nanoseconds = RCL_S_TO_NS(action_server_result_timeout);
   
   // Create the action server that we implement with our followPath method
-  // This may throw due to real-time prioritzation if user doesn't have real-time permissions
   try {
     action_server_ = std::make_unique<ActionServer>(
       shared_from_this(),

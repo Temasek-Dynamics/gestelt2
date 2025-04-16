@@ -169,7 +169,7 @@ std::vector<Eigen::Vector3i> AStar::tracePath(const Eigen::Vector3i& goal_idx)
     planned_path_idx.push_back(cur_idx);
 
 
-    std::reverse(planned_path_idx.begin(), planned_path_idx.end());
+    // std::reverse(planned_path_idx.begin(), planned_path_idx.end());
 
     return planned_path_idx;
 }

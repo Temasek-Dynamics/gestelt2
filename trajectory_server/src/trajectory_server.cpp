@@ -117,7 +117,7 @@ TrajectoryServer::TrajectoryServer()
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	lin_mpc_cmd_sub_ = this->create_subscription<px4_msgs::msg::TrajectorySetpoint>(
-		"intmd_cmd", rclcpp::SensorDataQoS(),
+		"intermediate_cmd", rclcpp::SensorDataQoS(),
 		std::bind(&TrajectoryServer::intmdCmdSubCB, this, _1), fcu_sub_opt);
 
 	global_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(
@@ -143,6 +143,8 @@ TrajectoryServer::TrajectoryServer()
 
 	// uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>(
 	// 	"uav_command", std::bind(&TrajectoryServer::uavCmdSrvCB, this, _1, _2), qos_profile, others_cb_group_);
+
+	logger_->logInfo("Initialized");
 }
 
 TrajectoryServer::~TrajectoryServer()

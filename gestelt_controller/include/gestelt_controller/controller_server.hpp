@@ -161,7 +161,7 @@ protected:
   void setPlannerPath(const nav_msgs::msg::Path & path);
 
   /**
-   * @brief Calculates velocity and publishes to intmd_cmd topic
+   * @brief Calculates velocity and publishes to intermediate_cmd topic
    */
   void computeAndPublishControl();
 
@@ -210,6 +210,7 @@ protected:
 
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr cmd_pub_;
+
 
   // Progress Checker Plugin
   pluginlib::ClassLoader<gestelt_core::ProgressChecker> progress_checker_loader_;

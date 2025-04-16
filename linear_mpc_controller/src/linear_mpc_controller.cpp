@@ -62,6 +62,7 @@ void LinearMPCController::configure(
   // transform_tolerance_ = tf2::durationFromSec(transform_tolerance);
   // control_duration_ = 1.0 / control_frequency;
 
+  sfc_pub_ = node->create_publisher<decomp_ros_msgs::msg::PolyhedronArray>("sfc", 1);
   global_path_pub_ = node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
 
   // Declare this plugin's parameters
@@ -196,6 +197,12 @@ void LinearMPCController::activate()
   //   std::bind(
   //     &LinearMPCController::dynamicParametersCallback,
   //     this, std::placeholders::_1));
+
+  RCLCPP_INFO(
+    logger_,
+    "Activated controller: %s of type "
+    "linear_mpc_controller::LinearMPCController",
+    plugin_name_.c_str());
 }
 
 void LinearMPCController::deactivate()

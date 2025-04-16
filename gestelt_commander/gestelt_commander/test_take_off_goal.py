@@ -20,7 +20,7 @@ from rclpy.duration import Duration
 
 from gestelt_commander.scenario import *
 
-def planPath(navigator):
+def planPath(navigator, ns=''):
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'world'
     initial_pose.header.stamp = navigator.get_clock().now().to_msg()
@@ -30,7 +30,7 @@ def planPath(navigator):
     initial_pose.pose.orientation.w = 1.0
 
     # Wait for navigation to fully activate, since autostarting nav2
-    navigator.waitUntilNav2Active(navigator='planner_server', localizer='robot_localization')
+    navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization')
 
     # Go to our demos first goal pose
     goal_pose = PoseStamped()
@@ -44,7 +44,7 @@ def planPath(navigator):
     # sanity check a valid path exists
     path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
 
-    # navigator.goToPose(goal_pose)
+    navigator.followPath(path)
 
     i = 0
     while not navigator.isTaskComplete():
@@ -102,7 +102,7 @@ def main(args=None):
             UAVCommand.Request.COMMAND_TAKEOFF, 
             UAVState.IDLE,
             value=mission_mngr.scenario.take_off_height)
-        mission_mngr.get_logger().info("All drones TAKING OFF")
+        mission_mngr.get_logger().info("Sending commands to TAKE OFF")
         
         #########
         # Wait for Hover
@@ -116,8 +116,8 @@ def main(args=None):
         time.sleep(2)
 
         # Send a goal
-        mission_mngr.get_logger().info("Planning path.")
-        planPath(navigator)
+        mission_mngr.get_logger().info("Sending commands to planning path.")
+        planPath(navigator, '/d0')
 
         #########
         # MissionManager mode

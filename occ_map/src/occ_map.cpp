@@ -155,6 +155,9 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
   logger_->logInfo("Configuring");
 
+  // RCLCPP_INFO(get_logger(), "get_namespace: %s", this->get_namespace());
+  // RCLCPP_INFO(get_logger(), "get_name: %s", this->get_name());
+
   try {
     getParameters();
   } catch (const std::exception & e) {
@@ -376,12 +379,17 @@ void OccMap::getParameters()
 
   /* Map parameters */
   get_parameter("print_timer", print_timer_);
-
++
   /* Frame IDs */
   get_parameter("global_frame", global_frame_);
   get_parameter("map_frame", map_frame_);
   get_parameter("camera_frame", camera_frame_);
   get_parameter("base_link_frame", base_link_frame_);
+
+  logger_->logInfo(strFmt("global_frame: %s", global_frame_.c_str()));
+  logger_->logInfo(strFmt("map_frame: %s", map_frame_.c_str()));
+  logger_->logInfo(strFmt("camera_frame: %s", camera_frame_.c_str()));
+  logger_->logInfo(strFmt("global_frame: %s", global_frame_.c_str()));
 
   get_parameter("global_map.size_x", global_map_size_(0));
   get_parameter("global_map.size_y", global_map_size_(1));

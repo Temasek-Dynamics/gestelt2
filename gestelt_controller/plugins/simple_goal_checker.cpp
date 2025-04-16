@@ -53,11 +53,11 @@ namespace gestelt_controller
 {
 
 SimpleGoalChecker::SimpleGoalChecker()
-: xy_goal_tolerance_(0.25),
+: xyz_goal_tolerance_(0.25),
   yaw_goal_tolerance_(0.25),
   stateful_(true),
   check_xy_(true),
-  xy_goal_tolerance_sq_(0.0625)
+  xyz_goal_tolerance_sq_(0.0625)
 {
 }
 
@@ -70,7 +70,7 @@ void SimpleGoalChecker::initialize(
 
   nav2_util::declare_parameter_if_not_declared(
     node,
-    plugin_name + ".xy_goal_tolerance", rclcpp::ParameterValue(0.25));
+    plugin_name + ".xyz_goal_tolerance", rclcpp::ParameterValue(0.25));
   nav2_util::declare_parameter_if_not_declared(
     node,
     plugin_name + ".yaw_goal_tolerance", rclcpp::ParameterValue(0.25));
@@ -78,11 +78,11 @@ void SimpleGoalChecker::initialize(
     node,
     plugin_name + ".stateful", rclcpp::ParameterValue(true));
 
-  node->get_parameter(plugin_name + ".xy_goal_tolerance", xy_goal_tolerance_);
+  node->get_parameter(plugin_name + ".xyz_goal_tolerance", xyz_goal_tolerance_);
   node->get_parameter(plugin_name + ".yaw_goal_tolerance", yaw_goal_tolerance_);
   node->get_parameter(plugin_name + ".stateful", stateful_);
 
-  xy_goal_tolerance_sq_ = xy_goal_tolerance_ * xy_goal_tolerance_;
+  xyz_goal_tolerance_sq_ = xyz_goal_tolerance_ * xyz_goal_tolerance_;
 
   // Add callback for dynamic parameters
   dyn_params_handler_ = node->add_on_set_parameters_callback(
@@ -100,8 +100,10 @@ bool SimpleGoalChecker::isGoalReached(
 {
   if (check_xy_) {
     double dx = query_pose.position.x - goal_pose.position.x,
-      dy = query_pose.position.y - goal_pose.position.y;
-    if (dx * dx + dy * dy > xy_goal_tolerance_sq_) {
+      dy = query_pose.position.y - goal_pose.position.y,
+      dz = query_pose.position.z - goal_pose.position.z;
+
+      if (dx * dx + dy * dy + dz * dz > xyz_goal_tolerance_sq_) {
       return false;
     }
     // We are within the window
@@ -110,10 +112,14 @@ bool SimpleGoalChecker::isGoalReached(
       check_xy_ = false;
     }
   }
-  double dyaw = angles::shortest_angular_distance(
-    tf2::getYaw(query_pose.orientation),
-    tf2::getYaw(goal_pose.orientation));
-  return fabs(dyaw) < yaw_goal_tolerance_;
+
+  return true;
+
+  // Do not check yaw
+  // double dyaw = angles::shortest_angular_distance(
+  //   tf2::getYaw(query_pose.orientation),
+  //   tf2::getYaw(goal_pose.orientation));
+  // return fabs(dyaw) < yaw_goal_tolerance_;
 }
 
 bool SimpleGoalChecker::getTolerances(
@@ -122,8 +128,8 @@ bool SimpleGoalChecker::getTolerances(
 {
   double invalid_field = std::numeric_limits<double>::lowest();
 
-  pose_tolerance.position.x = xy_goal_tolerance_;
-  pose_tolerance.position.y = xy_goal_tolerance_;
+  pose_tolerance.position.x = xyz_goal_tolerance_;
+  pose_tolerance.position.y = xyz_goal_tolerance_;
   pose_tolerance.position.z = invalid_field;
   pose_tolerance.orientation =
     nav2_util::geometry_utils::orientationAroundZAxis(yaw_goal_tolerance_);
@@ -148,9 +154,9 @@ SimpleGoalChecker::dynamicParametersCallback(std::vector<rclcpp::Parameter> para
     const auto & name = parameter.get_name();
 
     if (type == ParameterType::PARAMETER_DOUBLE) {
-      if (name == plugin_name_ + ".xy_goal_tolerance") {
-        xy_goal_tolerance_ = parameter.as_double();
-        xy_goal_tolerance_sq_ = xy_goal_tolerance_ * xy_goal_tolerance_;
+      if (name == plugin_name_ + ".xyz_goal_tolerance") {
+        xyz_goal_tolerance_ = parameter.as_double();
+        xyz_goal_tolerance_sq_ = xyz_goal_tolerance_ * xyz_goal_tolerance_;
       } else if (name == plugin_name_ + ".yaw_goal_tolerance") {
         yaw_goal_tolerance_ = parameter.as_double();
       }

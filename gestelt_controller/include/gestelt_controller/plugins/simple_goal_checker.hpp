@@ -71,10 +71,10 @@ public:
     geometry_msgs::msg::Twist & vel_tolerance) override;
 
 protected:
-  double xy_goal_tolerance_, yaw_goal_tolerance_;
+  double xyz_goal_tolerance_, yaw_goal_tolerance_;
   bool stateful_, check_xy_;
-  // Cached squared xy_goal_tolerance_
-  double xy_goal_tolerance_sq_;
+  // Cached squared xyz_goal_tolerance_
+  double xyz_goal_tolerance_sq_;
   // Dynamic parameters handler
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr dyn_params_handler_;
   std::string plugin_name_;
