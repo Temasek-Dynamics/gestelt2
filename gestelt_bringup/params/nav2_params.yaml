@@ -42,6 +42,7 @@ controller_server:
         plan_sample_interval: 4 #[] Uses every N point on global plan as the safe flight corridor seed 
       mpc:
         ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
+        # NOTE: This must be SMALLER or EQUAL to plan_sample_interval used by sfc
         plan_sample_interval: 1 # [] Uses every N point on global plan as reference path
         # Yaw control
         yaw_ctrl_flag: true # Control the yaw

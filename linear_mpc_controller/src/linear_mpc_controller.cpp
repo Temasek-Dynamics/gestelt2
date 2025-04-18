@@ -315,14 +315,61 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
     plan_map.poses.back().pose.position.z));
   ref_plan_mpc_idx.push_back(plan_map.poses.size()-1);
   
+  int sfc_idx = 0; // current index of SFC polyhedron
+  Eigen::Vector3d last_p_ref = pose; // last position reference
+
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC reference point
   {
-    // reference path index
-    int ref_idx = i >= (int)ref_plan_mpc.size() ? ref_plan_mpc.size() -1 : i;
+    // i: index for mpc control stage
 
+    // ref_idx: index for reference path 'ref_plan_mpc'
+    int ref_idx = i >= (int)ref_plan_mpc_idx.size() 
+      ? (int)ref_plan_mpc_idx.back(): ref_plan_mpc_idx[i];
 
+    // ref_pos: reference position
+    auto ref_pos = ref_plan_mpc[ref_idx];
+
+    // get sfc_idx that current ref_pos belongs in
+    int sfc_seg_end_idx = ref_plan_sfc_idx[sfc_idx + 1];
+    if (ref_idx >= sfc_seg_end_idx) // if reference index exceeds sfc 
+    {
+      // clamp sfc idx to be the last sfc
+      sfc_idx = sfc_idx >= (int)sfc_polyhedrons.size() - 2 
+        ? (int)sfc_polyhedrons.size() - 1 : sfc_idx + 1;
+      // RCLCPP_ERROR(logger_, 
+      //   "[MPC] ERROR: Ref Path idx %d exceeds SFC Segment end %d", ref_idx, sfc_seg_end_idx );
+    }
+
+    // Set PVA reference at given step i
+    Eigen::Vector3d p_ref = ref_pos; // position reference
+    Eigen::Vector3d v_ref(0, 0, 0); // vel reference
+    Eigen::Vector3d a_ref(0, 0, 0); // acc reference
+    if (i < mpc_controller_->MPC_HORIZON-1){
+      v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
+    }
+    mpc_controller_->setReference(p_ref, v_ref, a_ref, i);
+    last_p_ref = p_ref;
+
+    // Set safe flight corridor for i-th control iteration
+    Eigen::MatrixX4d planes;
+    polyhedronToPlanes(polyhedrons[sfc_idx], planes);
+    if (!mpc_controller_->isInFSC(ref_pos, planes)) { 
+      RCLCPP_ERROR(logger_, 
+        "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, sfc_idx );
+      throw gestelt_core::ControllerException("MPC Reference path not in SFC");
+    }
+    mpc_controller_->assignSFCToRefPt(planes, i); 
 
   }
+
+  // Solve MPC
+
+  // Set initial condition
+  mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
+  if (!mpc_controller_->run()){ // Successful MPC solve
+    throw gestelt_core::ControllerException("MPC solve failure!");
+  }
+
 
   // populate and return message
   px4_msgs::msg::TrajectorySetpoint traj_sp;
