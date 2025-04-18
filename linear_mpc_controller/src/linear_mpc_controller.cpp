@@ -241,21 +241,29 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   pose_stamped.pose.orientation.w = orientation.w();
   auto plan_map = transformPlanFromGlobalToMap(pose_stamped);
   
-  // Generate safe flight corridor
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> plan_sfc; // [MAP FRAME] global plan used by safe flight corridor 
+  /**
+   * Generate safe flight corridor
+   */
+
+  // Sample the global path
+  std::vector<int> ref_plan_sfc_idx;
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> ref_plan_sfc; // [MAP FRAME] global plan used by safe flight corridor 
   for (size_t i = 0; i < plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
-    plan_sfc.push_back(Eigen::Vector3d(
+    ref_plan_sfc.push_back(Eigen::Vector3d(
       plan_map.poses[0].pose.position.x, 
       plan_map.poses[0].pose.position.y, 
       plan_map.poses[0].pose.position.z));
+
+      ref_plan_sfc_idx.push_back(i);
   } 
   // Add end of plan
-  plan_sfc.push_back(Eigen::Vector3d(
+  ref_plan_sfc.push_back(Eigen::Vector3d(
     plan_map.poses.back().pose.position.x, 
     plan_map.poses.back().pose.position.y, 
     plan_map.poses.back().pose.position.z));
-  
-  if (!sfc_gen_->generateSFC(occ_map_->getLocalPtsInMapFrame(), plan_sfc)){
+  ref_plan_sfc_idx.push_back(plan_map.poses.size()-1);
+
+  if (!sfc_gen_->generateSFC(occ_map_->getLocalPtsInMapFrame(), ref_plan_sfc)){
     throw gestelt_core::ControllerException("Failed to generate Safe Flight Corridor");
   }
 
@@ -264,7 +272,57 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
 
   sfc_pub_->publish(sfc_gen_->toSFCMsg(occ_map_->getMapFrameID()));
 
-  RCLCPP_INFO(logger_, "[SFC] Number of polyhedrones: %ld", sfc_polyhedrons.size());
+  RCLCPP_INFO(logger_, "[SFC] Number of polyhedrones: %ld", 
+    sfc_polyhedrons.size());
+
+  /**
+   * Generate MPC controls
+   */
+
+  auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
+      Eigen::MatrixX4d& planes) 
+  {
+    int num_planes = (int) poly.vs_.size();
+    planes.resize(num_planes, 4);
+
+    for (int i = 0; i < num_planes; ++i) // for each plane
+    {
+      Eigen::Vector3d normal = poly.vs_[i].n_; // normal points outward (a,b,c) as in ax+by+cz = d
+      Eigen::Vector3d pt = poly.vs_[i].p_; // Point on plane
+
+      double d = normal.dot(pt);   // Scalar d obtained from normal DOT PRODUCT point 
+
+      // Final plane needs to have normal pointing outwards
+      // ax + by + cy + d = 0
+      planes.row(i) << normal(0), normal(1), normal(2), -d;
+    }
+  };
+
+  // Sample the global path
+  std::vector<int> ref_plan_mpc_idx;
+  std::vector<Eigen::Vector3d> ref_plan_mpc; // [MAP FRAME] global plan used by safe flight corridor 
+  for (size_t i = 0; i < plan_map.poses.size()-1; i += mpc_controller_->getPlanSampleInterval()){
+    ref_plan_mpc.push_back(Eigen::Vector3d(
+      plan_map.poses[0].pose.position.x,
+      plan_map.poses[0].pose.position.y,
+      plan_map.poses[0].pose.position.z));
+    ref_plan_mpc_idx.push_back(i);
+  } 
+  // Add end of plan
+  ref_plan_mpc.push_back(Eigen::Vector3d(
+    plan_map.poses.back().pose.position.x, 
+    plan_map.poses.back().pose.position.y, 
+    plan_map.poses.back().pose.position.z));
+  ref_plan_mpc_idx.push_back(plan_map.poses.size()-1);
+  
+  for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC reference point
+  {
+    // reference path index
+    int ref_idx = i >= (int)ref_plan_mpc.size() ? ref_plan_mpc.size() -1 : i;
+
+
+
+  }
 
   // populate and return message
   px4_msgs::msg::TrajectorySetpoint traj_sp;

@@ -751,7 +751,8 @@ bool Navigator::plan(const Eigen::Vector3d& goal_pos){
     fe_planner_->getPathWithTimeSampled(sfc_params_.sfc_samp_intv);
   // fe_sfc_segment_idx: Index of sampled original path. Indexed by polygon number. 
   //    The value is the front-end index at that polygon's starting segment
-  std::vector<int> fe_sfc_segment_idx = fe_planner_->getPathIdxSampled(sfc_params_.sfc_samp_intv);
+  std::vector<int> fe_sfc_segment_idx 
+    = fe_planner_->getPathIdxSampled(sfc_params_.sfc_samp_intv);
 
   // std::vector<Eigen::Vector4d> fe_path_with_t_lclmapframe_smoothed = fe_planner_->getSmoothedPathWithTime();
   // std::vector<int> fe_sfc_segment_idx = fe_planner_->getSmoothedPathIdx(); // Index of smoothed path in original path
@@ -908,7 +909,7 @@ bool Navigator::plan(const Eigen::Vector3d& goal_pos){
   //   }
 
   //   // Set safe flight corridor for i-th control iteration
-  //   mpc_controller_->setFSC(planes, i); 
+  //   mpc_controller_->assignSFCToRefPt(planes, i); 
   // }
 
   tm_mpc_.start();
@@ -945,7 +946,7 @@ bool Navigator::plan(const Eigen::Vector3d& goal_pos){
     }
 
     // Set safe flight corridor for i-th control iteration
-    mpc_controller_->setFSC(planes, i); 
+    mpc_controller_->assignSFCToRefPt(planes, i); 
   }
 
   // 7b) Set reference path for MPC 

@@ -22,6 +22,7 @@
 
   <depend>decomp_util</depend>
   <depend>decomp_ros_msgs</depend>
+  <depend>decomp_ros_utils</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_common</test_depend>

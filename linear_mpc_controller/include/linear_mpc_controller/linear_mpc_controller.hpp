@@ -208,8 +208,10 @@ protected:
 
   // Data
   nav_msgs::msg::Path global_plan_; // Global plan in global frame
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> global_path_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<decomp_ros_msgs::msg::PolyhedronArray>> sfc_pub_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> 
+    global_path_pub_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<decomp_ros_msgs::msg::PolyhedronArray>> 
+    sfc_pub_;
 
   std::unique_ptr<sfc::PolytopeSFC> sfc_gen_; // Polytope safe flight corridor generator
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller

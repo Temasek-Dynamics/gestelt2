@@ -369,11 +369,12 @@ namespace pvaj_mpc
 		 * in the form (a,b,c,d) corr. to equation ax + by + cx + d
 		 * @param step Timestep
 		 */
-		void setFSC(Eigen::MatrixX4d& planes, int step)
+		void assignSFCToRefPt(Eigen::MatrixX4d& planes, int step)
 		{
 			if (step >= MPC_HORIZON || step < 0)
 			{
-				std::cerr << "[MPC]: Check sfc index! Error index: " << step << std::endl;
+				std::cerr << "[MPC]: (assignSFCToRefPt) given reference point index exceeds MPC Horizon" 
+					<< step << std::endl;
 			}
 
 			planes_[step] = planes;
@@ -385,7 +386,8 @@ namespace pvaj_mpc
 			for (int i = 0; i < planes.rows(); i++) { // For each hyperplane
 				mpc_.T.row(mpc_.T.rows()-1 - i).setZero();
 				// Assign first 3 coefficients of plane, ax + by + cx
-				mpc_.T.block(mpc_.T.rows()-1 - i, step*3, 1, 3) = Eigen::Vector3d(planes(i, 0), planes(i, 1), planes(i, 2)).transpose(); 
+				mpc_.T.block(mpc_.T.rows()-1 - i, step*3, 1, 3) 
+					= Eigen::Vector3d(planes(i, 0), planes(i, 1), planes(i, 2)).transpose(); 
 				// Last coefficient of plane, d
 				mpc_.D_T(mpc_.D_T.rows() - 1 - i, 0) = planes(i, 3);
 
@@ -727,6 +729,11 @@ namespace pvaj_mpc
 			u = mpc_.u_optimal.block<3,1>(segment * 3, 0);
 		}
 
+		int getPlanSampleInterval() const
+		{
+			return params_.plan_samp_intv;
+		}
+		
 		/* Setters */
 
 		/**
