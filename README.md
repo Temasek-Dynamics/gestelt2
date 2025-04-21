@@ -88,11 +88,6 @@ sudo make install
 sudo ldconfig /usr/local/lib/
 ```
 
-(b) Check if px4_msg definitions match those in PX4 Firmware
-```bash
-./src/px4-ros2-interface-lib/scripts/check-message-compatibility.py -v ./src/px4_msgs/ ../PX4-Autopilot/
-```
-
 # Quick start
 
 To enable repeatability of experiments. We make use of scenarios which are configurations of drone spawn locations and environments stored in [gestelt_mission/scenarios.json](gestelt_mission/scenarios.json). Refer to [gestelt_mission/README.md](gestelt_mission/README.md) for more information.

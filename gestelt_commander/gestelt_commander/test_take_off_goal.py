@@ -20,7 +20,7 @@ from rclpy.duration import Duration
 
 from gestelt_commander.scenario import *
 
-def planPath(navigator, ns=''):
+def planAndFollowPath(navigator, ns=''):
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'world'
     initial_pose.header.stamp = navigator.get_clock().now().to_msg()
@@ -43,7 +43,6 @@ def planPath(navigator, ns=''):
 
     # sanity check a valid path exists
     path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
-
     navigator.followPath(path)
 
     i = 0
@@ -113,12 +112,6 @@ def main(args=None):
         # Reset occupancy map
         mission_mngr.resetOccMap()
 
-        time.sleep(2)
-
-        # Send a goal
-        mission_mngr.get_logger().info("Sending commands to planning path.")
-        planPath(navigator, '/d0')
-
         #########
         # MissionManager mode
         #########
@@ -135,6 +128,10 @@ def main(args=None):
             raise Exception("Failed to transition to mission_mngr mode")
         
         mission_mngr.get_logger().info("All drones in MISSION MODE")
+
+        # Send a goal
+        mission_mngr.get_logger().info("Sending commands to planning path.")
+        planAndFollowPath(navigator, '/d0')
 
         rclpy.spin(mission_mngr)
 

@@ -14,7 +14,7 @@ planner_server:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 20.0
+    controller_frequency: 30.0
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]

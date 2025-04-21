@@ -225,7 +225,7 @@ void LinearMPCController::deactivate()
 
 
 px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
-  const Eigen::Vector3d & pose,
+  const Eigen::Vector3d & position,
   const Eigen::Quaterniond & orientation,
   const Eigen::Vector3d & velocity,
   gestelt_core::GoalChecker *)
@@ -236,9 +236,9 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   geometry_msgs::msg::PoseStamped pose_stamped;
   pose_stamped.header.frame_id = occ_map_->getGlobalFrameID();
   pose_stamped.header.stamp = clock_->now();
-  pose_stamped.pose.position.x = pose(0);
-  pose_stamped.pose.position.y = pose(1);
-  pose_stamped.pose.position.z = pose(2);
+  pose_stamped.pose.position.x = position(0);
+  pose_stamped.pose.position.y = position(1);
+  pose_stamped.pose.position.z = position(2);
   pose_stamped.pose.orientation.x = orientation.x();
   pose_stamped.pose.orientation.y = orientation.y();
   pose_stamped.pose.orientation.z = orientation.z();
@@ -320,7 +320,7 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   ref_plan_mpc_idx.push_back(plan_map.poses.size()-1);
   
   int sfc_idx = 0; // current index of SFC polyhedron
-  Eigen::Vector3d last_p_ref = pose; // last position reference
+  Eigen::Vector3d last_p_ref = position; // last position reference
 
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC reference point
   {
@@ -369,7 +369,7 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   // Solve MPC
 
   // Set initial condition
-  mpc_controller_->setInitialCondition(pose, velocity, Eigen::Vector3d::Zero());
+  mpc_controller_->setInitialCondition(position, velocity, Eigen::Vector3d::Zero());
   if (!mpc_controller_->run()){ // Successful MPC solve
     throw gestelt_core::ControllerException("MPC solve failure!");
   }
@@ -458,7 +458,7 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
 
   if (mpc_controller_->yaw_ctrl_flag_){
     double cmd_yaw = 0.0;
-    double dt = mpc_controller_-> ;
+    double dt = 1.0/mpc_controller_->getControlSampFreq();
 
     // Calculate commanded yaw
     int lookahead_idx = yaw_lookahead_dist_;

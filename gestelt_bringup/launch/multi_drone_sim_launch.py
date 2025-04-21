@@ -119,16 +119,6 @@ def generate_launch_description():
         description='Full path to the RVIZ config file to use',
     )
 
-    # start_rviz_cmd = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
-    #     launch_arguments={
-    #         'namespace': namespace,
-    #         # 'use_namespace': use_namespace,
-    #         'use_sim_time': use_sim_time,
-    #         'rviz_config': rviz_config_file,
-    #     }.items(),
-    # )
-
     start_rviz_cmd = Node(
         package='rviz2',
         executable='rviz2',
@@ -213,7 +203,7 @@ def generate_launch_description():
     ld.add_action(start_rviz_cmd)
     ld.add_action(exit_event_handler)
 
-    ld.add_action(mission_node)
+    # ld.add_action(mission_node)
 
     # Generate nodes of SITL drone instances according to scenario
     for drone_id in range(scenario.num_agents):
@@ -225,37 +215,6 @@ def generate_launch_description():
         base_link_frame = ns + "_base_link"
         # camera_frame = ns + "_camera_link"
         camera_frame = "x500_depth_0/camera_link/StereoOV7251"
-
-        # ld.add_action(
-        #     GroupAction(
-        #         actions=[
-        #             # Transform from global to map frame
-        #             Node( 
-        #                 package = "tf2_ros", 
-        #                 name=ns+'_world_to_map_tf',
-        #                 executable = "static_transform_publisher",
-        #                 output="own_log",
-        #                 arguments = [str(scenario.spawns_pos[drone_id][0]), 
-        #                             str(scenario.spawns_pos[drone_id][1]), 
-        #                             "0", 
-        #                             str(scenario.spawns_pos[drone_id][2]), 
-        #                             "0", "0", 
-        #                             global_frame, map_frame],
-        #             ),
-        #             # Transform from base link to camera frame
-        #             Node(
-        #                 package = "tf2_ros", 
-        #                 name=ns+'_base_link_to_cam_tf',
-        #                 executable = "static_transform_publisher",
-        #                 output="own_log",
-        #                 arguments = ["0.12", "0.03", "-0.242", 
-        #                              "1", "0", "0", "0",
-        #                              base_link_frame, camera_frame],
-        #             ),
-        #         ]
-        #     )
-        # )
-
 
         ld.add_action(
             GroupAction(
@@ -300,7 +259,8 @@ def generate_launch_description():
                             # Environment variables
                             'PX4_SYS_AUTOSTART=4001',
                             'PX4_GZ_WORLD=default',
-                            'PX4_SIM_MODEL=gz_x500_depth',
+                            # 'PX4_SIM_MODEL=gz_x500_depth',
+                            'PX4_SIM_MODEL=gz_x500',
                             'PX4_GZ_STANDALONE=1',
                             ['PX4_GZ_MODEL_POSE="', 
                                 str(scenario.spawns_pos[drone_id][0]), ',', 
@@ -316,7 +276,7 @@ def generate_launch_description():
                             '-w', os.path.join(px4_build_dir, 'rootfs'), # Working directory
                             '-s', os.path.join(px4_build_dir, 'etc/init.d-posix/rcS'), # Startup file
                             '-i', str(drone_id), # Instance number
-                            '-d' # Run as daemon (not interactive terminal)
+                            # '-d' # Run as daemon (not interactive terminal)
                         ],
                         shell=True
                     )

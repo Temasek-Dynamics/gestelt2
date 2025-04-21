@@ -126,7 +126,7 @@ namespace pvaj_mpc
 
 	struct MPCControllerParams
 	{
-		double ctrl_samp_freq{20.0}; 
+		double ctrl_samp_freq{30.0}; 
 		int plan_samp_intv{1};
 
 		// Yaw control
@@ -732,6 +732,11 @@ namespace pvaj_mpc
 		int getPlanSampleInterval() const
 		{
 			return plan_samp_intv_;
+		}
+
+		double getControlSampFreq() const
+		{
+			return ctrl_samp_freq_;
 		}
 		
 		/* Setters */
