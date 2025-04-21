@@ -18,13 +18,7 @@ Dependencies:
 - Simulation 
     - PX4-Autopilot: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
 
-1. Clone dependencies 
-```bash
-cd ~/gestelt_ws/src/gestelt2
-vcs import < simulation.repos --recursive --debug
-vcs import < thirdparty.repos --recursive --debug
-```
-2. Install ROS2 and associated dependencies
+1. Install ROS2 and associated dependencies
 ```bash
 # Install the Desktop version of ROS2 at https://docs.ros.org/en/humble/Installation.html 
 
@@ -43,16 +37,21 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
     libeigen3-dev \
     ros-$ROS_DISTRO-navigation2 \
     ros-$ROS_DISTRO-nav-2d-utils \
-    ros-$ROS_DISTRO-message-filters \
+    ros-$ROS_DISTRO-message-filters 
 
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
 sudo apt-get install -y ros-$ROS_DISTRO-pcl*
 
 # [FOR DOING SIMULATIONS]
-sudo apt-get update && sudo apt-get install --no-install-recommends -y \
-    ros-$ROS_DISTRO-ros-gz-bridge
+sudo apt-get update && sudo apt-get install -y ros-$ROS_DISTRO-ros-gz
+```
 
+2. Clone dependencies 
+```bash
+cd ~/gestelt_ws/src/gestelt2
+vcs import < simulation.repos --recursive --debug
+vcs import < thirdparty.repos --recursive --debug
 ```
 
 3. Building the workspace
@@ -72,13 +71,6 @@ make distclean
 bash ./Tools/setup/ubuntu.sh 
 # Make SITL target for simulation
 DONT_RUN=1 make px4_sitl gz_x500
-```
-
-Install ROS-GZ bridging
-```bash
-sudo apt-get update && sudo apt-get install -y \
-ros-${ROS_DISTRO}-ros-gz \
-ros-humble-ros-gzharmonic 
 ```
 
 6. (OPTIONAL FOR Micro-XCRE DDS) Install dependencies for communication with FCU 
