@@ -731,7 +731,7 @@ namespace pvaj_mpc
 
 		int getPlanSampleInterval() const
 		{
-			return params_.plan_samp_intv;
+			return plan_samp_intv_;
 		}
 		
 		/* Setters */

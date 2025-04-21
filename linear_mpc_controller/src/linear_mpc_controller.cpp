@@ -63,6 +63,7 @@ void LinearMPCController::configure(
   // control_duration_ = 1.0 / control_frequency;
 
   sfc_pub_ = node->create_publisher<decomp_ros_msgs::msg::PolyhedronArray>("sfc", 1);
+  mpc_traj_pub_ = node->create_publisher<nav_msgs::msg::Path>("mpc_traj", 5);
   global_path_pub_ = node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
 
   // Declare this plugin's parameters
@@ -174,6 +175,7 @@ void LinearMPCController::cleanup()
   
   global_path_pub_.reset();
   sfc_pub_.reset();
+  mpc_traj_pub_.reset();
 
   sfc_gen_.reset();
   mpc_controller_.reset();
@@ -189,6 +191,7 @@ void LinearMPCController::activate()
   
   global_path_pub_->on_activate();
   sfc_pub_->on_activate();
+  mpc_traj_pub_->on_activate();
 
   // Add callback for dynamic parameters
   auto node = node_.lock();
@@ -214,6 +217,7 @@ void LinearMPCController::deactivate()
     plugin_name_.c_str());
 
   global_path_pub_->on_deactivate();
+  mpc_traj_pub_->on_deactivate();
   sfc_pub_->on_deactivate();
 
   dyn_params_handler_.reset();
@@ -223,7 +227,7 @@ void LinearMPCController::deactivate()
 px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   const Eigen::Vector3d & pose,
   const Eigen::Quaterniond & orientation,
-  const Eigen::Vector3d &,
+  const Eigen::Vector3d & velocity,
   gestelt_core::GoalChecker *)
 {
   std::lock_guard<std::mutex> lock_reinit(mutex_);
@@ -279,16 +283,16 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
    * Generate MPC controls
    */
 
-  auto polyhedronToPlanes = [&](const Polyhedron3D& poly, 
+  auto polyhedronToPlanes = [&](const Polyhedron3D& polyhedron, 
       Eigen::MatrixX4d& planes) 
   {
-    int num_planes = (int) poly.vs_.size();
+    int num_planes = (int) polyhedron.vs_.size();
     planes.resize(num_planes, 4);
 
     for (int i = 0; i < num_planes; ++i) // for each plane
     {
-      Eigen::Vector3d normal = poly.vs_[i].n_; // normal points outward (a,b,c) as in ax+by+cz = d
-      Eigen::Vector3d pt = poly.vs_[i].p_; // Point on plane
+      Eigen::Vector3d normal = polyhedron.vs_[i].n_; // normal points outward (a,b,c) as in ax+by+cz = d
+      Eigen::Vector3d pt = polyhedron.vs_[i].p_; // Point on plane
 
       double d = normal.dot(pt);   // Scalar d obtained from normal DOT PRODUCT point 
 
@@ -351,28 +355,147 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
     last_p_ref = p_ref;
 
     // Set safe flight corridor for i-th control iteration
-    Eigen::MatrixX4d planes;
-    polyhedronToPlanes(polyhedrons[sfc_idx], planes);
-    if (!mpc_controller_->isInFSC(ref_pos, planes)) { 
+    Eigen::MatrixX4d sfc_planes;
+    polyhedronToPlanes(sfc_polyhedrons[sfc_idx], sfc_planes);
+    if (!mpc_controller_->isInFSC(ref_pos, sfc_planes)) { 
       RCLCPP_ERROR(logger_, 
         "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, sfc_idx );
       throw gestelt_core::ControllerException("MPC Reference path not in SFC");
     }
-    mpc_controller_->assignSFCToRefPt(planes, i); 
+    mpc_controller_->assignSFCToRefPt(sfc_planes, i); 
 
   }
 
   // Solve MPC
 
   // Set initial condition
-  mpc_controller_->setInitialCondition(start_pos, start_vel, start_acc);
+  mpc_controller_->setInitialCondition(pose, velocity, Eigen::Vector3d::Zero());
   if (!mpc_controller_->run()){ // Successful MPC solve
     throw gestelt_core::ControllerException("MPC solve failure!");
   }
 
+  // Check if MPC command values are valid
+  auto checkValidCmd = [&](const Eigen::Vector3d& vec, const int& min_val, const int& max_val){
+    for (const auto& val : vec){
+      if (val < min_val || val > max_val){
+        return false;
+      }
+    }
+    return true;
+  };
+
+  Eigen::MatrixXd A1, B1; // system transition matrix
+  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->MPC_STEP);
+  Eigen::VectorXd x_current = mpc_controller_->X_0_; // Current state
+  Eigen::Vector3d u_optimal; 
+  bool valid_cmd = true;
+
+  std::vector<Eigen::Vector3d> mpc_pred_u;
+  std::vector<Eigen::Vector3d> mpc_pred_pos;
+  std::vector<Eigen::Vector3d> mpc_pred_vel;
+  std::vector<Eigen::Vector3d> mpc_pred_acc;
+
+  // Get predicted MPC path based on controls and check if valid
+  for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) {
+      mpc_controller_->getOptimalControl(u_optimal, i);
+      x_current = A1 * x_current + B1 * u_optimal;
+
+      // Check if position, velocity and acceleration at valid values
+      if (!checkValidCmd(x_current.segment<3>(0), -100.0, 100.0) ){
+        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f) at ", 
+          i, x_current.segment<3>(0)(0), 
+          x_current.segment<3>(0)(1), 
+          x_current.segment<3>(0)(2));
+        
+        valid_cmd = false;
+        break;
+      }
+      if (!checkValidCmd(x_current.segment<3>(3), -5.0, 5.0) ){
+        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f) at ", 
+          i, x_current.segment<3>(3)(0), 
+          x_current.segment<3>(3)(1), 
+          x_current.segment<3>(3)(2));
+
+        valid_cmd = false;
+        break;
+      }
+      if (!checkValidCmd(x_current.segment<3>(6), -60.0, 60.0) ){
+        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f) at ", 
+          i, x_current.segment<3>(6)(0), 
+          x_current.segment<3>(6)(1), 
+          x_current.segment<3>(6)(2));
+
+        valid_cmd = false;
+        break;
+      }
+
+      mpc_pred_u.push_back(u_optimal);
+      mpc_pred_pos.push_back(x_current.segment<3>(0));
+      mpc_pred_vel.push_back(x_current.segment<3>(3));
+      mpc_pred_acc.push_back(x_current.segment<3>(6));
+  }
+
+  if (!valid_cmd){
+    throw gestelt_core::ControllerException("Invalid controller input from MPC solution");
+  }
+
+  // Publish MPC path for visualization
+  nav_msgs::msg::Path msg;
+
+  msg.header.frame_id = occ_map_->getMapFrameID();
+  msg.header.stamp = clock_->now();
+  for (int i = 0; i < (int)mpc_pred_pos.size(); i++) {
+      geometry_msgs::msg::PoseStamped pose;
+      pose.pose.position.x = mpc_pred_pos[i](0);
+      pose.pose.position.y = mpc_pred_pos[i](1);
+      pose.pose.position.z = mpc_pred_pos[i](2);
+      msg.poses.push_back(pose);
+  }
+  mpc_traj_pub_->publish(msg);
+
+  // Get yaw
+  Eigen::Vector2d mpc_yaw( NAN, NAN);
+
+  if (mpc_controller_->yaw_ctrl_flag_){
+    double cmd_yaw = 0.0;
+    double dt = mpc_controller_-> ;
+
+    // Calculate commanded yaw
+    int lookahead_idx = yaw_lookahead_dist_;
+    // std::cout << "yaw_lookahead_dist_: " << yaw_lookahead_dist_ << std::endl;
+
+    if (0 < ref_plan_mpc.size() - lookahead_idx - 1) 
+    {
+
+      Eigen::Vector2d dir_vec(
+        ref_plan_mpc[lookahead_idx](1) - position(1),
+        ref_plan_mpc[lookahead_idx](0) - position(0)
+      );
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+    }
+    else {
+      Eigen::Vector2d dir_vec(
+        ref_plan_mpc.back()(1) - position(1),
+        ref_plan_mpc.back()(0) - position(0)
+      );
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+    }
+    mpc_yaw(0) = cmd_yaw;
+    mpc_yaw(1) = NAN;
+  }
 
   // populate and return message
   px4_msgs::msg::TrajectorySetpoint traj_sp;
+
+  traj_sp.position = 
+    {(float) mpc_pred_pos[0](0) , (float) mpc_pred_pos[0](1), (float) mpc_pred_pos[0](2)};
+  traj_sp.velocity = 
+    {(float) mpc_pred_vel[0](0) , (float) mpc_pred_vel[0](1), (float) mpc_pred_vel[0](2)};
+  traj_sp.acceleration = 
+    {(float) mpc_pred_acc[0](0) , (float) mpc_pred_acc[0](1), (float) mpc_pred_acc[0](2)};
+  traj_sp.yaw = mpc_yaw(0);
+  traj_sp.yawspeed = mpc_yaw(1);
+  traj_sp.timestamp = clock_->now().nanoseconds() / 1000.0; // In microseconds
 
   return traj_sp;
 }

@@ -70,6 +70,7 @@ git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28
 make distclean
 bash ./Tools/setup/ubuntu.sh 
 # Make SITL target for simulation
+# NOTE: Enter 'u' to update all submodules when prompted
 DONT_RUN=1 make px4_sitl gz_x500
 ```
 

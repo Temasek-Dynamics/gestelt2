@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.5)
 project(linear_mpc_controller)
 
+set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+	set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 set (EXTERNAL_DEPENDENCIES
   Eigen3
   OsqpEigen
@@ -29,9 +40,6 @@ endforeach()
 foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
 endforeach()
-
-nav2_package()
-set(CMAKE_CXX_STANDARD 17)
 
 include_directories(
   include
