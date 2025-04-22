@@ -90,19 +90,20 @@ TrajectoryServer::TrajectoryServer()
 
 	/* Publishers */
 	vehicle_command_pub_ = this->create_publisher<px4_msgs::msg::VehicleCommand>(
-		"fmu/in/vehicle_command", 5);
+		"fmu/in/vehicle_command", 10);
 	offboard_control_mode_pub_ = this->create_publisher<px4_msgs::msg::OffboardControlMode>(
-		"fmu/in/offboard_control_mode", 5);
+		"fmu/in/offboard_control_mode", 10);
 	trajectory_setpoint_pub_ = this->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
-		"fmu/in/trajectory_setpoint", 5);
+		"fmu/in/trajectory_setpoint", 10);
 	actuator_cmd_pub_ = this->create_publisher<px4_msgs::msg::ActuatorMotors>(
-		"fmu/in/actuator_motors", 5);
+		"fmu/in/actuator_motors", 10);
 	torque_setpoint_pub_ = this->create_publisher<px4_msgs::msg::VehicleTorqueSetpoint>(
-		"fmu/in/vehicle_torque_setpoint", 5);
+		"fmu/in/vehicle_torque_setpoint", 10);
 	thrust_setpoint_pub_ = this->create_publisher<px4_msgs::msg::VehicleThrustSetpoint>(
-		"fmu/in/vehicle_thrust_setpoint", 5);
+		"fmu/in/vehicle_thrust_setpoint", 10);
 
-	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::SensorDataQoS());
+	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
+		"odom", rclcpp::SensorDataQoS());
 
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
 		"uav_state", 5);
@@ -184,7 +185,7 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 
 	if (UAV::is_in_state<Idle>())
 	{
-		// Do nothing
+		// Set ground height as the height at which the UAV is resting on the ground
 		ground_height_ = Eigen::Vector3d(0.0, 0.0, cur_pos_enu_(2));
 	}
 
@@ -457,23 +458,23 @@ void TrajectoryServer::pubCtrlTimerCB()
 					cmd_pos_enu_corr_, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
 				break;
 			case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: 
-				logger_->logWarnThrottle("ATTITUDE CONTROL UNIMPLEMENTED", 1.0);
+				logger_->logErrorThrottle("ATTITUDE CONTROL UNIMPLEMENTED", 1.0);
 				// publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
 				break;
 			case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES: 
-				logger_->logWarnThrottle("RATE CONTROL UNIMPLEMENTED", 1.0);
+				logger_->logErrorThrottle("RATE CONTROL UNIMPLEMENTED", 1.0);
 				// publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
 			case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE: 
-				logger_->logWarnThrottle("THRUST_TORQUE CONTROL UNIMPLEMENTED", 1.0);
+				logger_->logErrorThrottle("THRUST_TORQUE CONTROL UNIMPLEMENTED", 1.0);
 				// publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
 			case gestelt_interfaces::msg::AllUAVCommand::MODE_MOTORS:
-				logger_->logWarnThrottle("MOTORS CONTROL UNIMPLEMENTED", 1.0);
+				logger_->logErrorThrottle("MOTORS CONTROL UNIMPLEMENTED", 1.0);
 				// publishActuatorCmds(Eigen::Vector4d(1.0, 1.0, 1.0, 1.0));
 				break;
 			default:
-				logger_->logWarnThrottle("UNDEFINED TRAJECTORY MODE", 1.0);
+				logger_->logErrorThrottle("UNDEFINED TRAJECTORY MODE", 1.0);
 				// Undefined. Do nothing
 				break;
 		}
@@ -610,8 +611,8 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 	switch (offb_ctrl_mode){
 		case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY: //0
 			msg.position = true;
-			msg.velocity = true;
-			msg.acceleration = true;
+			msg.velocity = false;
+			msg.acceleration = false;
 			break;
 		case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: //1
 			msg.attitude = true;

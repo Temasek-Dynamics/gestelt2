@@ -125,12 +125,12 @@ def main(args=None):
         # Wait for mission_mngr
         #########
         if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=20):
-            raise Exception("Failed to transition to mission_mngr mode")
+            raise Exception("Failed to transition to mission mode")
         
         mission_mngr.get_logger().info("All drones in MISSION MODE")
 
         # Send a goal
-        mission_mngr.get_logger().info("Sending commands to planning path.")
+        mission_mngr.get_logger().info("Requesting planned path.")
         planAndFollowPath(navigator, '/d0')
 
         rclpy.spin(mission_mngr)

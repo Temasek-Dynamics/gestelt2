@@ -48,8 +48,6 @@ AStarPlanner::configure(
 
   // Initialize parameters
   // Declare this plugin's parameters
-  declare_parameter_if_not_declared(node, name + ".print_runtime", rclcpp::ParameterValue(false));
-  node->get_parameter(name + ".print_runtime", print_runtime_);
   declare_parameter_if_not_declared(node, name + ".tolerance", rclcpp::ParameterValue(0.5));
   node->get_parameter(name + ".tolerance", tolerance_);
   declare_parameter_if_not_declared(node, name + ".max_iterations", rclcpp::ParameterValue(99999));
@@ -146,7 +144,8 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
 bool
 AStarPlanner::makePlan(
     const Eigen::Vector3d &start,
-    const Eigen::Vector3d &goal, double tolerance,
+    const Eigen::Vector3d &goal, 
+    double tolerance,
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path &plan)
 {

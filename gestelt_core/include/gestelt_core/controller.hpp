@@ -113,11 +113,16 @@ public:
    * @param goal_checker Pointer to the current goal checker the task is utilizing
    * @return The best command for the robot to drive
    */
-  virtual px4_msgs::msg::TrajectorySetpoint computeCommands(
+  virtual void computeCommands(
     const Eigen::Vector3d & pose,
     const Eigen::Quaterniond & orientation,
     const Eigen::Vector3d & velocity,
-    gestelt_core::GoalChecker * goal_checker) = 0;
+    gestelt_core::GoalChecker * goal_checker,
+    std::vector<Eigen::Vector3d>& mpc_pred_pos,
+    std::vector<Eigen::Vector3d>& mpc_pred_vel,
+    std::vector<Eigen::Vector3d>& mpc_pred_acc,
+    std::vector<Eigen::Vector3d>& mpc_pred_u,
+    Eigen::Vector2d& mpc_yaw) = 0;
 
   /**
    * @brief Cancel the current control action

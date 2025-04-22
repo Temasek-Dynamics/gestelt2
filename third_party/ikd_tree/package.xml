@@ -3,7 +3,7 @@
 <package format="3">
   <name>ikd_tree</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Iterative KD-Tree package from HKU</description>
   <maintainer email="john_tanguanzhong@hotmail.com">john</maintainer>
   <license>MIT</license>
 

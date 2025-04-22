@@ -176,7 +176,7 @@ def generate_launch_description():
     # Send single test goal
     mission_node = Node(
         package='gestelt_commander',
-        executable='test_take_off_goal',
+        executable='test_planning',
         output='screen',
         emulate_tty=False,
         shell=True,
@@ -203,7 +203,7 @@ def generate_launch_description():
     ld.add_action(start_rviz_cmd)
     ld.add_action(exit_event_handler)
 
-    # ld.add_action(mission_node)
+    ld.add_action(mission_node)
 
     # Generate nodes of SITL drone instances according to scenario
     for drone_id in range(scenario.num_agents):

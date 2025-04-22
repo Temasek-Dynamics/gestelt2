@@ -94,7 +94,8 @@ protected:
    */
   bool makePlan(
     const Eigen::Vector3d &start,
-    const Eigen::Vector3d &goal, double tolerance,
+    const Eigen::Vector3d &goal, 
+    double tolerance,
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path & plan);
 
@@ -124,7 +125,6 @@ protected:
   std::string plugin_name_;
 
   /* Parameters */
-  bool print_runtime_{false};
   // If the goal is obstructed, the tolerance specifies how many meters the planner
   // can relax the constraint in x and y before failing
   double tolerance_{0.5};

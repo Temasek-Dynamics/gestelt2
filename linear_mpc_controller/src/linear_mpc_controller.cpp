@@ -62,13 +62,22 @@ void LinearMPCController::configure(
   // transform_tolerance_ = tf2::durationFromSec(transform_tolerance);
   // control_duration_ = 1.0 / control_frequency;
 
-  sfc_pub_ = node->create_publisher<decomp_ros_msgs::msg::PolyhedronArray>("sfc", 1);
-  mpc_traj_pub_ = node->create_publisher<nav_msgs::msg::Path>("mpc_traj", 5);
-  global_path_pub_ = node->create_publisher<nav_msgs::msg::Path>("received_global_plan", 1);
+  sfc_pub_ = node->create_publisher<decomp_ros_msgs::msg::PolyhedronArray>(
+    "sfc", rclcpp::SensorDataQoS());
+  mpc_traj_pub_ = node->create_publisher<nav_msgs::msg::Path>(
+    "mpc_traj", rclcpp::SensorDataQoS());
+  global_path_pub_ = node->create_publisher<nav_msgs::msg::Path>(
+    "received_global_plan", rclcpp::SensorDataQoS());
+
+  mpc_ref_path_pub_ = node->create_publisher<nav_msgs::msg::Path>(
+    "mpc_ref_path", rclcpp::SensorDataQoS());
 
   // Declare this plugin's parameters
+  declare_parameter_if_not_declared(node, name + ".control_yaw", rclcpp::ParameterValue(true));
+  node->get_parameter(name + ".control_yaw", control_yaw_);
   declare_parameter_if_not_declared(node, name + ".yaw_lookahead_dist", rclcpp::ParameterValue(5));
   node->get_parameter(name + ".yaw_lookahead_dist", yaw_lookahead_dist_);
+
   declare_parameter_if_not_declared(node, name + ".max_robot_pose_search_dist", rclcpp::ParameterValue(1.0));
   node->get_parameter(name + ".max_robot_pose_search_dist", max_robot_pose_search_dist_);
 
@@ -87,17 +96,14 @@ void LinearMPCController::configure(
   // MPC
   pvaj_mpc::MPCControllerParams mpc_params;
 
-  declare_parameter_if_not_declared(node, name + ".mpc.ctrl_samp_freq", rclcpp::ParameterValue(30.0));
-  node->get_parameter(name + ".mpc.ctrl_samp_freq", mpc_params.ctrl_samp_freq);
   declare_parameter_if_not_declared(node, name + ".mpc.plan_sample_interval", rclcpp::ParameterValue(1));
   node->get_parameter(name + ".mpc.plan_sample_interval", mpc_params.plan_samp_intv);
-  declare_parameter_if_not_declared(node, name + ".mpc.yaw_ctrl_flag", rclcpp::ParameterValue(true));
-  node->get_parameter(name + ".mpc.yaw_ctrl_flag", mpc_params.yaw_ctrl_flag);
+
 
   declare_parameter_if_not_declared(node, name + ".mpc.horizon", rclcpp::ParameterValue(15));
   node->get_parameter(name + ".mpc.horizon", mpc_params.MPC_HORIZON);
   declare_parameter_if_not_declared(node, name + ".mpc.time_step", rclcpp::ParameterValue(0.1));
-  node->get_parameter(name + ".mpc.time_step", mpc_params.MPC_STEP);
+  node->get_parameter(name + ".mpc.time_step", mpc_params.TIME_STEP);
   declare_parameter_if_not_declared(node, name + ".mpc.R_p", rclcpp::ParameterValue(1000.0));
   node->get_parameter(name + ".mpc.R_p", mpc_params.R_p);
   declare_parameter_if_not_declared(node, name + ".mpc.R_v", rclcpp::ParameterValue(0.0));
@@ -161,8 +167,6 @@ void LinearMPCController::configure(
 
   // Initialize MPC controller
   mpc_controller_ = std::make_unique<pvaj_mpc::MPCController>(mpc_params);
-
-  // TODO: Initialize timer to publish MPC command
 }
 
 void LinearMPCController::cleanup()
@@ -173,6 +177,7 @@ void LinearMPCController::cleanup()
     " linear_mpc_controller::LinearMPCController",
     plugin_name_.c_str());
   
+  mpc_ref_path_pub_.reset();
   global_path_pub_.reset();
   sfc_pub_.reset();
   mpc_traj_pub_.reset();
@@ -189,6 +194,7 @@ void LinearMPCController::activate()
     "linear_mpc_controller::LinearMPCController",
     plugin_name_.c_str());
   
+  mpc_ref_path_pub_->on_activate();
   global_path_pub_->on_activate();
   sfc_pub_->on_activate();
   mpc_traj_pub_->on_activate();
@@ -216,6 +222,7 @@ void LinearMPCController::deactivate()
     "linear_mpc_controller::LinearMPCController",
     plugin_name_.c_str());
 
+  mpc_ref_path_pub_->on_deactivate();
   global_path_pub_->on_deactivate();
   mpc_traj_pub_->on_deactivate();
   sfc_pub_->on_deactivate();
@@ -223,12 +230,16 @@ void LinearMPCController::deactivate()
   dyn_params_handler_.reset();
 }
 
-
-px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
+void LinearMPCController::computeCommands(
   const Eigen::Vector3d & position,
   const Eigen::Quaterniond & orientation,
   const Eigen::Vector3d & velocity,
-  gestelt_core::GoalChecker *)
+  gestelt_core::GoalChecker *,
+  std::vector<Eigen::Vector3d>& mpc_pred_pos,
+  std::vector<Eigen::Vector3d>& mpc_pred_vel,
+  std::vector<Eigen::Vector3d>& mpc_pred_acc,
+  std::vector<Eigen::Vector3d>& mpc_pred_u,
+  Eigen::Vector2d& mpc_yaw)
 {
   std::lock_guard<std::mutex> lock_reinit(mutex_);
 
@@ -254,9 +265,9 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> ref_plan_sfc; // [MAP FRAME] global plan used by safe flight corridor 
   for (size_t i = 0; i < plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
     ref_plan_sfc.push_back(Eigen::Vector3d(
-      plan_map.poses[0].pose.position.x, 
-      plan_map.poses[0].pose.position.y, 
-      plan_map.poses[0].pose.position.z));
+      plan_map.poses[i].pose.position.x, 
+      plan_map.poses[i].pose.position.y, 
+      plan_map.poses[i].pose.position.z));
 
       ref_plan_sfc_idx.push_back(i);
   } 
@@ -275,9 +286,8 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
     = sfc_gen_->getPolyVec();
 
   sfc_pub_->publish(sfc_gen_->toSFCMsg(occ_map_->getMapFrameID()));
-
-  RCLCPP_INFO(logger_, "[SFC] Number of polyhedrones: %ld", 
-    sfc_polyhedrons.size());
+  // RCLCPP_INFO(logger_, "[SFC] Number of polyhedrons: %ld", 
+  //   sfc_polyhedrons.size());
 
   /**
    * Generate MPC controls
@@ -307,9 +317,9 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   std::vector<Eigen::Vector3d> ref_plan_mpc; // [MAP FRAME] global plan used by safe flight corridor 
   for (size_t i = 0; i < plan_map.poses.size()-1; i += mpc_controller_->getPlanSampleInterval()){
     ref_plan_mpc.push_back(Eigen::Vector3d(
-      plan_map.poses[0].pose.position.x,
-      plan_map.poses[0].pose.position.y,
-      plan_map.poses[0].pose.position.z));
+      plan_map.poses[i].pose.position.x,
+      plan_map.poses[i].pose.position.y,
+      plan_map.poses[i].pose.position.z));
     ref_plan_mpc_idx.push_back(i);
   } 
   // Add end of plan
@@ -320,7 +330,12 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   ref_plan_mpc_idx.push_back(plan_map.poses.size()-1);
   
   int sfc_idx = 0; // current index of SFC polyhedron
-  Eigen::Vector3d last_p_ref = position; // last position reference
+  Eigen::Vector3d last_pos_ref = position; // last position reference
+
+  nav_msgs::msg::Path mpc_ref_path_msg;
+
+  mpc_ref_path_msg.header.frame_id = occ_map_->getMapFrameID();
+  mpc_ref_path_msg.header.stamp = clock_->now();
 
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC reference point
   {
@@ -330,10 +345,10 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
     int ref_idx = i >= (int)ref_plan_mpc_idx.size() 
       ? (int)ref_plan_mpc_idx.back(): ref_plan_mpc_idx[i];
 
-    // ref_pos: reference position
-    auto ref_pos = ref_plan_mpc[ref_idx];
+    // pos_ref: reference position
+    auto pos_ref = ref_plan_mpc[ref_idx];
 
-    // get sfc_idx that current ref_pos belongs in
+    // get sfc_idx that current pos_ref belongs in
     int sfc_seg_end_idx = ref_plan_sfc_idx[sfc_idx + 1];
     if (ref_idx >= sfc_seg_end_idx) // if reference index exceeds sfc 
     {
@@ -345,28 +360,32 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
     }
 
     // Set PVA reference at given step i
-    Eigen::Vector3d p_ref = ref_pos; // position reference
-    Eigen::Vector3d v_ref(0, 0, 0); // vel reference
-    Eigen::Vector3d a_ref(0, 0, 0); // acc reference
+    Eigen::Vector3d vel_ref(0, 0, 0); // vel reference
+    Eigen::Vector3d acc_ref(0, 0, 0); // acc reference
     if (i < mpc_controller_->MPC_HORIZON-1){
-      v_ref = (p_ref - last_p_ref) / mpc_controller_->MPC_STEP;
+      vel_ref = (pos_ref - last_pos_ref) / mpc_controller_->TIME_STEP;
     }
-    mpc_controller_->setReference(p_ref, v_ref, a_ref, i);
-    last_p_ref = p_ref;
+    mpc_controller_->setReference(pos_ref, vel_ref, acc_ref, i);
+    last_pos_ref = pos_ref;
 
     // Set safe flight corridor for i-th control iteration
     Eigen::MatrixX4d sfc_planes;
     polyhedronToPlanes(sfc_polyhedrons[sfc_idx], sfc_planes);
-    if (!mpc_controller_->isInFSC(ref_pos, sfc_planes)) { 
+    if (!mpc_controller_->isInFSC(pos_ref, sfc_planes)) { 
       RCLCPP_ERROR(logger_, 
         "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, sfc_idx );
       throw gestelt_core::ControllerException("MPC Reference path not in SFC");
     }
     mpc_controller_->assignSFCToRefPt(sfc_planes, i); 
 
+    geometry_msgs::msg::PoseStamped pose;
+    pose.pose.position.x = pos_ref(0);
+    pose.pose.position.y = pos_ref(1);
+    pose.pose.position.z = pos_ref(2);
+    mpc_ref_path_msg.poses.push_back(pose);
   }
 
-  // Solve MPC
+  mpc_ref_path_pub_->publish(mpc_ref_path_msg);
 
   // Set initial condition
   mpc_controller_->setInitialCondition(position, velocity, Eigen::Vector3d::Zero());
@@ -385,15 +404,15 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   };
 
   Eigen::MatrixXd A1, B1; // system transition matrix
-  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->MPC_STEP);
+  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->TIME_STEP);
   Eigen::VectorXd x_current = mpc_controller_->X_0_; // Current state
   Eigen::Vector3d u_optimal; 
   bool valid_cmd = true;
 
-  std::vector<Eigen::Vector3d> mpc_pred_u;
-  std::vector<Eigen::Vector3d> mpc_pred_pos;
-  std::vector<Eigen::Vector3d> mpc_pred_vel;
-  std::vector<Eigen::Vector3d> mpc_pred_acc;
+  mpc_pred_pos.clear();
+  mpc_pred_vel.clear();
+  mpc_pred_acc.clear();
+  mpc_pred_u.clear();
 
   // Get predicted MPC path based on controls and check if valid
   for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) {
@@ -429,10 +448,10 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
         break;
       }
 
-      mpc_pred_u.push_back(u_optimal);
       mpc_pred_pos.push_back(x_current.segment<3>(0));
       mpc_pred_vel.push_back(x_current.segment<3>(3));
       mpc_pred_acc.push_back(x_current.segment<3>(6));
+      mpc_pred_u.push_back(u_optimal);
   }
 
   if (!valid_cmd){
@@ -440,29 +459,25 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
   }
 
   // Publish MPC path for visualization
-  nav_msgs::msg::Path msg;
+  nav_msgs::msg::Path mpc_traj_msg;
 
-  msg.header.frame_id = occ_map_->getMapFrameID();
-  msg.header.stamp = clock_->now();
+  mpc_traj_msg.header.frame_id = occ_map_->getMapFrameID();
+  mpc_traj_msg.header.stamp = clock_->now();
   for (int i = 0; i < (int)mpc_pred_pos.size(); i++) {
       geometry_msgs::msg::PoseStamped pose;
       pose.pose.position.x = mpc_pred_pos[i](0);
       pose.pose.position.y = mpc_pred_pos[i](1);
       pose.pose.position.z = mpc_pred_pos[i](2);
-      msg.poses.push_back(pose);
+      mpc_traj_msg.poses.push_back(pose);
   }
-  mpc_traj_pub_->publish(msg);
+  mpc_traj_pub_->publish(mpc_traj_msg);
 
-  // Get yaw
-  Eigen::Vector2d mpc_yaw( NAN, NAN);
-
-  if (mpc_controller_->yaw_ctrl_flag_){
+  if (control_yaw_){
     double cmd_yaw = 0.0;
-    double dt = 1.0/mpc_controller_->getControlSampFreq();
+    // double dt = 1.0/mpc_controller_->getControlSampFreq();
 
     // Calculate commanded yaw
     int lookahead_idx = yaw_lookahead_dist_;
-    // std::cout << "yaw_lookahead_dist_: " << yaw_lookahead_dist_ << std::endl;
 
     if (0 < ref_plan_mpc.size() - lookahead_idx - 1) 
     {
@@ -484,20 +499,6 @@ px4_msgs::msg::TrajectorySetpoint LinearMPCController::computeCommands(
     mpc_yaw(1) = NAN;
   }
 
-  // populate and return message
-  px4_msgs::msg::TrajectorySetpoint traj_sp;
-
-  traj_sp.position = 
-    {(float) mpc_pred_pos[0](0) , (float) mpc_pred_pos[0](1), (float) mpc_pred_pos[0](2)};
-  traj_sp.velocity = 
-    {(float) mpc_pred_vel[0](0) , (float) mpc_pred_vel[0](1), (float) mpc_pred_vel[0](2)};
-  traj_sp.acceleration = 
-    {(float) mpc_pred_acc[0](0) , (float) mpc_pred_acc[0](1), (float) mpc_pred_acc[0](2)};
-  traj_sp.yaw = mpc_yaw(0);
-  traj_sp.yawspeed = mpc_yaw(1);
-  traj_sp.timestamp = clock_->now().nanoseconds() / 1000.0; // In microseconds
-
-  return traj_sp;
 }
 
 void LinearMPCController::setPlan(const nav_msgs::msg::Path & path)

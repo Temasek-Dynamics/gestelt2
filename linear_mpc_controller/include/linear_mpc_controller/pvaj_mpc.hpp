@@ -126,15 +126,11 @@ namespace pvaj_mpc
 
 	struct MPCControllerParams
 	{
-		double ctrl_samp_freq{30.0}; 
 		int plan_samp_intv{1};
-
-		// Yaw control
-		bool yaw_ctrl_flag{true};
 
 		// Controller params
 		int MPC_HORIZON{15};	// Planning horizon
-		double MPC_STEP{0.1}; // [s] MPC time step
+		double TIME_STEP{0.1}; // [s] MPC time step
 
 		// Dynamical parameters
 		Eigen::Matrix3d Drag;
@@ -180,15 +176,11 @@ namespace pvaj_mpc
 		 */
 		void getParameters(const MPCControllerParams &params)
 		{
-			ctrl_samp_freq_ = params.ctrl_samp_freq;
 			plan_samp_intv_ = params.plan_samp_intv;
-
-			// Yaw control
-			yaw_ctrl_flag_ = params.yaw_ctrl_flag;
 
 			// MPC parameters
 			MPC_HORIZON = params.MPC_HORIZON;
-			MPC_STEP = params.MPC_STEP;
+			TIME_STEP = params.TIME_STEP;
 
 			// Objective Weights
 			R_p_ = params.R_p;
@@ -416,7 +408,7 @@ namespace pvaj_mpc
 			*/
 
 			// getSystemModel: Set up the matrices Ax and Bc as part of linear dynamical model : x_k+1 = Ax * x_k + Bx * u_k
-			getSystemModel(mpc_.Ax, mpc_.Bx, MPC_STEP);
+			getSystemModel(mpc_.Ax, mpc_.Bx, TIME_STEP);
 			// setModel: Set linear dynamical model across mpc horizon iterations
 			setModel(mpc_.Ax, mpc_.Bx, mpc_.M, mpc_.C);
 
@@ -614,7 +606,6 @@ namespace pvaj_mpc
 		 * @brief Set constraints
 		 */
 
-		// TODO: Change name to setUpConstraints
 		void setConstraints(mpc_osqp_t& mpc)
 		{
 
@@ -734,11 +725,6 @@ namespace pvaj_mpc
 			return plan_samp_intv_;
 		}
 
-		double getControlSampFreq() const
-		{
-			return ctrl_samp_freq_;
-		}
-		
 		/* Setters */
 
 		/**
@@ -830,15 +816,11 @@ namespace pvaj_mpc
 		mpc_osqp_t mpc_; // MPC data
 		// int fps_;
 
-		double ctrl_samp_freq_; // [Hz] frequency to send MPC command
 		double plan_samp_intv_; // [] Uses every N point on global plan as reference path
-
- 		// Yaw control params
-		bool yaw_ctrl_flag_{true};
 
 		// Controller params
 		int MPC_HORIZON{5};
-		double MPC_STEP{0.1}; // [s] time step for dynamics
+		double TIME_STEP{0.1}; // [s] time step for dynamics
 		
 		Eigen::VectorXd X_0_, X_r_; // Current position and reference position
 

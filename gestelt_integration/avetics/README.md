@@ -3,6 +3,15 @@
 ## Installing dependencies
 - Follow README.md at top directory
 
+
+## Clone repos
+```bash
+# Vilota (ecal <-> ROS2 DDS) depth map bridge
+https://bitbucket.org/nusuav/ray_vilota_bridge/src/master/
+# Depth map to PCD
+https://bitbucket.org/nusuav/depth2pcl/src/master/
+```
+
 ## Hardware
 
 User: nvidia, pass: nvidia

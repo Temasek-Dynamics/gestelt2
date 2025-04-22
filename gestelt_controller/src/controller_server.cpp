@@ -61,9 +61,11 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
   declare_parameter("speed_limit_topic", rclcpp::ParameterValue("speed_limit"));
 
   declare_parameter("failure_tolerance", rclcpp::ParameterValue(0.0));
-  declare_parameter("use_realtime_priority", rclcpp::ParameterValue(false));
   declare_parameter("publish_zero_velocity", rclcpp::ParameterValue(true));
   declare_parameter("occ_map_update_timeout", 0.30);  // 300ms
+
+  declare_parameter("controller_look_ahead_index", rclcpp::ParameterValue(1));
+  declare_parameter("print_runtime", rclcpp::ParameterValue(false));
 
   // Setup the local occupancy map
   occ_map_ = std::make_shared<occ_map::OccMap>(
@@ -85,6 +87,9 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
   auto node = shared_from_this();
 
   RCLCPP_INFO(get_logger(), "Configuring controller interface");
+
+  get_parameter("controller_look_ahead_index", controller_look_ahead_index_);
+  get_parameter("print_runtime", print_runtime_);
 
   get_parameter("progress_checker_plugin", progress_checker_id_);
   if (progress_checker_id_ == default_progress_checker_id_) {
@@ -117,8 +122,6 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
 
   get_parameter("controller_frequency", controller_frequency_);
   RCLCPP_INFO(get_logger(), "Controller frequency set to %.4fHz", controller_frequency_);
-
-  get_parameter("use_realtime_priority", use_realtime_priority_);
 
   occ_map_->configure();
   // Launch a thread to run the occupancy map node
@@ -556,13 +559,30 @@ void ControllerServer::computeAndPublishControl()
   px4_msgs::msg::TrajectorySetpoint traj_sp;
 
   try {
-    traj_sp =
-      controllers_[current_controller_]->computeCommands(
-      cur_pos,
-      cur_ori,
-      cur_vel_,
-      goal_checkers_[current_goal_checker_].get());
-    
+    std::vector<Eigen::Vector3d> mpc_pred_pos, mpc_pred_vel, mpc_pred_acc, mpc_pred_u;
+    Eigen::Vector2d mpc_yaw( NAN, NAN);
+
+    tm_compute_controls_.start();
+
+    controllers_[current_controller_]->computeCommands(
+      cur_pos, cur_ori, cur_vel_,
+      goal_checkers_[current_goal_checker_].get(),
+      mpc_pred_pos, mpc_pred_vel, mpc_pred_acc, mpc_pred_u, mpc_yaw);
+
+    tm_compute_controls_.stop(false);
+    tm_compute_controls_.getWallAvg(print_runtime_);
+
+    int idx = controller_look_ahead_index_ < mpc_pred_pos.size() ? controller_look_ahead_index_ : mpc_pred_pos.size()-1 ; 
+
+    traj_sp.position = 
+      {(float) mpc_pred_pos[idx](0) , (float) mpc_pred_pos[idx](1), (float) mpc_pred_pos[idx](2)};
+    traj_sp.velocity = 
+      {(float) mpc_pred_vel[idx](0) , (float) mpc_pred_vel[idx](1), (float) mpc_pred_vel[idx](2)};
+    traj_sp.acceleration = 
+      {(float) mpc_pred_acc[idx](0) , (float) mpc_pred_acc[idx](1), (float) mpc_pred_acc[idx](2)};
+    traj_sp.yaw = mpc_yaw(0);
+    traj_sp.yawspeed = mpc_yaw(1);
+
     last_valid_cmd_time_ = now();
     traj_sp.timestamp = last_valid_cmd_time_.nanoseconds() / 1000; // In microseconds
     // Only no valid control exception types are valid to attempt to have control patience, as

@@ -3,7 +3,7 @@
 <package format="3">
   <name>gestelt_interfaces</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>interfaces for gestelt packages</description>
   <maintainer email="john_tanguanzhong@hotmail.com">john</maintainer>
   <license>MIT</license>
 

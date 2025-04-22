@@ -3,7 +3,7 @@
 <package format="3">
   <name>logger_wrapper</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Wrapper for RCLCPP Logging</description>
   <maintainer email="john_tanguanzhong@hotmail.com">john</maintainer>
   <license>MIT</license>
 

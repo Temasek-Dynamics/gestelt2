@@ -19,6 +19,7 @@ set(ROS_DEPENDENCIES
   rclcpp_lifecycle
   tf2_ros
   px4_msgs
+  logger_wrapper
 )
 
 foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})

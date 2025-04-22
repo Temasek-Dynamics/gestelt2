@@ -169,16 +169,17 @@ private:
 	/**
 	 * @brief Publish a trajectory setpoint
 	 * 
-	 * @param pos Position (ENU frame)
-	 * @param yaw Yaw 
-	 * @param vel Velociyy (ENU frame)
-	 * @param acc Acceleration (ENU frame)
+	 * @param pos Position (ENU frame) [m]
+	 * @param yaw Yaw [degrees]
+	 * @param vel Velociyy (ENU frame) [m/s] 
+	 * @param acc Acceleration (ENU frame) [m/s^2]
 	 */
 	void publishTrajectorySetpoint(
 		const Eigen::Vector3d& pos, 
 		const Eigen::Vector2d& yaw_yawrate = Eigen::Vector2d(NAN, NAN),
 		const Eigen::Vector3d& vel = Eigen::Vector3d(NAN, NAN, NAN), 
 		const Eigen::Vector3d& acc = Eigen::Vector3d(NAN, NAN, NAN));
+
 	void publishAttitudeSetpoint(const double& thrust, const Eigen::Vector4d& q_d);
 	void publishRatesSetpoint(const double& thrust, const Eigen::Vector3d& rates);
 	void publishTorqueThrustSetpoint(const double& thrust, const Eigen::Vector3d& torques);

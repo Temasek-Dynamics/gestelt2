@@ -47,6 +47,8 @@
 
 #include "gestelt_core/controller.hpp"
 
+#include <logger_wrapper/timer.hpp>
+
 namespace gestelt_controller
 {
 class ProgressChecker;
@@ -238,14 +240,15 @@ protected:
   std::vector<std::string> controller_types_;
   std::string controller_ids_concat_, current_controller_;
 
-
   bool publish_zero_velocity_;
   rclcpp::Duration occ_map_update_timeout_;
   double failure_tolerance_{0.0};
 
   double controller_frequency_{0.0};
 
-  bool use_realtime_priority_;
+  int controller_look_ahead_index_{1};
+
+  bool print_runtime_{false}; // true if timer information is to be printed
 
   rclcpp::Time last_valid_cmd_time_;
 
@@ -258,6 +261,8 @@ protected:
 
   // Current path container
   nav_msgs::msg::Path current_path_;
+
+  logger_wrapper::Timer tm_compute_controls_{rclcpp::get_logger("ControllerServer"), "computeControls"};  // Time required for map construction
 
 private:
 

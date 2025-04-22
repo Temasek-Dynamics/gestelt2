@@ -109,11 +109,16 @@ public:
    * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
    * @return          Best command
    */
-  px4_msgs::msg::TrajectorySetpoint computeCommands(
+  void computeCommands(
     const Eigen::Vector3d & pose,
     const Eigen::Quaterniond & orientation,
     const Eigen::Vector3d & velocity,
-    gestelt_core::GoalChecker * goal_checker) override;
+    gestelt_core::GoalChecker * goal_checker,
+    std::vector<Eigen::Vector3d>& mpc_pred_pos,
+    std::vector<Eigen::Vector3d>& mpc_pred_vel,
+    std::vector<Eigen::Vector3d>& mpc_pred_acc,
+    std::vector<Eigen::Vector3d>& mpc_pred_u,
+    Eigen::Vector2d& mpc_yaw) override;
 
   /**
    * @brief gestelt_core setPlan - Sets the global plan
@@ -202,19 +207,23 @@ protected:
   rclcpp::Clock::SharedPtr clock_;
   
   // Params
-  int yaw_lookahead_dist_{5};
   double max_robot_pose_search_dist_{1.0};
+  bool control_yaw_{true};
+  int yaw_lookahead_dist_{5};
   // tf2::Duration transform_tolerance_;
 
   // Data
   nav_msgs::msg::Path global_plan_; // Global plan in global frame
+
+  // Publishers
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> 
     global_path_pub_;
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<decomp_ros_msgs::msg::PolyhedronArray>> 
     sfc_pub_;
   std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> 
     mpc_traj_pub_;
-    
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> 
+    mpc_ref_path_pub_;
 
   std::unique_ptr<sfc::PolytopeSFC> sfc_gen_; // Polytope safe flight corridor generator
   std::unique_ptr<pvaj_mpc::MPCController> mpc_controller_; // MPC controller

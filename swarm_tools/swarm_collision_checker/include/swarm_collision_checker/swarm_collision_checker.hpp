@@ -63,7 +63,6 @@ public:
       (*drone_poses_).push_back(Eigen::Vector3d::Constant(999.9));
     }
 
-    // TODO: sleep
     rclcpp::Rate loop_rate(1000);
     loop_rate.sleep();
 

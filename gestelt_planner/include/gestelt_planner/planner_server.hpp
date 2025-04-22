@@ -259,6 +259,9 @@ protected:
   rclcpp::Duration occ_map_update_timeout_;
   std::string planner_ids_concat_;
 
+  // Params
+  bool print_runtime_{false};
+
   // The planner needs an occupancy map
   std::shared_ptr<occ_map::OccMap> occ_map_;
   std::unique_ptr<nav2_util::NodeThread> occ_map_thread_;
@@ -271,6 +274,9 @@ protected:
 
   // Service to determine if the path is valid
   rclcpp::Service<nav2_msgs::srv::IsPathValid>::SharedPtr is_path_valid_service_;
+
+  logger_wrapper::Timer tm_compute_plan_{rclcpp::get_logger("PlannerServer"), "computePlan"};  // Time required for map construction
+
 };
 
 } // namespace gestelt_planner

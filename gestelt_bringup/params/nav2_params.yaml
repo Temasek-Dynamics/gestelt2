@@ -3,9 +3,11 @@ planner_server:
     expected_planner_frequency: 20.0
     planner_plugins: ["GridBased"]
     occ_map_update_timeout: 1.0
+
+    print_runtime: true # Print runtime of computing path
+
     GridBased:
       plugin: "astar_planner::AStarPlanner"
-      print_runtime: true
       tolerance: 0.5
       max_iterations: 99999
       tie_breaker: 1.001
@@ -14,16 +16,19 @@ planner_server:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 30.0
+    controller_frequency: 20.0
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
 
+    controller_look_ahead_index: 1
+    print_runtime: true # Print runtime of computing controls
+
     # Progress checker parameters
     progress_checker:
       plugin: "gestelt_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      required_movement_radius: 0.5 # [m] Movement allowance
+      movement_time_allowance: 60.0 # [s] Time allowance for movement of given radius 
     # Goal checker parameters
     goal_checker:
       plugin: "gestelt_controller::SimpleGoalChecker"
@@ -33,19 +38,16 @@ controller_server:
     # DWB parameters
     FollowPath:
       plugin: "linear_mpc_controller::LinearMPCController"
+      control_yaw: true # Enable simple control of the yaw
       yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
+        plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
         bbox_x: 2.0 # [m] Bounding box in x axis
         bbox_y: 2.0 # [m] Bounding box in y axis
         bbox_z: 2.0 # [m] Bounding box in z axis
-        plan_sample_interval: 4 #[] Uses every N point on global plan as the safe flight corridor seed 
       mpc:
-        ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
-        # NOTE: This must be SMALLER or EQUAL to plan_sample_interval used by sfc
         plan_sample_interval: 1 # [] Uses every N point on global plan as reference path
-        # Yaw control
-        yaw_ctrl_flag: true # Control the yaw
         # MPC parameters
         horizon: 15
         time_step: 0.1 #[s]

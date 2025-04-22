@@ -31,6 +31,9 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
   declare_parameter("expected_planner_frequency", 1.0);
   declare_parameter("action_server_result_timeout", 10.0);
   declare_parameter("occ_map_update_timeout", 1.0);
+  declare_parameter("print_runtime", rclcpp::ParameterValue(false));
+
+  get_parameter("print_runtime", print_runtime_);
 
   get_parameter("planner_plugins", planner_ids_);
   if (planner_ids_ == default_ids_) {
@@ -43,7 +46,6 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
   occ_map_ = std::make_shared<occ_map::OccMap>(
     "global_occ_map", std::string{get_namespace()}, 
     get_parameter("use_sim_time").as_bool());
-
 }
 
 PlannerServer::~PlannerServer()
@@ -486,17 +488,14 @@ PlannerServer::computePlan()
       return;
     }
 
-
     waitForOccMap();
 
     getPreemptedGoalIfRequested(action_server_pose_, goal);
-
 
     // Use start pose if provided otherwise use current robot pose
     if (!getStartPose<ActionToPose>(goal, start)) {
       throw gestelt_core::PlannerTFError("Unable to get start pose");
     }
-
 
     // Transform them into the global frame
     geometry_msgs::msg::PoseStamped goal_pose = goal->goal;
@@ -504,14 +503,14 @@ PlannerServer::computePlan()
       throw gestelt_core::PlannerTFError("Unable to transform poses to global frame");
     }
 
-
     auto cancel_checker = [this]() {
       return action_server_pose_->is_cancel_requested();
     };
 
-
+    tm_compute_plan_.start();
     result->path = getPlan(start, goal_pose, goal->planner_id, cancel_checker);
-
+    tm_compute_plan_.stop(false);
+    tm_compute_plan_.getWallAvg(print_runtime_);
 
     if (!validatePath<ActionThroughPoses>(goal_pose, result->path, goal->planner_id)) {
       throw gestelt_core::NoValidPathCouldBeFound(goal->planner_id + " generated a empty path");
@@ -572,6 +571,8 @@ PlannerServer::computePlan()
     // result->error_code = ActionToPoseResult::UNKNOWN;
     action_server_pose_->terminate_current(result);
   }
+
+
 }
 
 nav_msgs::msg::Path

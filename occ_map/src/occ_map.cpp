@@ -379,7 +379,7 @@ void OccMap::getParameters()
 
   /* Map parameters */
   get_parameter("print_timer", print_timer_);
-+
+
   /* Frame IDs */
   get_parameter("global_frame", global_frame_);
   get_parameter("map_frame", map_frame_);
