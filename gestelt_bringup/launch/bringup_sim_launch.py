@@ -103,7 +103,8 @@ def generate_launch_description():
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
     base_link_frame = [namespace, "_base_link"]
-    camera_frame = [namespace, "_camera_link"]
+    # camera_frame = [namespace, "_camera_link"]
+    camera_frame = "x500_depth_0/camera_link/StereoOV7251"
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
@@ -121,7 +122,7 @@ def generate_launch_description():
     nav_configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params_file,
-            # root_key=namespace,
+            root_key=namespace,
             param_rewrites=nav_param_substitutions,
             convert_types=True,
         ),

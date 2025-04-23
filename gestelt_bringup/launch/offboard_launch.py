@@ -98,7 +98,7 @@ def generate_launch_description():
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
-        default_value=os.path.join(bringup_dir, 'rviz', 'default.rviz'),
+        default_value=os.path.join(bringup_dir, 'rviz', 'single_drone.rviz'),
         description='Full path to the RVIZ config file to use',
     )
 
@@ -106,15 +106,13 @@ def generate_launch_description():
         'use_rviz', default_value='True', description='Whether to start RVIZ'
     )
 
-    rviz_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
+    start_rviz_cmd = Node(
         condition=IfCondition(use_rviz),
-        launch_arguments={
-            'namespace': namespace,
-            'use_namespace': use_namespace,
-            'use_sim_time': use_sim_time,
-            'rviz_config': rviz_config_file,
-        }.items(),
+        package='rviz2',
+        executable='rviz2',
+        arguments=['-d', rviz_config_file],
+        output='screen',
+        parameters=[{'use_sim_time': use_sim_time}],
     )
 
     # XRCE Agent that will connect to ALL XRCE-DDS clients
@@ -152,7 +150,7 @@ def generate_launch_description():
     ld.add_action(declare_use_rviz_cmd)
 
     ld.add_action(xrce_agent)
-    ld.add_action(rviz_cmd)
+    ld.add_action(start_rviz_cmd)
 
     ld.add_action(mission_node)
 

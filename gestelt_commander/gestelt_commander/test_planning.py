@@ -91,13 +91,13 @@ def main(args=None):
     rclpy.init(args=args)
 
     mission_mngr = MissionManager()
-    navigator = BasicNavigator(node_name='basic_navigator', namespace='d0')
+    navigator = BasicNavigator(node_name='basic_navigator')
 
     try: 
         time.sleep(5)
         # Send a goal
         mission_mngr.get_logger().info("Requesting planned path.")
-        planAndFollowPath(navigator, '/d0')
+        planAndFollowPath(navigator)
 
         rclpy.spin(mission_mngr)
 
