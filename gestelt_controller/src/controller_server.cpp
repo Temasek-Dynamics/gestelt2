@@ -45,7 +45,7 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
   default_goal_checker_types_{"gestelt_controller::SimpleGoalChecker"},
   lp_loader_("gestelt_core", "gestelt_core::Controller"),
   default_ids_{"FollowPath"},
-  default_types_{"dwb_core::DWBLocalPlanner"},
+  default_types_{"linear_mpc_controller::LinearMPCController"},
   occ_map_update_timeout_(300ms)
 {
   RCLCPP_INFO(get_logger(), "Creating controller server");
