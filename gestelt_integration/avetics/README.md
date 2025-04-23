@@ -3,23 +3,35 @@
 ## Installing dependencies
 - Follow README.md at top directory
 
+## Additional dependencies
+```bash
+# opencv library dependency version mismatch https://github.com/IntelRealSense/realsense-ros/issues/3203 
+sudo apt install libopencv-dev=4.5.4+dfsg-9ubuntu4
+# Library used by vilota bridge
+sudo apt-get install ros-humble-tf-transformations
+
+# Upgrade packages
+pip3 install transforms3d --upgrade
+pip3 install "numpy<2.0"
+```
+
 
 ## Clone repos
 ```bash
 # Vilota (ecal <-> ROS2 DDS) depth map bridge
-https://bitbucket.org/nusuav/ray_vilota_bridge/src/master/
+https://bitbucket.org/nusuav/vilota_bridge/src/master/
 # Depth map to PCD
 https://bitbucket.org/nusuav/depth2pcl/src/master/
 ```
 
 ## Hardware
-
-User: nvidia, pass: nvidia
-
 - Onboard computer: Nvidia Orin NX
 - Flight Controller Unit:
 - Network adaptor: Viumesh
 - VIO: Vilota VK180Pro (forward facing) and VK180 (Backward facing)
+
+## Authentication
+User: nvidia, pass: nvidia
 
 ## Start up vilota VIO
 ```bash
@@ -142,3 +154,5 @@ References:
 
 
 
+
+## Known issues
