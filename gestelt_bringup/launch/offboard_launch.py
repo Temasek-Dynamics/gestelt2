@@ -129,7 +129,8 @@ def generate_launch_description():
     # Send single test goal
     mission_node = Node(
         package='gestelt_commander',
-        executable='test_take_off_goal',
+        # executable='test_take_off_goal',
+        executable='test_planning',
         output='screen',
         emulate_tty=False,
         shell=True,
@@ -153,7 +154,7 @@ def generate_launch_description():
     ld.add_action(xrce_agent)
     ld.add_action(rviz_cmd)
 
-    # ld.add_action(mission_node)
+    ld.add_action(mission_node)
 
     drone_id = 0
     ns = "d" + str(drone_id)
@@ -167,7 +168,8 @@ def generate_launch_description():
         GroupAction(
             actions=[
                 IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(os.path.join(launch_dir, 'bringup_launch.py')),
+                    PythonLaunchDescriptionSource(
+                        os.path.join(launch_dir, 'bringup_launch.py')),
                     launch_arguments={
                         'namespace': namespace,
                         'use_namespace': use_namespace,
@@ -178,19 +180,24 @@ def generate_launch_description():
                         'use_respawn': 'False',
                     }.items(),
                 ),
-                # Transform from global to map frame
                 Node( 
                     package = "tf2_ros", 
+                    name=ns+'_world_to_map_tf',
                     executable = "static_transform_publisher",
-                    output = "log",
-                    arguments = [str(scenario.spawns_pos[drone_id][0]), str(scenario.spawns_pos[drone_id][1]), "0", 
-                                    str(scenario.spawns_pos[drone_id][2]), "0", "0", 
-                                    global_frame, map_frame],
+                    output="own_log",
+                    arguments = [str(scenario.spawns_pos[drone_id][0]), 
+                                str(scenario.spawns_pos[drone_id][1]), 
+                                "0", 
+                                str(scenario.spawns_pos[drone_id][2]), 
+                                "0", "0", 
+                                global_frame, map_frame],
                 ),
+                # Transform from base link to camera frame
                 Node(
                     package = "tf2_ros", 
+                    name=ns+'_base_link_to_cam_tf',
                     executable = "static_transform_publisher",
-                    output="log",
+                    output="own_log",
                     arguments = ["0.12", "0.03", "-0.242", 
                                     "1", "0", "0", "0",
                                     base_link_frame, camera_frame],

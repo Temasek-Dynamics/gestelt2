@@ -8,10 +8,11 @@
 # opencv library dependency version mismatch https://github.com/IntelRealSense/realsense-ros/issues/3203 
 sudo apt install libopencv-dev=4.5.4+dfsg-9ubuntu4
 # Library used by vilota bridge
-sudo apt-get install ros-humble-tf-transformations
+sudo apt-get install capnproto ros-humble-tf-transformations
 
 # Upgrade packages
-pip3 install transforms3d --upgrade
+pip install transforms3d==0.4.2 # fix for module 'numpy' has no attribute 'float', requires transforms3d >= 0.4.1
+pip install pycapnp==1.3.0 # importing doesn't seem to work well for 2.0.0
 pip3 install "numpy<2.0"
 ```
 
