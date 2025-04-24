@@ -185,6 +185,9 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 
 	if (UAV::is_in_state<Idle>())
 	{
+
+		logger_->logInfoThrottle(strFmt("Using current height %f as ground height", 
+										cur_pos_enu_(2)), 5.0);
 		// Set ground height as the height at which the UAV is resting on the ground
 		ground_height_ = Eigen::Vector3d(0.0, 0.0, cur_pos_enu_(2));
 	}
