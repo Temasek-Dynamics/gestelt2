@@ -63,38 +63,8 @@ def generate_launch_description():
 
     # Get the launch directory
     bringup_dir = get_package_share_directory('gestelt_bringup')
-    launch_dir = os.path.join(bringup_dir, 'launch')
 
     rviz_config_file = LaunchConfiguration('rviz_config_file')
-    use_rviz = LaunchConfiguration('use_rviz')
-
-    # Declare parameters
-    namespace = LaunchConfiguration('namespace')
-    use_namespace = LaunchConfiguration('use_namespace')
-    params_file = LaunchConfiguration('params_file')
-    use_sim_time = LaunchConfiguration('use_sim_time')
-
-    declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='d0', description='Top-level namespace'
-    )
-
-    declare_params_file_cmd = DeclareLaunchArgument(
-        'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-        description='Full path to the ROS2 parameters file to use for all launched nodes',
-    )
-
-    declare_use_namespace_cmd = DeclareLaunchArgument(
-        'use_namespace',
-        default_value='false',
-        description='Whether to apply a namespace to the navigation stack',
-    )
-
-    declare_use_sim_time_cmd = DeclareLaunchArgument(
-        'use_sim_time',
-        default_value='false',
-        description='Use simulation (Gazebo) clock if true',
-    )
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
@@ -102,57 +72,21 @@ def generate_launch_description():
         description='Full path to the RVIZ config file to use',
     )
 
-    declare_use_rviz_cmd = DeclareLaunchArgument(
-        'use_rviz', default_value='True', description='Whether to start RVIZ'
-    )
 
     start_rviz_cmd = Node(
-        condition=IfCondition(use_rviz),
         package='rviz2',
         executable='rviz2',
         arguments=['-d', rviz_config_file],
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}],
+        output='screen'
     )
 
-    # XRCE Agent that will connect to ALL XRCE-DDS clients
-    xrce_agent = ExecuteProcess(
-        cmd=[[
-            'MicroXRCEAgent serial --dev /dev/ttyTHS1 -b 921600'
-        ]],
-        name='microxrceagent',
-        shell=True
-    )
-
-    # # Send single test goal
-    # mission_node = Node(
-    #     package='gestelt_commander',
-    #     # executable='test_take_off_goal',
-    #     executable='test_planning',
-    #     output='screen',
-    #     emulate_tty=False,
-    #     shell=True,
-    #     parameters = [
-    #         {'scenario': scenario.name},
-    #         {'init_delay': 1},
-    #     ]
-    # )
 
     # Create the launch description and populate
     ld = LaunchDescription()
 
-    ld.add_action(declare_namespace_cmd)
-    ld.add_action(declare_use_namespace_cmd)
-    ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_use_sim_time_cmd)
-
     ld.add_action(declare_rviz_config_file_cmd)
-    ld.add_action(declare_use_rviz_cmd)
 
-    ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)
-
-    # ld.add_action(mission_node)
 
     drone_id = 0
     ns = "d" + str(drone_id)
@@ -165,19 +99,6 @@ def generate_launch_description():
     ld.add_action(
         GroupAction(
             actions=[
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(launch_dir, 'bringup_launch.py')),
-                    launch_arguments={
-                        'namespace': namespace,
-                        'use_namespace': use_namespace,
-                        'use_sim_time': use_sim_time,
-                        'params_file': params_file,
-                        'autostart': 'True',
-                        'use_composition': 'False',
-                        'use_respawn': 'False',
-                    }.items(),
-                ),
                 Node( 
                     package = "tf2_ros", 
                     name=ns+'_world_to_map_tf',
