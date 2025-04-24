@@ -1,6 +1,20 @@
 # tests
 
-# 23/4/25
+# Test Planning (23/4/25)
+```bash
+# Drone 
+ros2 run vision vio_bridge_px4
+# 1 (VK180Pro)
+# 1 (Forward Facing)
+# 0 -10 0 (Roll, Pitch, Yaw)
+ros2 launch gestelt_bringup offboard_launch.py 
+
+# GCS 
+ros2 launch gestelt_bringup gcs.py
+ros2 launch gestelt_bringup test_take_off_goal.py scenario_name:=single_drone_test
+```
+
+# Test Planning (23/4/25)
 ```bash
 # Drone 
 ros2 run vision vio_bridge_px4

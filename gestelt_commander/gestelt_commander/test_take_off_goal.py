@@ -92,13 +92,13 @@ def main(args=None):
     rclpy.init(args=args)
 
     mission_mngr = MissionManager()
-    navigator = BasicNavigator(node_name='basic_navigator', namespace='d0')
+    navigator = BasicNavigator(node_name='basic_navigator')
 
     try: 
         #########
         # Take off 
         #########
-        mission_mngr.cmdAllDronesPubNamespaced(
+        mission_mngr.cmdAllDronesPubGlobal(
             UAVCommand.Request.COMMAND_TAKEOFF, 
             UAVState.IDLE,
             value=mission_mngr.scenario.take_off_height)
@@ -116,7 +116,7 @@ def main(args=None):
         #########
         # MissionManager mode
         #########
-        mission_mngr.cmdAllDronesPubNamespaced(
+        mission_mngr.cmdAllDronesPubGlobal(
             UAVCommand.Request.COMMAND_START_MISSION, 
             UAVState.HOVERING,
             mode=0)

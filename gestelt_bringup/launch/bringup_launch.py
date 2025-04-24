@@ -100,6 +100,12 @@ def generate_launch_description():
         # (['/', namespace, '/tf_static'], '/tf_static'),
     ]
 
+    traj_server_remappings = [
+        ('/uav_state', ['/', namespace, '/uav_state']), 
+    ]
+
+
+
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
     base_link_frame = [namespace, "_base_link"]
@@ -194,7 +200,7 @@ def generate_launch_description():
                     {'pub_ctrl_freq': 30.0},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings,
+                remappings=traj_server_remappings,
             ),
         ],
 
