@@ -18,15 +18,9 @@ from gestelt_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
 from rclpy.duration import Duration
 
-"""
-Basic navigation demo to go to pose.
-"""
+from gestelt_commander.scenario import *
 
-def main():
-    rclpy.init()
-
-    navigator = BasicNavigator()
-
+def planAndFollowPath(navigator, ns=''):
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'world'
     initial_pose.header.stamp = navigator.get_clock().now().to_msg()
@@ -35,35 +29,21 @@ def main():
     initial_pose.pose.position.z = 0.5
     initial_pose.pose.orientation.w = 1.0
 
-    # Activate navigation, if not autostarted. This should be called after setInitialPose()
-    # or this will initialize at the origin of the map and update the costmap with bogus readings.
-    # If autostart, you should `waitUntilNav2Active()` instead.
-    # navigator.lifecycleStartup()
-
     # Wait for navigation to fully activate, since autostarting nav2
-    navigator.waitUntilNav2Active(navigator='planner_server', localizer='robot_localization')
-
-    # If desired, you can change or load the map as well
-    # navigator.changeMap('/path/to/map.yaml')
-
-    # You may use the navigator to clear or obtain costmaps
-    # navigator.clearAllCostmaps()  # also have clearLocalCostmap() and clearGlobalCostmap()
-    # global_costmap = navigator.getGlobalCostmap()
-    # local_costmap = navigator.getLocalCostmap()
+    navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization')
 
     # Go to our demos first goal pose
     goal_pose = PoseStamped()
     goal_pose.header.frame_id = 'world'
     goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 2.5
-    goal_pose.pose.position.y = -0.77
+    goal_pose.pose.position.x = 5.0
+    goal_pose.pose.position.y = 0.0
     goal_pose.pose.position.z = 0.5
     goal_pose.pose.orientation.w = 1.0
 
     # sanity check a valid path exists
-    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=True)
-
-    # navigator.goToPose(goal_pose)
+    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
+    navigator.followPath(path)
 
     i = 0
     while not navigator.isTaskComplete():
@@ -107,7 +87,60 @@ def main():
     else:
         print('Goal has an invalid return status!')
 
-    navigator.lifecycleShutdown()
+def main(args=None):
+    rclpy.init(args=args)
+
+    mission_mngr = MissionManager()
+    navigator = BasicNavigator(node_name='basic_navigator', namespace='d0')
+
+    try: 
+        #########
+        # Take off 
+        #########
+        mission_mngr.cmdAllDronesPubNamespaced(
+            UAVCommand.Request.COMMAND_TAKEOFF, 
+            UAVState.IDLE,
+            value=mission_mngr.scenario.take_off_height)
+        mission_mngr.get_logger().info("Sending commands to TAKE OFF")
+        
+        #########
+        # Wait for Hover
+        #########
+        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=20):
+            raise Exception("Failed to transition to hover mode")
+        mission_mngr.get_logger().info("All drones are in HOVER MODE.")
+        # Reset occupancy map
+        mission_mngr.resetOccMap()
+
+        #########
+        # MissionManager mode
+        #########
+        mission_mngr.cmdAllDronesPubNamespaced(
+            UAVCommand.Request.COMMAND_START_MISSION, 
+            UAVState.HOVERING,
+            mode=0)
+        mission_mngr.get_logger().info("All drones swtching switching to MISSION MODE")
+
+        #########
+        # Wait for mission_mngr
+        #########
+        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=20):
+            raise Exception("Failed to transition to mission mode")
+        
+        mission_mngr.get_logger().info("All drones in MISSION MODE")
+
+        # Send a goal
+        mission_mngr.get_logger().info("Requesting planned path.")
+        planAndFollowPath(navigator, '/d0')
+
+        rclpy.spin(mission_mngr)
+
+    except Exception as e:
+        print(e)
+
+    mission_mngr.destroy_node()
+    # navigator.lifecycleShutdown()
+    rclpy.shutdown()
 
     exit(0)
 

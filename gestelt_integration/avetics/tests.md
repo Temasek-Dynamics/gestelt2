@@ -16,7 +16,8 @@ ros2 launch gestelt_bringup offboard_launch.py
 ros2 launch vilota_bridge vilota_bridge_launch.py
 zenoh-bridge-ros2dds -c /home/nvidia/gestelt_ws/src/gestelt2/gestelt_network/zenoh_d0_cfg.json5
 # GCS 
-ros2 launch gestelt_bringup test_takeoff.py scenario_name:=single_drone_test
+ros2 launch gestelt_bringup gcs.py
+ros2 launch gestelt_bringup test_planning.py scenario_name:=single_drone_test
 zenoh-bridge-ros2dds -c /home/john/gestelt_ws/src/gestelt2/gestelt_network/zenoh_host_cfg.json5
 ```
 

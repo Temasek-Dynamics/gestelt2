@@ -72,7 +72,6 @@ def generate_launch_description():
         description='Full path to the RVIZ config file to use',
     )
 
-
     start_rviz_cmd = Node(
         package='rviz2',
         executable='rviz2',

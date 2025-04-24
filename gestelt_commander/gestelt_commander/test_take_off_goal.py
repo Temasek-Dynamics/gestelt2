@@ -20,6 +20,7 @@ from rclpy.duration import Duration
 
 from gestelt_commander.scenario import *
 
+
 def planAndFollowPath(navigator, ns=''):
     initial_pose = PoseStamped()
     initial_pose.header.frame_id = 'world'
@@ -36,13 +37,13 @@ def planAndFollowPath(navigator, ns=''):
     goal_pose = PoseStamped()
     goal_pose.header.frame_id = 'world'
     goal_pose.header.stamp = navigator.get_clock().now().to_msg()
-    goal_pose.pose.position.x = 5.0
+    goal_pose.pose.position.x = 2.0
     goal_pose.pose.position.y = 0.0
-    goal_pose.pose.position.z = 0.5
+    goal_pose.pose.position.z = 1.0
     goal_pose.pose.orientation.w = 1.0
 
     # sanity check a valid path exists
-    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
+    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=True)
     navigator.followPath(path)
 
     i = 0
@@ -131,7 +132,7 @@ def main(args=None):
 
         # Send a goal
         mission_mngr.get_logger().info("Requesting planned path.")
-        planAndFollowPath(navigator, '/d0')
+        planAndFollowPath(navigator)
 
         rclpy.spin(mission_mngr)
 

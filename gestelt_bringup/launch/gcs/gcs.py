@@ -66,7 +66,6 @@ def generate_launch_description():
     launch_dir = os.path.join(bringup_dir, 'launch')
 
     rviz_config_file = LaunchConfiguration('rviz_config_file')
-    use_rviz = LaunchConfiguration('use_rviz')
 
     # Declare parameters
     namespace = LaunchConfiguration('namespace')
@@ -98,41 +97,29 @@ def generate_launch_description():
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
-        default_value=os.path.join(bringup_dir, 'rviz', 'default.rviz'),
+        default_value=os.path.join(bringup_dir, 'rviz', 'single_drone.rviz'),
         description='Full path to the RVIZ config file to use',
     )
 
-    rviz_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(launch_dir, 'rviz_launch.py')),
-        launch_arguments={
-            'namespace': namespace,
-            'use_namespace': use_namespace,
-            'use_sim_time': use_sim_time,
-            'rviz_config': rviz_config_file,
-        }.items(),
-    )
-
-    # XRCE Agent that will connect to ALL XRCE-DDS clients
-    xrce_agent = ExecuteProcess(
-        cmd=[[
-            'MicroXRCEAgent serial --dev /dev/ttyTHS1 -b 921600'
-        ]],
-        name='microxrceagent',
-        shell=True
+    start_rviz_cmd = Node(
+        package='rviz2',
+        executable='rviz2',
+        arguments=['-d', rviz_config_file],
+        output='screen'
     )
 
     # Send single test goal
-    mission_node = Node(
-        package='gestelt_commander',
-        executable='test_take_off_goal',
-        output='screen',
-        emulate_tty=False,
-        shell=True,
-        parameters = [
-            {'scenario': scenario.name},
-            {'init_delay': 1},
-        ]
-    )
+    # mission_node = Node(
+    #     package='gestelt_commander',
+    #     executable='test_take_off_goal',
+    #     output='screen',
+    #     emulate_tty=False,
+    #     shell=True,
+    #     parameters = [
+    #         {'scenario': scenario.name},
+    #         {'init_delay': 1},
+    #     ]
+    # )
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -144,7 +131,7 @@ def generate_launch_description():
 
     ld.add_action(declare_rviz_config_file_cmd)
 
-    ld.add_action(rviz_cmd)
+    ld.add_action(start_rviz_cmd)
     # ld.add_action(mission_node)
 
     return ld

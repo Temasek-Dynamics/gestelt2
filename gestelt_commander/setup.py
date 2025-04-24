@@ -28,7 +28,6 @@ setup(
             'land = gestelt_commander.land:main',
             'takeoff = gestelt_commander.takeoff:main',
             'send_goals = gestelt_commander.send_goals:main',
-            'test_single_goal_1 = gestelt_commander.test_single_goal_1:main',
             'test_take_off_goal = gestelt_commander.test_take_off_goal:main',
             'test_planning = gestelt_commander.test_planning:main',
         ],
