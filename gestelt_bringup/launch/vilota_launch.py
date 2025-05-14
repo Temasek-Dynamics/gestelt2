@@ -1,6 +1,16 @@
 import launch
 import launch_ros.actions
 
+from launch import LaunchDescription
+from launch.actions import (
+    IncludeLaunchDescription, 
+    GroupAction, 
+    ExecuteProcess, 
+    DeclareLaunchArgument
+)
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
+
 def generate_launch_description():
 
     # Common params
@@ -33,6 +43,13 @@ def generate_launch_description():
         default_value='3',
         description='Minimum number of points to count as a voxel in output'
     )
+
+    min_dist = LaunchConfiguration('min_dist')
+    max_dist = LaunchConfiguration('max_dist')
+    pcl_frame_id = LaunchConfiguration('pcl_frame_id')
+    downsample_leaf_size = LaunchConfiguration('downsample_leaf_size')
+    minimum_points_per_voxel = LaunchConfiguration('minimum_points_per_voxel')
+
 
     # Vilota depth image bridge
     vilota_bridge_front_left_node = Node(
@@ -80,10 +97,11 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
-    ld.add_action(declare_namespace_cmd)
-    ld.add_action(declare_use_namespace_cmd)
-    ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_use_sim_time_cmd)
+    ld.add_action(min_dist_arg)
+    ld.add_action(max_dist_arg)
+    ld.add_action(pcl_frame_id_arg)
+    ld.add_action(downsample_leaf_size_arg)
+    ld.add_action(minimum_points_per_voxel_arg)
 
     ld.add_action(vilota_bridge_front_left_node)
     ld.add_action(depth2pcl_node)

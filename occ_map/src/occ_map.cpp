@@ -182,7 +182,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
   /* Initialize Subscribers */
   cloud_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
-    "depth_camera/points", rclcpp::SensorDataQoS(), std::bind(&OccMap::cloudCB, this, _1) );
+    "occ_map/cloud_in", rclcpp::SensorDataQoS(), std::bind(&OccMap::cloudCB, this, _1) );
 
   /* Initialize Publishers */
   occ_map_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(

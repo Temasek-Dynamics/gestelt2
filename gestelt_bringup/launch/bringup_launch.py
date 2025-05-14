@@ -98,13 +98,12 @@ def generate_launch_description():
     remappings = [
         # (['/', namespace, '/tf'], '/tf'), 
         # (['/', namespace, '/tf_static'], '/tf_static'),
+        ('occ_map/cloud_in', '/point_cloud/downsample'), 
     ]
 
     traj_server_remappings = [
         ('/uav_state', ['/', namespace, '/uav_state']), 
     ]
-
-
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
