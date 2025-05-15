@@ -19,6 +19,7 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(px4_msgs REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -41,6 +42,23 @@ target_include_directories(viz_helper PUBLIC
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
 target_compile_definitions(viz_helper PRIVATE "LOGGER_WRAPPER_BUILDING_LIBRARY")
+
+# Add executable for visualizing PX4 msgs
+add_executable(px4_viz
+  src/px4_viz.cpp
+)
+ament_target_dependencies(px4_viz 
+  Eigen3
+  rclcpp
+  visualization_msgs
+  px4_msgs
+)
+target_include_directories(px4_viz
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
+)
+
 
 install(
   DIRECTORY include/
