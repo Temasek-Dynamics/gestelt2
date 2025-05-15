@@ -76,7 +76,7 @@ def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)
 
     launch_args = [
-        DeclareLaunchArgument('scenario_name', default_value='goals_2d_0'),
+        DeclareLaunchArgument('scenario_name', default_value='single_drone_test'),
     ]
 
     ld = LaunchDescription(launch_args)

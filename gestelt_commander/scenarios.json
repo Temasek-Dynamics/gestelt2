@@ -6,7 +6,7 @@
     "take_off_height": 1.0,
     "send_goals": false,
     "spawns_pos": [
-      [0.0, 0.0, 0.0]
+      [0.0, 0.0, 0.785]
     ],
     "goals_pos": [
       [2.0, 0.15, 1.0]

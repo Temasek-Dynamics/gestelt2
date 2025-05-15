@@ -48,6 +48,16 @@ To access Vilota camera settings:
 
 To debug on nuttx shell use `listener vehicle_visual_odometry`
 
+### SSH into vilota computer
+```bash
+ssh compulab@10.42.0.64 
+# password is compulab
+
+# Configs are stored in
+cd /opt/vilota/configs/vio 
+
+```
+
 
 ## Zenoh
 1. Using the standalone plugin from https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds
