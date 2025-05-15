@@ -1,0 +1,48 @@
+{
+  plugins: {
+    ros2dds: {
+      nodename: "zenoh_bridge_ros2dds_1",
+      namespace: "/d1",
+      ros_localhost_only: true,
+      ros_automatic_discovery_range: "LOCALHOST",
+      allow: {
+        publishers: [ 
+                      // State machine
+                      "/uav_state", 
+                      // Perception
+                      "/visbot_itof/point_cloud", 
+                      "/occ_map", 
+                      // Localization
+                      "/odom", 
+                      "/agent_id_text",
+                      // Planning
+                      "/fe_plan_req", // plan start and goal request
+                      "/fe_plan/viz", // A* path
+                      "/mpc/traj", // MPC trajectory
+                      // Transformations
+                      "/tf",
+                      "/tf_static",
+                    ],
+        subscribers: [
+                      ".*/point_goal",
+                      ".*/all_uav_command",
+                      ".*/goals",
+                      ".*/reset_map",
+                    ],
+        service_servers: [],
+        service_clients: [],
+        action_servers: [],
+        action_clients: [],
+      },
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+    endpoints: [
+      "udp/10.42.0.1:7447"
+    ]
+  },
+
+}

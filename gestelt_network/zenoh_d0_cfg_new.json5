@@ -1,0 +1,22 @@
+{
+  plugins: {
+    dds: {
+      scope: "/d0",
+      domain: 0,
+      localhost_only: true,
+      nodename: "zenoh_bridge_dds_0",
+      ros_automatic_discovery_range: "LOCALHOST",
+      allow: ["/uav_state", "/occ_map", "/odom", 
+        "/tf", "/tf_static", ".*/point_goal", ".*/uav_command"],
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+    endpoints: [
+      "udp/192.168.17.100:7447"
+    ]
+  },
+
+}

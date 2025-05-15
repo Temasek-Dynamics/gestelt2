@@ -62,7 +62,7 @@ add_library(${PROJECT_NAME}
 )
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 # ament_target_dependencies(${PROJECT_NAME} 
-#   ${ROS_LIBRABRIES}
+#   ${ROS_DEPENDENCIES}
 # )
 target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_include_directories(${PROJECT_NAME} PUBLIC

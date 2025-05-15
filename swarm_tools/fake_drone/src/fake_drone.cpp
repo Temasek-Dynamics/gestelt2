@@ -28,83 +28,102 @@
 FakeDrone::FakeDrone()
 : Node("fake_drone")
 {
+	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+
 	sim_update_cb_group_ = this->create_callback_group(
 		rclcpp::CallbackGroupType::Reentrant);
 
-    fcu_cb_group_ = this->create_callback_group(
-      rclcpp::CallbackGroupType::Reentrant);
-
     traj_sp_cb_group_ = this->create_callback_group(
       rclcpp::CallbackGroupType::MutuallyExclusive);
-
-	std::string param_ns = "fake_drone";
-
-	vehicle_status_msg_ = std::make_unique<VehicleStatus>();
-	vehicle_odom_msg_ = std::make_unique<VehicleOdometry>();
 	
+	/* Parameters */
+	std::string param_ns = "fake_drone";
 	this->declare_parameter(param_ns+".drone_id", -1);
+	this->declare_parameter(param_ns+".map_frame", "map");
+	this->declare_parameter(param_ns+".base_link_frame", "base_link");
 
 	this->declare_parameter(param_ns+".state_update_frequency", -1.0);
+	this->declare_parameter(param_ns+".odom_update_frequency", -1.0);
 
 	this->declare_parameter(param_ns+".init_x", 0.0);
 	this->declare_parameter(param_ns+".init_y", 0.0);
+	this->declare_parameter(param_ns+".init_z", 0.0);
 	this->declare_parameter(param_ns+".init_yaw", 0.0);
 
 	drone_id_ = this->get_parameter(param_ns+".drone_id").as_int();
+	std::string map_frame = this->get_parameter(param_ns+".map_frame").as_string();
+	std::string base_link_frame = this->get_parameter(param_ns+".base_link_frame").as_string();
 
-	double state_update_freq = this->get_parameter(param_ns+".state_update_frequency").as_double();
+	double state_update_frequency = this->get_parameter(param_ns+".state_update_frequency").as_double();
+	double odom_update_frequency = this->get_parameter(param_ns+".odom_update_frequency").as_double();
 
 	Eigen::Vector3d init_pos;
 	init_pos(0) = this->get_parameter(param_ns+".init_x").as_double();
 	init_pos(1) = this->get_parameter(param_ns+".init_y").as_double();
-	init_pos(2) = 0.0; 
+	init_pos(2) = this->get_parameter(param_ns+".init_z").as_double();
 	double init_yaw = this->get_parameter(param_ns+".init_yaw").as_double();
-
-	Eigen::Vector3d init_pos_ned = vecENUToNED(init_pos);
-	vehicle_odom_msg_->position = {(float)init_pos_ned(0), (float)init_pos_ned(1), (float)init_pos_ned(2)}; 
-
 	Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, init_yaw);
-	vehicle_odom_msg_->q = {(float)quat.w(),(float)quat.x(),(float)quat.y(),(float)quat.z() }; 
 
-	vehicle_status_msg_->arming_state = false;
-	vehicle_status_msg_->nav_state = VehicleStatus::NAVIGATION_STATE_POSCTL;
+	/* Assign initial values */
+	odom_msg_ = std::make_unique<nav_msgs::msg::Odometry>();
+	odom_msg_->header.frame_id = map_frame;
+	odom_msg_->pose.pose.position.x = init_pos(0);
+	odom_msg_->pose.pose.position.y = init_pos(1);
+	odom_msg_->pose.pose.position.z = init_pos(2);
+	odom_msg_->pose.pose.orientation.x = quat.x();
+	odom_msg_->pose.pose.orientation.y = quat.y();
+	odom_msg_->pose.pose.orientation.z = quat.z();
+	odom_msg_->pose.pose.orientation.w = quat.w();
+
+	vehicle_state_msg_ = std::make_unique<mavros_msgs::msg::State>();
+	vehicle_state_msg_->armed = false;
+	vehicle_state_msg_->connected = true;
+	vehicle_state_msg_->mode = "AUTO.LOITER";
+
+	map_to_bl_tf_.header.frame_id = map_frame; 
+	map_to_bl_tf_.child_frame_id = base_link_frame; 
+	map_to_bl_tf_.transform.translation.x = init_pos(0);
+	map_to_bl_tf_.transform.translation.y = init_pos(1);
+	map_to_bl_tf_.transform.translation.z = init_pos(2);
+
+	/* Services */
+	cmd_arming_srv_ =
+		this->create_service<mavros_msgs::srv::CommandBool>(
+			"mavros/cmd/arming", std::bind(&FakeDrone::cmdArmingSrvCB, this, _1, _2)) ;
+	set_mode_srv_ =
+		this->create_service<mavros_msgs::srv::SetMode>(
+			"mavros/set_mode", std::bind(&FakeDrone::setModeSrvCB, this, _1, _2));
 
 	/* Subscribers */
-    auto fcu_topics_opt = rclcpp::SubscriptionOptions();
-	fcu_topics_opt.callback_group = fcu_cb_group_;
-
 	auto traj_sp_opt = rclcpp::SubscriptionOptions();
 	traj_sp_opt.callback_group = traj_sp_cb_group_;
 
-	trajectory_setpoint_sub_ = this->create_subscription<TrajectorySetpoint>(
-		"fmu/in/trajectory_setpoint", rclcpp::SystemDefaultsQoS(), 
+	auto state_qos = rclcpp::QoS(10).transient_local();
+
+	trajectory_setpoint_sub_ = this->create_subscription<mavros_msgs::msg::PositionTarget>(
+		"mavros/setpoint_raw/local", rclcpp::SystemDefaultsQoS(), 
 		std::bind(&FakeDrone::trajectorySetpointSubCB, this, _1), traj_sp_opt);
 
-	offboard_control_mode_sub_ = this->create_subscription<OffboardControlMode>(
-		"fmu/in/offboard_control_mode", rclcpp::SystemDefaultsQoS(), 
-		std::bind(&FakeDrone::offboardCtrlModeSubCB, this, _1), fcu_topics_opt);
-
-	vehicle_command_sub_ = this->create_subscription<VehicleCommand>(
-		"fmu/in/vehicle_command", rclcpp::SystemDefaultsQoS(), 
-		std::bind(&FakeDrone::VehicleCommandSubCB, this, _1), fcu_topics_opt);
-
 	/* Publishers */
-	fcu_odom_pub_ = this->create_publisher<VehicleOdometry>(
-		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS());
+	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
+		"mavros/local_position/odom", rclcpp::SensorDataQoS());
 
-	vehicle_status_pub_ = this->create_publisher<VehicleStatus>(
-		"fmu/out/vehicle_status", rclcpp::SensorDataQoS());
+	vehicle_state_pub_ = this->create_publisher<mavros_msgs::msg::State>(
+		"mavros/state", state_qos);
 
 	/**
 	 * Timer for drone state update  
 	*/
-	state_update_timer_ = this->create_wall_timer((1.0/state_update_freq) *1000ms, 
+	odom_update_timer_ = this->create_wall_timer((1.0/odom_update_frequency) *1000ms, 
+                                            std::bind(&FakeDrone::odomUpdateTimerCB, this), 
+                                            sim_update_cb_group_);
+
+	state_update_timer_ = this->create_wall_timer((1.0/state_update_frequency) *1000ms, 
                                             std::bind(&FakeDrone::stateUpdateTimerCB, this), 
                                             sim_update_cb_group_);
 
 	printf("[fake_drone] drone%d created with start_pose [%.2lf %.2lf %.2lf]! \n", 
 		drone_id_, init_pos(0), init_pos(1), init_pos(2));
-	
 }
 
 FakeDrone::~FakeDrone()
@@ -113,84 +132,86 @@ FakeDrone::~FakeDrone()
 
 /* Subscriber Callbacks*/
 
-void FakeDrone::trajectorySetpointSubCB(const TrajectorySetpoint::UniquePtr &msg)
+void FakeDrone::trajectorySetpointSubCB(const mavros_msgs::msg::PositionTarget::UniquePtr &msg)
 {
-	if (vehicle_status_msg_->nav_state == VehicleStatus::NAVIGATION_STATE_AUTO_LAND){
+	if (vehicle_state_msg_->mode == "AUTO.LOITER"){
 		// TODO: land vehicle
 	}
-	else if (vehicle_status_msg_->nav_state == VehicleStatus::NAVIGATION_STATE_OFFBOARD)
+	else if (vehicle_state_msg_->mode == "OFFBOARD" && vehicle_state_msg_->armed)
 	{
+		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
+
+		map_to_bl_tf_.header.stamp = this->get_clock()->now();
+		odom_msg_->header.stamp = this->get_clock()->now();
+
+		if (!std::isnan(msg->position.x) && !std::isnan(msg->position.y) && !std::isnan(msg->position.z))
 		{
-			std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
-			if (!std::isnan(msg->position[0]) && !std::isnan(msg->position[1]) && !std::isnan(msg->position[2]))
-			{
-				vehicle_odom_msg_->position = {msg->position[0], msg->position[1], msg->position[2]};
-			}
-			if (!std::isnan(msg->velocity[0]) && !std::isnan(msg->velocity[1]) && !std::isnan(msg->velocity[2]))
-			{
-				vehicle_odom_msg_->velocity = {msg->velocity[0], msg->velocity[1], msg->velocity[2]};
-			}
-			Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, (double) msg->yaw);
-			// quaternion in order of (w,x,y,z)
-			vehicle_odom_msg_->q = {(float)quat.w(),(float)quat.x(),(float)quat.y(),(float)quat.z() }; 
+			odom_msg_->pose.pose.position.x = msg->position.x;
+			odom_msg_->pose.pose.position.y = msg->position.y;
+			odom_msg_->pose.pose.position.z = msg->position.z;
+
+			map_to_bl_tf_.transform.translation.x = msg->position.x;
+			map_to_bl_tf_.transform.translation.y = msg->position.y;
+			map_to_bl_tf_.transform.translation.z = msg->position.z;
+
 		}
+		if (!std::isnan(msg->velocity.x) && !std::isnan(msg->velocity.y) && !std::isnan(msg->velocity.z))
+		{
+			odom_msg_->twist.twist.linear.x = msg->velocity.x;
+			odom_msg_->twist.twist.linear.y = msg->velocity.y;
+			odom_msg_->twist.twist.linear.z = msg->velocity.z;
+		}
+		Eigen::Quaterniond quat = RPYToQuaternion(0.0, 0.0, (double) msg->yaw);
+		odom_msg_->pose.pose.orientation.x = quat.x();
+		odom_msg_->pose.pose.orientation.y = quat.y();
+		odom_msg_->pose.pose.orientation.z = quat.z();
+		odom_msg_->pose.pose.orientation.w = quat.w();
+
+		map_to_bl_tf_.transform.rotation.x = quat.x();
+		map_to_bl_tf_.transform.rotation.y = quat.y();
+		map_to_bl_tf_.transform.rotation.z = quat.z();
+		map_to_bl_tf_.transform.rotation.w = quat.w();
+
 	}
 
 }
 
-void FakeDrone::offboardCtrlModeSubCB(const OffboardControlMode::UniquePtr &msg)
+
+void FakeDrone::cmdArmingSrvCB(const std::shared_ptr<mavros_msgs::srv::CommandBool::Request> req,
+					std::shared_ptr<mavros_msgs::srv::CommandBool::Response> resp)
 {
-	// TODO: add timeout if frequency < 2 Hz
+	if (req->value){
+		printf("[fake_drone] drone%d armed! \n", drone_id_);
+	}
+	else {
+		printf("[fake_drone] drone%d disarmed! \n", drone_id_);
+	}
+	vehicle_state_msg_->armed = req->value;
+
+	resp->success = true;
 }
 
-void FakeDrone::VehicleCommandSubCB(const VehicleCommand::UniquePtr &msg)
+void FakeDrone::setModeSrvCB(const std::shared_ptr<mavros_msgs::srv::SetMode::Request> req,
+					std::shared_ptr<mavros_msgs::srv::SetMode::Response> resp)
 {
-	switch (msg->command){
-		case VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM:
-			if (msg->param1 == VehicleCommand::ARMING_ACTION_DISARM){
-				vehicle_status_msg_->arming_state = false;
-			}	
-			else if (msg->param1 == VehicleCommand::ARMING_ACTION_ARM){
-					vehicle_status_msg_->arming_state = true;
-			}
-			else {
-				printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
-			}
-			break;
-		case VehicleCommand::VEHICLE_CMD_DO_SET_MODE:
-			if (msg->param1 != 1){
-				printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
-				return;
-			}
-			else{
-				if (msg->param2 == PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD){
-					vehicle_status_msg_->nav_state = VehicleStatus::NAVIGATION_STATE_OFFBOARD;
-				}
-				else if (msg->param2 == PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO){
-					if (msg->param3 == PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND)
-					{
-						vehicle_status_msg_->nav_state = VehicleStatus::NAVIGATION_STATE_AUTO_LAND;
-					}
-				}
-				else {
-					printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
-					return;
-				}
-			}
-			break;
-		default:
-			printf("[fake_drone] drone%d received invalid vehicle_command \n", drone_id_);
-			break;
-	} 
+	vehicle_state_msg_->mode = req->custom_mode;
+
+	printf("[fake_drone] drone%d switched to mode %s! \n", 
+			drone_id_, req->custom_mode.c_str());
+
+	resp->mode_sent = true;
 }
 
 /* Timer Callbacks*/
 
+void FakeDrone::odomUpdateTimerCB()
+{
+	std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
+	odom_pub_->publish(*odom_msg_);
+	tf_broadcaster_->sendTransform(map_to_bl_tf_);
+}
+
 void FakeDrone::stateUpdateTimerCB()
 {
-	{
-		std::lock_guard<std::mutex> state_mutex_guard(state_mutex_);
-		fcu_odom_pub_->publish(*vehicle_odom_msg_);
-	}
-	vehicle_status_pub_->publish(*vehicle_status_msg_);
+	vehicle_state_pub_->publish(*vehicle_state_msg_);
 }

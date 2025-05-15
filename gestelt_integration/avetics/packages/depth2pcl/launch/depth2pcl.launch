@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="depth2pcl" exec="depth2pcl_node" name="depth2pcl_node_back_left" output="screen">
+      <param name="min_dist" value="0.1"/>
+      <param name="max_dist" value="20.0"/>
+      <param name="pcl_frame_id" value="odom"/>
+
+      <param name="downsample_leaf_size" value="0.1"/>
+      <param name="minimum_points_per_voxel" value="3"/>
+
+      <remap from="/depth/rect" to="/back_left/depth/rect"/>
+      <remap from="/depth/camera_info" to="/back_left/depth/camera_info"/>
+      <remap from="/point_cloud" to="/point_cloud"/>
+    </node>
+
+    <node pkg="depth2pcl" exec="depth2pcl_node" name="depth2pcl_node_back_right" output="screen">
+      <param name="min_dist" value="0.1"/>
+      <param name="max_dist" value="20.0"/>
+      <param name="pcl_frame_id" value="odom"/>
+
+      <param name="downsample_leaf_size" value="0.1"/>
+      <param name="minimum_points_per_voxel" value="3"/>
+
+      <remap from="/depth/rect" to="/back_right/depth/rect"/>
+      <remap from="/depth/camera_info" to="/back_right/depth/camera_info"/>
+      <remap from="/point_cloud" to="/point_cloud"/>
+    </node>
+</launch>

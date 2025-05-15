@@ -3,54 +3,87 @@
     navigator:
 
       planner: 
-        verbose_print: false  # If enabled, print debug information such as runtime 
-        plan_once: false       # Only plan once
+        print_runtime: false  # If enabled, print debug information such as runtime 
         goal_tolerance: 0.5   # [m] Tolerance for goal execution to be complete
-        t_unit: 0.1           # [s] Duration of each time unit           
+        min_sqr_dist_obs: 0  # Minimum squared distnace to obstacle to be considered a free cell
+        max_iterations: 99999 # Max number of allowed iterations
+        tie_breaker: 1.001
+        cost_function_type: 2 # 0: getOctileDist, 1: getL1Norm, 2: getL2Norm, 3: getChebyshevDist
+
+      point_goal_height: 1.0 #[m] Height to send point goal
 
       pub_state_frequency: 10.0 # [Hz] Frequency at which state is published
-      planner_frequency: 15.0  # [Hz] Frequency at which plan is generated
-      generate_voronoi_frequency: 30.0  # [Hz] Frequency at which voronoi is generated
+      planner_frequency: 8.0  # [Hz] Frequency at which plan is generated
+      # generate_voronoi_frequency: 5.0  # Unused [Hz] Frequency at which voronoi is generated
 
-      planner_recovery_timeout: 3.0 # [s] Timeout before planner recovery behaviour is executed
+      planner_recovery_timeout: 3.0 # [s] UNIMPLEMENTED Timeout before planner recovery behaviour is executed
 
       # plan_method options
-      # 0: COMMLESS_MINCO 
+      # 0: COMMLESS_MINCO
       # 1: COMMLESS_MPC 
       # 2: COMM_MINCO
       plan_method: 1
 
+      samp_mpc_tolerance: 0.2 # [m] Used when sampling previous trajectory for start of plan. Tolerance for difference between current position and sampled MPC position 
+
+      map_slicing: # 2D boolean map slices used for voronoi generation
+        # min_height_cm:    40    # [cm] Minimum slice height
+        # max_height_cm:    320   # [cm] Maximum slice height
+        # z_sep_cm:  40    # [cm] Separation between slices
+        # min_height_cm:    50    # [cm] Minimum slice height
+        # max_height_cm:    200   # [cm] Maximum slice height
+        # z_sep_cm:  50    # [cm] Separation between slices
+        min_height_cm:    90    # [cm] Minimum slice height
+        max_height_cm:    260   # [cm] Maximum slice height
+        z_sep_cm:  10    # [cm] Separation between slices
+        sample_thickness: 0.41 # [m] Height above and below to sample for obstacles for each slice. For example, 0.5m means 0.25m top and 0.25m bottom
       mpc:
-        ctrl_samp_freq: 25.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
+        ctrl_samp_freq: 30.0 #[Hz] Control sample frequency. The rate at which MPC predicted state is sampled
         ref_path_samp_interval: 1
+        # Yaw control
+        yaw_ctrl_flag: true # Control the yaw
+        yaw_lookahead_dist: 6 # [front-end sample points] Lookahead distance for calculating yaw
         # MPC parameters
         horizon: 15
         time_step: 0.1 #[s]
         # Objective Weights
-        R_p: 1000.0
-        R_v: 0.0
-        R_a: 0.0
-        R_u: 0.0 
-        R_u_con: 0.2
-        R_pN: 1000.0
-        R_vN: 1000.0
-        R_aN: 1000.0
+        R_p: 1000.0 # Error from reference position
+        R_v: 0.0  # Velocity magnitude
+        R_a: 0.0  # Acceleration magnitude
+        R_u: 0.0  # Control magnitude
+        R_u_con: 0.2  # Continuity in controls
+        R_pN: 2000.0 # Terminal position
+        R_vN: 1000.0 # Terminal velocity
+        R_aN: 1000.0 # Terminal acceleration
+        
         # State bounds
-        v_min: -10.0
-        v_max: 10.0
-        a_min: -20.0
-        a_max: 20.0
-        # Control bounds
-        u_min: -50.0
-        u_max: 50.0
+        vx_min:     -0.25
+        vy_min:     -0.25
+        vz_min:     -0.25
+        vx_max:      0.25
+        vy_max:      0.25
+        vz_max:      0.25
+
+        ax_min:     -30.0
+        ay_min:     -30.0
+        az_min:     -30.0
+        ax_max:      30.0
+        ay_max:      30.0
+        az_max:      30.0
+
+        ux_min:     -60.0
+        uy_min:     -60.0
+        uz_min:     -60.0
+        ux_max:      60.0
+        uy_max:      60.0
+        uz_max:      60.0
 
       sfc:
-        bbox_x: 1.0
-        bbox_y: 2.0
-        bbox_z: 1.0
-
-      min_jerk_trajectory:
-        front_end_stride: 5 # Stride to sample front-end path for trajectory generation
+        poly:
+          bbox_x: 2.0
+          bbox_y: 2.0
+          bbox_z: 2.0
+          sfc_sampling_interval: 4
 
       reservation_table:
         inflation: 1.0    # [m] buffer for reservation table in spatial domain

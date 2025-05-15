@@ -98,6 +98,20 @@
         "valarray": "cpp",
         "regex": "cpp",
         "hash_map": "cpp",
-        "hash_set": "cpp"
-    }
+        "hash_set": "cpp",
+        "numericaldiff": "cpp",
+        "*.ipp": "cpp",
+        "csetjmp": "cpp",
+        "barrier": "cpp",
+        "coroutine": "cpp",
+        "cuchar": "cpp",
+        "netfwd": "cpp",
+        "rope": "cpp",
+        "slist": "cpp",
+        "latch": "cpp",
+        "scoped_allocator": "cpp",
+        "syncstream": "cpp",
+        "specialfunctions": "cpp"
+    },
+    "cmake.sourceDirectory": "/home/john/gestelt_ws/src/gestelt2/swarm_tools/swarm_collision_checker"
 }

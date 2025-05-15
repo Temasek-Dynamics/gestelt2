@@ -1,0 +1,170 @@
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 20.0
+    planner_plugins: ["GridBased"]
+    occ_map_update_timeout: 1.0
+
+    print_runtime: true # Print runtime of computing path
+
+    GridBased:
+      plugin: "astar_planner::AStarPlanner"
+      tolerance: 0.5
+      max_iterations: 99999
+      tie_breaker: 1.001
+      allow_unknown: true
+      cost_function_type: 1
+
+controller_server:
+  ros__parameters:
+    controller_frequency: 20.0
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["goal_checker"]
+    controller_plugins: ["FollowPath"]
+
+    controller_look_ahead_index: 1
+    print_runtime: true # Print runtime of computing controls
+
+    # Progress checker parameters
+    progress_checker:
+      plugin: "gestelt_controller::SimpleProgressChecker"
+      required_movement_radius: 0.5 # [m] Movement allowance
+      movement_time_allowance: 60.0 # [s] Time allowance for movement of given radius 
+    # Goal checker parameters
+    goal_checker:
+      plugin: "gestelt_controller::SimpleGoalChecker"
+      xyz_goal_tolerance: 0.25 # [m] 
+      # yaw_goal_tolerance: 0.25 # Not used
+      stateful: True
+    # DWB parameters
+    FollowPath:
+      plugin: "linear_mpc_controller::LinearMPCController"
+      control_yaw: true # Enable simple control of the yaw
+      yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
+      max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
+      sfc:
+        plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
+        bbox_x: 2.0 # [m] Bounding box in x axis
+        bbox_y: 2.0 # [m] Bounding box in y axis
+        bbox_z: 2.0 # [m] Bounding box in z axis
+      mpc:
+        plan_sample_interval: 1 # [] Uses every N point on global plan as reference path
+        # MPC parameters
+        horizon: 15
+        time_step: 0.1 #[s]
+        # Objective Weights
+        R_p: 1000.0 # Error from reference position
+        R_v: 0.0  # Velocity magnitude
+        R_a: 0.0  # Acceleration magnitude
+        R_u: 0.0  # Control magnitude
+        R_u_con: 0.2  # Continuity in controls
+        R_pN: 2000.0 # Terminal position
+        R_vN: 1000.0 # Terminal velocity
+        R_aN: 1000.0 # Terminal acceleration
+        
+        # State bounds
+        vx_min:     -0.25
+        vy_min:     -0.25
+        vz_min:     -0.25
+        vx_max:      0.25
+        vy_max:      0.25
+        vz_max:      0.25
+
+        ax_min:     -30.0
+        ay_min:     -30.0
+        az_min:     -30.0
+        ax_max:      30.0
+        ay_max:      30.0
+        az_max:      30.0
+
+        ux_min:     -60.0
+        uy_min:     -60.0
+        uz_min:     -60.0
+        ux_max:      60.0
+        uy_max:      60.0
+        uz_max:      60.0
+
+global_occ_map:
+  ros__parameters:
+    global_frame: "world"
+    map_frame: "map"
+    camera_frame: "camera_link"
+    base_link_frame: "base_link"
+
+    print_timer: false       # If enabled, print debug information such as timing information
+    update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
+    viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
+
+    global_map: 
+      size_x: 60.0  # [m]
+      size_y: 60.0  # [m]
+      size_z: 10.0  # [m]
+
+    local_map:  # Local map used by controllers
+      size_x: 20.0  # [m]
+      size_y: 20.0  # [m]
+      size_z: 5.0   # [m]
+
+    prob_map:  # Occupancy map parameters
+      # Probabilistic map
+      prob_miss_log: 0.35 # 
+      prob_hit_log: 0.78  # 
+      clamp_min_log: 0.12 # 
+      clamp_max_log: 0.90 # 
+      occupancy_threshold_log: 0.5 # 
+
+      resolution: 0.1   # [m] Resolution of voxel
+      static_inflation: 0.2    # [m] Static obstacle inflation
+      ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
+      # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
+      max_range: 5.0   # [m] Maximum range of sensor
+
+    # Passthrough filter for input point cloud
+    cloud_in_min_z: -0.5 # [m] Minimum height for point cloud to be included in map
+    cloud_in_max_z: 5.0 # [m] Maximum height for point cloud to be included in map
+
+    # Noise filter by checking clusters
+    noise_search_radius: 0.17  # Radius to search for neighbouring points
+    noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point
+
+local_occ_map:
+  ros__parameters:
+    global_frame: "world"
+    map_frame: "map"
+    camera_frame: "camera_link"
+    base_link_frame: "base_link"
+
+    print_timer: false       # If enabled, print debug information such as timing information
+    update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
+    viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
+
+    global_map: 
+      size_x: 30.0  # [m]
+      size_y: 30.0  # [m]
+      size_z: 10.0  # [m]
+
+    local_map:  # Local map used by controllers
+      size_x: 20.0  # [m]
+      size_y: 20.0  # [m]
+      size_z: 5.0   # [m]
+
+    prob_map:  # Occupancy map parameters
+      # Probabilistic map
+      prob_miss_log: 0.35 # 
+      prob_hit_log: 0.78  # 
+      clamp_min_log: 0.12 # 
+      clamp_max_log: 0.90 # 
+      occupancy_threshold_log: 0.5 # 
+
+      resolution: 0.1   # [m] Resolution of voxel
+      static_inflation: 0.2    # [m] Static obstacle inflation
+      ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
+      # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
+      max_range: 5.0   # [m] Maximum range of sensor
+
+    # Passthrough filter for input point cloud
+    cloud_in_min_z: -0.5 # [m] Minimum height for point cloud to be included in map
+    cloud_in_max_z: 5.0 # [m] Maximum height for point cloud to be included in map
+
+    # Noise filter by checking clusters
+    noise_search_radius: 0.17  # Radius to search for neighbouring points
+    noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point

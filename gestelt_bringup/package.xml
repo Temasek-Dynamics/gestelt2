@@ -11,15 +11,21 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
-  <depend>navigator</depend>
-  <depend>fake_map</depend>
-  <depend>fake_drone</depend>
-  <depend>fake_sensor</depend>
+  <depend>launch_ros</depend>
+
+  <depend>nav2_common</depend>
+  <depend>gestelt_planner</depend>
+  <depend>gestelt_commander</depend>
+  <depend>gestelt_controller</depend>  
   <depend>trajectory_server</depend>
-  <depend>mavros</depend>
-  
-  <depend>gestelt_mission</depend>
-  <depend>swarm_collision_checker</depend>
+
+  <depend>astar_planner</depend>
+  <depend>linear_mpc_controller</depend>
+
+  <depend>fake_sensor</depend>
+  <depend>fake_map</depend>
+
+  <depend>ros_gz_bridge</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -1,0 +1,27 @@
+{
+  plugins: {
+    ros2dds: {
+      nodename: "zenoh_bridge_ros2dds_host",
+      ros_localhost_only: true,
+      ros_automatic_discovery_range: "LOCALHOST",
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+   endpoints: [
+      "udp/10.42.0.34:7447",
+      "udp/10.42.0.35:7447",
+      "udp/10.42.0.45:7447",
+      "udp/10.42.0.37:7447"
+   ]
+  },
+
+  // listen: {
+  //  endpoints: [
+  //     "udp/0.0.0.0:7447"
+  //  ]
+  // },
+
+}

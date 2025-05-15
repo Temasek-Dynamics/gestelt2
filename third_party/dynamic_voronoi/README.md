@@ -1,3 +1,0 @@
-# dynamic_voronoi
-
-The core algorithm of this package is taken from the standalone library for dynamic voronoi generation from [Boris Lau](http://www2.informatik.uni-freiburg.de/~lau/dynamicvoronoi/) with significant API modifications. It is based upon the paper ["B. Lau, C. Sprunk, and W. Burgard. Efficient Grid-Based Spatial Representations for Robot Navigation in Dynamic Environments. Robotics and Autonomous Systems, 61 (10), 2013, pp. 1116-1130, Elsevier"](http://www.sciencedirect.com/science/article/pii/S092188901200142X) 

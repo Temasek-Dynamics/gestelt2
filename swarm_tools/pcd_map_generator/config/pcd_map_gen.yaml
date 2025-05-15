@@ -1,13 +1,14 @@
 /**: 
   ros__parameters:
     map:
+      filename: vicon_room_obs1
       resolution: 0.1 # [m]
-      x_size: 25.0 # [m]
-      y_size: 50.0 # [m]
-      z_size: 5.0 # [m]
+      x_size: 5.0 # [m]
+      y_size: 5.0 # [m]
+      z_size: 2.5 # [m]
 
     random_forest: 
-      num_cylindrical_obs: 50  # Number of cylinder obstacles
+      num_cylindrical_obs: 0  # Number of cylinder obstacles
       num_hoop_obs: 0         # Number of hoops
       rnd_seed: 1             # Random seed
 

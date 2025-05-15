@@ -3,7 +3,7 @@
 <package format="3">
   <name>fake_drone</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Simulated drone without dynamics</description>
   <maintainer email="john_tanguanzhong@hotmail.com">john</maintainer>
   <license>MIT</license>
 
@@ -13,7 +13,9 @@
   <test_depend>ament_lint_common</test_depend>
 
   <depend> rclcpp </depend>
-  <depend> px4_msgs </depend>
+  <depend> mavros_msgs </depend>
+  <depend> nav_msgs </depend>
+  <depend> tf2_ros </depend>
 
   <export>
     <build_type>ament_cmake</build_type>
