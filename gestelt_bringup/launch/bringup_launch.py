@@ -107,8 +107,10 @@ def generate_launch_description():
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
-    base_link_frame = [namespace, "_base_link"]
-    camera_frame = [namespace, "_camera_link"]
+    # base_link_frame = [namespace, "_base_link"]
+    # camera_frame = [namespace, "_camera_link"]
+    base_link_frame = 'base_link'
+    camera_frame = 'camera_link'
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {

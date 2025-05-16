@@ -62,7 +62,8 @@ def generate_launch_description():
             {'bridge_name': 'front_left'},
             {'disparity_topic': 'S1/stereo1_l/disparity'},
             {'image_topic': 'S1/stereo1_l'},
-            {'odom_topic': 'S1/vio_odom'}
+            # {'odom_topic': 'S1/vio_odom'}
+            {'odom_topic': 'S1/vio_odom_ned'}
         ]
     )
 

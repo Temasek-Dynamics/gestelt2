@@ -159,8 +159,10 @@ def generate_launch_description():
 
     global_frame = "world" # Fixed
     map_frame = ns + "_map"
-    base_link_frame = ns + "_base_link"
-    camera_frame = ns + "_camera_link"
+    # base_link_frame = ns + "_base_link"
+    # camera_frame = ns + "_camera_link"
+    base_link_frame = "base_link"
+    camera_frame = "camera_front_left"
 
     ld.add_action(
         GroupAction(
@@ -191,15 +193,15 @@ def generate_launch_description():
                                 global_frame, map_frame],
                 ),
                 # Transform from base link to camera frame
-                Node(
-                    package = "tf2_ros", 
-                    name=ns+'_base_link_to_cam_tf',
-                    executable = "static_transform_publisher",
-                    output="own_log",
-                    arguments = ["0.12", "0.03", "-0.242", 
-                                    "1", "0", "0", "0",
-                                    base_link_frame, camera_frame],
-                ),
+                # Node(
+                #     package = "tf2_ros", 
+                #     name=ns+'_base_link_to_cam_tf',
+                #     executable = "static_transform_publisher",
+                #     output="own_log",
+                #     arguments = ["0.12", "0.03", "-0.242", 
+                #                     "1", "0", "0", "0",
+                #                     base_link_frame, camera_frame],
+                # ),
             ]
         )
     )

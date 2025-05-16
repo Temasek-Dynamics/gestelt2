@@ -573,24 +573,23 @@ void TrajectoryServer::SMTickTimerCB()
 void TrajectoryServer::pubStateTimerCB()
 {
 
+	// // broadcast tf link from global map frame to local map origin 
+	// geometry_msgs::msg::TransformStamped map_to_base_link_tf;
 
-	// broadcast tf link from global map frame to local map origin 
-	geometry_msgs::msg::TransformStamped map_to_base_link_tf;
+	// map_to_base_link_tf.header.stamp = this->get_clock()->now();
+	// map_to_base_link_tf.header.frame_id = map_frame_; 
+	// map_to_base_link_tf.child_frame_id = base_link_frame_; 
 
-	map_to_base_link_tf.header.stamp = this->get_clock()->now();
-	map_to_base_link_tf.header.frame_id = map_frame_; 
-	map_to_base_link_tf.child_frame_id = base_link_frame_; 
+	// map_to_base_link_tf.transform.translation.x = cur_pos_enu_corr_(0);
+	// map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
+	// map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
 
-	map_to_base_link_tf.transform.translation.x = cur_pos_enu_corr_(0);
-	map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
-	map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
-
-	map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
-	map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
-	map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();
-	map_to_base_link_tf.transform.rotation.w = cur_ori_enu_.w();
+	// map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
+	// map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
+	// map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();
+	// map_to_base_link_tf.transform.rotation.w = cur_ori_enu_.w();
 	
-	tf_broadcaster_->sendTransform(map_to_base_link_tf);
+	// tf_broadcaster_->sendTransform(map_to_base_link_tf);
 }
 
 /****************** */
