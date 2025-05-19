@@ -673,7 +673,8 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
 	// yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
 
-	msg.yaw = yaw_corr; // [-PI:PI]
+	// msg.yaw = yaw_corr; // [-PI:PI]
+	msg.yaw = NAN; // [-PI:PI]
 	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
 	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 
