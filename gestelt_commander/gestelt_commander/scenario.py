@@ -52,7 +52,7 @@ class MissionManager(Node):
         super().__init__('mission_node')
 
         """ Parameter Server """
-        self.declare_parameter('scenario', '')
+        self.declare_parameter('scenario', 'single_drone_test')
         self.declare_parameter('init_delay', 2)
 
         self.scenario_name = self.get_parameter('scenario').get_parameter_value().string_value
@@ -76,11 +76,10 @@ class MissionManager(Node):
         )
 
         """Publisher to all UAVs"""
-
-        """Publisher to all UAVs"""
         self.uav_cmd_global_pub = self.create_publisher(
             AllUAVCommand, '/global_uav_command', rclpy.qos.qos_profile_services_default)
 
+        """Publisher to individual UAV"""
         self.uav_cmd_pubs = []
         for id in range(self.scenario.num_agents):
             self.uav_cmd_pubs.append(self.create_publisher(

@@ -163,7 +163,6 @@ References:
 1. https://serverfault.com/questions/152363/bridging-wlan0-to-eth0
 2. https://medium.com/@sydasif78/setting-up-a-dhcp-server-on-ubuntu-a-guide-for-network-engineer-d620c5d7afb2
 
-
-
-
 ## Known issues
+
+1. Transmitter must be switched on before the FCU is switched on. Failing which, the transmitter is not able to change flight modes on the FCU.s

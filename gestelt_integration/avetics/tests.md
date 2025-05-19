@@ -16,6 +16,8 @@ ros2 launch gestelt_bringup offboard_launch.py
 ros2 launch gestelt_bringup gcs.py
 ros2 launch gestelt_bringup test_take_off_goal.py scenario_name:=single_drone_test
 # ros2 launch gestelt_bringup test_planning.py scenario_name:=single_drone_test
+
+ros2 run gestelt_commander land scenario_name:=single_drone_test
 ```
 
 # Test Planning (23/4/25)
