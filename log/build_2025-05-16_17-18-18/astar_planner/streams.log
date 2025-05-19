@@ -1,0 +1,139 @@
+[0.065s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake /home/nvidia/gestelt_ws/src/gestelt2/astar_planner -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner
+[0.189s] -- The C compiler identification is GNU 11.4.0
+[0.313s] -- The CXX compiler identification is GNU 11.4.0
+[0.329s] -- Detecting C compiler ABI info
+[0.487s] -- Detecting C compiler ABI info - done
+[0.514s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.514s] -- Detecting C compile features
+[0.515s] -- Detecting C compile features - done
+[0.526s] -- Detecting CXX compiler ABI info
+[0.700s] -- Detecting CXX compiler ABI info - done
+[0.713s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.713s] -- Detecting CXX compile features
+[0.714s] -- Detecting CXX compile features - done
+[0.722s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[0.743s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[0.752s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[1.137s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[1.302s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.415s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[1.447s] -- Found rclcpp: 16.0.12 (/opt/ros/humble/share/rclcpp/cmake)
+[1.574s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[1.592s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[1.617s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[1.651s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.698s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.828s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[1.839s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[2.051s] -- Found OpenSSL: /usr/lib/aarch64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[2.113s] -- Found FastRTPS: /opt/ros/humble/include  
+[2.207s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[2.240s] -- Looking for pthread.h
+[2.402s] -- Looking for pthread.h - found
+[2.403s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[2.565s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[2.569s] -- Found Threads: TRUE  
+[2.702s] -- Found rclcpp_lifecycle: 16.0.12 (/opt/ros/humble/share/rclcpp_lifecycle/cmake)
+[2.754s] -- Found pluginlib: 5.1.0 (/opt/ros/humble/share/pluginlib/cmake)
+[2.825s] -- Found nav2_util: 1.1.18 (/opt/ros/humble/share/nav2_util/cmake)
+[3.205s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[3.281s] -- Found gestelt_core: 0.0.1 (/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core/share/gestelt_core/cmake)
+[3.338s] -- Checking for module 'eigen3'
+[3.372s] --   Found eigen3, version 3.4.0
+[3.449s] -- Found Eigen: /usr/include/eigen3 (Required is at least version "3.1") 
+[3.449s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[3.558s] -- Checking for module 'flann'
+[3.592s] --   Found flann, version 1.9.1
+[3.688s] -- Found FLANN: /usr/lib/aarch64-linux-gnu/libflann_cpp.so  
+[3.688s] -- FLANN found (include: /usr/include, lib: /usr/lib/aarch64-linux-gnu/libflann_cpp.so)
+[5.873s] -- Checking for module 'libusb-1.0'
+[5.913s] --   Found libusb-1.0, version 1.0.25
+[6.004s] -- Found libusb: /usr/lib/aarch64-linux-gnu/libusb-1.0.so  
+[6.007s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[6.148s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/aarch64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[6.490s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[6.504s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[6.519s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/aarch64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[6.859s] -- Found Qhull version 8.0.2
+[7.202s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[7.537s] -- Found PCL_COMMON: /usr/lib/aarch64-linux-gnu/libpcl_common.so  
+[7.539s] -- Found PCL_KDTREE: /usr/lib/aarch64-linux-gnu/libpcl_kdtree.so  
+[7.541s] -- Found PCL_OCTREE: /usr/lib/aarch64-linux-gnu/libpcl_octree.so  
+[7.543s] -- Found PCL_SEARCH: /usr/lib/aarch64-linux-gnu/libpcl_search.so  
+[7.545s] -- Found PCL_SAMPLE_CONSENSUS: /usr/lib/aarch64-linux-gnu/libpcl_sample_consensus.so  
+[7.546s] -- Found PCL_FILTERS: /usr/lib/aarch64-linux-gnu/libpcl_filters.so  
+[7.547s] -- Found PCL_2D: /usr/include/pcl-1.12  
+[7.548s] -- Found PCL_GEOMETRY: /usr/include/pcl-1.12  
+[7.550s] -- Found PCL_IO: /usr/lib/aarch64-linux-gnu/libpcl_io.so  
+[7.552s] -- Found PCL_FEATURES: /usr/lib/aarch64-linux-gnu/libpcl_features.so  
+[7.554s] -- Found PCL_ML: /usr/lib/aarch64-linux-gnu/libpcl_ml.so  
+[7.558s] -- Found PCL_SEGMENTATION: /usr/lib/aarch64-linux-gnu/libpcl_segmentation.so  
+[7.560s] -- Found PCL_VISUALIZATION: /usr/lib/aarch64-linux-gnu/libpcl_visualization.so  
+[7.562s] -- Found PCL_SURFACE: /usr/lib/aarch64-linux-gnu/libpcl_surface.so  
+[7.564s] -- Found PCL_REGISTRATION: /usr/lib/aarch64-linux-gnu/libpcl_registration.so  
+[7.566s] -- Found PCL_KEYPOINTS: /usr/lib/aarch64-linux-gnu/libpcl_keypoints.so  
+[7.568s] -- Found PCL_TRACKING: /usr/lib/aarch64-linux-gnu/libpcl_tracking.so  
+[7.570s] -- Found PCL_RECOGNITION: /usr/lib/aarch64-linux-gnu/libpcl_recognition.so  
+[7.572s] -- Found PCL_STEREO: /usr/lib/aarch64-linux-gnu/libpcl_stereo.so  
+[7.574s] -- Found PCL_APPS: /usr/lib/aarch64-linux-gnu/libpcl_apps.so  
+[7.575s] -- Found PCL_IN_HAND_SCANNER: /usr/include/pcl-1.12  
+[7.576s] -- Found PCL_MODELER: /usr/include/pcl-1.12  
+[7.577s] -- Found PCL_POINT_CLOUD_EDITOR: /usr/include/pcl-1.12  
+[7.579s] -- Found PCL_OUTOFCORE: /usr/lib/aarch64-linux-gnu/libpcl_outofcore.so  
+[7.581s] -- Found PCL_PEOPLE: /usr/lib/aarch64-linux-gnu/libpcl_people.so  
+[7.837s] -- Found ament_lint_auto: 0.12.12 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[8.053s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[8.054s] -- Configured cppcheck include dirs: $<BUILD_INTERFACE:/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/include>
+[8.054s] -- Configured cppcheck exclude dirs and/or files: 
+[8.056s] -- Added test 'lint_cmake' to check CMake code style
+[8.059s] -- Added test 'uncrustify' to check C / C++ code style
+[8.059s] -- Configured uncrustify additional arguments: 
+[8.061s] -- Added test 'xmllint' to check XML markup files
+[8.071s] -- Configuring done
+[8.204s] -- Generating done
+[8.234s] -- Build files have been written to: /home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner
+[8.303s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner' returned '0': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake /home/nvidia/gestelt_ws/src/gestelt2/astar_planner -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner
+[8.308s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner -- -j8 -l8
+[8.444s] [ 66%] [32mBuilding CXX object CMakeFiles/astar_planner.dir/src/astar.cpp.o[0m
+[8.444s] [ 66%] [32mBuilding CXX object CMakeFiles/astar_planner.dir/src/astar_planner.cpp.o[0m
+[28.025s] [01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:[m[K In member function ‘[01m[Kbool astar_planner::AStarPlanner::makePlan(const Vector3d&, const Vector3d&, double, std::function<bool()>, nav_msgs::msg::Path&)[m[K’:
+[28.026s] [01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:148:12:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktolerance[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[28.026s]   148 |     [01;35m[Kdouble tolerance[m[K,
+[28.026s]       |     [01;35m[K~~~~~~~^~~~~~~~~[m[K
+[45.375s] [100%] [32m[1mLinking CXX shared library libastar_planner.so[0m
+[46.690s] [100%] Built target astar_planner
+[46.717s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner' returned '0': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner -- -j8 -l8
+[46.721s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner
+[46.739s] -- Install configuration: "Release"
+[46.740s] -- Execute custom install script
+[46.741s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner//global_planner_plugin.xml
+[46.763s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/include/astar_planner/astar_planner/astar.hpp
+[46.783s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/include/astar_planner/astar_planner/astar_planner.hpp
+[46.805s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/global_planner_plugin.xml
+[46.805s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/library_path.sh
+[46.827s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/library_path.dsv
+[46.848s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/package_run_dependencies/astar_planner
+[46.869s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/parent_prefix_path/astar_planner
+[46.891s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/ament_prefix_path.sh
+[46.911s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/ament_prefix_path.dsv
+[46.933s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/path.sh
+[46.954s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/path.dsv
+[46.975s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.bash
+[46.996s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.sh
+[47.017s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.zsh
+[47.038s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.dsv
+[47.060s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/package.dsv
+[47.081s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/packages/astar_planner
+[47.102s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/gestelt_core__pluginlib__plugin/astar_planner
+[47.124s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_include_directories-extras.cmake
+[47.145s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_libraries-extras.cmake
+[47.167s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_dependencies-extras.cmake
+[47.188s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_targets-extras.cmake
+[47.208s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerConfig.cmake
+[47.230s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerConfig-version.cmake
+[47.251s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/package.xml
+[47.271s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/lib/libastar_planner.so
+[47.298s] -- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/lib/libastar_planner.so" to ""
+[47.298s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerExport.cmake
+[47.298s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerExport-release.cmake
+[47.304s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner' returned '0': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/astar_planner

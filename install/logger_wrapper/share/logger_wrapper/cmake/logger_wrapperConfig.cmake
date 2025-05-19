@@ -1,0 +1,1 @@
+/home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper/ament_cmake_core/logger_wrapperConfig.cmake

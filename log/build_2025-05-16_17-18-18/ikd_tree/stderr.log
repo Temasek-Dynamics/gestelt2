@@ -1,0 +1,325 @@
+[0m** WARNING ** io features related to pcap will be disabled[0m
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::multi_thread_rebuild() [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:285:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_old[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  285 |             int [01;35m[Kvalid_old[m[K = old_root_node->TreeSize-old_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:286:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_new[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  286 |             int [01;35m[Kvalid_new[m[K = new_root_node->TreeSize-new_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:202:35:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Knew_node_ptr[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  202 |     KD_TREE_NODE * father_ptr, ** [01;35m[Knew_node_ptr[m[K;
+      |                                   [01;35m[K^~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Rebuild(KD_TREE<PointType>::KD_TREE_NODE**) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:635:13:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ksize_rec[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  635 |         int [01;35m[Ksize_rec[m[K = (*root)->TreeSize;
+      |             [01;35m[K^~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool, bool) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:675:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  675 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:723:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  723 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool, int) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:828:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  828 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:781:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  781 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Search(KD_TREE<PointType>::KD_TREE_NODE*, int, PointType, KD_TREE<PointType>::MANUAL_HEAP&, double) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:895:62:[m[K [01;35m[Kwarning: [m[Ksuggest parentheses around ‘[01m[K&&[m[K’ within ‘[01m[K||[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wparentheses-Wparentheses]8;;[m[K]
+  895 |     if (q.size()< k_nearest || [01;35m[Kdist_left_node < q.top().dist && dist_right_node < q.top().dist[m[K){
+      |                                [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:892:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kcur_search_counter[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  892 |     int [01;35m[Kcur_search_counter[m[K;
+      |         [01;35m[K^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Add_Points(KD_TREE<PointType>::PointVector&, bool) [with PointType = ikdTree_PointType; KD_TREE<PointType>::PointVector = std::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:421:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  421 |     for (int i=0; [01;35m[Ki<PointToAdd.size()[m[K;i++){
+      |                   [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:436:39:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  436 |             for (int index = 0; [01;35m[Kindex < Downsample_Storage.size()[m[K; index++){
+      |                                 [01;35m[K~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:414:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KNewPointSize[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  414 |     int [01;35m[KNewPointSize[m[K = PointToAdd.size();
+      |         [01;35m[K^~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:415:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ktree_size[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  415 |     int [01;35m[Ktree_size[m[K = size();
+      |         [01;35m[K^~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_Point_Boxes(std::vector<BoxPointType>&) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:492:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  492 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_Points(KD_TREE<PointType>::PointVector&) [with PointType = ikdTree_PointType; KD_TREE<PointType>::PointVector = std::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:514:19:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  514 |     for (int i=0;[01;35m[Ki<PointToDel.size()[m[K;i++){
+      |                  [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_Point_Boxes(std::vector<BoxPointType>&) [with PointType = ikdTree_PointType][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:537:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  537 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::acquire_removed_points(KD_TREE<PointType>::PointVector&) [with PointType = ikdTree_PointType; KD_TREE<PointType>::PointVector = std::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1445:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:560:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  560 |     for (int i = 0; [01;35m[Ki < Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:563:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<ikdTree_PointType, Eigen::aligned_allocator<ikdTree_PointType> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  563 |     for (int i = 0; [01;35m[Ki < Multithread_Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::multi_thread_rebuild() [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:285:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_old[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  285 |             int [01;35m[Kvalid_old[m[K = old_root_node->TreeSize-old_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:286:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_new[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  286 |             int [01;35m[Kvalid_new[m[K = new_root_node->TreeSize-new_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:202:35:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Knew_node_ptr[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  202 |     KD_TREE_NODE * father_ptr, ** [01;35m[Knew_node_ptr[m[K;
+      |                                   [01;35m[K^~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Rebuild(KD_TREE<PointType>::KD_TREE_NODE**) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:635:13:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ksize_rec[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  635 |         int [01;35m[Ksize_rec[m[K = (*root)->TreeSize;
+      |             [01;35m[K^~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool, bool) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:675:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  675 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:723:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  723 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool, int) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:828:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  828 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:781:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  781 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Search(KD_TREE<PointType>::KD_TREE_NODE*, int, PointType, KD_TREE<PointType>::MANUAL_HEAP&, double) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:895:62:[m[K [01;35m[Kwarning: [m[Ksuggest parentheses around ‘[01m[K&&[m[K’ within ‘[01m[K||[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wparentheses-Wparentheses]8;;[m[K]
+  895 |     if (q.size()< k_nearest || [01;35m[Kdist_left_node < q.top().dist && dist_right_node < q.top().dist[m[K){
+      |                                [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:892:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kcur_search_counter[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  892 |     int [01;35m[Kcur_search_counter[m[K;
+      |         [01;35m[K^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Add_Points(KD_TREE<PointType>::PointVector&, bool) [with PointType = pcl::PointXYZ; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:421:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  421 |     for (int i=0; [01;35m[Ki<PointToAdd.size()[m[K;i++){
+      |                   [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:436:39:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  436 |             for (int index = 0; [01;35m[Kindex < Downsample_Storage.size()[m[K; index++){
+      |                                 [01;35m[K~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:414:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KNewPointSize[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  414 |     int [01;35m[KNewPointSize[m[K = PointToAdd.size();
+      |         [01;35m[K^~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:415:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ktree_size[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  415 |     int [01;35m[Ktree_size[m[K = size();
+      |         [01;35m[K^~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_Point_Boxes(std::vector<BoxPointType>&) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:492:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  492 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_Points(KD_TREE<PointType>::PointVector&) [with PointType = pcl::PointXYZ; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:514:19:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  514 |     for (int i=0;[01;35m[Ki<PointToDel.size()[m[K;i++){
+      |                  [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_Point_Boxes(std::vector<BoxPointType>&) [with PointType = pcl::PointXYZ][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:537:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  537 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::acquire_removed_points(KD_TREE<PointType>::PointVector&) [with PointType = pcl::PointXYZ; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1446:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:560:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  560 |     for (int i = 0; [01;35m[Ki < Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:563:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  563 |     for (int i = 0; [01;35m[Ki < Multithread_Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::multi_thread_rebuild() [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:285:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_old[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  285 |             int [01;35m[Kvalid_old[m[K = old_root_node->TreeSize-old_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:286:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_new[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  286 |             int [01;35m[Kvalid_new[m[K = new_root_node->TreeSize-new_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:202:35:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Knew_node_ptr[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  202 |     KD_TREE_NODE * father_ptr, ** [01;35m[Knew_node_ptr[m[K;
+      |                                   [01;35m[K^~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Rebuild(KD_TREE<PointType>::KD_TREE_NODE**) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:635:13:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ksize_rec[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  635 |         int [01;35m[Ksize_rec[m[K = (*root)->TreeSize;
+      |             [01;35m[K^~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool, bool) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:675:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  675 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:723:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  723 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool, int) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:828:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  828 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:781:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  781 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Search(KD_TREE<PointType>::KD_TREE_NODE*, int, PointType, KD_TREE<PointType>::MANUAL_HEAP&, double) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:895:62:[m[K [01;35m[Kwarning: [m[Ksuggest parentheses around ‘[01m[K&&[m[K’ within ‘[01m[K||[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wparentheses-Wparentheses]8;;[m[K]
+  895 |     if (q.size()< k_nearest || [01;35m[Kdist_left_node < q.top().dist && dist_right_node < q.top().dist[m[K){
+      |                                [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:892:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kcur_search_counter[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  892 |     int [01;35m[Kcur_search_counter[m[K;
+      |         [01;35m[K^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Add_Points(KD_TREE<PointType>::PointVector&, bool) [with PointType = pcl::PointXYZI; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:421:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  421 |     for (int i=0; [01;35m[Ki<PointToAdd.size()[m[K;i++){
+      |                   [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:436:39:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  436 |             for (int index = 0; [01;35m[Kindex < Downsample_Storage.size()[m[K; index++){
+      |                                 [01;35m[K~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:414:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KNewPointSize[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  414 |     int [01;35m[KNewPointSize[m[K = PointToAdd.size();
+      |         [01;35m[K^~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:415:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ktree_size[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  415 |     int [01;35m[Ktree_size[m[K = size();
+      |         [01;35m[K^~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_Point_Boxes(std::vector<BoxPointType>&) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:492:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  492 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_Points(KD_TREE<PointType>::PointVector&) [with PointType = pcl::PointXYZI; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:514:19:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  514 |     for (int i=0;[01;35m[Ki<PointToDel.size()[m[K;i++){
+      |                  [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_Point_Boxes(std::vector<BoxPointType>&) [with PointType = pcl::PointXYZI][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:537:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  537 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::acquire_removed_points(KD_TREE<PointType>::PointVector&) [with PointType = pcl::PointXYZI; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1447:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:560:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  560 |     for (int i = 0; [01;35m[Ki < Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:563:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZI, Eigen::aligned_allocator<pcl::PointXYZI> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  563 |     for (int i = 0; [01;35m[Ki < Multithread_Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::multi_thread_rebuild() [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:285:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_old[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  285 |             int [01;35m[Kvalid_old[m[K = old_root_node->TreeSize-old_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:286:17:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kvalid_new[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  286 |             int [01;35m[Kvalid_new[m[K = new_root_node->TreeSize-new_root_node->invalid_point_num;
+      |                 [01;35m[K^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:202:35:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Knew_node_ptr[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  202 |     KD_TREE_NODE * father_ptr, ** [01;35m[Knew_node_ptr[m[K;
+      |                                   [01;35m[K^~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Rebuild(KD_TREE<PointType>::KD_TREE_NODE**) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:635:13:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ksize_rec[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  635 |         int [01;35m[Ksize_rec[m[K = (*root)->TreeSize;
+      |             [01;35m[K^~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool, bool) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:675:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  675 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:723:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  723 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_point(KD_TREE<PointType>::KD_TREE_NODE**, PointType, bool, int) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:828:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  828 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_by_range(KD_TREE<PointType>::KD_TREE_NODE**, BoxPointType, bool) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:781:21:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KTimeout[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  781 |     struct timespec [01;35m[KTimeout[m[K;
+      |                     [01;35m[K^~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Search(KD_TREE<PointType>::KD_TREE_NODE*, int, PointType, KD_TREE<PointType>::MANUAL_HEAP&, double) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:895:62:[m[K [01;35m[Kwarning: [m[Ksuggest parentheses around ‘[01m[K&&[m[K’ within ‘[01m[K||[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wparentheses-Wparentheses]8;;[m[K]
+  895 |     if (q.size()< k_nearest || [01;35m[Kdist_left_node < q.top().dist && dist_right_node < q.top().dist[m[K){
+      |                                [01;35m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:892:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kcur_search_counter[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  892 |     int [01;35m[Kcur_search_counter[m[K;
+      |         [01;35m[K^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Add_Points(KD_TREE<PointType>::PointVector&, bool) [with PointType = pcl::PointXYZINormal; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:421:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  421 |     for (int i=0; [01;35m[Ki<PointToAdd.size()[m[K;i++){
+      |                   [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:436:39:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  436 |             for (int index = 0; [01;35m[Kindex < Downsample_Storage.size()[m[K; index++){
+      |                                 [01;35m[K~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:414:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KNewPointSize[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  414 |     int [01;35m[KNewPointSize[m[K = PointToAdd.size();
+      |         [01;35m[K^~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:415:9:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Ktree_size[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  415 |     int [01;35m[Ktree_size[m[K = size();
+      |         [01;35m[K^~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Add_Point_Boxes(std::vector<BoxPointType>&) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:492:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  492 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::Delete_Points(KD_TREE<PointType>::PointVector&) [with PointType = pcl::PointXYZINormal; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:514:19:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  514 |     for (int i=0;[01;35m[Ki<PointToDel.size()[m[K;i++){
+      |                  [01;35m[K~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kint KD_TREE<PointType>::Delete_Point_Boxes(std::vector<BoxPointType>&) [with PointType = pcl::PointXYZINormal][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:537:20:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<BoxPointType>::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  537 |     for (int i=0;[01;35m[Ki < BoxPoints.size()[m[K;i++){
+      |                  [01;35m[K~~^~~~~~~~~~~~~~~~~~[m[K
+/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp: In instantiation of ‘[01m[Kvoid KD_TREE<PointType>::acquire_removed_points(KD_TREE<PointType>::PointVector&) [with PointType = pcl::PointXYZINormal; KD_TREE<PointType>::PointVector = std::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >][m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:1448:16:[m[K   required from here
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:560:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  560 |     for (int i = 0; [01;35m[Ki < Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/third_party/ikd_tree/src/ikd_tree.cpp:563:23:[m[K [01;35m[Kwarning: [m[Kcomparison of integer expressions of different signedness: ‘[01m[Kint[m[K’ and ‘[01m[Kstd::vector<pcl::PointXYZINormal, Eigen::aligned_allocator<pcl::PointXYZINormal> >::size_type[m[K’ {aka ‘[01m[Klong unsigned int[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare-Wsign-compare]8;;[m[K]
+  563 |     for (int i = 0; [01;35m[Ki < Multithread_Points_deleted.size()[m[K;i++){
+      |                     [01;35m[K~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K

@@ -1,0 +1,126 @@
+[0.037s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/nvidia/gestelt_ws/src/gestelt2/trajectory_server -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server
+[0.154s] -- The C compiler identification is GNU 11.4.0
+[0.259s] -- The CXX compiler identification is GNU 11.4.0
+[0.275s] -- Detecting C compiler ABI info
+[0.425s] -- Detecting C compiler ABI info - done
+[0.436s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.437s] -- Detecting C compile features
+[0.437s] -- Detecting C compile features - done
+[0.444s] -- Detecting CXX compiler ABI info
+[0.613s] -- Detecting CXX compiler ABI info - done
+[0.623s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.624s] -- Detecting CXX compile features
+[0.625s] -- Detecting CXX compile features - done
+[0.634s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[0.652s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[0.660s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[1.068s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[1.242s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[1.361s] -- Found rclcpp: 16.0.12 (/opt/ros/humble/share/rclcpp/cmake)
+[1.498s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[1.517s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[1.544s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[1.580s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.630s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.769s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[1.781s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.996s] -- Found OpenSSL: /usr/lib/aarch64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[2.058s] -- Found FastRTPS: /opt/ros/humble/include  
+[2.153s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[2.187s] -- Looking for pthread.h
+[2.352s] -- Looking for pthread.h - found
+[2.352s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[2.512s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[2.514s] -- Found Threads: TRUE  
+[2.640s] -- Found rclpy: 3.3.16 (/opt/ros/humble/share/rclpy/cmake)
+[2.648s] -- Found geometry_msgs: 4.8.0 (/opt/ros/humble/share/geometry_msgs/cmake)
+[2.678s] -- Found nav_msgs: 4.8.0 (/opt/ros/humble/share/nav_msgs/cmake)
+[2.716s] -- Found sensor_msgs: 4.8.0 (/opt/ros/humble/share/sensor_msgs/cmake)
+[2.749s] -- Found gestelt_interfaces: 0.0.0 (/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake)
+[2.782s] -- Found px4_msgs: 2.0.1 (/home/nvidia/tl_vision2/install/px4_msgs/share/px4_msgs/cmake)
+[2.821s] -- Found tf2_ros: 0.25.12 (/opt/ros/humble/share/tf2_ros/cmake)
+[3.059s] -- Found logger_wrapper: 0.0.0 (/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake)
+[3.088s] -- Found ament_lint_auto: 0.12.12 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[3.321s] -- Added test 'copyright' to check source files copyright and LICENSE
+[3.325s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[3.326s] -- Configured cppcheck include dirs: /home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include;$<BUILD_INTERFACE:/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include/trajectory_server>;$<BUILD_INTERFACE:/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include>
+[3.326s] -- Configured cppcheck exclude dirs and/or files: 
+[3.329s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[3.329s] -- Configured cpplint exclude dirs and/or files: 
+[3.332s] -- Added test 'lint_cmake' to check CMake code style
+[3.335s] -- Added test 'uncrustify' to check C / C++ code style
+[3.335s] -- Configured uncrustify additional arguments: 
+[3.337s] -- Added test 'xmllint' to check XML markup files
+[3.342s] -- Configuring done
+[3.402s] -- Generating done
+[3.422s] -- Build files have been written to: /home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server
+[3.458s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server' returned '0': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake /home/nvidia/gestelt_ws/src/gestelt2/trajectory_server -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server
+[3.461s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server -- -j8 -l8
+[3.602s] [ 22%] [32mBuilding CXX object CMakeFiles/frame_transforms.dir/src/frame_transforms.cpp.o[0m
+[3.603s] [ 22%] [32mBuilding CXX object CMakeFiles/uav_cmd_srv_client.dir/src/uav_cmd_srv_client.cpp.o[0m
+[5.688s] In file included from [01m[K/usr/include/eigen3/Eigen/Core:214[m[K,
+[5.688s]                  from [01m[K/usr/include/eigen3/Eigen/Dense:1[m[K,
+[5.688s]                  from [01m[K/usr/include/eigen3/Eigen/Eigen:1[m[K,
+[5.688s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include/frame_transforms.hpp:45[m[K,
+[5.688s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/src/frame_transforms.cpp:41[m[K:
+[5.689s] [01m[K/usr/include/eigen3/Eigen/src/Core/arch/NEON/PacketMath.h:[m[K In function ‘[01m[KPacket Eigen::internal::pload(const typename Eigen::internal::unpacket_traits<T>::type*) [with Packet = Eigen::internal::eigen_packet_wrapper<int, 2>; typename Eigen::internal::unpacket_traits<T>::type = signed char][m[K’:
+[5.689s] [01m[K/usr/include/eigen3/Eigen/src/Core/arch/NEON/PacketMath.h:1671:9:[m[K [01;35m[Kwarning: [m[K‘[01m[Kvoid* memcpy(void*, const void*, size_t)[m[K’ copying an object of non-trivial type ‘[01m[KEigen::internal::Packet4c[m[K’ {aka ‘[01m[Kstruct Eigen::internal::eigen_packet_wrapper<int, 2>[m[K’} from an array of ‘[01m[Kconst int8_t[m[K’ {aka ‘[01m[Kconst signed char[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wclass-memaccess-Wclass-memaccess]8;;[m[K]
+[5.689s]  1671 |   [01;35m[Kmemcpy(&res, from, sizeof(Packet4c))[m[K;
+[5.689s]       |   [01;35m[K~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[5.689s] In file included from [01m[K/usr/include/eigen3/Eigen/Core:172[m[K,
+[5.689s]                  from [01m[K/usr/include/eigen3/Eigen/Dense:1[m[K,
+[5.690s]                  from [01m[K/usr/include/eigen3/Eigen/Eigen:1[m[K,
+[5.690s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include/frame_transforms.hpp:45[m[K,
+[5.690s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/src/frame_transforms.cpp:41[m[K:
+[5.690s] [01m[K/usr/include/eigen3/Eigen/src/Core/GenericPacketMath.h:159:8:[m[K [01;36m[Knote: [m[K‘[01m[KEigen::internal::Packet4c[m[K’ {aka ‘[01m[Kstruct Eigen::internal::eigen_packet_wrapper<int, 2>[m[K’} declared here
+[5.690s]   159 | struct [01;36m[Keigen_packet_wrapper[m[K
+[5.690s]       |        [01;36m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[5.691s] In file included from [01m[K/usr/include/eigen3/Eigen/Core:214[m[K,
+[5.691s]                  from [01m[K/usr/include/eigen3/Eigen/Dense:1[m[K,
+[5.691s]                  from [01m[K/usr/include/eigen3/Eigen/Eigen:1[m[K,
+[5.691s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include/frame_transforms.hpp:45[m[K,
+[5.691s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/src/frame_transforms.cpp:41[m[K:
+[5.692s] [01m[K/usr/include/eigen3/Eigen/src/Core/arch/NEON/PacketMath.h:[m[K In function ‘[01m[KPacket Eigen::internal::ploadu(const typename Eigen::internal::unpacket_traits<T>::type*) [with Packet = Eigen::internal::eigen_packet_wrapper<int, 2>; typename Eigen::internal::unpacket_traits<T>::type = signed char][m[K’:
+[5.692s] [01m[K/usr/include/eigen3/Eigen/src/Core/arch/NEON/PacketMath.h:1716:9:[m[K [01;35m[Kwarning: [m[K‘[01m[Kvoid* memcpy(void*, const void*, size_t)[m[K’ copying an object of non-trivial type ‘[01m[KEigen::internal::Packet4c[m[K’ {aka ‘[01m[Kstruct Eigen::internal::eigen_packet_wrapper<int, 2>[m[K’} from an array of ‘[01m[Kconst int8_t[m[K’ {aka ‘[01m[Kconst signed char[m[K’} [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wclass-memaccess-Wclass-memaccess]8;;[m[K]
+[5.692s]  1716 |   [01;35m[Kmemcpy(&res, from, sizeof(Packet4c))[m[K;
+[5.692s]       |   [01;35m[K~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[5.692s] In file included from [01m[K/usr/include/eigen3/Eigen/Core:172[m[K,
+[5.692s]                  from [01m[K/usr/include/eigen3/Eigen/Dense:1[m[K,
+[5.692s]                  from [01m[K/usr/include/eigen3/Eigen/Eigen:1[m[K,
+[5.692s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/include/frame_transforms.hpp:45[m[K,
+[5.693s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/trajectory_server/src/frame_transforms.cpp:41[m[K:
+[5.693s] [01m[K/usr/include/eigen3/Eigen/src/Core/GenericPacketMath.h:159:8:[m[K [01;36m[Knote: [m[K‘[01m[KEigen::internal::Packet4c[m[K’ {aka ‘[01m[Kstruct Eigen::internal::eigen_packet_wrapper<int, 2>[m[K’} declared here
+[5.693s]   159 | struct [01;36m[Keigen_packet_wrapper[m[K
+[5.693s]       |        [01;36m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[18.075s] [ 33%] [32m[1mLinking CXX executable uav_cmd_srv_client[0m
+[18.386s] [ 33%] Built target uav_cmd_srv_client
+[31.430s] [ 44%] [32m[1mLinking CXX shared library libframe_transforms.so[0m
+[32.002s] [ 44%] Built target frame_transforms
+[32.052s] [ 66%] [32mBuilding CXX object CMakeFiles/trajectory_server.dir/src/trajectory_server.cpp.o[0m
+[32.052s] [ 66%] [32mBuilding CXX object CMakeFiles/trajectory_server.dir/src/uavsm.cpp.o[0m
+[143.828s] [ 77%] [32m[1mLinking CXX static library libtrajectory_server.a[0m
+[144.739s] [ 77%] Built target trajectory_server
+[144.790s] [ 88%] [32mBuilding CXX object CMakeFiles/trajectory_server_node.dir/src/main.cpp.o[0m
+[158.573s] [100%] [32m[1mLinking CXX executable trajectory_server_node[0m
+[159.960s] [100%] Built target trajectory_server_node
+[159.988s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server' returned '0': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server -- -j8 -l8
+[159.991s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server
+[160.010s] -- Install configuration: "Release"
+[160.010s] -- Execute custom install script
+[160.011s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/lib/trajectory_server/trajectory_server_node
+[160.034s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/ament_index/resource_index/package_run_dependencies/trajectory_server
+[160.055s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/ament_index/resource_index/parent_prefix_path/trajectory_server
+[160.081s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/ament_prefix_path.sh
+[160.102s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/ament_prefix_path.dsv
+[160.122s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/path.sh
+[160.143s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/path.dsv
+[160.164s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.bash
+[160.184s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.sh
+[160.202s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.zsh
+[160.220s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.dsv
+[160.239s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/package.dsv
+[160.261s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/ament_index/resource_index/packages/trajectory_server
+[160.282s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/cmake/trajectory_serverConfig.cmake
+[160.303s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/cmake/trajectory_serverConfig-version.cmake
+[160.326s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/package.xml
+[160.354s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server' returned '0': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server

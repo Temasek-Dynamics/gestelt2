@@ -1,0 +1,6 @@
+In file included from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/linear_mpc_controller/include/linear_mpc_controller/linear_mpc_controller.hpp:45[m[K,
+                 from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/linear_mpc_controller/src/linear_mpc_controller.cpp:23[m[K:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/linear_mpc_controller/include/linear_mpc_controller/pvaj_mpc.hpp:[m[K In member function ‘[01m[Kbool pvaj_mpc::MPCController::run()[m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/linear_mpc_controller/include/linear_mpc_controller/pvaj_mpc.hpp:299:25:[m[K [01;35m[Kwarning: [m[K‘[01m[Ksolve_flag[m[K’ may be used uninitialized in this function [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wmaybe-uninitialized-Wmaybe-uninitialized]8;;[m[K]
+  299 |                         [01;35m[Kif[m[K (solve_flag == OsqpEigen::ErrorExitFlag::NoError
+      |                         [01;35m[K^~[m[K

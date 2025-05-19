@@ -185,7 +185,7 @@ public:
       && pos(0) < global_map_size_(0)/2
       && pos(1) >= -global_map_size_(1)/2 
       && pos(1) < global_map_size_(1)/2
-      && pos(2) >= 0.0 
+      && pos(2) >= -0.5 
       && pos(2) < global_map_size_(2));
   }
 
@@ -195,7 +195,7 @@ public:
       && idx(0) < global_map_size_idx_(0)/2
       && idx(1) >= -global_map_size_idx_(1)/2 
       && idx(1) < global_map_size_idx_(1)/2
-      && idx(2) >= 0 
+      && idx(2) >= -10
       && idx(2) < global_map_size_idx_(2));
   }
 

@@ -1,0 +1,1 @@
+/home/nvidia/gestelt_ws/src/gestelt2/build/linear_mpc_controller/ament_cmake_core/linear_mpc_controllerConfig.cmake
