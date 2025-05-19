@@ -54,6 +54,7 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("pub_state_freq", 30.0);
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
+	this->declare_parameter("publish_map_to_baselink_tf", true);
 	/* Safety */
 	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
 	geofence_->min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
@@ -76,6 +77,8 @@ TrajectoryServer::TrajectoryServer()
 	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
 	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
+
+	pub_map_to_baselink_tf_ = this->get_parameter("publish_map_to_baselink_tf").as_bool();
 
 	// Create callback groups
 	control_cb_group_ = this->create_callback_group(
@@ -572,24 +575,25 @@ void TrajectoryServer::SMTickTimerCB()
 
 void TrajectoryServer::pubStateTimerCB()
 {
+	if (pub_map_to_baselink_tf_){
+		// broadcast tf link from global map frame to local map origin 
+		geometry_msgs::msg::TransformStamped map_to_base_link_tf;
 
-	// // broadcast tf link from global map frame to local map origin 
-	// geometry_msgs::msg::TransformStamped map_to_base_link_tf;
+		map_to_base_link_tf.header.stamp = this->get_clock()->now();
+		map_to_base_link_tf.header.frame_id = map_frame_; 
+		map_to_base_link_tf.child_frame_id = base_link_frame_; 
 
-	// map_to_base_link_tf.header.stamp = this->get_clock()->now();
-	// map_to_base_link_tf.header.frame_id = map_frame_; 
-	// map_to_base_link_tf.child_frame_id = base_link_frame_; 
+		map_to_base_link_tf.transform.translation.x = cur_pos_enu_corr_(0);
+		map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
+		map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
 
-	// map_to_base_link_tf.transform.translation.x = cur_pos_enu_corr_(0);
-	// map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
-	// map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
-
-	// map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
-	// map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
-	// map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();
-	// map_to_base_link_tf.transform.rotation.w = cur_ori_enu_.w();
-	
-	// tf_broadcaster_->sendTransform(map_to_base_link_tf);
+		map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
+		map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
+		map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();
+		map_to_base_link_tf.transform.rotation.w = cur_ori_enu_.w();
+		
+		tf_broadcaster_->sendTransform(map_to_base_link_tf);
+	}
 }
 
 /****************** */

@@ -199,6 +199,7 @@ def generate_launch_description():
                     {'pub_state_freq': 40.0},
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 30.0},
+                    {'publish_map_to_baselink_tf': True},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=traj_server_remappings,

@@ -241,6 +241,8 @@ private:
 	/* Params */
 	int drone_id_{0};
 
+	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
+
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // Origin frame of uav i.e. "world" or "map"
 
