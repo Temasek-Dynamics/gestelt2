@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_interfaces/rosidl_generator_c/gestelt_interfaces/srv/detail/uav_command__functions.h

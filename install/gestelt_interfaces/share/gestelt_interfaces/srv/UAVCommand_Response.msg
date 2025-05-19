@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_interfaces/rosidl_cmake/srv/UAVCommand_Response.msg

@@ -1,8 +1,0 @@
-source;share/fake_sensor/hook/cmake_prefix_path.ps1
-source;share/fake_sensor/hook/cmake_prefix_path.dsv
-source;share/fake_sensor/hook/cmake_prefix_path.sh
-source;share/fake_sensor/local_setup.bash
-source;share/fake_sensor/local_setup.dsv
-source;share/fake_sensor/local_setup.ps1
-source;share/fake_sensor/local_setup.sh
-source;share/fake_sensor/local_setup.zsh

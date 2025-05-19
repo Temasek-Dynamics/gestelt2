@@ -1,4 +1,0 @@
-[33mCMake Warning (dev) at CMakeLists.txt:33 (find_package):
-  Ignoring EXACT since no version is requested.
-This warning is for project developers.  Use -Wno-dev to suppress it.
-[0m

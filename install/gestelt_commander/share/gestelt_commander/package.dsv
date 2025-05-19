@@ -1,9 +1,0 @@
-source;share/gestelt_commander/hook/pythonpath.ps1
-source;share/gestelt_commander/hook/pythonpath.dsv
-source;share/gestelt_commander/hook/pythonpath.sh
-source;share/gestelt_commander/hook/ament_prefix_path.ps1
-source;share/gestelt_commander/hook/ament_prefix_path.dsv
-source;share/gestelt_commander/hook/ament_prefix_path.sh
-source;../../build/gestelt_commander/share/gestelt_commander/hook/pythonpath_develop.ps1
-source;../../build/gestelt_commander/share/gestelt_commander/hook/pythonpath_develop.dsv
-source;../../build/gestelt_commander/share/gestelt_commander/hook/pythonpath_develop.sh

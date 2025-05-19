@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/third_party/decomp_ros/decomp_util/include/decomp_geometry/ellipsoid.h

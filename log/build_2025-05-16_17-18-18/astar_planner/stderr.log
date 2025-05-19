@@ -1,4 +1,0 @@
-[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:[m[K In member function ‘[01m[Kbool astar_planner::AStarPlanner::makePlan(const Vector3d&, const Vector3d&, double, std::function<bool()>, nav_msgs::msg::Path&)[m[K’:
-[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:148:12:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktolerance[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
-  148 |     [01;35m[Kdouble tolerance[m[K,
-      |     [01;35m[K~~~~~~~^~~~~~~~~[m[K
