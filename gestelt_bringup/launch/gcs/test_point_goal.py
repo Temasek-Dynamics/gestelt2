@@ -57,13 +57,16 @@ def launch_setup(context):
     mission_node = Node(
         name='mission_node',
         package='gestelt_commander',
-        executable='takeoff',
+        executable='test_point_goal',
         output='screen',
         emulate_tty=False,
         shell=True,
         parameters = [
             {'scenario': scenario.name},
-            {'init_delay': 1},
+            {'init_delay': 1.0},
+            {'point_goal_height': 1.0},
+            {'plan_task_timeout': 60.0},
+            {'global_replanning_freq': 5.0},
         ]
     )
 
@@ -76,7 +79,7 @@ def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)
 
     launch_args = [
-        DeclareLaunchArgument('scenario_name', default_value='goals_2d_0'),
+        DeclareLaunchArgument('scenario_name', default_value='single_drone_test'),
     ]
 
     ld = LaunchDescription(launch_args)

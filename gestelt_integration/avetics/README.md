@@ -16,7 +16,6 @@ pip install pycapnp==1.3.0 # importing doesn't seem to work well for 2.0.0
 pip3 install "numpy<2.0"
 ```
 
-
 ## Clone repos
 ```bash
 # Vilota (ecal <-> ROS2 DDS) depth map bridge
@@ -42,7 +41,7 @@ ros2 run vision vio_bridge_px4
 # 0 -10 0 (Roll, Pitch, Yaw)
 ```
 
-To access Vilota camera settings:
+To access Vilota camera settings via browser-based GUI:
 - Vilota IP (VK180Pro): 10.42.0.64
 - Vilota IP (VK180): 10.42.0.65
 
@@ -57,7 +56,6 @@ ssh compulab@10.42.0.64
 cd /opt/vilota/configs/vio 
 
 ```
-
 
 ## Zenoh
 1. Using the standalone plugin from https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds
@@ -95,7 +93,7 @@ GCS-Viumesh: 192.168.17.1
 Drone0-Viumesh: 192.168.17.11
 Drone0: 192.168.17.10
 
-### Set up a network bridge on the GCS computer
+### [DOES NOT WORK] Set up a network bridge on the GCS computer
 A network bridge would allow us to forward packets between network interfaces. In this case, we want to have internet access on the drones and therefore we would forward packets within the wireless interface (e.g. wlp5s0) on the GCS and the wired interface (e.g. enp2s0) connected to the GCS viumesh.
 
 ```bash
@@ -127,7 +125,7 @@ References:
 1. https://developers.redhat.com/articles/2022/04/06/introduction-linux-bridging-commands-and-features#spanning_tree_protocol
 2. https://serverfault.com/questions/152363/bridging-wlan0-to-eth0
 
-### Set up NAT on GCS for internet access on drones
+### [DOES NOT WORK] Set up NAT on GCS for internet access on drones
 ```bash
 # Use ip link to get the name of the network interfaces you wish to connect
 # In this example, we use the wired interface 'enp2s0' and the wireless interface 'wlp5s0'
@@ -166,3 +164,5 @@ References:
 ## Known issues
 
 1. Transmitter must be switched on before the FCU is switched on. Failing which, the transmitter is not able to change flight modes on the FCU.s
+
+2. Drone must always be started facing WEST(y-axis/LEFT) of it's intended NORTH heading (x-axis/forward). This is because the default starting Vilota VIO heading is North, and the drone obeys ENU convention where East is forward. 

@@ -5,14 +5,17 @@ import json
 from ament_index_python.packages import get_package_share_directory
 
 import rclpy
+from rclpy.duration import Duration
 from rclpy.node import Node
 from rclpy.wait_for_message import wait_for_message
 
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
 from std_msgs.msg import Empty
 
 from gestelt_interfaces.msg import PlanRequest, Goals, UAVState, AllUAVCommand
 from gestelt_interfaces.srv import UAVCommand
+
+from gestelt_commander.robot_navigator import BasicNavigator, TaskResult
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -51,12 +54,20 @@ class MissionManager(Node):
     def __init__(self, no_scenario=False):
         super().__init__('mission_node')
 
+        self.navigator = BasicNavigator(node_name='basic_navigator')
+
         """ Parameter Server """
         self.declare_parameter('scenario', 'single_drone_test')
         self.declare_parameter('init_delay', 2)
+        self.declare_parameter('point_goal_height', 1.0)
+        self.declare_parameter('plan_task_timeout', 60.0)
+        self.declare_parameter('global_replanning_freq', 5.0)
 
         self.scenario_name = self.get_parameter('scenario').get_parameter_value().string_value
         self.init_delay = self.get_parameter('init_delay').get_parameter_value().integer_value
+        self.point_goal_height = self.get_parameter('point_goal_height').get_parameter_value().double_value
+        self.plan_task_timeout = self.get_parameter('plan_task_timeout').get_parameter_value().double_value
+        self.global_replanning_freq = self.get_parameter('global_replanning_freq').get_parameter_value().double_value
 
         self.max_retries = 20
 
@@ -69,42 +80,37 @@ class MissionManager(Node):
             self.get_logger().info("No scenario required! Only initializing publisher to '/global_uav_command'")
             return
 
-        """ Read scenario JSON to get goal positions """
+        """ 
+        Read scenario JSON to get goal positions 
+        """
         self.scenario = Scenario(
             os.path.join(get_package_share_directory('gestelt_commander'), 'scenarios.json'),
             self.scenario_name
         )
+        """
+        Subscribers
+        """
+        sub_point_goal = self.create_subscription(
+            PoseStamped, '/goal_pose', self.pointGoalCallback, 10)
+        sub_point_goal  # prevent unused variable warning
 
-        """Publisher to all UAVs"""
+        """
+        Publishers
+        """
+        # Publish to all UAVs
         self.uav_cmd_global_pub = self.create_publisher(
             AllUAVCommand, '/global_uav_command', rclpy.qos.qos_profile_services_default)
 
-        """Publisher to individual UAV"""
+        # Publish to individual UAV
         self.uav_cmd_pubs = []
         for id in range(self.scenario.num_agents):
             self.uav_cmd_pubs.append(self.create_publisher(
                                     AllUAVCommand, '/d' + str(id) + '/uav_command', 
                                     rclpy.qos.qos_profile_services_default))
 
-        '''Initialize data structures'''
-        self.uav_states = []
-        for id in range(self.scenario.num_agents):
-            self.uav_states.append(UAVState.UNDEFINED)
-
-        """Services"""
-        # self.uav_cmd_srv_clients_ = []
-        # for id in range(self.scenario.num_agents):
-        #     self.uav_cmd_srv_clients_.append(self.create_client(
-        #                                         UAVCommand, 
-        #                                         'd' + str(id) + '/uav_command'))
-        #     while not self.uav_cmd_srv_clients_[id].wait_for_service(timeout_sec=1.0):
-        #         self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
-
-        """Publishers"""
-
+        # Publisher for resetting occupancy map and uav goals
         self.occ_map_pubs_ = []
         self.goals_pubs_ = []
-
         for id in range(self.scenario.num_agents):
             self.goals_pubs_.append(self.create_publisher(
                                     Goals, 'd' + str(id) + '/goals', 
@@ -113,12 +119,47 @@ class MissionManager(Node):
                                     Empty, '/occ_map/reset_map', 
                                     rclpy.qos.qos_profile_services_default))
 
-        """Set goals_pos"""
-        self.plan_req_msgs = []
-        for id in range(self.scenario.num_agents):
-            self.plan_req_msgs.append(self.createGoalsMsg(self.scenario.goals_pos[id]))
+        """
+        Services
+        """
+        # self.uav_cmd_srv_clients_ = []
+        # for id in range(self.scenario.num_agents):
+        #     self.uav_cmd_srv_clients_.append(self.create_client(
+        #                                         UAVCommand, 
+        #                                         'd' + str(id) + '/uav_command'))
+        #     while not self.uav_cmd_srv_clients_[id].wait_for_service(timeout_sec=1.0):
+        #         self.get_logger().info(f'Drone{id} UAV Command service not available, waiting again...')
 
-        """Timers"""
+        """
+        Set goals_pos
+        """
+        self.plan_req_msgs = []
+
+        def createPose(x, y, z):
+            pose = Pose()
+            pose.position.x = x
+            pose.position.y = y
+            pose.position.z = z
+            return pose
+
+        for id in range(self.scenario.num_agents):
+            goal_msg = Goals()
+            goal_msg.header.stamp = self.get_clock().now().to_msg()
+            goal_msg.header.frame_id = 'map'
+
+            goal = self.scenario.goals_pos[id]
+            goal_msg.waypoints.append(createPose(goal[0], goal[1], goal[2]))
+
+            self.plan_req_msgs.append(self.createGoalsMsg(goal_msg))
+
+        # Initialize data structures
+        self.uav_states = []
+        for id in range(self.scenario.num_agents):
+            self.uav_states.append(UAVState.UNDEFINED)
+
+        """
+        Timers
+        """
         # self.plan_req_timer_ = self.create_timer(1.0, self.planReqTimerCB, autostart=True)
 
         # self.get_logger().info(f"Waiting for /dX/uav_state topics...")
@@ -127,9 +168,6 @@ class MissionManager(Node):
         #         time.sleep(0.5)
 
         # self.get_logger().info(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
-
-    # def UAVStateSub(self, msg):
-    #     self.uav_states[msg.agent_id] = msg.state
 
     def sendUAVCommandReq(self, id, command, value, mode):
         srv_req = UAVCommand.Request()
@@ -292,61 +330,10 @@ class MissionManager(Node):
 
         return True
 
-    # def createPlanReqMsg(self, id, start, goal):
-    #     """Set goals_pos
-
-    #     Args:
-    #         start (list): [x,y,z]
-    #         goal (list): [x,y,z]
-    #     """
-
-    #     def createPose(x, y, z):
-    #         msg = Pose()
-    #         msg.position.x = x
-    #         msg.position.y = y
-    #         msg.position.z = z
-
-    #         return msg
-
-    #     plan_req_msg = PlanRequest()
-    #     plan_req_msg.header.stamp = self.get_clock().now().to_msg()
-    #     plan_req_msg.header.frame_id = 'world'
-    #     plan_req_msg.agent_id = id
-
-    #     plan_req_msg.start = createPose(start[0], start[1], start[2])
-    #     plan_req_msg.goal = createPose(goal[0], goal[1], goal[2])
-
-    #     return plan_req_msg
-
-    def createGoalsMsg(self, goal):
-        """Set goals_pos
-
-        Args:
-            start (list): [x,y,z]
-            goal (list): [x,y,z]
-        """
-
-        def createPose(x, y, z):
-            msg = Pose()
-            msg.position.x = x
-            msg.position.y = y
-            msg.position.z = z
-
-            return msg
-
-        goal_msg = Goals()
-        goal_msg.header.stamp = self.get_clock().now().to_msg()
-        goal_msg.header.frame_id = 'map'
-
-        goal_msg.waypoints.append(createPose(goal[0], goal[1], goal[2]))
-
-        return goal_msg
-
     def pubGoals(self):
         # Publish goals to all drones
         for id in range(self.scenario.num_agents):
             self.goals_pubs_[id].publish(self.plan_req_msgs[id])
-
 
     def resetOccMap(self):
         """Reset occupancy map
@@ -354,3 +341,59 @@ class MissionManager(Node):
 
         for id in range(self.scenario.num_agents):
             self.occ_map_pubs_[id].publish(Empty())
+
+    def pointGoalCallback(self, msg):
+        self.get_logger().info("Got point goal callback")
+        ns = ''
+
+        initial_pose = PoseStamped()
+
+        goal_pose = PoseStamped()
+        goal_pose.header.frame_id = 'world'
+        goal_pose.header.stamp = self.get_clock().now().to_msg()
+        goal_pose.pose.position.x = msg.pose.position.x
+        goal_pose.pose.position.y = msg.pose.position.y
+        goal_pose.pose.position.z = self.point_goal_height
+        goal_pose.pose.orientation.w = 1.0
+
+        # Wait for navigation to fully activate, since autostarting nav2
+        self.navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization')
+        # sanity check a valid path exists
+        gbl_path = self.navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
+        # Send global path to controller
+        self.navigator.followPath(gbl_path)
+
+        gbl_replan_rate = self.create_rate(self.global_replanning_freq)
+        i = 0
+        while not self.navigator.isTaskComplete():
+            # TODO: Add replanning here
+
+            # Do something with the feedback
+            i = i + 1
+            feedback = self.navigator.getFeedback()
+            if feedback and i % 5 == 0:
+                print(
+                    'Estimated time of arrival: '
+                    + '{0:.0f}'.format(
+                        Duration.from_msg(feedback.estimated_time_remaining).nanoseconds
+                        / 1e9
+                    )
+                    + ' seconds.'
+                )
+
+                # Some navigation timeout to demo cancellation
+                if Duration.from_msg(feedback.navigation_time) > Duration(seconds= self.plan_task_timeout):
+                    self.navigator.cancelTask()
+            
+            gbl_replan_rate.sleep()
+
+        # Do something depending on the return code
+        result = self.navigator.getResult()
+        if result == TaskResult.SUCCEEDED:
+            print('Goal succeeded!')
+        elif result == TaskResult.CANCELED:
+            print('Goal was canceled!')
+        elif result == TaskResult.FAILED:
+            print('Goal failed!')
+        else:
+            print('Goal has an invalid return status!')
