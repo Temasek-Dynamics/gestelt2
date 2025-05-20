@@ -110,7 +110,7 @@ def generate_launch_description():
     # base_link_frame = [namespace, "_base_link"]
     # camera_frame = [namespace, "_camera_link"]
     base_link_frame = 'base_link'
-    camera_frame = 'camera_link'
+    camera_frame = 'camera_front_left'
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
