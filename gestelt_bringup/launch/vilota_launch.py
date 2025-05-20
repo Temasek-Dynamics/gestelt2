@@ -44,9 +44,10 @@ def generate_launch_description():
         ],
         parameters=[
             {'min_dist': 0.01},
-            {'max_dist': 0.6},
+            {'max_dist': 6.0},
             {'pcl_frame_id': 'camera_front_left'},
-            {'downsample_leaf_size': 0.2},
+            # {'pcl_frame_id': 'base_link'},
+            {'downsample_leaf_size': 0.1},
             {'minimum_points_per_voxel': 3},
         ]
     )
