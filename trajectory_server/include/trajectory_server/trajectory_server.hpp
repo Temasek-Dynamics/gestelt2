@@ -253,6 +253,9 @@ private:
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
 
+	bool transform_cmd_from_nwu_to_enu_{false}; // If enabled, transform all commands from NWU frame to ENU frame
+	double cmd_rot_z_{0.0}, cmd_rot_y_{0.0}, cmd_rot_x_{0.0}; // transformation for commands about z, y and x axes
+
 	/* Stored Data */
 	Eigen::Vector3d cur_pos_enu_{0.0, 0.0, 0.0};		// Current position
 	Eigen::Vector3d cur_pos_enu_corr_{0.0, 0.0, 0.0};	// Current position with corrected ground height
@@ -265,6 +268,7 @@ private:
 	Eigen::Vector3d cmd_vel_enu_{0.0, 0.0, 0.0};
 	Eigen::Vector3d cmd_acc_enu_{0.0, 0.0, 0.0};
 	Eigen::Vector2d cmd_yaw_yawrate_{0.0, 0.0};
+
 
 	/* Safety */
 	std::unique_ptr<Geofence> geofence_; // Geofence to enforce positional limits

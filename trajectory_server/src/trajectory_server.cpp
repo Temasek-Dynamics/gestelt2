@@ -55,6 +55,12 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	this->declare_parameter("publish_map_to_baselink_tf", true);
+	this->declare_parameter("transform_cmd_from_nwu_to_enu", true);
+
+	this->declare_parameter("cmd_rot_x", 0.0);
+	this->declare_parameter("cmd_rot_y", 0.0);
+	this->declare_parameter("cmd_rot_z", 0.0);
+
 	/* Safety */
 	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
 	geofence_->min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
@@ -79,6 +85,10 @@ TrajectoryServer::TrajectoryServer()
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
 	pub_map_to_baselink_tf_ = this->get_parameter("publish_map_to_baselink_tf").as_bool();
+	transform_cmd_from_nwu_to_enu_ = this->get_parameter("transform_cmd_from_nwu_to_enu").as_bool();
+	cmd_rot_z_ = this->get_parameter("cmd_rot_z").as_double();
+	cmd_rot_y_ = this->get_parameter("cmd_rot_y").as_double();
+	cmd_rot_x_ = this->get_parameter("cmd_rot_x").as_double();
 
 	// Create callback groups
 	control_cb_group_ = this->create_callback_group(
@@ -657,10 +667,23 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
+	Eigen::Vector3d pos_ned, vel_ned, acc_ned;
+
+	if (transform_cmd_from_nwu_to_enu_){
+		Eigen::Matrix3d m;
+		m = Eigen::AngleAxisd(cmd_rot_z_, Eigen::Vector3d::UnitZ())
+			* Eigen::AngleAxisd(cmd_rot_y_,  Eigen::Vector3d::UnitY())
+			* Eigen::AngleAxisd(cmd_rot_x_, Eigen::Vector3d::UnitX());
+
+		pos_ned = m * pos;
+		vel_ned = m * vel;
+		acc_ned = m * acc;
+	}
+
 	// Convert from ENU to NED
-	Eigen::Vector3d pos_ned = transform_static_frame(pos, frame_transforms::StaticTF::ENU_TO_NED);
-	Eigen::Vector3d vel_ned = transform_static_frame(vel, frame_transforms::StaticTF::ENU_TO_NED);
-	Eigen::Vector3d acc_ned = transform_static_frame(acc, frame_transforms::StaticTF::ENU_TO_NED);
+	pos_ned = transform_static_frame(pos, frame_transforms::StaticTF::ENU_TO_NED);
+	vel_ned = transform_static_frame(vel, frame_transforms::StaticTF::ENU_TO_NED);
+	acc_ned = transform_static_frame(acc, frame_transforms::StaticTF::ENU_TO_NED);
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};

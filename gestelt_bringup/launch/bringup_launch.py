@@ -200,6 +200,11 @@ def generate_launch_description():
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 30.0},
                     {'publish_map_to_baselink_tf': True},
+
+                    {'transform_cmd_from_nwu_to_enu': True},
+                    {'cmd_rot_z': 1.5707963267948966},
+                    {'cmd_rot_y': 0.0},
+                    {'cmd_rot_x': 0.0},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=traj_server_remappings,

@@ -91,17 +91,17 @@ global_occ_map:
     base_link_frame: "base_link"
 
     print_timer: false       # If enabled, print debug information such as timing information
-    update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
+    update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
-      size_x: 60.0  # [m]
-      size_y: 60.0  # [m]
-      size_z: 10.0  # [m]
+      size_x: 30.0  # [m]
+      size_y: 30.0  # [m]
+      size_z: 7.5  # [m]
 
     local_map:  # Local map used by controllers
-      size_x: 20.0  # [m]
-      size_y: 20.0  # [m]
+      size_x: 11.0  # [m]
+      size_y: 11.0  # [m]
       size_z: 5.0   # [m]
 
     prob_map:  # Occupancy map parameters
@@ -134,17 +134,17 @@ local_occ_map:
     base_link_frame: "base_link"
 
     print_timer: false       # If enabled, print debug information such as timing information
-    update_local_map_frequency: 10.0 # [Hz] Frequency to update the local map
+    update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
-      size_x: 30.0  # [m]
-      size_y: 30.0  # [m]
-      size_z: 10.0  # [m]
-
-    local_map:  # Local map used by controllers
       size_x: 20.0  # [m]
       size_y: 20.0  # [m]
+      size_z: 7.5  # [m]
+
+    local_map:  # Local map used by controllers
+      size_x: 8.0  # [m]
+      size_y: 8.0  # [m]
       size_z: 5.0   # [m]
 
     prob_map:  # Occupancy map parameters

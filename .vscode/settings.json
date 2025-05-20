@@ -5,6 +5,27 @@
         "memory": "cpp",
         "random": "cpp",
         "future": "cpp",
-        "optional": "cpp"
-    }
+        "optional": "cpp",
+        "core": "cpp",
+        "numericaldiff": "cpp",
+        "specialfunctions": "cpp"
+    },
+    "python.autoComplete.extraPaths": [
+        "/home/john/gestelt_ws/install/px4_msgs/local/lib/python3.10/dist-packages",
+        "/home/john/gestelt_ws/install/gestelt_interfaces/local/lib/python3.10/dist-packages",
+        "/home/john/gestelt_ws/build/gestelt_commander",
+        "/home/john/gestelt_ws/install/gestelt_commander/lib/python3.10/site-packages",
+        "/home/john/gestelt_ws/install/decomp_ros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/john/gestelt_ws/install/px4_msgs/local/lib/python3.10/dist-packages",
+        "/home/john/gestelt_ws/install/gestelt_interfaces/local/lib/python3.10/dist-packages",
+        "/home/john/gestelt_ws/build/gestelt_commander",
+        "/home/john/gestelt_ws/install/gestelt_commander/lib/python3.10/site-packages",
+        "/home/john/gestelt_ws/install/decomp_ros_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ]
 }

@@ -1,0 +1,51 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/john/gestelt_ws/install/linear_mpc_controller/include/**",
+        "/home/john/gestelt_ws/install/gestelt_planner/include/**",
+        "/home/john/gestelt_ws/install/gestelt_controller/include/**",
+        "/home/john/gestelt_ws/install/astar_planner/include/**",
+        "/home/john/gestelt_ws/install/gestelt_core/include/**",
+        "/home/john/gestelt_ws/install/px4_msgs/include/**",
+        "/home/john/gestelt_ws/install/occ_map/include/**",
+        "/home/john/gestelt_ws/install/logger_wrapper/include/**",
+        "/home/john/gestelt_ws/install/ikd_tree/include/**",
+        "/home/john/gestelt_ws/install/gestelt_interfaces/include/**",
+        "/home/john/gestelt_ws/install/decomp_ros_utils/include/**",
+        "/home/john/gestelt_ws/install/decomp_util/include/**",
+        "/home/john/gestelt_ws/install/decomp_ros_msgs/include/**",
+        "/home/john/gestelt_ws/install/bonxai/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/astar_planner/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/gestelt_controller/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/gestelt_core/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/gestelt_planner/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/linear_mpc_controller/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/occ_map/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/swarm_tools/fake_drone/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/swarm_tools/fake_map/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/swarm_tools/swarm_collision_checker/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/third_party/bonxai/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/third_party/decomp_ros/decomp_ros_utils/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/third_party/decomp_ros/decomp_util/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/third_party/ikd_tree/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/trajectory_server/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/utils/logger_wrapper/include/**",
+        "/home/john/gestelt_ws/src/gestelt2/utils/viz_helper/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
