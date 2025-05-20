@@ -314,9 +314,13 @@ class BasicNavigator(Node):
             self._waitForNodeToActivate(localizer)
         if localizer == 'amcl':
             self._waitForInitialPose()
-        self._waitForNodeToActivate(navigator)
+
+        if not self._waitForNodeToActivate(navigator):
+            self.error('Nav2 is NOT ready for use!')
+            return False
+        
         self.info('Nav2 is ready for use!')
-        return
+        return True
 
     def _getPathImpl(self, start, goal, planner_id='', use_start=False):
         """
@@ -535,8 +539,12 @@ class BasicNavigator(Node):
         self.debug(f'Waiting for {node_name} to become active..')
         node_service = f'{node_name}/get_state'
         state_client = self.create_client(GetState, node_service)
+        retries = 0
         while not state_client.wait_for_service(timeout_sec=1.0):
             self.info(f'{node_service} service not available, waiting...')
+            retries = retries + 1
+            if (retries > 5):
+                return False
 
         req = GetState.Request()
         state = 'unknown'
@@ -548,7 +556,7 @@ class BasicNavigator(Node):
                 state = future.result().current_state.label
                 self.debug(f'Result of get_state: {state}')
             time.sleep(2)
-        return
+        return True
 
     def _waitForInitialPose(self):
         while not self.initial_pose_received:

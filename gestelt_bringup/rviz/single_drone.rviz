@@ -58,29 +58,13 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        base_link:
-          Value: true
-        camera_front_left:
-          Value: true
-        d0_base_link:
-          Value: false
-        d0_camera_link:
-          Value: false
-        d0_map:
-          Value: false
-        world:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          d0_map:
-            base_link:
-              camera_front_left:
-                {}
+        {}
       Update Interval: 0
       Value: true
     - Class: rviz_default_plugins/Axes
@@ -511,7 +495,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /d0/point_goal
+        Value: /point_goal
     - Class: rviz_default_plugins/PublishPoint
       Single click: true
       Topic:
@@ -562,5 +546,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 925
-  X: 70
+  X: 132
   Y: 27

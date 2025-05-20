@@ -58,20 +58,20 @@ class MissionManager(Node):
 
         """ Parameter Server """
         self.declare_parameter('scenario', 'single_drone_test')
-        self.declare_parameter('init_delay', 2)
+        self.declare_parameter('init_delay', 2.0)
         self.declare_parameter('point_goal_height', 1.0)
         self.declare_parameter('plan_task_timeout', 60.0)
         self.declare_parameter('global_replanning_freq', 5.0)
 
         self.scenario_name = self.get_parameter('scenario').get_parameter_value().string_value
-        self.init_delay = self.get_parameter('init_delay').get_parameter_value().integer_value
+        self.init_delay = self.get_parameter('init_delay').get_parameter_value().double_value
         self.point_goal_height = self.get_parameter('point_goal_height').get_parameter_value().double_value
         self.plan_task_timeout = self.get_parameter('plan_task_timeout').get_parameter_value().double_value
         self.global_replanning_freq = self.get_parameter('global_replanning_freq').get_parameter_value().double_value
 
         self.max_retries = 20
 
-        self.get_logger().info(f"Initializing mission with scenario {self.scenario_name}...")
+        self.get_logger().info(f"Initializing mission manager with scenario {self.scenario_name}...")
 
         # Sleep for init_delay
         time.sleep(self.init_delay)
@@ -91,7 +91,7 @@ class MissionManager(Node):
         Subscribers
         """
         sub_point_goal = self.create_subscription(
-            PoseStamped, '/goal_pose', self.pointGoalCallback, 10)
+            PoseStamped, '/point_goal', self.pointGoalCallback, 10)
         sub_point_goal  # prevent unused variable warning
 
         """
@@ -150,7 +150,7 @@ class MissionManager(Node):
             goal = self.scenario.goals_pos[id]
             goal_msg.waypoints.append(createPose(goal[0], goal[1], goal[2]))
 
-            self.plan_req_msgs.append(self.createGoalsMsg(goal_msg))
+            self.plan_req_msgs.append(goal_msg)
 
         # Initialize data structures
         self.uav_states = []
@@ -168,6 +168,8 @@ class MissionManager(Node):
         #         time.sleep(0.5)
 
         # self.get_logger().info(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
+
+        self.get_logger().info(f"Initialized mission manager")
 
     def sendUAVCommandReq(self, id, command, value, mode):
         srv_req = UAVCommand.Request()
@@ -343,7 +345,7 @@ class MissionManager(Node):
             self.occ_map_pubs_[id].publish(Empty())
 
     def pointGoalCallback(self, msg):
-        self.get_logger().info("Got point goal callback")
+        self.get_logger().info(f"Callback on point goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
         ns = ''
 
         initial_pose = PoseStamped()
@@ -357,10 +359,12 @@ class MissionManager(Node):
         goal_pose.pose.orientation.w = 1.0
 
         # Wait for navigation to fully activate, since autostarting nav2
-        self.navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization')
+        if not self.navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization'):
+            self.get_logger().error(f"Failed to activate {ns+'/planner_server'}, planning request aborted!")
+            return
         # sanity check a valid path exists
         gbl_path = self.navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
-        # Send global path to controller
+        # Request for controller to follow global path
         self.navigator.followPath(gbl_path)
 
         gbl_replan_rate = self.create_rate(self.global_replanning_freq)

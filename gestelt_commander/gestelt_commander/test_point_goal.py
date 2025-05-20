@@ -22,14 +22,14 @@ from gestelt_commander.scenario import *
 
 
 def main(args=None):
+    rclpy.init(args=args)
     try:
-        with rclpy.init(args=args):
-            mission_mngr = MissionManager()
+        mission_mngr = MissionManager()
 
-            executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)
-            executor.add_node(mission_mngr)
+        executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)
+        executor.add_node(mission_mngr)
 
-            executor.spin()
+        executor.spin()
 
     except (KeyboardInterrupt, ExternalShutdownException):
         rclpy.shutdown()
