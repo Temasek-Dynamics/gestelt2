@@ -23,6 +23,7 @@ def generate_launch_description():
         name='vilota_bridge_front_left',
         parameters=[
             {'bridge_name': 'front_left'},
+            {'map_frame_id': 'd0_map'},
             {'camera_frame_id': 'camera_front_left'},
             {'disparity_topic': 'S1/stereo1_l/disparity'},
             {'image_topic': 'S1/stereo1_l'},

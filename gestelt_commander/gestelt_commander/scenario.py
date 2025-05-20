@@ -375,19 +375,7 @@ class MissionManager(Node):
             # Do something with the feedback
             i = i + 1
             feedback = self.navigator.getFeedback()
-            if feedback and i % 5 == 0:
-                print(
-                    'Estimated time of arrival: '
-                    + '{0:.0f}'.format(
-                        Duration.from_msg(feedback.estimated_time_remaining).nanoseconds
-                        / 1e9
-                    )
-                    + ' seconds.'
-                )
-
-                # Some navigation timeout to demo cancellation
-                if Duration.from_msg(feedback.navigation_time) > Duration(seconds= self.plan_task_timeout):
-                    self.navigator.cancelTask()
+            # self.navigator.cancelTask()
             
             gbl_replan_rate.sleep()
 

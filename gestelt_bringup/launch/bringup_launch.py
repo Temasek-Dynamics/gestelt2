@@ -199,7 +199,7 @@ def generate_launch_description():
                     {'pub_state_freq': 40.0},
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 30.0},
-                    {'publish_map_to_baselink_tf': True},
+                    {'publish_map_to_baselink_tf': False},
 
                     {'transform_cmd_from_nwu_to_enu': True},
                     {'cmd_rot_z': 1.5707963267948966},
