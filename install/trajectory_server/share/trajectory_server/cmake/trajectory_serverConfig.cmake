@@ -1,0 +1,1 @@
+/home/nvidia/gestelt_ws/src/gestelt2/build/trajectory_server/ament_cmake_core/trajectory_serverConfig.cmake

@@ -1,0 +1,1 @@
+/home/nvidia/gestelt_ws/src/gestelt2/gestelt_bringup/launch/rviz_viz.py

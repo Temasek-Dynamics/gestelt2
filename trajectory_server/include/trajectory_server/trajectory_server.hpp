@@ -35,6 +35,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/static_transform_broadcaster.h>
 
 #include <nav_msgs/msg/odometry.hpp>
 
@@ -242,9 +243,11 @@ private:
 	int drone_id_{0};
 
 	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
+	bool pub_baselink_to_camera_tf_{false}; // If enabled, publish base link to camera transformation
 
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
-	std::string base_link_frame_; // Origin frame of uav i.e. "world" or "map"
+	std::string base_link_frame_; // 
+	std::string camera_frame_; // Frame of depth camera sensor
 
 	double take_off_landing_tol_{0.15}; // [m] Take off and landing tolerance for execution to be completed
 
@@ -274,6 +277,7 @@ private:
 	std::unique_ptr<Geofence> geofence_; // Geofence to enforce positional limits
 
 	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; 
+	std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_; 
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;

@@ -1,0 +1,34 @@
+[35m[1mConsolidate compiler generated dependencies of target occ_map[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/occ_map.dir/src/occ_map.cpp.o[0m
+[100%] [32m[1mLinking CXX shared library libocc_map.so[0m
+[100%] Built target occ_map
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/include/occ_map/occ_map/cost_values.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/include/occ_map/occ_map/occ_map.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/include/occ_map/occ_map/visibility_control.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/environment/library_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/environment/library_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/ament_index/resource_index/package_run_dependencies/occ_map
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/ament_index/resource_index/parent_prefix_path/occ_map
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/ament_index/resource_index/packages/occ_map
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/ament_cmake_export_targets-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/occ_mapConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/occ_mapConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/package.xml
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib/libocc_map.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib/libocc_map.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/export_occ_mapExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/share/occ_map/cmake/export_occ_mapExport-release.cmake

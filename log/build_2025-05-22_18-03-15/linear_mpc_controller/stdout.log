@@ -1,0 +1,32 @@
+[35m[1mConsolidate compiler generated dependencies of target linear_mpc_controller[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/linear_mpc_controller.dir/src/linear_mpc_controller.cpp.o[0m
+[100%] [32m[1mLinking CXX shared library liblinear_mpc_controller.so[0m
+[100%] Built target linear_mpc_controller
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/lib/liblinear_mpc_controller.so
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/include//linear_mpc_controller/linear_mpc_controller.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/include//linear_mpc_controller/poly_sfc_gen.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/include//linear_mpc_controller/pvaj_mpc.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/environment/library_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/environment/library_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller//linear_mpc_controller.xml
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/ament_index/resource_index/package_run_dependencies/linear_mpc_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/ament_index/resource_index/parent_prefix_path/linear_mpc_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/ament_index/resource_index/packages/linear_mpc_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/ament_index/resource_index/gestelt_core__pluginlib__plugin/linear_mpc_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/cmake/linear_mpc_controllerConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/cmake/linear_mpc_controllerConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/linear_mpc_controller/share/linear_mpc_controller/package.xml

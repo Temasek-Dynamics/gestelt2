@@ -43,18 +43,22 @@ TrajectoryServer::TrajectoryServer()
 	fsm_list::start(); // start UAV state machine
  
 	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+	tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
+
 	geofence_ = std::make_unique<Geofence>(logger_);
 
 	// Declare params
 	this->declare_parameter("namespace", "");
 	this->declare_parameter("map_frame", "map");
 	this->declare_parameter("base_link_frame", "base_link");
+	this->declare_parameter("camera_frame", "camera_link");
 	/* Frequencies for timers and periodic publishers*/
 	this->declare_parameter("set_offb_ctrl_freq", 4.0);
 	this->declare_parameter("pub_state_freq", 30.0);
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	this->declare_parameter("publish_map_to_baselink_tf", true);
+	this->declare_parameter("publish_base_link_to_camera_tf", true);
 	this->declare_parameter("transform_cmd_from_nwu_to_enu", true);
 
 	this->declare_parameter("cmd_rot_x", 0.0);
@@ -79,12 +83,14 @@ TrajectoryServer::TrajectoryServer()
 
 	map_frame_ = this->get_parameter("map_frame").as_string();
 	base_link_frame_ = this->get_parameter("base_link_frame").as_string();
+	camera_frame_ = this->get_parameter("camera_frame").as_string();
 	set_offb_ctrl_freq_ = this->get_parameter("set_offb_ctrl_freq").as_double();
 	pub_state_freq_ = this->get_parameter("pub_state_freq").as_double();
 	pub_ctrl_freq_ = this->get_parameter("pub_ctrl_freq").as_double();
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
 	pub_map_to_baselink_tf_ = this->get_parameter("publish_map_to_baselink_tf").as_bool();
+	pub_baselink_to_camera_tf_ = this->get_parameter("publish_base_link_to_camera_tf").as_bool();
 	transform_cmd_from_nwu_to_enu_ = this->get_parameter("transform_cmd_from_nwu_to_enu").as_bool();
 	cmd_rot_z_ = this->get_parameter("cmd_rot_z").as_double();
 	cmd_rot_y_ = this->get_parameter("cmd_rot_y").as_double();
@@ -586,7 +592,7 @@ void TrajectoryServer::SMTickTimerCB()
 void TrajectoryServer::pubStateTimerCB()
 {
 	if (pub_map_to_baselink_tf_){
-		// broadcast tf link from global map frame to local map origin 
+		// broadcast tf from map to base link 
 		geometry_msgs::msg::TransformStamped map_to_base_link_tf;
 
 		map_to_base_link_tf.header.stamp = this->get_clock()->now();
@@ -597,6 +603,7 @@ void TrajectoryServer::pubStateTimerCB()
 		map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
 		map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
 
+		// Flip y axis
 		map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
 		map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
 		map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();
@@ -604,6 +611,27 @@ void TrajectoryServer::pubStateTimerCB()
 		
 		tf_broadcaster_->sendTransform(map_to_base_link_tf);
 	}
+
+	// if (pub_baselink_to_camera_tf_){
+
+	// 	// broadcast tf link from global map frame to local map origin 
+	// 	geometry_msgs::msg::TransformStamped base_link_to_camera_tf;
+
+	// 	base_link_to_camera_tf.header.stamp = this->get_clock()->now();
+	// 	base_link_to_camera_tf.header.frame_id = "camera_link"; 
+	// 	base_link_to_camera_tf.child_frame_id = camera_frame_; 
+
+	// 	base_link_to_camera_tf.transform.translation.x = 0.0;
+	// 	base_link_to_camera_tf.transform.translation.y = 0.0;
+	// 	base_link_to_camera_tf.transform.translation.z = 0.0;
+
+	// 	base_link_to_camera_tf.transform.rotation.x = 0.0;
+	// 	base_link_to_camera_tf.transform.rotation.y = 0.0; 
+	// 	base_link_to_camera_tf.transform.rotation.z = 0.0;
+	// 	base_link_to_camera_tf.transform.rotation.w = 1.0; 
+
+	// 	tf_static_broadcaster_->sendTransform(base_link_to_camera_tf);
+	// }
 }
 
 /****************** */

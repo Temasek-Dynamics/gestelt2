@@ -1,0 +1,64 @@
+[35m[1mConsolidate compiler generated dependencies of target simple_goal_checker[0m
+[35m[1mConsolidate compiler generated dependencies of target simple_progress_checker[0m
+[35m[1mConsolidate compiler generated dependencies of target controller_server_core[0m
+[ 16%] [32m[1mLinking CXX shared library libsimple_progress_checker.so[0m
+[ 16%] [32m[1mLinking CXX shared library libsimple_goal_checker.so[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/controller_server_core.dir/src/controller_server.cpp.o[0m
+[ 33%] Built target simple_goal_checker
+[ 41%] Built target simple_progress_checker
+[35m[1mConsolidate compiler generated dependencies of target stopped_goal_checker[0m
+[35m[1mConsolidate compiler generated dependencies of target pose_progress_checker[0m
+[ 50%] [32m[1mLinking CXX shared library libstopped_goal_checker.so[0m
+[ 58%] [32m[1mLinking CXX shared library libpose_progress_checker.so[0m
+[ 66%] Built target stopped_goal_checker
+[ 75%] Built target pose_progress_checker
+[ 83%] [32m[1mLinking CXX shared library libcontroller_server_core.so[0m
+[ 83%] Built target controller_server_core
+[35m[1mConsolidate compiler generated dependencies of target controller_server[0m
+[ 91%] [32mBuilding CXX object CMakeFiles/controller_server.dir/src/main.cpp.o[0m
+[100%] [32m[1mLinking CXX executable controller_server[0m
+[100%] Built target controller_server
+-- Install configuration: ""
+-- Execute custom install script
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/gestelt_controller/controller_server
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/include/gestelt_controller/gestelt_controller/controller_server.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/include/gestelt_controller/gestelt_controller/plugins/pose_progress_checker.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/include/gestelt_controller/gestelt_controller/plugins/simple_goal_checker.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/include/gestelt_controller/gestelt_controller/plugins/simple_progress_checker.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/include/gestelt_controller/gestelt_controller/plugins/stopped_goal_checker.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/environment/library_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/environment/library_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller//plugins.xml
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/ament_index/resource_index/package_run_dependencies/gestelt_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/ament_index/resource_index/parent_prefix_path/gestelt_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/ament_index/resource_index/packages/gestelt_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/ament_index/resource_index/gestelt_core__pluginlib__plugin/gestelt_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/ament_index/resource_index/rclcpp_components/gestelt_controller
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/ament_cmake_export_targets-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/gestelt_controllerConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/gestelt_controllerConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/package.xml
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libsimple_progress_checker.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libsimple_progress_checker.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libpose_progress_checker.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libpose_progress_checker.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libsimple_goal_checker.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libsimple_goal_checker.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libstopped_goal_checker.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libstopped_goal_checker.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libcontroller_server_core.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/lib/libcontroller_server_core.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/controller_server_coreExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_controller/share/gestelt_controller/cmake/controller_server_coreExport-noconfig.cmake

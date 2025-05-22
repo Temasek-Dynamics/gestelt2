@@ -1,0 +1,29 @@
+[1.807s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander': PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/build --no-deps symlink_data
+[2.452s] running develop
+[2.857s] running egg_info
+[2.857s] writing gestelt_commander.egg-info/PKG-INFO
+[2.858s] writing dependency_links to gestelt_commander.egg-info/dependency_links.txt
+[2.858s] writing entry points to gestelt_commander.egg-info/entry_points.txt
+[2.859s] writing requirements to gestelt_commander.egg-info/requires.txt
+[2.859s] writing top-level names to gestelt_commander.egg-info/top_level.txt
+[2.864s] reading manifest file 'gestelt_commander.egg-info/SOURCES.txt'
+[2.865s] writing manifest file 'gestelt_commander.egg-info/SOURCES.txt'
+[2.869s] running build_ext
+[2.869s] Creating /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/python3.10/site-packages/gestelt-commander.egg-link (link to .)
+[2.872s] Installing land script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.872s] Installing mission script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.872s] Installing send_goals script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.873s] Installing takeoff script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.873s] Installing test_planning script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.873s] Installing test_point_goal script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.873s] Installing test_take_off_goal script to /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/gestelt_commander
+[2.874s] 
+[2.874s] Installed /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander
+[2.874s] running symlink_data
+[2.874s] creating /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/share/ament_index
+[2.875s] creating /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/share/ament_index/resource_index
+[2.875s] creating /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/share/ament_index/resource_index/packages
+[2.875s] symbolically linking /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/resource/gestelt_commander -> /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/share/ament_index/resource_index/packages
+[2.875s] symbolically linking /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/package.xml -> /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/share/gestelt_commander
+[2.875s] symbolically linking /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/scenarios.json -> /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/share/gestelt_commander
+[2.969s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander' returned '0': PYTHONPATH=/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_commander/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_commander/build --no-deps symlink_data

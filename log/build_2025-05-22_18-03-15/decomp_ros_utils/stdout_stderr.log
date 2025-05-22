@@ -1,0 +1,32 @@
+[  7%] [34m[1mAutomatic MOC for target mesh_shape[0m
+[  7%] Built target mesh_shape_autogen
+[35m[1mConsolidate compiler generated dependencies of target mesh_shape[0m
+[ 30%] Built target mesh_shape
+[ 38%] [34m[1mAutomatic MOC for target decomp_rviz_plugins[0m
+[ 38%] Built target decomp_rviz_plugins_autogen
+[35m[1mConsolidate compiler generated dependencies of target decomp_rviz_plugins[0m
+[100%] Built target decomp_rviz_plugins
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/include//decomp_ros_utils/data_ros_utils.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/include//decomp_ros_utils/mesh_shape.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils//plugin_description.xml
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/ament_index/resource_index/package_run_dependencies/decomp_ros_utils
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/ament_index/resource_index/parent_prefix_path/decomp_ros_utils
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/ament_index/resource_index/packages/decomp_ros_utils
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/ament_index/resource_index/rviz_common__pluginlib__plugin/decomp_ros_utils
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/cmake/decomp_ros_utilsConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/cmake/decomp_ros_utilsConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/share/decomp_ros_utils/package.xml
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_utils/lib/libdecomp_rviz_plugins.so

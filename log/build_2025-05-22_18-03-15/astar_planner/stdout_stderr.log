@@ -1,0 +1,41 @@
+[35m[1mConsolidate compiler generated dependencies of target astar_planner[0m
+[ 33%] [32mBuilding CXX object CMakeFiles/astar_planner.dir/src/astar.cpp.o[0m
+[ 66%] [32mBuilding CXX object CMakeFiles/astar_planner.dir/src/astar_planner.cpp.o[0m
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:[m[K In member function ‘[01m[Kbool astar_planner::AStarPlanner::makePlan(const Vector3d&, const Vector3d&, double, std::function<bool()>, nav_msgs::msg::Path&)[m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:148:12:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktolerance[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  148 |     [01;35m[Kdouble tolerance[m[K,
+      |     [01;35m[K~~~~~~~^~~~~~~~~[m[K
+[100%] [32m[1mLinking CXX shared library libastar_planner.so[0m
+[100%] Built target astar_planner
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner//global_planner_plugin.xml
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/include/astar_planner/astar_planner/astar.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/include/astar_planner/astar_planner/astar_planner.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/global_planner_plugin.xml
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/library_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/library_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/package_run_dependencies/astar_planner
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/parent_prefix_path/astar_planner
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/packages/astar_planner
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/ament_index/resource_index/gestelt_core__pluginlib__plugin/astar_planner
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/ament_cmake_export_targets-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/package.xml
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/lib/libastar_planner.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/lib/libastar_planner.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/astar_planner/share/astar_planner/cmake/astar_plannerExport-release.cmake

@@ -189,6 +189,7 @@ def generate_launch_description():
                     {'namespace': namespace},
                     {'map_frame': map_frame},
                     {'base_link_frame': base_link_frame},
+                    {'camera_frame': camera_frame},
                     {'safety.geofence.min_x': -50.0},
                     {'safety.geofence.min_y': -50.0},
                     {'safety.geofence.min_z': -0.5},
@@ -200,6 +201,7 @@ def generate_launch_description():
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 30.0},
                     {'publish_map_to_baselink_tf': True},
+                    {'publish_base_link_to_camera_tf': False},
 
                     {'transform_cmd_from_nwu_to_enu': True},
                     {'cmd_rot_z': 1.5707963267948966},

@@ -192,16 +192,28 @@ def generate_launch_description():
                                 "0", "0", 
                                 global_frame, map_frame],
                 ),
-                # Transform from base link to camera frame
-                # Node(
+                # Node( 
                 #     package = "tf2_ros", 
-                #     name=ns+'_base_link_to_cam_tf',
+                #     name='ENU_TO_NED_tf',
                 #     executable = "static_transform_publisher",
                 #     output="own_log",
-                #     arguments = ["0.085", "0.0", "0.0", 
-                #                     "-0.577", "0.304", "-0.409", "0.638",
-                #                     base_link_frame, camera_frame],
+                #     arguments = ["0", "0", "0", 
+                #                 "0.7071068", "0.7071068", "0.0", "0.0",
+                #                 map_frame, "NED"],
                 # ),
+                # Transform from base link to camera frame
+                Node(
+                    package = "tf2_ros", 
+                    name=ns+'_base_link_to_cam_tf',
+                    executable = "static_transform_publisher",
+                    output="own_log",
+                    arguments = [ #"0.085", "0.0", "0.0", 
+                                    # "-0.577", "0.304", "-0.409", "0.638",
+                                    "0.0", "0.0", "0.0", 
+                                    # "0.5", "0.5", "0.5", "0.5", # 90 deg about z then 90 deg about x
+                                    "0.4777144", "0.5213338", "0.4777144", "0.5213338", # 90 deg about z then 90 deg about x
+                                    base_link_frame, camera_frame],
+                ),
             ]
         )
     )

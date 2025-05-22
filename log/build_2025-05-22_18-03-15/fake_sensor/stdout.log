@@ -1,0 +1,21 @@
+[35m[1mConsolidate compiler generated dependencies of target fake_sensor_node[0m
+[100%] Built target fake_sensor_node
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor//config/fake_sensor.yaml
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/lib/fake_sensor/fake_sensor_node
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/ament_index/resource_index/package_run_dependencies/fake_sensor
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/ament_index/resource_index/parent_prefix_path/fake_sensor
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/ament_index/resource_index/packages/fake_sensor
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/cmake/fake_sensorConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/cmake/fake_sensorConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/package.xml
