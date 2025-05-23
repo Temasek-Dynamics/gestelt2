@@ -1,34 +1,37 @@
 #! /usr/bin/env python3
-# Copyright 2021 Samsung Research America
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# MIT License
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+# Copyright (c) 2025 John Tan
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
 
 from geometry_msgs.msg import PoseStamped
 from gestelt_commander.robot_navigator import BasicNavigator, TaskResult
 import rclpy
 from rclpy.duration import Duration
 
-from gestelt_commander.scenario import *
+from gestelt_commander.mission_manager import MissionManager
+from gestelt_interfaces.msg import UAVState, AllUAVCommand
 
 def planAndFollowPath(navigator, ns=''):
-    initial_pose = PoseStamped()
-    initial_pose.header.frame_id = 'world'
-    initial_pose.header.stamp = navigator.get_clock().now().to_msg()
-    initial_pose.pose.position.x = 0.0
-    initial_pose.pose.position.y = 0.0
-    initial_pose.pose.position.z = 0.5
-    initial_pose.pose.orientation.w = 1.0
-
     # Wait for navigation to fully activate, since autostarting nav2
     navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization')
 
@@ -42,16 +45,11 @@ def planAndFollowPath(navigator, ns=''):
     goal_pose.pose.orientation.w = 1.0
 
     # sanity check a valid path exists
-    path = navigator.getPath(initial_pose, goal_pose, planner_id='GridBased', use_start=False)
+    path = navigator.getPath(PoseStamped(), goal_pose, planner_id='GridBased', use_start=False)
     navigator.followPath(path)
 
     i = 0
     while not navigator.isTaskComplete():
-        ################################################
-        #
-        # Implement some code here for your application!
-        #
-        ################################################
 
         # Do something with the feedback
         i = i + 1
@@ -98,7 +96,7 @@ def main(args=None):
         # Take off 
         #########
         mission_mngr.cmdAllDronesPubNamespaced(
-            UAVCommand.Request.COMMAND_TAKEOFF, 
+            AllUAVCommand.COMMAND_TAKEOFF, 
             UAVState.IDLE,
             value=mission_mngr.scenario.take_off_height)
         mission_mngr.get_logger().info("Sending commands to TAKE OFF")
@@ -106,7 +104,7 @@ def main(args=None):
         #########
         # Wait for Hover
         #########
-        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=20):
+        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=40):
             raise Exception("Failed to transition to hover mode")
         mission_mngr.get_logger().info("All drones are in HOVER MODE.")
         # Reset occupancy map
@@ -116,7 +114,7 @@ def main(args=None):
         # MissionManager mode
         #########
         mission_mngr.cmdAllDronesPubNamespaced(
-            UAVCommand.Request.COMMAND_START_MISSION, 
+            AllUAVCommand.COMMAND_START_MISSION, 
             UAVState.HOVERING,
             mode=0)
         mission_mngr.get_logger().info("All drones swtching switching to MISSION MODE")
@@ -124,14 +122,14 @@ def main(args=None):
         #########
         # Wait for mission_mngr
         #########
-        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=20):
+        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=40):
             raise Exception("Failed to transition to mission mode")
         
         mission_mngr.get_logger().info("All drones in MISSION MODE")
 
         # Send a goal
-        mission_mngr.get_logger().info("Requesting planned path.")
-        planAndFollowPath(navigator, '/d0')
+        mission_mngr.get_logger().info("Requesting planned path. Ready to execute goals.")
+        planAndFollowPath(navigator, ns='/d0')
 
         rclpy.spin(mission_mngr)
 

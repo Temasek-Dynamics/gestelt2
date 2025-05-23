@@ -59,7 +59,7 @@ int AStar::computePath(const int& max_iterations,
 
     open_list_.put(start_idx, 0.0);
 
-    static int num_iter = 0;
+    int num_iter = 0;
 
     while (!open_list_.empty())
     {

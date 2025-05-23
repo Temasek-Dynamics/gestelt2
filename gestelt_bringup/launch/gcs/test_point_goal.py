@@ -65,7 +65,6 @@ def launch_setup(context):
             {'scenario': scenario.name},
             {'init_delay': 1.0},
             {'point_goal_height': 1.0},
-            {'plan_task_timeout': 60.0},
             {'global_replanning_freq': 5.0},
         ]
     )

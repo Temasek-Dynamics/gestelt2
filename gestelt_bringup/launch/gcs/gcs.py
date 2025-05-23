@@ -63,37 +63,8 @@ def generate_launch_description():
 
     # Get the launch directory
     bringup_dir = get_package_share_directory('gestelt_bringup')
-    launch_dir = os.path.join(bringup_dir, 'launch')
 
     rviz_config_file = LaunchConfiguration('rviz_config_file')
-
-    # Declare parameters
-    namespace = LaunchConfiguration('namespace')
-    use_namespace = LaunchConfiguration('use_namespace')
-    params_file = LaunchConfiguration('params_file')
-    use_sim_time = LaunchConfiguration('use_sim_time')
-
-    declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='d0', description='Top-level namespace'
-    )
-
-    declare_params_file_cmd = DeclareLaunchArgument(
-        'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-        description='Full path to the ROS2 parameters file to use for all launched nodes',
-    )
-
-    declare_use_namespace_cmd = DeclareLaunchArgument(
-        'use_namespace',
-        default_value='false',
-        description='Whether to apply a namespace to the navigation stack',
-    )
-
-    declare_use_sim_time_cmd = DeclareLaunchArgument(
-        'use_sim_time',
-        default_value='false',
-        description='Use simulation (Gazebo) clock if true',
-    )
 
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config_file',
@@ -123,11 +94,6 @@ def generate_launch_description():
 
     # Create the launch description and populate
     ld = LaunchDescription()
-
-    ld.add_action(declare_namespace_cmd)
-    ld.add_action(declare_use_namespace_cmd)
-    ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_use_sim_time_cmd)
 
     ld.add_action(declare_rviz_config_file_cmd)
 

@@ -27,11 +27,48 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 
 from gestelt_commander.mission_manager import MissionManager
+from gestelt_interfaces.msg import UAVState, AllUAVCommand
 
 def main(args=None):
     rclpy.init(args=args)
+
+    mission_mngr = MissionManager()
+
     try:
-        mission_mngr = MissionManager()
+        #########
+        # Take off 
+        #########
+        mission_mngr.cmdAllDronesPubNamespaced(
+            AllUAVCommand.COMMAND_TAKEOFF, 
+            UAVState.IDLE,
+            value=mission_mngr.scenario.take_off_height)
+        mission_mngr.get_logger().info("Sending commands to TAKE OFF")
+        
+        #########
+        # Wait for Hover
+        #########
+        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=40):
+            raise Exception("Failed to transition to hover mode")
+        mission_mngr.get_logger().info("All drones are in HOVER MODE.")
+        # Reset occupancy map
+        mission_mngr.resetOccMap()
+
+        #########
+        # MissionManager mode
+        #########
+        mission_mngr.cmdAllDronesPubNamespaced(
+            AllUAVCommand.COMMAND_START_MISSION, 
+            UAVState.HOVERING,
+            mode=0)
+        mission_mngr.get_logger().info("All drones swtching switching to MISSION MODE")
+
+        #########
+        # Wait for mission_mngr
+        #########
+        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=40):
+            raise Exception("Failed to transition to mission mode")
+        
+        mission_mngr.get_logger().info("All drones in MISSION MODE. Ready to execute goals.")
 
         executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)
         executor.add_node(mission_mngr)
@@ -39,6 +76,7 @@ def main(args=None):
         executor.spin()
 
     except (KeyboardInterrupt, ExternalShutdownException):
+        mission_mngr.destroy_node()
         rclpy.shutdown()
     
     exit(0)

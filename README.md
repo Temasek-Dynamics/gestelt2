@@ -92,14 +92,15 @@ sudo ldconfig /usr/local/lib/
 
 To enable repeatability of experiments. We make use of scenarios which are configurations of drone spawn locations and environments stored in [gestelt_mission/scenarios.json](gestelt_mission/scenarios.json). Refer to [gestelt_mission/README.md](gestelt_mission/README.md) for more information.
 
-## With mock drones
-To run a simulation without a dynamical model i.e. to test the path planning logic.
-```bash
-
-``` 
-
 ## With PX4-SITL 
 To run a simulation with a dynamical model (with physics).
 ```bash
+# Launch the simulation
 ros2 launch gestelt_bringup multi_drone_sim_launch.py 
+
+# Command take-off and sending of goals
+ros2 launch gestelt_bringup test_point_goal_sim.py
+
+# Land the drone after it is done
+ros2 run gestelt_commander land_sim
 ```

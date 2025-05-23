@@ -69,7 +69,7 @@ def generate_launch_description():
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+        default_value=os.path.join(bringup_dir, 'params', 'gnc_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes',
     )
 
@@ -98,13 +98,19 @@ def generate_launch_description():
     remappings = [
         # (['/', namespace, '/tf'], '/tf'), 
         # (['/', namespace, '/tf_static'], '/tf_static'),
+        ('occ_map/cloud_in', '/point_cloud/downsample'), 
+    ]
+
+    traj_server_remappings = [
+        ('/uav_state', ['/', namespace, '/uav_state']), 
     ]
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
-    base_link_frame = [namespace, "_base_link"]
+    # base_link_frame = [namespace, "_base_link"]
     # camera_frame = [namespace, "_camera_link"]
-    camera_frame = "x500_depth_0/camera_link/StereoOV7251"
+    base_link_frame = 'base_link'
+    camera_frame = 'camera_front_left'
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
@@ -122,7 +128,7 @@ def generate_launch_description():
     nav_configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params_file,
-            root_key=namespace,
+            # root_key=namespace,
             param_rewrites=nav_param_substitutions,
             convert_types=True,
         ),
@@ -183,6 +189,7 @@ def generate_launch_description():
                     {'namespace': namespace},
                     {'map_frame': map_frame},
                     {'base_link_frame': base_link_frame},
+                    {'camera_frame': camera_frame},
                     {'safety.geofence.min_x': -50.0},
                     {'safety.geofence.min_y': -50.0},
                     {'safety.geofence.min_z': -0.5},
@@ -193,9 +200,16 @@ def generate_launch_description():
                     {'pub_state_freq': 40.0},
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 30.0},
+                    {'publish_map_to_baselink_tf': True},
+                    {'publish_base_link_to_camera_tf': False},
+
+                    {'transform_cmd_from_nwu_to_enu': True},
+                    {'cmd_rot_z': 1.5707963267948966},
+                    {'cmd_rot_y': 0.0},
+                    {'cmd_rot_x': 0.0},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings,
+                remappings=traj_server_remappings,
             ),
         ],
 

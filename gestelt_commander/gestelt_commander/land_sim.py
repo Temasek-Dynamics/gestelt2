@@ -35,7 +35,7 @@ def main(args=None):
 
     try: 
         # Landing
-        mission_mngr.cmdAllDronesPubGlobal(
+        mission_mngr.cmdAllDronesPubNamespaced(
             AllUAVCommand.COMMAND_LAND)
         mission_mngr.get_logger().info("All drones LANDING")
 

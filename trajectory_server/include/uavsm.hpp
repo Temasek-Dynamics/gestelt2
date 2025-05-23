@@ -28,7 +28,7 @@
 
 #include <tinyfsm.hpp>
 
-#include <gestelt_interfaces/srv/uav_command.hpp>
+#include <gestelt_interfaces/msg/all_uav_command.hpp>
 
 #include <iostream>
 
@@ -315,7 +315,7 @@ inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& 
 {
   switch (cmd)
   {
-    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:  
+    case gestelt_interfaces::msg::AllUAVCommand::COMMAND_TAKEOFF:  
       {
         // std::cout << "Sending take off event" << std::endl;
         auto evt = TakeOff_E();
@@ -323,14 +323,14 @@ inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& 
         sendEvent(evt);
       }
       break;
-    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_LAND:  
+    case gestelt_interfaces::msg::AllUAVCommand::COMMAND_LAND:  
       {      
         // std::cout << "Sending land event" << std::endl;
         auto evt = Land_E();
         sendEvent(evt);
       }
       break;
-    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION:  
+    case gestelt_interfaces::msg::AllUAVCommand::COMMAND_START_MISSION:  
       {      
         // std::cout << "Sending start mission event" << std::endl;
         auto evt = StartMission_E();
@@ -338,14 +338,14 @@ inline void sendUAVCommandEvent(const int& cmd, const double& value, const int& 
         sendEvent(evt);
       }
       break;
-    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_STOP_MISSION:  
+    case gestelt_interfaces::msg::AllUAVCommand::COMMAND_STOP_MISSION:  
       {      
         // std::cout << "Sending stop mission event" << std::endl;
         auto evt = StopMission_E();
         sendEvent(evt);
       }
       break;
-    case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_EMERGENCY_STOP:  
+    case gestelt_interfaces::msg::AllUAVCommand::COMMAND_EMERGENCY_STOP:  
       {      
         // std::cout << "Sending emergency stop event" << std::endl;
         auto evt = EmergencyStop_E();

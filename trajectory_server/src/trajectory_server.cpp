@@ -158,12 +158,6 @@ TrajectoryServer::TrajectoryServer()
 	pub_state_timer_ = this->create_wall_timer((1.0 / pub_state_freq_) * 1000ms,
 		std::bind(&TrajectoryServer::pubStateTimerCB, this), others_cb_group_);
 												
-	/* Services */
-	// rmw_qos_profile_t qos_profile = rmw_qos_profile_services_default;
-
-	// uav_cmd_srv_ = this->create_service<gestelt_interfaces::srv::UAVCommand>(
-	// 	"uav_command", std::bind(&TrajectoryServer::uavCmdSrvCB, this, _1, _2), qos_profile, others_cb_group_);
-
 	logger_->logInfo("Initialized");
 }
 
@@ -653,21 +647,21 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 	msg.direct_actuator = false;
 
 	switch (offb_ctrl_mode){
-		case gestelt_interfaces::srv::UAVCommand::Request::MODE_TRAJECTORY: //0
+		case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY: //0
 			msg.position = true;
 			msg.velocity = false;
 			msg.acceleration = false;
 			break;
-		case gestelt_interfaces::srv::UAVCommand::Request::MODE_ATTITUDE: //1
+		case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: //1
 			msg.attitude = true;
 			break;
-		case gestelt_interfaces::srv::UAVCommand::Request::MODE_RATES: //2
+		case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES: //2
 			msg.body_rate = true;
 			break;
-		case gestelt_interfaces::srv::UAVCommand::Request::MODE_THRUST_TORQUE: //3
+		case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE: //3
 			msg.thrust_and_torque = true;
 			break;
-		case gestelt_interfaces::srv::UAVCommand::Request::MODE_MOTORS: //4
+		case gestelt_interfaces::msg::AllUAVCommand::MODE_MOTORS: //4
 			msg.direct_actuator = true;
 			break;
 		default:
@@ -815,154 +809,3 @@ void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, f
 
 	vehicle_command_pub_->publish(msg);
 }
-
-/****************** */
-/* SERVICE CALLBACKS*/
-/****************** */
-
-// void TrajectoryServer::uavCmdSrvCB(const std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Request> request,
-// 								   std::shared_ptr<gestelt_interfaces::srv::UAVCommand::Response> response)
-// {
-// 	// request->header
-// 	logger_->logInfo(strFmt("Incoming request\n Command: %d"
-// 							" Mode: %d"
-// 							" Value: %f",
-// 							request->command, request->mode, request->value));
-
-// 	// Checkn if value and mode is within bounds for specific commands
-// 	switch (request->command)
-// 	{
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:
-// 		if (request->value < 0.5 || request->value > 3.0)
-// 		{
-// 			response->success = false;
-// 			response->state = (int)getUAVState();
-// 			response->state_name = getUAVStateString();
-// 			logger_->logError("Value for COMMAND_TAKEOFF should be between 0.5 and 3.0, inclusive");
-
-// 			return;
-// 		}
-
-// 		break;
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION:
-
-// 		if (request->mode > 4)
-// 		{
-// 			response->success = false;
-// 			response->state = (int)getUAVState();
-// 			response->state_name = getUAVStateString();
-// 			logger_->logError("Value for COMMAND_START_MISSION should be between 0 and 4 inclusive");
-
-// 			return;
-// 		}
-
-// 		break;
-// 	default:
-// 		break;
-// 	}
-
-// 	static double takeoff_timeout = 10.0;
-// 	static double start_mission_timeout = 1.0;
-// 	static double land_timeout = 10.0;
-// 	static double stop_mission_timeout = 1.0;
-// 	static double estop_timeout = 0.1;
-
-// 	// Send event to state machine
-// 	sendUAVCommandEvent(request->command, request->value, request->mode);
-
-// 	double srv_rcv_t = this->get_clock()->now().seconds();
-// 	bool timeout = false;
-
-// 	// Wait for state change to be completed
-// 	switch (request->command)
-// 	{
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_TAKEOFF:
-// 		logger_->logInfo("COMMAND_TAKEOFF");
-
-// 		// Wait for state change to complete
-// 		while (!UAV::is_in_state<Hovering>() && !timeout)
-// 		{
-// 			if ((srv_rcv_t - this->get_clock()->now().seconds()) >= takeoff_timeout)
-// 			{
-// 				timeout = true;
-// 				break;
-// 			}
-// 			rclcpp::sleep_for(std::chrono::milliseconds(25));
-// 		}
-// 		break;
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_LAND:
-// 		logger_->logInfo("COMMAND_LAND");
-
-// 		while (!UAV::is_in_state<Idle>() && !timeout)
-// 		{
-// 			if ((srv_rcv_t - this->get_clock()->now().seconds()) >= land_timeout)
-// 			{
-// 				timeout = true;
-// 				break;
-// 			}
-// 			rclcpp::sleep_for(std::chrono::milliseconds(25));
-// 		}
-// 		break;
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_START_MISSION:
-// 		logger_->logInfo("COMMAND_START_MISSION");
-
-// 		while (!UAV::is_in_state<Mission>() && !timeout)
-// 		{
-// 			if ((srv_rcv_t - this->get_clock()->now().seconds()) >= start_mission_timeout)
-// 			{
-// 				timeout = true;
-// 				break;
-// 			}
-// 			rclcpp::sleep_for(std::chrono::milliseconds(25));
-// 		}
-// 		break;
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_STOP_MISSION:
-// 		logger_->logInfo("COMMAND_STOP_MISSION");
-
-// 		while (!UAV::is_in_state<Hovering>() && !timeout)
-// 		{
-// 			if ((srv_rcv_t - this->get_clock()->now().seconds()) >= stop_mission_timeout)
-// 			{
-// 				timeout = true;
-// 				break;
-// 			}
-// 			rclcpp::sleep_for(std::chrono::milliseconds(25));
-// 		}
-
-// 		break;
-// 	case gestelt_interfaces::srv::UAVCommand::Request::COMMAND_EMERGENCY_STOP:
-// 		logger_->logInfo("COMMAND_EMERGENCY_STOP");
-
-// 		while (!UAV::is_in_state<EmergencyStop>() && !timeout)
-// 		{
-// 			if ((srv_rcv_t - this->get_clock()->now().seconds()) >= estop_timeout)
-// 			{
-// 				timeout = true;
-// 				break;
-// 			}
-// 			rclcpp::sleep_for(std::chrono::milliseconds(25));
-// 		}
-
-// 		break;
-// 	default:
-// 		break;
-// 	}
-
-// 	response->state = (int)getUAVState();
-// 	response->state_name = getUAVStateString();
-
-// 	if (timeout)
-// 	{
-// 		response->success = false;
-
-// 		logger_->logInfo(strFmt("Timeout!!: State[%d] State_name[%s] Success [%d]",
-// 								response->state, response->state_name.c_str(), response->success));
-// 	}
-// 	else
-// 	{
-// 		response->success = true;
-
-// 		logger_->logInfo(strFmt("Success! Sending back response: State[%d] State_name[%s] Success [%d]",
-// 								response->state, response->state_name.c_str(), response->success));
-// 	}
-// }

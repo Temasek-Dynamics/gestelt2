@@ -57,7 +57,7 @@ def launch_setup(context):
     mission_node = Node(
         name='mission_node',
         package='gestelt_commander',
-        executable='test_planning',
+        executable='test_take_off_goal_sim',
         output='screen',
         emulate_tty=False,
         shell=True,

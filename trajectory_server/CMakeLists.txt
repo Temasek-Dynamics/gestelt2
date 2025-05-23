@@ -79,16 +79,6 @@ target_link_libraries(
 	rclcpp::rclcpp
 )
 
-# (For testing) Trajectory Server UAV Command service client 
-add_executable(uav_cmd_srv_client src/uav_cmd_srv_client.cpp )
-ament_target_dependencies(uav_cmd_srv_client 
-	rclcpp 
-	gestelt_interfaces)
-target_include_directories(uav_cmd_srv_client PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-	$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
-
 ############
 # Install ##
 ############

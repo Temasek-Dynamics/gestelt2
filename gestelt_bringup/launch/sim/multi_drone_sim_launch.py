@@ -21,14 +21,15 @@ from launch.actions import (
 from launch.events import Shutdown
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+from launch.substitutions import LaunchConfiguration
 
-from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
-from launch_ros.descriptions import ComposableNode
+from launch_ros.actions import Node
 
 # from ros_gz_bridge.actions import RosGzBridge
 
-SCENARIO_NAME = "single_drone_test"
+# SCENARIO_NAME = "single_drone_test"
+# SCENARIO_NAME = "start_2d"
+SCENARIO_NAME = "start_4d_empty"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -86,18 +87,13 @@ def generate_launch_description():
     rviz_config_file = LaunchConfiguration('rviz_config_file')
 
     # Declare parameters
-    namespace = LaunchConfiguration('namespace')
     use_namespace = LaunchConfiguration('use_namespace')
     params_file = LaunchConfiguration('params_file')
     use_sim_time = LaunchConfiguration('use_sim_time')
 
-    declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='d0', description='Top-level namespace'
-    )
-
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
+        default_value=os.path.join(bringup_dir, 'params', 'gnc_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes',
     )
 
@@ -173,23 +169,9 @@ def generate_launch_description():
         output="own_log",
     )
 
-    # Send single test goal
-    mission_node = Node(
-        package='gestelt_commander',
-        executable='test_planning',
-        output='screen',
-        emulate_tty=False,
-        shell=True,
-        parameters = [
-            {'scenario': scenario.name},
-            {'init_delay': 1},
-        ]
-    )
-
     # Create the launch description and populate
     ld = LaunchDescription()
 
-    ld.add_action(declare_namespace_cmd)
     ld.add_action(declare_use_namespace_cmd)
     ld.add_action(declare_params_file_cmd)
     ld.add_action(declare_use_sim_time_cmd)
@@ -198,12 +180,9 @@ def generate_launch_description():
 
     ld.add_action(start_gazebo_cmd)
     ld.add_action(ros_gz_bridge_action)
-    # ld.add_action(ros_gz_bridge_unidir_clock)
     ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)
     ld.add_action(exit_event_handler)
-
-    ld.add_action(mission_node)
 
     # Generate nodes of SITL drone instances according to scenario
     for drone_id in range(scenario.num_agents):
@@ -221,9 +200,9 @@ def generate_launch_description():
                 actions=[
                     IncludeLaunchDescription(
                         PythonLaunchDescriptionSource(
-                            os.path.join(launch_dir, 'bringup_launch.py')),
+                            os.path.join(launch_dir, 'sim', 'bringup_sim_launch.py')),
                         launch_arguments={
-                            'namespace': namespace,
+                            'namespace': ns,
                             'use_namespace': use_namespace,
                             'use_sim_time': use_sim_time,
                             'params_file': params_file,
