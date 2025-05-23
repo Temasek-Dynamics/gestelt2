@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/build/decomp_util/ament_cmake_environment_hooks/local_setup.sh
