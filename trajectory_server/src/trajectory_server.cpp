@@ -65,6 +65,8 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("cmd_rot_y", 0.0);
 	this->declare_parameter("cmd_rot_z", 0.0);
 
+	this->declare_parameter("correct_for_ground_height", true);
+
 	/* Safety */
 	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
 	geofence_->min_y = this->declare_parameter("safety.geofence.min_y", 0.0);
@@ -95,6 +97,8 @@ TrajectoryServer::TrajectoryServer()
 	cmd_rot_z_ = this->get_parameter("cmd_rot_z").as_double();
 	cmd_rot_y_ = this->get_parameter("cmd_rot_y").as_double();
 	cmd_rot_x_ = this->get_parameter("cmd_rot_x").as_double();
+
+	correct_for_ground_height_ = this->get_parameter("correct_for_ground_height").as_bool();
 
 	// Create callback groups
 	control_cb_group_ = this->create_callback_group(
@@ -206,9 +210,16 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	}
 
 	// Correct for ground height
-	cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
-	cur_ori_enu_ = transform_orientation(
-		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q), pos_frame_tf);
+	if (correct_for_ground_height_){
+		cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
+	}
+	else {
+		cur_pos_enu_corr_ = cur_pos_enu_;
+	}
+
+	cur_ori_enu_ = frame_transforms::px4_to_ros_orientation(
+		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q));
+
 	cur_vel_enu_ = transform_static_frame(
 		Eigen::Vector3d(vel.data()), vel_frame_tf);
 	cur_ang_vel_enu_ = transform_static_frame(
@@ -226,10 +237,10 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	odom_msg.pose.pose.position.y = cur_pos_enu_corr_(1);
 	odom_msg.pose.pose.position.z = cur_pos_enu_corr_(2);
 
-	odom_msg.pose.pose.orientation.w = cur_ori_enu_.w();
 	odom_msg.pose.pose.orientation.x = cur_ori_enu_.x();
 	odom_msg.pose.pose.orientation.y = cur_ori_enu_.y();
 	odom_msg.pose.pose.orientation.z = cur_ori_enu_.z();
+	odom_msg.pose.pose.orientation.w = cur_ori_enu_.w();
 
 	odom_msg.twist.twist.linear.x = cur_vel_enu_(0);
 	odom_msg.twist.twist.linear.y = cur_vel_enu_(1);
@@ -554,9 +565,8 @@ void TrajectoryServer::SMTickTimerCB()
 	{
 		logger_->logInfoThrottle("[TakingOff]", 1.0);
 
-		cmd_pos_enu_ = cur_pos_enu_corr_;
 		cmd_pos_enu_(2) = fsm_list::fsmtype::current_state_ptr->getTakeoffHeight();
-
+		// Commanded z position needs to a given take off height above the ground height.
 		cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
 
 		if (abs(cur_pos_enu_corr_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) 
@@ -597,7 +607,6 @@ void TrajectoryServer::pubStateTimerCB()
 		map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
 		map_to_base_link_tf.transform.translation.z = cur_pos_enu_corr_(2);
 
-		// Flip y axis
 		map_to_base_link_tf.transform.rotation.x = cur_ori_enu_.x();
 		map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
 		map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();

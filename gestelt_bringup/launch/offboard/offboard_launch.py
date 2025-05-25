@@ -162,7 +162,9 @@ def generate_launch_description():
     # base_link_frame = ns + "_base_link"
     # camera_frame = ns + "_camera_link"
     base_link_frame = "base_link"
-    camera_frame = "camera_front_left"
+    intmd_base_link = "intmd_base_link"
+    camera_front_frame = "camera_front_link"
+    camera_front_left_frame = "camera_front_left"
 
     ld.add_action(
         GroupAction(
@@ -192,27 +194,26 @@ def generate_launch_description():
                                 "0", "0", 
                                 global_frame, map_frame],
                 ),
-                # Node( 
-                #     package = "tf2_ros", 
-                #     name='ENU_TO_NED_tf',
-                #     executable = "static_transform_publisher",
-                #     output="own_log",
-                #     arguments = ["0", "0", "0", 
-                #                 "0.7071068", "0.7071068", "0.0", "0.0",
-                #                 map_frame, "NED"],
-                # ),
-                # Transform from base link to camera frame
                 Node(
                     package = "tf2_ros", 
                     name=ns+'_base_link_to_cam_tf',
                     executable = "static_transform_publisher",
                     output="own_log",
-                    arguments = [ #"0.085", "0.0", "0.0", 
-                                    # "-0.577", "0.304", "-0.409", "0.638",
-                                    "0.0", "0.0", "0.0", 
-                                    # "0.5", "0.5", "0.5", "0.5", # 90 deg about z then 90 deg about x
-                                    "0.4777144", "0.5213338", "0.4777144", "0.5213338", # 90 deg about z then 90 deg about x
-                                    base_link_frame, camera_frame],
+                    arguments = [ "0.0", "0.0", "0.0", 
+                                    "-0.5", "0.5", "-0.5", "0.5", # 90 deg about z then 90 deg about x
+                                    # "0.4777144", "0.5213338", "0.4777144", "0.5213338", # 90 deg about z then 90 deg about x
+                                    # "0.0", "0.0", "0.0", "1.0", # 
+                                    base_link_frame, camera_front_frame],
+                ),
+                Node(
+                    package = "tf2_ros", 
+                    name=ns+'_base_link_to_cam_tf',
+                    executable = "static_transform_publisher",
+                    output="own_log",
+                    arguments = ["0.0", "0.0", "0.0", 
+                                    "0.0", "0.0", "0.0", "1.0", # 
+                                    # "0.357077", "0.611043", "-0.610573", "-0.355418",  
+                                camera_front_frame, camera_front_left_frame],
                 ),
             ]
         )

@@ -237,6 +237,8 @@ private:
 	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
 	bool pub_baselink_to_camera_tf_{false}; // If enabled, publish base link to camera transformation
 
+	bool correct_for_ground_height_{true}; // If true and in IDLE mode, set current z position as 0.0 i.e. at ground height
+
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // 
 	std::string camera_frame_; // Frame of depth camera sensor
