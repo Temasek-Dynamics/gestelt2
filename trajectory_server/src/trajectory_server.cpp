@@ -678,23 +678,17 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
-	Eigen::Vector3d pos_ned, vel_ned, acc_ned;
-
-	if (transform_cmd_from_nwu_to_enu_){
-		Eigen::Matrix3d m;
-		m = Eigen::AngleAxisd(cmd_rot_z_, Eigen::Vector3d::UnitZ())
-			* Eigen::AngleAxisd(cmd_rot_y_,  Eigen::Vector3d::UnitY())
-			* Eigen::AngleAxisd(cmd_rot_x_, Eigen::Vector3d::UnitX());
-
-		pos_ned = m * pos;
-		vel_ned = m * vel;
-		acc_ned = m * acc;
-	}
-
 	// Convert from ENU to NED
-	pos_ned = transform_static_frame(pos, frame_transforms::StaticTF::ENU_TO_NED);
-	vel_ned = transform_static_frame(vel, frame_transforms::StaticTF::ENU_TO_NED);
-	acc_ned = transform_static_frame(acc, frame_transforms::StaticTF::ENU_TO_NED);
+	Eigen::Vector3d pos_ned = frame_transforms::aircraft_to_baselink_body_frame(
+		frame_transforms::enu_to_ned_local_frame(pos));
+	Eigen::Vector3d vel_ned = frame_transforms::aircraft_to_baselink_body_frame(
+		frame_transforms::enu_to_ned_local_frame(vel));
+	Eigen::Vector3d acc_ned = frame_transforms::aircraft_to_baselink_body_frame(
+		frame_transforms::enu_to_ned_local_frame(acc));
+
+	// pos_ned = frame_transforms::ned_to_enu_local_frame(pos);
+	// vel_ned = frame_transforms::ned_to_enu_local_frame(vel);
+	// acc_ned = frame_transforms::ned_to_enu_local_frame(acc);
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};

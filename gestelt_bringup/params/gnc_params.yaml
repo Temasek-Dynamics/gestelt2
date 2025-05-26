@@ -38,7 +38,7 @@ controller_server:
     # DWB parameters
     FollowPath:
       plugin: "linear_mpc_controller::LinearMPCController"
-      control_yaw: true # Enable simple control of the yaw
+      control_yaw: false # Enable simple control of the yaw
       yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
