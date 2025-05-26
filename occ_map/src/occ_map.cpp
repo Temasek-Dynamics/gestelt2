@@ -143,6 +143,7 @@ void OccMap::init()
   declare_parameter("cloud_in_passthrough.max_z", 5.0);
 
   /* Noise filter */
+  declare_parameter("enable_noise_filter", true);
   declare_parameter("noise_search_radius", 0.2);
   declare_parameter("noise_min_neighbors", 3);
 
@@ -424,6 +425,7 @@ void OccMap::getParameters()
   bonxai_options_.occupancy_threshold_log = Bonxai::ProbabilisticMap::logods(occupancy_threshold);
 
   /* Noise filter */
+  get_parameter("enable_noise_filter", enable_noise_filter_);
   get_parameter("noise_search_radius", noise_search_radius_);
   get_parameter("noise_min_neighbors", noise_min_neighbors_);
 
@@ -482,10 +484,10 @@ void OccMap::updateLocalMap(){
   {
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
 
-    lcl_pcd_map_raw_.reset(new pcl::PointCloud<pcl::PointXYZ>());
-    lcl_pcd_map_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+    lcl_pcd_map_raw_.reset(new pcl::PointCloud<pcl::PointXYZ>()); // Raw local point cloud map before noise filtering
+    lcl_pcd_map_.reset(new pcl::PointCloud<pcl::PointXYZ>()); // local point cloud map after filtering
 
-    lcl_pts_map_.clear();
+    lcl_pts_map_.clear(); // local point cloud map in eigen vec data structure
 
     // Only add points within local bound of base_link
     for (auto& coord : occ_coords) 
@@ -501,9 +503,11 @@ void OccMap::updateLocalMap(){
         pcl::PointXYZ(obs_pos_map(0), obs_pos_map(1), obs_pos_map(2)));
     }
 
-    kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
-    // Add local occ points in fixed map frame to KDTree
-    kdtree_->Build(lcl_pcd_map_raw_->points);
+    if (enable_noise_filter_){
+      kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+      // Add local occ points in fixed map frame to KDTree
+      kdtree_->Build(lcl_pcd_map_raw_->points);
+    }
 
     // For each point in local bounds
     for (auto& obs_pt_map : lcl_pcd_map_raw_->points) 
@@ -513,11 +517,13 @@ void OccMap::updateLocalMap(){
       // // pt_in_lcl_frame_eig: With respect to local origins
       // Eigen::Vector3d pt_in_lcl_frame_eig = obs_pt_map_eig - local_map_origin_;
 
-      std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
-      // Perform radius search for each point and get nunber of points
-      kdtree_->Radius_Search(obs_pt_map, noise_search_radius_, nb_points);
-      if ((int) nb_points.size() < noise_min_neighbors_){
-        continue;
+      if (enable_noise_filter_){
+        std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
+        // Perform radius search for each point and get nunber of points
+        kdtree_->Radius_Search(obs_pt_map, noise_search_radius_, nb_points);
+        if ((int) nb_points.size() < noise_min_neighbors_){
+          continue;
+        }
       }
 
       // lcl_pts_map_: Used for SFC

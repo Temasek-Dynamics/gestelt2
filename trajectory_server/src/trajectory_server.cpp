@@ -58,7 +58,6 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	this->declare_parameter("publish_map_to_baselink_tf", true);
-	this->declare_parameter("publish_base_link_to_camera_tf", true);
 	this->declare_parameter("transform_cmd_from_nwu_to_enu", true);
 
 	this->declare_parameter("cmd_rot_x", 0.0);
@@ -92,7 +91,6 @@ TrajectoryServer::TrajectoryServer()
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
 	pub_map_to_baselink_tf_ = this->get_parameter("publish_map_to_baselink_tf").as_bool();
-	pub_baselink_to_camera_tf_ = this->get_parameter("publish_base_link_to_camera_tf").as_bool();
 	transform_cmd_from_nwu_to_enu_ = this->get_parameter("transform_cmd_from_nwu_to_enu").as_bool();
 	cmd_rot_z_ = this->get_parameter("cmd_rot_z").as_double();
 	cmd_rot_y_ = this->get_parameter("cmd_rot_y").as_double();
@@ -216,6 +214,8 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	else {
 		cur_pos_enu_corr_ = cur_pos_enu_;
 	}
+
+	cur_pos_enu_corr_(0) = cur_pos_enu_corr_(0) + 0.085;
 
 	cur_ori_enu_ = frame_transforms::px4_to_ros_orientation(
 		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q));
@@ -615,26 +615,6 @@ void TrajectoryServer::pubStateTimerCB()
 		tf_broadcaster_->sendTransform(map_to_base_link_tf);
 	}
 
-	// if (pub_baselink_to_camera_tf_){
-
-	// 	// broadcast tf link from global map frame to local map origin 
-	// 	geometry_msgs::msg::TransformStamped base_link_to_camera_tf;
-
-	// 	base_link_to_camera_tf.header.stamp = this->get_clock()->now();
-	// 	base_link_to_camera_tf.header.frame_id = "camera_link"; 
-	// 	base_link_to_camera_tf.child_frame_id = camera_frame_; 
-
-	// 	base_link_to_camera_tf.transform.translation.x = 0.0;
-	// 	base_link_to_camera_tf.transform.translation.y = 0.0;
-	// 	base_link_to_camera_tf.transform.translation.z = 0.0;
-
-	// 	base_link_to_camera_tf.transform.rotation.x = 0.0;
-	// 	base_link_to_camera_tf.transform.rotation.y = 0.0; 
-	// 	base_link_to_camera_tf.transform.rotation.z = 0.0;
-	// 	base_link_to_camera_tf.transform.rotation.w = 1.0; 
-
-	// 	tf_static_broadcaster_->sendTransform(base_link_to_camera_tf);
-	// }
 }
 
 /****************** */

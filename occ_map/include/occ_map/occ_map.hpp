@@ -385,7 +385,8 @@ private:
   bool use_radius_{true};
 
   // Noise filter
-  double noise_search_radius_{0.3}; // Radius to search for neighbouring points
+  bool enable_noise_filter_{false}; // Enable noise filtering
+  double noise_search_radius_{0.2}; // Radius to search for neighbouring points
   int noise_min_neighbors_{1}; // Minimum number of neighbors within 'search_radius' to be a valid point
 
   // Passthrough filter for point cloud 

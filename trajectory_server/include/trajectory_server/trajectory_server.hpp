@@ -235,7 +235,6 @@ private:
 	int drone_id_{0};
 
 	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
-	bool pub_baselink_to_camera_tf_{false}; // If enabled, publish base link to camera transformation
 
 	bool correct_for_ground_height_{true}; // If true and in IDLE mode, set current z position as 0.0 i.e. at ground height
 

@@ -162,8 +162,9 @@ def generate_launch_description():
     # base_link_frame = ns + "_base_link"
     # camera_frame = ns + "_camera_link"
     base_link_frame = "base_link"
-    intmd_base_link = "intmd_base_link"
-    camera_front_frame = "camera_front_link"
+    camera_link = "camera_link"
+    camera_front_frame = "camera_front"
+    camera_front_right_frame = "camera_front_right"
     camera_front_left_frame = "camera_front_left"
 
     ld.add_action(
@@ -199,21 +200,38 @@ def generate_launch_description():
                     name=ns+'_base_link_to_cam_tf',
                     executable = "static_transform_publisher",
                     output="own_log",
-                    arguments = [ "0.0", "0.0", "0.0", 
-                                    "-0.5", "0.5", "-0.5", "0.5", # 90 deg about z then 90 deg about x
-                                    # "0.4777144", "0.5213338", "0.4777144", "0.5213338", # 90 deg about z then 90 deg about x
-                                    # "0.0", "0.0", "0.0", "1.0", # 
-                                    base_link_frame, camera_front_frame],
+                    arguments = [ "-0.085", "0.0", "0.0", 
+                                    "0.0993197", "0.0", "-0.9950556", "0.0", #ZYX (-180, 11.4, 0)
+                                    # "0.0", "0.0", "1.0", "0.0", #ZYX (-180, 0, 0)
+                                    base_link_frame, camera_link],
+                ),
+
+                Node(
+                    package = "tf2_ros", 
+                    name=ns+'_cam_to_front_cam_tf',
+                    executable = "static_transform_publisher",
+                    output="own_log",
+                    arguments = [ "-0.2", "0.0", "0.0", 
+                                    "0.5", "0.5", "-0.5", "-0.5", #ZYX (90, 0, 90)
+                                    camera_link, camera_front_frame],
                 ),
                 Node(
                     package = "tf2_ros", 
-                    name=ns+'_base_link_to_cam_tf',
+                    name=ns+'_cam_to_left_cam_tf',
                     executable = "static_transform_publisher",
                     output="own_log",
-                    arguments = ["0.0", "0.0", "0.0", 
-                                    "0.0", "0.0", "0.0", "1.0", # 
-                                    # "0.357077", "0.611043", "-0.610573", "-0.355418",  
-                                camera_front_frame, camera_front_left_frame],
+                    arguments = [ "-0.159341", "-0.071877", "0.000139", 
+                                    "0.35707", "0.61104", "-0.61057", "-0.35541",
+                                    camera_link, camera_front_left_frame],
+                ),
+                Node(
+                    package = "tf2_ros", 
+                    name=ns+'_cam_to_right_cam_tf',
+                    executable = "static_transform_publisher",
+                    output="own_log",
+                    arguments = [ "-0.160507", "0.071495", "0.000393", 
+                                    "-0.605586", "-0.35930", "0.359366", "0.612390",
+                                    camera_link, camera_front_right_frame],
                 ),
             ]
         )

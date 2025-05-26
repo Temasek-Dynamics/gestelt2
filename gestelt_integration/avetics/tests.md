@@ -1,5 +1,35 @@
 # tests
 
+# Test take off and planning with perception (26/5/25)
+
+Goals:
+    - Trajectory Server
+        - Test orientation with "transform_cmd_from_nwu_to_enu" set to falase
+    - Occupancy Map
+        - Test with smaller map parameters
+    - A star planning
+        - See map planning
+    - Collect ROSBags
+```bash
+#####
+# Drone
+#####
+start_vilota
+# Launch offboard nodes
+ros2 launch gestelt_bringup offboard_launch.py 
+
+#####
+# GCS
+#####
+ros2 launch gestelt_bringup rviz_viz.py
+
+ros2 topic pub /reset_map std_msgs/msg/Empty {} -1
+
+ros2 launch gestelt_bringup test_take_off_goal.py scenario_name:=single_drone_test
+
+ros2 run gestelt_commander land scenario_name:=single_drone_test
+```
+
 # Test NWU to ENU transformation for command to PX4 (20/5/25)
 
 ```bash

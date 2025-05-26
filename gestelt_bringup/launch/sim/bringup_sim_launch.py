@@ -194,7 +194,6 @@ def generate_launch_description():
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 30.0},
                     {'publish_map_to_baselink_tf': True},
-                    {'publish_base_link_to_camera_tf': False},
 
                     {'transform_cmd_from_nwu_to_enu': False},
                     {'cmd_rot_z': 0.0},

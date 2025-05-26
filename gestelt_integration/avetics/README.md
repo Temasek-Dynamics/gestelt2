@@ -52,9 +52,18 @@ To debug on nuttx shell use `listener vehicle_visual_odometry`
 ssh compulab@10.42.0.64 
 # password is compulab
 
-# Configs are stored in
-cd /opt/vilota/configs/vio 
-
+# VIO Configs are stored in '/opt/vilota/configs/vio' 
+# Camera driver configs are stored in '/opt/vilota/configs/camera_driver' and they can be used to change the reference camera link for the TF of the individual camera lenses, the section to change will look something like 
+        "reference_cam": "camd",
+        "body_T_cam0": {
+            "px": -0.2,
+            "py": 0.0,
+            "pz": 0.0,
+            "qx": -0.5,
+            "qy": -0.5,
+            "qz": 0.5,
+            "qw": 0.5
+        }
 ```
 
 ## Zenoh
