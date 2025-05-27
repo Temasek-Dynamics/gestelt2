@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'land = gestelt_commander.land:main',
             'land_sim = gestelt_commander.land_sim:main',
+            'test_send_cmds = gestelt_commander.test_send_cmds:main',
             'test_take_off_goal = gestelt_commander.test_take_off_goal:main',
             'test_take_off_goal_sim = gestelt_commander.test_take_off_goal_sim:main',
             'test_planning = gestelt_commander.test_planning:main',

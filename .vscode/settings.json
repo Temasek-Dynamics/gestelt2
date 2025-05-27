@@ -112,5 +112,6 @@
         "/home/john/gestelt_ws/install/decomp_ros_msgs/local/lib/python3.10/dist-packages",
         "/opt/ros/humble/lib/python3.10/site-packages",
         "/opt/ros/humble/local/lib/python3.10/dist-packages"
-    ]
+    ],
+    "cmake.sourceDirectory": "/home/john/gestelt_ws/src/gestelt2/third_party/ikd_tree"
 }

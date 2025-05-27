@@ -58,13 +58,17 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("pub_ctrl_freq", 30.0);
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	this->declare_parameter("publish_map_to_baselink_tf", true);
-	this->declare_parameter("transform_cmd_from_nwu_to_enu", true);
 
+	this->declare_parameter("transform_cmd_from_nwu_to_enu", true);
 	this->declare_parameter("cmd_rot_x", 0.0);
 	this->declare_parameter("cmd_rot_y", 0.0);
 	this->declare_parameter("cmd_rot_z", 0.0);
 
 	this->declare_parameter("correct_for_ground_height", true);
+
+	this->declare_parameter("mode_trajectory_enable_pos", true);
+	this->declare_parameter("mode_trajectory_enable_vel", true);
+	this->declare_parameter("mode_trajectory_enable_acc", true);
 
 	/* Safety */
 	geofence_->min_x = this->declare_parameter("safety.geofence.min_x", 0.0);
@@ -97,6 +101,13 @@ TrajectoryServer::TrajectoryServer()
 	cmd_rot_x_ = this->get_parameter("cmd_rot_x").as_double();
 
 	correct_for_ground_height_ = this->get_parameter("correct_for_ground_height").as_bool();
+
+	mode_trajectory_enable_pos_ = 
+		this->get_parameter("mode_trajectory_enable_pos").as_bool();
+	mode_trajectory_enable_vel_ = 
+		this->get_parameter("mode_trajectory_enable_vel").as_bool();
+	mode_trajectory_enable_acc_ = 
+		this->get_parameter("mode_trajectory_enable_acc").as_bool();
 
 	// Create callback groups
 	control_cb_group_ = this->create_callback_group(
@@ -207,14 +218,10 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 		ground_height_ = Eigen::Vector3d(0.0, 0.0, cur_pos_enu_(2));
 	}
 
-	// Correct for ground height
-	if (correct_for_ground_height_){
-		cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
-	}
-	else {
-		cur_pos_enu_corr_ = cur_pos_enu_;
-	}
+	cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
 
+	// Correct for camera_link to base_link offset, since VIO is with 
+	// reference to camera link
 	cur_pos_enu_corr_(0) = cur_pos_enu_corr_(0) + 0.085;
 
 	cur_ori_enu_ = frame_transforms::px4_to_ros_orientation(
@@ -637,9 +644,9 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 
 	switch (offb_ctrl_mode){
 		case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY: //0
-			msg.position = true;
-			msg.velocity = false;
-			msg.acceleration = false;
+			msg.position = mode_trajectory_enable_pos_;	
+			msg.velocity = mode_trajectory_enable_vel_;
+			msg.acceleration = mode_trajectory_enable_acc_;
 			break;
 		case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: //1
 			msg.attitude = true;
@@ -679,12 +686,16 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
 	// Convert from ENU to NED
-	Eigen::Vector3d pos_ned = frame_transforms::aircraft_to_baselink_body_frame(
-		frame_transforms::enu_to_ned_local_frame(pos));
-	Eigen::Vector3d vel_ned = frame_transforms::aircraft_to_baselink_body_frame(
-		frame_transforms::enu_to_ned_local_frame(vel));
-	Eigen::Vector3d acc_ned = frame_transforms::aircraft_to_baselink_body_frame(
-		frame_transforms::enu_to_ned_local_frame(acc));
+	// Eigen::Vector3d pos_ned = frame_transforms::aircraft_to_baselink_body_frame(
+	// 	frame_transforms::enu_to_ned_local_frame(pos));
+	// Eigen::Vector3d vel_ned = frame_transforms::aircraft_to_baselink_body_frame(
+	// 	frame_transforms::enu_to_ned_local_frame(vel));
+	// Eigen::Vector3d acc_ned = frame_transforms::aircraft_to_baselink_body_frame(
+	// 	frame_transforms::enu_to_ned_local_frame(acc));
+
+	Eigen::Vector3d pos_ned = frame_transforms::enu_to_ned_local_frame(pos);
+	Eigen::Vector3d vel_ned = frame_transforms::enu_to_ned_local_frame(vel);
+	Eigen::Vector3d acc_ned = frame_transforms::enu_to_ned_local_frame(acc);
 
 	// pos_ned = frame_transforms::ned_to_enu_local_frame(pos);
 	// vel_ned = frame_transforms::ned_to_enu_local_frame(vel);
@@ -696,12 +707,12 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
 
 	// Correct YAW to transfrom from ENU to NED frame
-	float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
+	// float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
 
 	// yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
 	// yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
 
-	msg.yaw = yaw_corr; // [-PI:PI]
+	msg.yaw = NAN; // [-PI:PI]
 	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
 	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 

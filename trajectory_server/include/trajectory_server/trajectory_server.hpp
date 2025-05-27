@@ -235,8 +235,11 @@ private:
 	int drone_id_{0};
 
 	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
-
 	bool correct_for_ground_height_{true}; // If true and in IDLE mode, set current z position as 0.0 i.e. at ground height
+
+	bool mode_trajectory_enable_pos_{true};
+	bool mode_trajectory_enable_vel_{true};
+	bool mode_trajectory_enable_acc_{true};
 
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
 	std::string base_link_frame_; // 
@@ -264,7 +267,6 @@ private:
 	Eigen::Vector3d cmd_vel_enu_{0.0, 0.0, 0.0};
 	Eigen::Vector3d cmd_acc_enu_{0.0, 0.0, 0.0};
 	Eigen::Vector2d cmd_yaw_yawrate_{0.0, 0.0};
-
 
 	/* Safety */
 	std::unique_ptr<Geofence> geofence_; // Geofence to enforce positional limits

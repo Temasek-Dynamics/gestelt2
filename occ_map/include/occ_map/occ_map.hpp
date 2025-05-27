@@ -251,7 +251,12 @@ public:
    * @param pos 
    * @return int 
    */
+
   int getCostIdx(const Eigen::Vector3i &idx);
+
+  double getInflation() const {
+    return inflation_;
+  }
 
   std::string getMapFrameID() const{
     return map_frame_;
@@ -267,6 +272,9 @@ public:
   {
     return access_;
   }
+
+  // Check if given position is within inflation distance of an obstacle
+  bool withinObstacleInflation(const Eigen::Vector3d& pos, const double& inf_radius);
   
 protected:
 
@@ -318,6 +326,7 @@ protected:
   }
 
 private:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   void init();
 
@@ -328,10 +337,6 @@ private:
   // Called by planners to update the local map
   void updateLocalMap();
 
-  // Publish local map bounds
-  void publishLocalMapBounds();
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /*Subscriber Callbacks*/
   void resetMapCB(const std_msgs::msg::Empty::SharedPtr );
@@ -459,7 +464,8 @@ private:
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_map_; // Local obstacle points in map frame
 
   std::shared_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
-  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_; // KD-Tree 
+  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_lcl_; // KD-Tree for local processed PCD
+  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_lcl_raw_; // KD-Tree for local raw PCD 
 
   /* Flags */
   bool local_map_updated_{false}; // Indicates if first local map update is done 

@@ -207,7 +207,9 @@ def generate_launch_description():
                     {'cmd_rot_y': 0.0},
                     {'cmd_rot_x': 0.0},
 
-                    {'correct_for_ground_height': False},
+                    {'correct_for_ground_height': True},
+
+                    
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=traj_server_remappings,

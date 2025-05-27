@@ -207,7 +207,8 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   bonxai_map_->setOptions(bonxai_options_);
   
   // KD_TREE(float delete_param = 0.5, float balance_param = 0.6 , float box_length = 0.2);
-  kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+  kdtree_lcl_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
+  kdtree_lcl_raw_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
 
   lcl_pcd_map_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
@@ -354,7 +355,8 @@ OccMap::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   executor_thread2_.reset();
 
   bonxai_map_.reset();
-  kdtree_.reset();
+  kdtree_lcl_raw_.reset();
+  kdtree_lcl_.reset();
 
   tf_listener_.reset();
   tf_buffer_.reset();
@@ -504,9 +506,8 @@ void OccMap::updateLocalMap(){
     }
 
     if (enable_noise_filter_){
-      kdtree_ = std::make_unique<KD_TREE<pcl::PointXYZ>>(0.5, 0.6, 0.1);
       // Add local occ points in fixed map frame to KDTree
-      kdtree_->Build(lcl_pcd_map_raw_->points);
+      kdtree_lcl_raw_->Build(lcl_pcd_map_raw_->points);
     }
 
     // For each point in local bounds
@@ -520,7 +521,7 @@ void OccMap::updateLocalMap(){
       if (enable_noise_filter_){
         std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
         // Perform radius search for each point and get nunber of points
-        kdtree_->Radius_Search(obs_pt_map, noise_search_radius_, nb_points);
+        kdtree_lcl_raw_->Radius_Search(obs_pt_map, noise_search_radius_, nb_points);
         if ((int) nb_points.size() < noise_min_neighbors_){
           continue;
         }
@@ -533,6 +534,8 @@ void OccMap::updateLocalMap(){
       lcl_pcd_map_->push_back(obs_pt_map);
     }
 
+    kdtree_lcl_->Build(lcl_pcd_map_->points);
+
     lcl_pcd_map_raw_->header.frame_id = map_frame_;
     lcl_pcd_map_raw_->width = lcl_pcd_map_raw_->points.size();
     lcl_pcd_map_raw_->height = 1;
@@ -544,6 +547,16 @@ void OccMap::updateLocalMap(){
     lcl_pcd_map_->is_dense = true; 
   }
 }
+
+bool OccMap::withinObstacleInflation(const Eigen::Vector3d& pos, const double& inf_radius)
+{
+  pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
+  std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
+  kdtree_lcl_->Radius_Search(search_point, inf_radius, nb_points);
+
+  return !nb_points.empty();
+}
+
 
 /** Timer callbacks */
 
@@ -575,7 +588,33 @@ void OccMap::vizMapTimerCB()
     occ_map_pub_->publish(cloud_msg);
   }
 
-  publishLocalMapBounds(); // publish boundaries of local map volume
+  // publish boundaries of local map volume
+
+  geometry_msgs::msg::PolygonStamped local_map_poly;
+  local_map_poly.header.frame_id = global_frame_;
+  local_map_poly.header.stamp = get_clock()->now();
+
+  geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;
+  min_corner.x = local_map_origin_(0);
+  min_corner.y = local_map_origin_(1);
+
+  corner_0.x = local_map_max_(0);
+  corner_0.y = local_map_origin_(1);
+
+  corner_1.x = local_map_origin_(0);
+  corner_1.y = local_map_max_(1);
+
+  max_corner.x = local_map_max_(0);
+  max_corner.y = local_map_max_(1);
+
+  min_corner.z = corner_0.z = corner_1.z = max_corner.z = local_map_origin_(2);
+
+  local_map_poly.polygon.points.push_back(min_corner);
+  local_map_poly.polygon.points.push_back(corner_0);
+  local_map_poly.polygon.points.push_back(max_corner);
+  local_map_poly.polygon.points.push_back(corner_1);
+
+  local_map_bounds_pub_->publish(local_map_poly);
 }
 
 void OccMap::updateLocalMapTimerCB()
@@ -667,35 +706,6 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
   bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, max_range_);
   // tm_bonxai_insert_.stop(false);
-}
-
-void OccMap::publishLocalMapBounds()
-{
-  geometry_msgs::msg::PolygonStamped local_map_poly;
-  local_map_poly.header.frame_id = global_frame_;
-  local_map_poly.header.stamp = get_clock()->now();
-
-  geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;
-  min_corner.x = local_map_origin_(0);
-  min_corner.y = local_map_origin_(1);
-
-  corner_0.x = local_map_max_(0);
-  corner_0.y = local_map_origin_(1);
-
-  corner_1.x = local_map_origin_(0);
-  corner_1.y = local_map_max_(1);
-
-  max_corner.x = local_map_max_(0);
-  max_corner.y = local_map_max_(1);
-
-  min_corner.z = corner_0.z = corner_1.z = max_corner.z = local_map_origin_(2);
-
-  local_map_poly.polygon.points.push_back(min_corner);
-  local_map_poly.polygon.points.push_back(corner_0);
-  local_map_poly.polygon.points.push_back(max_corner);
-  local_map_poly.polygon.points.push_back(corner_1);
-
-  local_map_bounds_pub_->publish(local_map_poly);
 }
 
 rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::vector<rclcpp::Parameter> & parameters)
@@ -825,6 +835,5 @@ rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::
 
   return result;
 }
-
 
 }  // namespace occ_map

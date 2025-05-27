@@ -135,15 +135,18 @@ std::vector<Eigen::Vector3i> AStar::getNeighbours(const Eigen::Vector3i& idx)
                     continue;
                 }
 
-                int cost = occ_map_->getCostIdx(nb_idx);
-                    
-                if (cost == occ_map::LETHAL_OBSTACLE){
+                if (occ_map_->withinObstacleInflation(
+                        occ_map_->idxToPos(nb_idx), occ_map_->getInflation())){
                     continue;
                 }
 
-                if (!allow_unknown_ && cost == occ_map::NO_INFORMATION){
-                    continue;
-                }
+                // int cost = occ_map_->getCostIdx(nb_idx);
+                // if (cost == occ_map::LETHAL_OBSTACLE){
+                //     continue;
+                // }
+                // if (!allow_unknown_ && cost == occ_map::NO_INFORMATION){
+                //     continue;
+                // }
 
                 neighbours.push_back(nb_idx);
             }
