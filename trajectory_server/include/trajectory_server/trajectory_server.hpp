@@ -237,6 +237,8 @@ private:
 	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
 	bool correct_for_ground_height_{true}; // If true and in IDLE mode, set current z position as 0.0 i.e. at ground height
 
+	bool bypass_transform_cmd_{true}; // If true, then do not transform commands from ENU to NED frame.
+
 	bool mode_trajectory_enable_pos_{true};
 	bool mode_trajectory_enable_vel_{true};
 	bool mode_trajectory_enable_acc_{true};
@@ -251,9 +253,6 @@ private:
 	double pub_state_freq_; // [Hz] Frequency to publish odometry
 	double sm_tick_freq_; // [Hz] State machine tick frequency
 	double set_offb_ctrl_freq_; // [Hz] Frequency of state machine ticks
-
-	bool transform_cmd_from_nwu_to_enu_{false}; // If enabled, transform all commands from NWU frame to ENU frame
-	double cmd_rot_z_{0.0}, cmd_rot_y_{0.0}, cmd_rot_x_{0.0}; // transformation for commands about z, y and x axes
 
 	/* Stored Data */
 	Eigen::Vector3d cur_pos_enu_{0.0, 0.0, 0.0};		// Current position

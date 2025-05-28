@@ -59,10 +59,7 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	this->declare_parameter("publish_map_to_baselink_tf", true);
 
-	this->declare_parameter("transform_cmd_from_nwu_to_enu", true);
-	this->declare_parameter("cmd_rot_x", 0.0);
-	this->declare_parameter("cmd_rot_y", 0.0);
-	this->declare_parameter("cmd_rot_z", 0.0);
+	this->declare_parameter("bypass_transform_cmd", true);
 
 	this->declare_parameter("correct_for_ground_height", true);
 
@@ -95,10 +92,7 @@ TrajectoryServer::TrajectoryServer()
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
 	pub_map_to_baselink_tf_ = this->get_parameter("publish_map_to_baselink_tf").as_bool();
-	transform_cmd_from_nwu_to_enu_ = this->get_parameter("transform_cmd_from_nwu_to_enu").as_bool();
-	cmd_rot_z_ = this->get_parameter("cmd_rot_z").as_double();
-	cmd_rot_y_ = this->get_parameter("cmd_rot_y").as_double();
-	cmd_rot_x_ = this->get_parameter("cmd_rot_x").as_double();
+	bypass_transform_cmd_ = this->get_parameter("bypass_transform_cmd").as_bool();
 
 	correct_for_ground_height_ = this->get_parameter("correct_for_ground_height").as_bool();
 
@@ -675,15 +669,6 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	const Eigen::Vector3d& acc)
 {
 	px4_msgs::msg::TrajectorySetpoint msg{};
-	
-	// # NED local world frame
-	// float32[3] position # in meters
-	// float32[3] velocity # in meters/second
-	// float32[3] acceleration # in meters/second^2
-	// float32[3] jerk # in meters/second^3 (for logging only)
-
-	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
-	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
 	// Convert from ENU to NED
 	// Eigen::Vector3d pos_ned = frame_transforms::aircraft_to_baselink_body_frame(
@@ -693,9 +678,15 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// Eigen::Vector3d acc_ned = frame_transforms::aircraft_to_baselink_body_frame(
 	// 	frame_transforms::enu_to_ned_local_frame(acc));
 
-	Eigen::Vector3d pos_ned = frame_transforms::enu_to_ned_local_frame(pos);
-	Eigen::Vector3d vel_ned = frame_transforms::enu_to_ned_local_frame(vel);
-	Eigen::Vector3d acc_ned = frame_transforms::enu_to_ned_local_frame(acc);
+	Eigen::Vector3d pos_ned = pos;
+	Eigen::Vector3d vel_ned = vel;
+	Eigen::Vector3d acc_ned = acc;
+
+	if (!bypass_transform_cmd_){
+		pos_ned = frame_transforms::enu_to_ned_local_frame(pos_ned);
+		vel_ned = frame_transforms::enu_to_ned_local_frame(vel_ned);
+		acc_ned = frame_transforms::enu_to_ned_local_frame(acc_ned);
+	}
 
 	// pos_ned = frame_transforms::ned_to_enu_local_frame(pos);
 	// vel_ned = frame_transforms::ned_to_enu_local_frame(vel);
@@ -711,6 +702,9 @@ void TrajectoryServer::publishTrajectorySetpoint(
 
 	// yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
 	// yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
+
+	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
+	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
 	msg.yaw = NAN; // [-PI:PI]
 	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
