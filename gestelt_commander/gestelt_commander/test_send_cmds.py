@@ -54,7 +54,7 @@ class OffboardControl(Node):
         )
 
         self.publisher_trajectory = self.create_publisher(
-            TrajectorySetpoint, '/fmu/in/trajectory_setpoint', qos_profile)
+            TrajectorySetpoint, '/intermediate_cmd', qos_profile)
         
         timer_freq = 10.0 # [Hz]
         self.timer = self.create_timer(1.0/timer_freq, self.cmdloop_callback)
