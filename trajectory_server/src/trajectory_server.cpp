@@ -278,7 +278,11 @@ void TrajectoryServer::intmdCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::Un
 	{
 		cmd_pos_enu_ = Eigen::Vector3d(
 			msg->position[0], msg->position[1], msg->position[2]);
-		cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
+
+		cmd_pos_enu_corr_ =  cmd_pos_enu_;
+		if (!bypass_transform_cmd_){
+			cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
+		}
 
 		cmd_vel_enu_ = Eigen::Vector3d(
 			msg->velocity[0], msg->velocity[1], msg->velocity[2]);
