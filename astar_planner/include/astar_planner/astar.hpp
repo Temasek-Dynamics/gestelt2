@@ -23,7 +23,7 @@ struct std::hash<Eigen::Vector3i> {
 namespace astar_planner
 {
 
-template<typename T, typename priority_t>
+template<typename priority_t, typename T>
 struct PriorityQueue {
     typedef std::pair<priority_t, T> PQElement;
 
@@ -43,10 +43,11 @@ struct PriorityQueue {
         return elements.empty();
     }
 
-    inline void put(T item, priority_t priority) {
+    inline void put(priority_t priority, T item) {
         elements.emplace(priority, item);
     }
 
+    /** Get minimum element and pop it */
     T get() {
         T best_item = elements.top().second;
         elements.pop();
@@ -71,6 +72,11 @@ public:
   AStar();
 
   ~AStar();
+
+  /**
+   * @brief  resets all data structures to be done before each plan generation
+   */
+  void resetData();
 
   /**
    * @brief  Set up the cost array for the planner, usually from ROS
@@ -103,12 +109,18 @@ public:
 
   inline double L1Dist(const Eigen::Vector3i& a, const Eigen::Vector3i& b)
   {
-      return (b - a).lpNorm<1>();
+      // return (b - a).lpNorm<1>();
+
+      return abs(b.x() - a.x()) + abs(b.y() - a.y()) + abs(b.z() - a.z());
   }
 
   inline double L2Dist(const Eigen::Vector3i& a, const Eigen::Vector3i& b)
   {
-      return (b - a).norm();
+    double dx = fabs(a.x() - b.x());
+    double dy = fabs(a.y() - b.y());
+    double dz = fabs(a.z() - b.z());
+    
+    return sqrt(dx*dx + dy*dy + dz*dz);
   }
 
   /**
@@ -140,7 +152,7 @@ private:
 
   std::unordered_map<Eigen::Vector3i, double> cost_to_come_; 
   std::unordered_map<Eigen::Vector3i, Eigen::Vector3i> came_from_; // predecessor
-  PriorityQueue<Eigen::Vector3i, double> open_list_; // Min priority queue 
+  PriorityQueue<double, Eigen::Vector3i> open_list_; // Min priority queue 
   std::unordered_set<Eigen::Vector3i> closed_list_; // All closed nodes
 
   std::vector<Eigen::Vector3i> planned_path_idx_; // Planned path in pixel coordinates 

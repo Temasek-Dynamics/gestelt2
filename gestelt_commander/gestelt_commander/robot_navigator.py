@@ -354,6 +354,8 @@ class BasicNavigator(Node):
             self.warn(f'Getting path failed with status code: {self.status}')
             return None
 
+        self.info('Get path succeeded')
+
         return self.result_future.result().result
 
     def getPath(self, start, goal, planner_id='', use_start=False):

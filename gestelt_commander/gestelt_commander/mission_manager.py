@@ -121,7 +121,8 @@ class MissionManager(Node):
             self.navigators.append(BasicNavigator(node_name='basic_navigator', 
                                                   namespace='/d' + str(id)))
 
-        self.navigator = BasicNavigator(node_name='basic_navigator', namespace='/d' + str(id))
+        # self.navigator = BasicNavigator(node_name='basic_navigator', namespace='/d' + str(id))
+        self.navigator_no_ns = BasicNavigator(node_name='basic_navigator')
 
         # Check if all drones are in IDLE state
         # self.get_logger().info(f"Waiting for /dX/uav_state topics...")
@@ -130,6 +131,11 @@ class MissionManager(Node):
         #         time.sleep(0.5)
 
         # self.get_logger().info(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
+
+
+        """
+        
+        """
 
         self.get_logger().info(f"Initialized mission manager")
     
@@ -240,8 +246,9 @@ class MissionManager(Node):
         """
         self.get_logger().info(f"Callback on point goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
         
-        ns = '/d0'
-        navigator = self.navigators[0]
+        # ns = '/d0'
+        # navigator = self.navigators[0]
+        navigator = self.navigator_no_ns
 
         goal_pose = PoseStamped()
         goal_pose.header.frame_id = 'world'
@@ -259,8 +266,7 @@ class MissionManager(Node):
         # sanity check a valid path exists
         gbl_path = navigator.getPath(PoseStamped(), goal_pose, planner_id='GridBased', use_start=False)
         # Request for controller to follow global path
-        # navigator.followPath(gbl_path)
-        # self.get_logger().info(f"Navigator following path!")
+        navigator.followPath(gbl_path)
 
         # gbl_replan_rate = self.create_rate(self.global_replanning_freq)
         # i = 0

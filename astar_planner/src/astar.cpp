@@ -13,6 +13,16 @@ AStar::AStar()
 AStar::~AStar()
 {}
 
+void AStar::resetData()
+{
+    came_from_.clear();
+    cost_to_come_.clear();
+    open_list_.clear();
+    closed_list_.clear();
+    planned_path_idx_.clear();
+    planned_path_pos_.clear();
+}
+
 void AStar::setOccMap(std::shared_ptr<occ_map::OccMap> occ_map, 
                         bool allow_unknown)
 {
@@ -38,7 +48,6 @@ int AStar::computePath(const int& max_iterations,
         return 0;
     }
 
-
     const auto start_idx = occ_map_->posToIdx(start_pos_);
     const auto goal_idx = occ_map_->posToIdx(goal_pos_);
 
@@ -57,7 +66,7 @@ int AStar::computePath(const int& max_iterations,
     came_from_[start_idx] = start_idx;
     cost_to_come_[start_idx] = 0.0;
 
-    open_list_.put(start_idx, 0.0);
+    open_list_.put(0.0, start_idx);
 
     int num_iter = 0;
 
@@ -76,24 +85,33 @@ int AStar::computePath(const int& max_iterations,
     
         if (cur_idx == goal_idx)
         {
+            std::cout << "got goal with num_iter=" << num_iter << std::endl;
             planned_path_idx_ = tracePath(cur_idx);
 
             return planned_path_idx_.size();
         }
 
+        closed_list_.insert(cur_idx);
+
         for (auto nb_idx : getNeighbours(cur_idx))
         {
-            double tent_g_cost = cost_to_come_[cur_idx] + L1Dist(cur_idx, nb_idx);
+            double tent_g_cost = cost_to_come_[cur_idx] + L2Dist(cur_idx, nb_idx);
+            
+            bool nb_explored = cost_to_come_.count(nb_idx);
+            bool found_shorter_path_to_nb = false;
+            if (nb_explored){
+                found_shorter_path_to_nb = tent_g_cost < cost_to_come_[nb_idx];
+            }
          
-            if (!cost_to_come_.count(nb_idx) || tent_g_cost < cost_to_come_[nb_idx])
+            if (!nb_explored || found_shorter_path_to_nb)
             {
                 cost_to_come_[nb_idx] = tent_g_cost;
 
-                double f_cost = cost_to_come_[nb_idx] 
-                    + h_weight_ * L1Dist(nb_idx, goal_idx);
+                double h_cost =  h_weight_ * L2Dist(nb_idx, goal_idx);
+                double f_cost = cost_to_come_[nb_idx] + h_cost;
 
-                came_from_[nb_idx] = cur_idx;
-                open_list_.put(nb_idx, f_cost);
+                came_from_[nb_idx] = cur_idx; // Assign new predecessor cell
+                open_list_.put(f_cost, nb_idx); // Add to priority queue with new f_cost
 
                 // if (!closed_list_.count(nb_idx)) 
                 // {
@@ -170,7 +188,6 @@ std::vector<Eigen::Vector3i> AStar::tracePath(const Eigen::Vector3i& goal_idx)
         cur_idx = came_from_[cur_idx];
     }
     planned_path_idx.push_back(cur_idx);
-
 
     // std::reverse(planned_path_idx.begin(), planned_path_idx.end());
 

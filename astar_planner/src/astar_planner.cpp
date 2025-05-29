@@ -171,6 +171,8 @@ AStarPlanner::makePlan(
 
   std::unique_lock<occ_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
 
+  planner_->resetData();
+
   planner_->setOccMap(occ_map_, true);
 
   planner_->setStart(map_goal);

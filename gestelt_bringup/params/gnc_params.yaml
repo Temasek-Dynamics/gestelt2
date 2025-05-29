@@ -10,7 +10,7 @@ planner_server:
       plugin: "astar_planner::AStarPlanner"
       tolerance: 0.5
       max_iterations: 99999
-      tie_breaker: 1.00001
+      tie_breaker: 1.0000
       allow_unknown: true
       cost_function_type: 1
 

@@ -694,7 +694,7 @@ void TrajectoryServer::publishTrajectorySetpoint(
 
 	logger_->logInfoThrottle(strFmt("PubTrajSetpoint ENU(%f, %f, %f) -> NED(%f, %f, %f)", 
 		pos(0), pos(1), pos(2), 
-		pos_ned(0), pos_ned(1), pos_ned(2), 0.25));
+		pos_ned(0), pos_ned(1), pos_ned(2)), 0.25);
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};
