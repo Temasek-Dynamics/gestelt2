@@ -3,35 +3,68 @@ A Receding Horizon Planning (RHP) framework with a focus on multi-UAV navigation
 
 # Architecture 
 
-The architecture below illustrates the high-level architecture of Gestelt using MAVROS as a communication bridge between the flight controller unit and the onboard computer.
-<img src="docs/pictures/gestelt2_arch.png" alt="Gestelt Architecture" style="width: 1200px;"/>
+The architecture below illustrates the high-level architecture of Gestelt. Communication between the flight controller unit and the onboard computer uses the MICROXRCE-DDS protocol, with sensors such as the Vilota VK180Pro and VK180 using the [eCAL protocol](https://github.com/eclipse-ecal/ecal).
+<img src="docs/pictures/system_architecture.png" alt="Gestelt Architecture" style="width: 1200px;"/>
+
+The sections below go into more detail about each module and links are provided to their inner workings.
+
+## PlannerServer
+Plugin-based server that generates a global plan.   
+
+Currently implemented plugins include `astar_planner::AStarPlanner` of base class `gestelt_core::GlobalPlanner`. [Implementation found here](astar_planner)
+
+[More Documentation](gestelt_planner/README.md)
+
+## ControllerServer
+Plugin-based server that generates a control input given a reference plan from the **PlannerServer** 
+
+Currently implemented plugins include `linear_mpc_controller::LinearMPCController` of base class `gestelt_core::GlobalPlanner`. [Implementation found here](linear_mpc_controller)
+
+[More Documentation](gestelt_controller/README.md)
+
+## Trajectory Server
+Interface between high level planning/control nodes and Flight Controller.
+- Handles take off, landing, emergency stop, mission mode etc.
+- Processes and filters command setpoints from ControllerServer
+
+[More Documentation](trajectory_server/README.md)
+
+## Vilota Bridge
+This is a third party repo developed to bridge the eCAL topics from the Vilota sensors to ROS2 DDS. The eCAL topics being bridged includes the Visual Inertial Odometry (VIO) and the disparity map which is converted to a point cloud topic as input to the Occupancy map in the **PlannerServer** and **ControllerServer** module.
+
+## OccMap (Occupancy Map)
+A probabilistic mapper that uses [Bonxai](https://github.com/facontidavide/Bonxai) at it's core.
+
+[More Documentation](occ_map/README.md)
+
+## MissionManager
+
+MissionManager is an abstraction that allows us to take-off, land and send goals to multiple drones via a Python API. One example can be found at [gestelt_commander/gestelt_commander/test_take_off_goal.py](gestelt_commander/gestelt_commander/test_take_off_goal.py) 
+
+The `MissionManager` class is located at [gestelt_commander/gestelt_commander/mission_manager.py](gestelt_commander/gestelt_commander/mission_manager.py).
+
+[More Documentation](gestelt_commander/README.md)
 
 # Installation and Setup for Simulation
 
-Dependencies:
+## 0. Dependencies:
 - System
     - Ubuntu 22.04 (Jammy)
     - ROS2 Humble
 - Communications
     - eProsima/Micro-XRCE-DDS-Agent: Tag `v2.4.3`
-    - PX4-msgs: Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
+    - PX4-msgs repo: Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
 - Simulation 
-    - PX4-Autopilot: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
+    - PX4-Autopilot repo: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
 
-1. Install ROS2 and associated dependencies
+## 1. Install ROS2 and associated dependencies
 ```bash
 # Install the Desktop version of ROS2 at https://docs.ros.org/en/humble/Installation.html 
 
 # Install Package dependencies
 sudo apt-get update && sudo apt-get install --no-install-recommends -y \
-    vim \
-    curl \
-    wget \
-    tmux \
-    build-essential \
-    software-properties-common \
-    python3-pip \
-    python3-vcstool \
+    vim curl wget tmux build-essential software-properties-common \
+    python3-pip python3-vcstool \
     nlohmann-json3-dev \
     libasio-dev \
     libeigen3-dev \
@@ -42,26 +75,25 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
 sudo apt-get install -y ros-$ROS_DISTRO-pcl*
-
-# [FOR DOING SIMULATIONS]
-sudo apt-get update && sudo apt-get install -y ros-$ROS_DISTRO-ros-gz
+sudo apt-get install -y ros-$ROS_DISTRO-ros-gz
 ```
 
-2. Clone dependencies 
+## 2. Clone repos, including PX4-Autopilot repo and px4_msgs
 ```bash
+mkdir -p ~/gestelt_ws/src/
+git clone https://github.com/Temasek-Dynamics/gestelt2.git
 cd ~/gestelt_ws/src/gestelt2
 vcs import < simulation.repos --recursive --debug
 vcs import < thirdparty.repos --recursive --debug
 ```
 
-3. Building the workspace
+## 3. Build workspace
 ```bash
 # Assuming your workspace is named as follows
 cd ~/gestelt_ws/ && colcon build --symlink-install
-cd ~/gestelt_ws/ && colcon build --symlink-install --packages-up-to gestelt_bringup
 ```
 
-5. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
+## 4. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
 git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
 cd ~/PX4-Autopilot
@@ -74,7 +106,7 @@ bash ./Tools/setup/ubuntu.sh
 DONT_RUN=1 make px4_sitl gz_x500
 ```
 
-6. (OPTIONAL FOR Micro-XCRE DDS) Install dependencies for communication with FCU 
+## 5. Install dependencies for communication with FCU via MicroXCRE-DDS
 
 (a) XRCE DDS installation
 ```bash
@@ -86,6 +118,24 @@ cmake ..
 make
 sudo make install
 sudo ldconfig /usr/local/lib/
+```
+
+## 6. Install dependencies for linear MPC Controller
+```bash
+git clone https://github.com/osqp/osqp.git \
+&& cd osqp \
+&& mkdir build \
+&& cd build \
+&& sudo cmake -G "Unix Makefiles" .. \
+&& sudo cmake --build . --target install
+
+git clone https://github.com/robotology/osqp-eigen.git \
+&& cd osqp-eigen \
+&& mkdir build \
+&& cd build \
+&& cmake ../ \
+&& sudo make \
+&& sudo make install 
 ```
 
 # Quick start

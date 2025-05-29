@@ -27,3 +27,7 @@ A new scenario is created by adding a new dictionary entry to the JSON file [sce
         ]
     },
 ``` 
+
+# [UNSTABLE] Automatic generation of new scenarios
+
+New scenarios such as antipodal swap and forward flight for an arbitrary number of drones can be auto-generated using the [gestelt_commander/scripts/generate_scenario.py](gestelt_commander/scripts/generate_scenario.py) script. 
