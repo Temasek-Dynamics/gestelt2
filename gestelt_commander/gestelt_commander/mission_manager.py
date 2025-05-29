@@ -259,7 +259,8 @@ class MissionManager(Node):
         # sanity check a valid path exists
         gbl_path = navigator.getPath(PoseStamped(), goal_pose, planner_id='GridBased', use_start=False)
         # Request for controller to follow global path
-        navigator.followPath(gbl_path)
+        # navigator.followPath(gbl_path)
+        # self.get_logger().info(f"Navigator following path!")
 
         # gbl_replan_rate = self.create_rate(self.global_replanning_freq)
         # i = 0
