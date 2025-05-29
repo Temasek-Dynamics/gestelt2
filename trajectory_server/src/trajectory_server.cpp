@@ -631,14 +631,14 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 	px4_msgs::msg::OffboardControlMode msg{};
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
-	msg.position = false;
-	msg.velocity = false;
-	msg.acceleration = false;
+	// msg.position = false;
+	// msg.velocity = false;
+	// msg.acceleration = false;
 
-	msg.attitude = false;
-	msg.body_rate = false;
-	msg.thrust_and_torque = false;
-	msg.direct_actuator = false;
+	// msg.attitude = false;
+	// msg.body_rate = false;
+	// msg.thrust_and_torque = false;
+	// msg.direct_actuator = false;
 
 	switch (offb_ctrl_mode){
 		case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY: //0
@@ -686,15 +686,15 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	Eigen::Vector3d vel_ned = vel;
 	Eigen::Vector3d acc_ned = acc;
 
-	if (!bypass_transform_cmd_){
+	if (!bypass_transform_cmd_ || !UAV::is_in_state<Mission>()){
 		pos_ned = frame_transforms::enu_to_ned_local_frame(pos_ned);
 		vel_ned = frame_transforms::enu_to_ned_local_frame(vel_ned);
 		acc_ned = frame_transforms::enu_to_ned_local_frame(acc_ned);
 	}
 
-	// pos_ned = frame_transforms::ned_to_enu_local_frame(pos);
-	// vel_ned = frame_transforms::ned_to_enu_local_frame(vel);
-	// acc_ned = frame_transforms::ned_to_enu_local_frame(acc);
+	logger_->logInfoThrottle(strFmt("PubTrajSetpoint ENU(%f, %f, %f) -> NED(%f, %f, %f)", 
+		pos(0), pos(1), pos(2), 
+		pos_ned(0), pos_ned(1), pos_ned(2), 0.25));
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};
@@ -710,7 +710,7 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
-	msg.yaw = NAN; // [-PI:PI]
+	msg.yaw = yaw_yawrate(0); // [-PI:PI]
 	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
 	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 

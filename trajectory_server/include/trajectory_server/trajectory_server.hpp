@@ -160,12 +160,14 @@ private:
 	 * @param param2    Command parameter 2
 	 */
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0, float param3=0.0);
+	
 	/**
 	 * @brief Publish the offboard control mode.
 	 *        For this example, only position and altitude controls are active.
 	 * @param offb_ctrl_mode    Offboard control mode
 	 */
 	void publishOffboardCtrlMode(const int& offb_ctrl_mode);
+
 	/**
 	 * @brief Publish a trajectory setpoint
 	 * 
