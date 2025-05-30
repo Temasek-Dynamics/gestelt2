@@ -58,6 +58,8 @@ class MissionManager(Node):
 
         self.max_retries = 20
 
+        self.enable_planning = False
+
         self.get_logger().info(f"Initializing mission manager with scenario {self.scenario_name}...")
 
         # Sleep for init_delay
@@ -132,14 +134,32 @@ class MissionManager(Node):
 
         # self.get_logger().info(f"ALL {self.scenario.num_agents} DRONES INITIALIZED!")
 
-
         """
-        
+        Initialize Timer
         """
+        self.planning_timer = self.create_timer(1.0/self.global_replanning_freq, self.planningTimerCB)
 
         self.get_logger().info(f"Initialized mission manager")
     
-    
+    def planningTimerCB(self):
+        if self.enable_planning:
+            navigator = self.navigator_no_ns
+
+            self.get_logger().info(f"Getting global plan to goal "
+                f"({self.point_goal_pose.pose.position.x:.2f}, {self.point_goal_pose.pose.position.y:.2f}, {self.point_goal_pose.pose.position.z:.2f})...",
+                throttle_duration_sec=1.0)
+
+            # sanity check a valid path exists
+            gbl_path = navigator.getPath(PoseStamped(), self.point_goal_pose, 
+                planner_id='GridBased', use_start=False)
+            # Request for controller to follow global path
+            navigator.followPath(gbl_path)
+
+            if navigator.isTaskComplete(): # timeout of 0.1 s
+                self.get_logger().info(f"Navigation task complete! Disabling planning and controls!")
+                self.enable_planning = False
+
+
     def cmdAllDronesPubGlobal(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones without namespace
 
@@ -244,29 +264,22 @@ class MissionManager(Node):
     def pointGoalCallback(self, msg):
         """Callback on point goal topic from RVIZ
         """
-        self.get_logger().info(f"Callback on point goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
+        self.get_logger().info(f"Received point goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
         
-        # ns = '/d0'
-        # navigator = self.navigators[0]
-        navigator = self.navigator_no_ns
+        self.point_goal_pose = PoseStamped()
+        self.point_goal_pose.header.frame_id = 'world'
+        self.point_goal_pose.header.stamp = self.get_clock().now().to_msg()
+        self.point_goal_pose.pose.position.x = msg.pose.position.x
+        self.point_goal_pose.pose.position.y = msg.pose.position.y
+        self.point_goal_pose.pose.position.z = self.point_goal_height
+        self.point_goal_pose.pose.orientation.w = 1.0
 
-        goal_pose = PoseStamped()
-        goal_pose.header.frame_id = 'world'
-        goal_pose.header.stamp = self.get_clock().now().to_msg()
-        goal_pose.pose.position.x = msg.pose.position.x
-        goal_pose.pose.position.y = msg.pose.position.y
-        goal_pose.pose.position.z = self.point_goal_height
-        goal_pose.pose.orientation.w = 1.0
+        self.enable_planning = True
 
         # Wait for navigation to fully activate, since autostarting nav2
         # if not navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization'):
         #     self.get_logger().error(f"Failed to activate {ns+'/planner_server'}, planning request aborted!")
         #     return
-
-        # sanity check a valid path exists
-        gbl_path = navigator.getPath(PoseStamped(), goal_pose, planner_id='GridBased', use_start=False)
-        # Request for controller to follow global path
-        navigator.followPath(gbl_path)
 
         # gbl_replan_rate = self.create_rate(self.global_replanning_freq)
         # i = 0

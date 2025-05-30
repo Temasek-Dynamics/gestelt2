@@ -1,5 +1,35 @@
 # tests
 
+# Test take off with point goal (30/5/25)
+
+Goals:
+    - Trajectory Server
+        - Test orientation with "transform_cmd_from_nwu_to_enu" set to falase
+    - Occupancy Map
+        - Test with smaller map parameters
+    - A star planning
+        - See map planning
+    - Collect ROSBags
+```bash
+#####
+# Drone
+#####
+start_vilota
+# Launch offboard nodes
+ros2 launch gestelt_bringup offboard_launch.py 
+
+#####
+# GCS
+#####
+ros2 launch gestelt_bringup rviz_viz.py
+
+# Take off and start point goal script
+ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=single_drone_test
+
+# Land drone
+ros2 run gestelt_commander land scenario_name:=single_drone_test
+```
+
 # Test take off and planning with perception (26/5/25)
 
 Goals:
