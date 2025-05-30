@@ -64,7 +64,6 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
   declare_parameter("publish_zero_velocity", rclcpp::ParameterValue(true));
   declare_parameter("occ_map_update_timeout", 0.30);  // 300ms
 
-  declare_parameter("controller_look_ahead_index", rclcpp::ParameterValue(1));
   declare_parameter("print_runtime", rclcpp::ParameterValue(false));
 
   // Setup the local occupancy map
@@ -88,7 +87,6 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
 
   RCLCPP_INFO(get_logger(), "Configuring controller interface");
 
-  get_parameter("controller_look_ahead_index", controller_look_ahead_index_);
   get_parameter("print_runtime", print_runtime_);
 
   get_parameter("progress_checker_plugin", progress_checker_id_);
@@ -572,14 +570,13 @@ void ControllerServer::computeAndPublishControl()
     tm_compute_controls_.stop(false);
     tm_compute_controls_.getWallAvg(print_runtime_);
 
-    int idx = controller_look_ahead_index_ < mpc_pred_pos.size() ? controller_look_ahead_index_ : mpc_pred_pos.size()-1 ; 
 
     traj_sp.position = 
-      {(float) mpc_pred_pos[idx](0) , (float) mpc_pred_pos[idx](1), (float) mpc_pred_pos[idx](2)};
+      {(float) mpc_pred_pos[0](0) , (float) mpc_pred_pos[0](1), (float) mpc_pred_pos[0](2)};
     traj_sp.velocity = 
-      {(float) mpc_pred_vel[idx](0) , (float) mpc_pred_vel[idx](1), (float) mpc_pred_vel[idx](2)};
+      {(float) mpc_pred_vel[0](0) , (float) mpc_pred_vel[0](1), (float) mpc_pred_vel[0](2)};
     traj_sp.acceleration = 
-      {(float) mpc_pred_acc[idx](0) , (float) mpc_pred_acc[idx](1), (float) mpc_pred_acc[idx](2)};
+      {(float) mpc_pred_acc[0](0) , (float) mpc_pred_acc[0](1), (float) mpc_pred_acc[0](2)};
     traj_sp.yaw = mpc_yaw(0);
     traj_sp.yawspeed = mpc_yaw(1);
 

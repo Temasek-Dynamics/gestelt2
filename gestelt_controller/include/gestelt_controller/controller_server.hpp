@@ -246,8 +246,6 @@ protected:
 
   double controller_frequency_{0.0};
 
-  int controller_look_ahead_index_{1};
-
   bool print_runtime_{false}; // true if timer information is to be printed
 
   rclcpp::Time last_valid_cmd_time_;
