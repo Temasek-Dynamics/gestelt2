@@ -31,7 +31,7 @@ from gestelt_interfaces.msg import AllUAVCommand
 def main(args=None):
     rclpy.init(args=args)
 
-    mission_mngr = MissionManager()
+    mission_mngr = MissionManager(no_scenario=True)
 
     try: 
         # Landing

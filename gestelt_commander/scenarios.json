@@ -1,7 +1,7 @@
 {
   "single_drone_test": {
     "description": "Single Drone Testing",
-    "map": "empty_20x20",
+    "map": "forest_sparse_10x10",
     "num_agents": 1,
     "take_off_height": 1.0,
     "send_goals": false,

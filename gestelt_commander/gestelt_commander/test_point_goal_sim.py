@@ -32,42 +32,43 @@ from gestelt_interfaces.msg import UAVState, AllUAVCommand
 def main(args=None):
     rclpy.init(args=args)
 
-    mission_mngr = MissionManager()
+    mission_mngr = MissionManager(simulation=True)
 
     try:
-        #########
-        # Take off 
-        #########
-        mission_mngr.cmdAllDronesPubNamespaced(
-            AllUAVCommand.COMMAND_TAKEOFF, 
-            UAVState.IDLE,
-            value=mission_mngr.scenario.take_off_height)
-        mission_mngr.get_logger().info("Sending commands to TAKE OFF")
-        
-        #########
-        # Wait for Hover
-        #########
-        if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=40):
-            raise Exception("Failed to transition to hover mode")
-        mission_mngr.get_logger().info("All drones are in HOVER MODE.")
-        # Reset occupancy map
-        mission_mngr.resetOccMap()
+        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=5):
+            #########
+            # Take off 
+            #########
+            mission_mngr.cmdAllDronesPubNamespaced(
+                AllUAVCommand.COMMAND_TAKEOFF, 
+                UAVState.IDLE,
+                value=mission_mngr.scenario.take_off_height)
+            mission_mngr.get_logger().info("Sending commands to TAKE OFF")
+            
+            #########
+            # Wait for Hover
+            #########
+            if not mission_mngr.waitForReqState(UAVState.HOVERING, max_retries=40):
+                raise Exception("Failed to transition to hover mode")
+            mission_mngr.get_logger().info("All drones are in HOVER MODE.")
+            # Reset occupancy map
+            mission_mngr.resetOccMap()
 
-        #########
-        # MissionManager mode
-        #########
-        mission_mngr.cmdAllDronesPubNamespaced(
-            AllUAVCommand.COMMAND_START_MISSION, 
-            UAVState.HOVERING,
-            mode=0)
-        mission_mngr.get_logger().info("All drones swtching switching to MISSION MODE")
+            #########
+            # MissionManager mode
+            #########
+            mission_mngr.cmdAllDronesPubNamespaced(
+                AllUAVCommand.COMMAND_START_MISSION, 
+                UAVState.HOVERING,
+                mode=0)
+            mission_mngr.get_logger().info("All drones swtching switching to MISSION MODE")
 
-        #########
-        # Wait for mission_mngr
-        #########
-        if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=40):
-            raise Exception("Failed to transition to mission mode")
-        
+            #########
+            # Wait for mission_mngr
+            #########
+            if not mission_mngr.waitForReqState(UAVState.MISSION, max_retries=40):
+                raise Exception("Failed to transition to mission mode")
+            
         mission_mngr.get_logger().info("All drones in MISSION MODE. Ready to execute goals.")
 
         executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)

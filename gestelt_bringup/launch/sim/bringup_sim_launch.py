@@ -103,8 +103,8 @@ def generate_launch_description():
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
     base_link_frame = [namespace, "_base_link"]
-    # camera_frame = [namespace, "_camera_link"]
-    camera_frame = "x500_depth_0/camera_link/StereoOV7251"
+    camera_frame = [namespace, "_camera_link"]
+    # camera_frame = "x500_depth_0/camera_link/StereoOV7251"
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
@@ -138,7 +138,7 @@ def generate_launch_description():
         actions=[
             SetParameter('use_sim_time', use_sim_time),
             PushRosNamespace(condition=IfCondition(use_namespace), namespace=namespace),
-
+            # Lifecycle Manager
             Node(
                 package='nav2_lifecycle_manager',
                 executable='lifecycle_manager',
@@ -148,6 +148,7 @@ def generate_launch_description():
                 parameters=[{'autostart': autostart}, 
                             {'node_names': lifecycle_nodes}],
             ),
+            # Planner Server
             Node(
                 package='gestelt_planner',
                 executable='planner_server',
@@ -159,7 +160,7 @@ def generate_launch_description():
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=remappings,
             ),
-
+            # Controller Server
             Node(
                 package='gestelt_controller',
                 executable='controller_server',
@@ -171,7 +172,7 @@ def generate_launch_description():
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=remappings,
             ),
-
+            # Trajectory Server
             Node(
                 package='trajectory_server',
                 executable='trajectory_server_node',
@@ -188,17 +189,18 @@ def generate_launch_description():
                     {'safety.geofence.min_z': -0.5},
                     {'safety.geofence.max_x': 50.0},
                     {'safety.geofence.max_y': 50.0},
-                    {'safety.geofence.max_z': 5.0},
+                    {'safety.geofence.max_z': 3.0},
                     {'set_offb_ctrl_freq': 10.0},
-                    {'pub_state_freq': 40.0},
+                    {'pub_state_freq': 30.0},
                     {'state_machine_tick_freq': 30.0},
-                    {'pub_ctrl_freq': 30.0},
+                    {'pub_ctrl_freq': 25.0},
                     {'publish_map_to_baselink_tf': True},
 
-                    {'transform_cmd_from_nwu_to_enu': False},
-                    {'cmd_rot_z': 0.0},
-                    {'cmd_rot_y': 0.0},
-                    {'cmd_rot_x': 0.0},
+                    {'correct_for_ground_height': True},
+
+                    {'mode_trajectory_enable_pos': True},
+                    {'mode_trajectory_enable_vel': True},
+                    {'mode_trajectory_enable_acc': True},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=remappings,

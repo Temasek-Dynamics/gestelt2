@@ -93,7 +93,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "eigen": "cpp"
     },
     "python.autoComplete.extraPaths": [
         "/home/john/gestelt_ws/install/px4_msgs/local/lib/python3.10/dist-packages",

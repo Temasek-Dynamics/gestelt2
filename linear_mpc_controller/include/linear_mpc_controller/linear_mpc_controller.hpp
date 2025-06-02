@@ -100,13 +100,15 @@ public:
   /**
    * @brief Compute the best command given the current pose and velocity, with possible debug information
    *
-   * Same as above computeCommands, but with debug results.
-   * If the results pointer is not null, additional information about the twists
-   * evaluated will be in results after the call.
-   *
    * @param pose      Current robot pose
+   * @param orientation  Current robot orientation
    * @param velocity  Current robot velocity
    * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
+   * @param mpc_pred_pos   Vector of MPC predicted pose
+   * @param mpc_pred_vel   Vector of MPC predicted velocity
+   * @param mpc_pred_acc   Vector of MPC predicted acceleration
+   * @param mpc_pred_u   Vector of MPC predicted controls
+   * @param mpc_yaw   Vector of yaw commands (not from MPC)
    * @return          Best command
    */
   void computeCommands(

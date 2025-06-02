@@ -205,10 +205,8 @@ def generate_launch_description():
                     {'correct_for_ground_height': True},
 
                     {'mode_trajectory_enable_pos': True},
-                    {'mode_trajectory_enable_vel': False},
-                    {'mode_trajectory_enable_acc': False},
-
-                    {'bypass_transform_cmd': False},
+                    {'mode_trajectory_enable_vel': True},
+                    {'mode_trajectory_enable_acc': True},
                 ],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=traj_server_remappings,

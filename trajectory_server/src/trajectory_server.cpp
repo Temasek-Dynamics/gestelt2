@@ -59,8 +59,6 @@ TrajectoryServer::TrajectoryServer()
 	this->declare_parameter("state_machine_tick_freq", 30.0);
 	this->declare_parameter("publish_map_to_baselink_tf", true);
 
-	this->declare_parameter("bypass_transform_cmd", true);
-
 	this->declare_parameter("correct_for_ground_height", true);
 
 	this->declare_parameter("mode_trajectory_enable_pos", true);
@@ -92,7 +90,6 @@ TrajectoryServer::TrajectoryServer()
 	sm_tick_freq_ = this->get_parameter("state_machine_tick_freq").as_double();
 
 	pub_map_to_baselink_tf_ = this->get_parameter("publish_map_to_baselink_tf").as_bool();
-	bypass_transform_cmd_ = this->get_parameter("bypass_transform_cmd").as_bool();
 
 	correct_for_ground_height_ = this->get_parameter("correct_for_ground_height").as_bool();
 
@@ -280,9 +277,7 @@ void TrajectoryServer::intmdCmdSubCB(const px4_msgs::msg::TrajectorySetpoint::Un
 			msg->position[0], msg->position[1], msg->position[2]);
 
 		cmd_pos_enu_corr_ =  cmd_pos_enu_;
-		if (!bypass_transform_cmd_){
-			cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
-		}
+		cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
 
 		cmd_vel_enu_ = Eigen::Vector3d(
 			msg->velocity[0], msg->velocity[1], msg->velocity[2]);
@@ -686,15 +681,9 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	Eigen::Vector3d vel_ned = vel;
 	Eigen::Vector3d acc_ned = acc;
 
-	if (!bypass_transform_cmd_ || !UAV::is_in_state<Mission>()){
-		pos_ned = frame_transforms::enu_to_ned_local_frame(pos_ned);
-		vel_ned = frame_transforms::enu_to_ned_local_frame(vel_ned);
-		acc_ned = frame_transforms::enu_to_ned_local_frame(acc_ned);
-	}
-
-	logger_->logInfoThrottle(strFmt("PubTrajSetpoint ENU(%f, %f, %f) -> NED(%f, %f, %f)", 
-		pos(0), pos(1), pos(2), 
-		pos_ned(0), pos_ned(1), pos_ned(2)), 0.25);
+	pos_ned = frame_transforms::enu_to_ned_local_frame(pos_ned);
+	vel_ned = frame_transforms::enu_to_ned_local_frame(vel_ned);
+	acc_ned = frame_transforms::enu_to_ned_local_frame(acc_ned);
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};

@@ -42,8 +42,11 @@ from gestelt_commander.robot_navigator import BasicNavigator, TaskResult
 from gestelt_commander.scenario import Scenario
 
 class MissionManager(Node):
-    def __init__(self, no_scenario=False):
+    def __init__(self, simulation=False, no_scenario=False):
         super().__init__('mission_node')
+
+        self.simulation = simulation
+        self.max_retries = 20
 
         """ Parameter Server """
         self.declare_parameter('scenario', 'single_drone_test')
@@ -56,11 +59,9 @@ class MissionManager(Node):
         self.point_goal_height = self.get_parameter('point_goal_height').get_parameter_value().double_value
         self.global_replanning_freq = self.get_parameter('global_replanning_freq').get_parameter_value().double_value
 
-        self.max_retries = 20
+        self.get_logger().info(f"Initializing mission manager with scenario {self.scenario_name}...")
 
         self.enable_planning = False
-
-        self.get_logger().info(f"Initializing mission manager with scenario {self.scenario_name}...")
 
         # Sleep for init_delay
         time.sleep(self.init_delay)
@@ -114,16 +115,15 @@ class MissionManager(Node):
         for id in range(self.scenario.num_agents):
             self.uav_states.append(UAVState.UNDEFINED)
 
-
         """
-        Initialize navigator 
+        Initialize navigator object for interfacing with planner and controller server
         """
         self.navigators = []
         for id in range(self.scenario.num_agents):
             self.navigators.append(BasicNavigator(node_name='basic_navigator', 
                                                   namespace='/d' + str(id)))
 
-        # self.navigator = BasicNavigator(node_name='basic_navigator', namespace='/d' + str(id))
+        # Navigator without namespace
         self.navigator_no_ns = BasicNavigator(node_name='basic_navigator')
 
         # Check if all drones are in IDLE state
@@ -143,11 +143,14 @@ class MissionManager(Node):
     
     def planningTimerCB(self):
         if self.enable_planning:
-            navigator = self.navigator_no_ns
-
             self.get_logger().info(f"Getting global plan to goal "
                 f"({self.point_goal_pose.pose.position.x:.2f}, {self.point_goal_pose.pose.position.y:.2f}, {self.point_goal_pose.pose.position.z:.2f})...",
                 throttle_duration_sec=1.0)
+
+            if self.simulation:
+                navigator = self.navigators[0]
+            else:
+                navigator = self.navigator_no_ns
 
             # sanity check a valid path exists
             gbl_path = navigator.getPath(PoseStamped(), self.point_goal_pose, 
@@ -158,7 +161,6 @@ class MissionManager(Node):
             if navigator.isTaskComplete(): # timeout of 0.1 s
                 self.get_logger().info(f"Navigation task complete! Disabling planning and controls!")
                 self.enable_planning = False
-
 
     def cmdAllDronesPubGlobal(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones without namespace
@@ -235,7 +237,6 @@ class MissionManager(Node):
 
         return True
 
-
     def pubScenarioGoals(self):
         """Publish goals to all drones from scenario.json configuration
         """
@@ -275,34 +276,6 @@ class MissionManager(Node):
         self.point_goal_pose.pose.orientation.w = 1.0
 
         self.enable_planning = True
-
-        # Wait for navigation to fully activate, since autostarting nav2
-        # if not navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization'):
-        #     self.get_logger().error(f"Failed to activate {ns+'/planner_server'}, planning request aborted!")
-        #     return
-
-        # gbl_replan_rate = self.create_rate(self.global_replanning_freq)
-        # i = 0
-        # while not navigator.isTaskComplete():
-        #     # TODO: Add replanning here
-
-        #     # Do something with the feedback
-        #     i = i + 1
-        #     feedback = navigator.getFeedback()
-        #     # navigator.cancelTask()
-            
-        #     gbl_replan_rate.sleep()
-
-        # # Do something depending on the return code
-        # result = navigator.getResult()
-        # if result == TaskResult.SUCCEEDED:
-        #     print('Goal succeeded!')
-        # elif result == TaskResult.CANCELED:
-        #     print('Goal was canceled!')
-        # elif result == TaskResult.FAILED:
-        #     print('Goal failed!')
-        # else:
-        #     print('Goal has an invalid return status!')
 
     def resetOccMap(self):
         """Reset occupancy map

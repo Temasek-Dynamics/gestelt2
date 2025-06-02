@@ -292,23 +292,23 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
     r.sleep();
   }
 
-  logger_->logInfo("Checking transform from map to global frame");
+  logger_->logInfo("Checking transform from global to map frame");
   try {
     auto tf_res = tf_buffer_->lookupTransform(
       map_frame_, global_frame_, tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(initial_transform_timeout_)));
 
-    world_to_map_mat_.block<3,3>(0,0) = Eigen::Quaterniond(
+    global_to_map_mat_.block<3,3>(0,0) = Eigen::Quaterniond(
       tf_res.transform.rotation.w,
       tf_res.transform.rotation.x,
       tf_res.transform.rotation.y,
       tf_res.transform.rotation.z).toRotationMatrix();
-    world_to_map_mat_.block<3,1>(0,3) = Eigen::Vector3d(
+    global_to_map_mat_.block<3,1>(0,3) = Eigen::Vector3d(
       tf_res.transform.translation.x,
       tf_res.transform.translation.y,
       tf_res.transform.translation.z);
 
-    map_to_world_mat_ = world_to_map_mat_.inverse();
+    map_to_world_mat_ = global_to_map_mat_.inverse();
 
   }
   catch (const tf2::TransformException & ex) {

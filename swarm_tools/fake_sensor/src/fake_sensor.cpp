@@ -14,8 +14,7 @@ FakeSensor::FakeSensor()
 	sensor_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
 	this->declare_parameter("drone_id", -1);
-	this->declare_parameter("tf.listen_to_tf", false);
-	this->declare_parameter("tf.listen_freq", -1.0);
+	this->declare_parameter("tf.listen_to_tf", true);
 
 	// Frame parameters
 	this->declare_parameter("global_frame", "world");
@@ -39,7 +38,6 @@ FakeSensor::FakeSensor()
 	this->declare_parameter("pcd_voxel_filter.voxel_size", -1.0);
 
 	/* Get Parameters */
-	drone_id_ = this->get_parameter("drone_id").as_int();
 	listen_to_tf_ = this->get_parameter("tf.listen_to_tf").as_bool();
 
 	// Frame parameters
@@ -63,14 +61,15 @@ FakeSensor::FakeSensor()
 	voxel_size_ = this->get_parameter("pcd_voxel_filter.voxel_size").as_double();
 
 	/* Subscribers */
-	odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-		"odom", rclcpp::SensorDataQoS(), std::bind(&FakeSensor::odomSubCB, this, _1));
+	// odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+	// 	"odom", rclcpp::SensorDataQoS(), std::bind(&FakeSensor::odomSubCB, this, _1));
 
 	auto reentrant_sub_opt = rclcpp::SubscriptionOptions();
 	reentrant_sub_opt.callback_group = reentrant_cb_grp_;
 
 	/* Publishers */
-    sensor_pc_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 10);
+    sensor_pc_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+		"cloud", rclcpp::SensorDataQoS());
 
 	if (voxel_filter_enable_){
 		vox_grid_ = std::make_shared<pcl::VoxelGrid<pcl::PointXYZ>>();
@@ -101,35 +100,6 @@ FakeSensor::FakeSensor()
 	}
 	RCLCPP_INFO(this->get_logger(), "Loaded PCD input file from %s\n", map_filepath.c_str());
 
-	// // Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
-	// try {
-	// 	RCLCPP_INFO(this->get_logger(), "Getting transform from map to global frame");
-	// 	auto tf_res = tf_buffer_->lookupTransform(
-	// 		map_frame_, global_frame_, tf2::TimePointZero,
-	// 		tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
-
-	// 	// Create transformation matrix from global to sensor frame
-	// 	gbl_to_map_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
-	// 		tf_res.transform.rotation.w,
-	// 		tf_res.transform.rotation.x,
-	// 		tf_res.transform.rotation.y,
-	// 		tf_res.transform.rotation.z).toRotationMatrix();
-
-	// 	gbl_to_map_tf_mat_.block<3,1>(0,3) = Eigen::Vector3d(
-	// 		tf_res.transform.translation.x,
-	// 		tf_res.transform.translation.y,
-	// 		tf_res.transform.translation.z);
-	// } 
-	// catch (const tf2::TransformException & ex) {
-	// 	RCLCPP_ERROR(
-	// 		this->get_logger(), "Could not get transform from global frame(%s) to map_frame_(%s): %s. SHUTTING DOWN.",
-	// 		global_frame_.c_str(), map_frame_.c_str(), ex.what());
-	// 	rclcpp::shutdown();
-	// 	return;
-	// }
-
-	// // Transform point cloud map from global_frame_ frame to map_frame_
-	// pcl::transformPointCloud (*fake_map_cloud_, *fake_map_cloud_, gbl_to_map_tf_mat_);
   	fake_map_cloud_->header.frame_id = global_frame_;
 
 	// Set up sensor renderer
@@ -152,106 +122,56 @@ FakeSensor::FakeSensor()
 FakeSensor::~FakeSensor()
 {}
 
-/* Subscriber Callbacks*/
-
-void FakeSensor::odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg)
-{
-	{
-		std::lock_guard<std::mutex> odom_mtx_guard(odom_mutex_);
-		cur_odom_ = *msg;
-	}
-	pose_rcv_ = true;
-}
-
 /* Timer Callbacks*/
 
 void FakeSensor::sensorUpdateTimerCB()
 {
-	if (listen_to_tf_){
+	// We receive sensor data in world frame, and we transform it to sensor frame
 
-		// Get 'map' to map_frame fixed TF, used for transforming PCD map to map_frame
-		try {
-			auto tf_res = tf_buffer_->lookupTransform(
-				sensor_frame_, global_frame_, tf2::TimePointZero,
-				tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(5.0)));
+	Eigen::Matrix3d sensor_ori; // Sensor orientation in global frame
+	Eigen::Vector3d sensor_pos; // Sensor position in global frame
 
-			// Create transformation matrix from global to sensor frame
-			sensor_to_gbl_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
-				tf_res.transform.rotation.w,
-				tf_res.transform.rotation.x,
-				tf_res.transform.rotation.y,
-				tf_res.transform.rotation.z).toRotationMatrix();
+	// Get global frame to sensor_frame TF
+	try {
+		auto tf_res = tf_buffer_->lookupTransform(
+			sensor_frame_, global_frame_, tf2::TimePointZero,
+			tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
 
-			sensor_to_gbl_tf_mat_.block<3,1>(0,3) = Eigen::Vector3d(
-				tf_res.transform.translation.x,
-				tf_res.transform.translation.y,
-				tf_res.transform.translation.z);
-		} 
-		catch (const tf2::TransformException & ex) {
-			RCLCPP_ERROR(this->get_logger(), 
-				"Could not get transform from sensor_frame (%s) to global_frame(%s): %s. ",
-				sensor_frame_.c_str(), global_frame_.c_str(), ex.what());
-			return;
-		}
+		// Create transformation matrix from global to sensor frame
+		global_to_sensor_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
+			tf_res.transform.rotation.w,
+			tf_res.transform.rotation.x,
+			tf_res.transform.rotation.y,
+			tf_res.transform.rotation.z).toRotationMatrix();
 
-		Eigen::Matrix3d sensor_rot = sensor_to_gbl_tf_mat_.block<3, 3>(0, 0);
-		Eigen::Vector3d sensor_pos = sensor_to_gbl_tf_mat_.block<3,1>(0,3);
+		global_to_sensor_mat_.block<3,1>(0,3) = Eigen::Vector3d(
+			tf_res.transform.translation.x,
+			tf_res.transform.translation.y,
+			tf_res.transform.translation.z);
 
-		if (sensor_rot.array().isNaN().any() || sensor_pos.array().isNaN().any()){
-			RCLCPP_ERROR(this->get_logger(), "NaN value in sensor orientation and position");
-			return;
-		}
-
-		// Generate point cloud in global frame using position and orientation of sensor
-		sensor_renderer_.render_sensed_points(
-			sensor_pos,  // sensor position in global frame
-			sensor_rot,  // sensor orientation in global frame
-			*sensor_cloud_);
-
-		gbl_to_sensor_tf_mat_ = sensor_to_gbl_tf_mat_.inverse();
-
-		// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
-		pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, gbl_to_sensor_tf_mat_);
+		sensor_ori = global_to_sensor_mat_.block<3, 3>(0, 0);
+		sensor_pos = global_to_sensor_mat_.block<3,1>(0,3);
+	} 
+	catch (const tf2::TransformException & ex) {
+		RCLCPP_ERROR(this->get_logger(), 
+			"Could not get transform from global_frame (%s) to sensor_frame(%s): %s. ",
+			global_frame_.c_str(), sensor_frame_.c_str(), ex.what());
+		return;
 	}
-	else {
-		if (!pose_rcv_)
-		{
-			return;
-		}
 
-		{
-			std::lock_guard<std::mutex> odom_mtx_guard(odom_mutex_);
-
-			// Create map to sensor TF matrix
-			map_to_sensor_tf_mat_.block<3, 3>(0, 0) = Eigen::Quaterniond(
-				cur_odom_.pose.pose.orientation.w,
-				cur_odom_.pose.pose.orientation.x,
-				cur_odom_.pose.pose.orientation.y,
-				cur_odom_.pose.pose.orientation.z).toRotationMatrix();
-			map_to_sensor_tf_mat_.block<3,1>(0, 3) = Eigen::Vector3d(
-				cur_odom_.pose.pose.position.x,
-				cur_odom_.pose.pose.position.y,
-				cur_odom_.pose.pose.position.z);
-
-		}
-
-		if (map_to_sensor_tf_mat_.block<3, 3>(0, 0).array().isNaN().any() 
-			|| map_to_sensor_tf_mat_.block<3,1>(0,3).array().isNaN().any()){
-			RCLCPP_ERROR(this->get_logger(), "NaN value in sensor orientation and position");
-			return;
-		}
-
-		// Generate point cloud from position and orientation of sensor
-		sensor_renderer_.render_sensed_points(
-			map_to_sensor_tf_mat_.block<3, 1>(0, 3), // sensor position in map frame
-			map_to_sensor_tf_mat_.block<3, 3>(0, 0), // sensor orientation in map frame
-			*sensor_cloud_);
-
-		sensor_to_map_tf_mat_ = map_to_sensor_tf_mat_.inverse();
-
-		// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
-		pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, sensor_to_map_tf_mat_);
+	if (sensor_ori.array().isNaN().any() || sensor_pos.array().isNaN().any()){
+		RCLCPP_ERROR(this->get_logger(), "NaN value in sensor orientation and position");
+		return;
 	}
+
+	// Generate point cloud in global frame using position and orientation of sensor
+	sensor_renderer_.render_sensed_points(
+		sensor_pos,  // sensor position in global frame
+		sensor_ori,  // sensor orientation in global frame
+		*sensor_cloud_);
+
+	// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
+	pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, global_to_sensor_mat_);
 
 	// Downsample cloud
 	if (voxel_filter_enable_){
@@ -268,28 +188,23 @@ void FakeSensor::sensorUpdateTimerCB()
 	pass_fil_z_-> setInputCloud (sensor_cloud_);
 	pass_fil_z_-> filter (*sensor_cloud_);
 
-	// Publish cloud 
+	printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
+			sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
+
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;
-	// printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
-	// 		sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
-	if (sensor_cloud_->points.empty()){
-		RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Publish empty /cloud");
-		
-		sensor_cloud_msg.header.frame_id = sensor_frame_;
-		sensor_cloud_msg.header.stamp = this->get_clock()->now();
 
-		sensor_pc_pub_->publish(sensor_cloud_msg);
-		return;
+	if (!sensor_cloud_->points.empty()){
+		sensor_cloud_->width = sensor_cloud_->points.size();
+		sensor_cloud_->height = 1;
+
+		pcl::toROSMsg(*sensor_cloud_, sensor_cloud_msg);
 	}
-
-	sensor_cloud_->width = sensor_cloud_->points.size();
-	sensor_cloud_->height = 1;
-
-	pcl::toROSMsg(*sensor_cloud_, sensor_cloud_msg);
-
+	else {
+		RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, 
+								"Publishing empty sensor cloud");
+	}
 	sensor_cloud_msg.header.frame_id = sensor_frame_;
 	sensor_cloud_msg.header.stamp = this->get_clock()->now();
 
 	sensor_pc_pub_->publish(sensor_cloud_msg);
-
 }

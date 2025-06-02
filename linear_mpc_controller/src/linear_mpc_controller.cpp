@@ -244,7 +244,7 @@ void LinearMPCController::computeCommands(
   std::lock_guard<std::mutex> lock_reinit(mutex_);
 
   // Transform path to map frame
-  geometry_msgs::msg::PoseStamped pose_stamped;
+  geometry_msgs::msg::PoseStamped pose_stamped; // Current pose in global frame
   pose_stamped.header.frame_id = occ_map_->getGlobalFrameID();
   pose_stamped.header.stamp = clock_->now();
   pose_stamped.pose.position.x = position(0);
@@ -262,7 +262,8 @@ void LinearMPCController::computeCommands(
 
   // Sample the global path
   std::vector<int> ref_plan_sfc_idx;
-  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> ref_plan_sfc; // [MAP FRAME] global plan used by safe flight corridor 
+  // [MAP FRAME] Global plan used by safe flight corridor 
+  std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> ref_plan_sfc; 
   for (size_t i = 0; i < plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
     ref_plan_sfc.push_back(Eigen::Vector3d(
       plan_map.poses[i].pose.position.x, 
@@ -363,6 +364,7 @@ void LinearMPCController::computeCommands(
     Eigen::Vector3d vel_ref(0, 0, 0); // vel reference
     Eigen::Vector3d acc_ref(0, 0, 0); // acc reference
     if (i < mpc_controller_->MPC_HORIZON-1){
+      // If not last velocity reference
       vel_ref = (pos_ref - last_pos_ref) / mpc_controller_->TIME_STEP;
     }
     mpc_controller_->setReference(pos_ref, vel_ref, acc_ref, i);

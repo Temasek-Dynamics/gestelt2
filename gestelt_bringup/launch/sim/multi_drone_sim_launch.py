@@ -27,9 +27,9 @@ from launch_ros.actions import Node
 
 # from ros_gz_bridge.actions import RosGzBridge
 
-# SCENARIO_NAME = "single_drone_test"
+SCENARIO_NAME = "single_drone_test"
 # SCENARIO_NAME = "start_2d"
-SCENARIO_NAME = "start_4d_empty"
+# SCENARIO_NAME = "start_4d_empty"
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -192,8 +192,8 @@ def generate_launch_description():
         global_frame = "world" # Fixed
         map_frame = ns + "_map"
         base_link_frame = ns + "_base_link"
-        # camera_frame = ns + "_camera_link"
-        camera_frame = "x500_depth_0/camera_link/StereoOV7251"
+        camera_frame = ns + "_camera_link"
+        # camera_frame = "x500_depth_0/camera_link/StereoOV7251"
 
         ld.add_action(
             GroupAction(
@@ -224,14 +224,47 @@ def generate_launch_description():
                                     global_frame, map_frame],
                     ),
                     # Transform from base link to camera frame
+                    # Node(
+                    #     package = "tf2_ros", 
+                    #     name=ns+'_base_link_to_cam_tf',
+                    #     executable = "static_transform_publisher",
+                    #     output="own_log",
+                    #     arguments = ["0.12", "0.03", "-0.242", 
+                    #                  "1", "0", "0", "0",
+                    #                  base_link_frame, camera_frame],
+                    # ),
+                    # Transform from base link to camera frame
                     Node(
                         package = "tf2_ros", 
                         name=ns+'_base_link_to_cam_tf',
                         executable = "static_transform_publisher",
                         output="own_log",
-                        arguments = ["0.12", "0.03", "-0.242", 
-                                     "1", "0", "0", "0",
+                        arguments = ["0.0", "0.0", "0.0", 
+                                     "0", "0", "0", "1",
                                      base_link_frame, camera_frame],
+                    ),
+                    # Fake sensor node
+                    Node(
+                        package='fake_sensor',
+                        executable='fake_sensor_node',
+                        name= ['fake_sensor_', ns],
+                        output='screen',
+                        # shell=False,
+                        parameters=[
+                            {'global_frame': global_frame},
+                            {'map_frame': map_frame},
+                            {'sensor_frame': camera_frame},
+                            {'pcd_map.filepath': os.path.join(
+                                get_package_share_directory('gestelt_bringup'), 
+                                'pcd_maps',
+                                scenario.map + '.pcd'
+                            )},
+                            os.path.join(
+                                get_package_share_directory('fake_sensor'),
+                                'config',
+                                'fake_sensor.yaml'
+                            ),
+                        ],
                     ),
                     ExecuteProcess(
                         name=['px4_sitl_', str(drone_id)],

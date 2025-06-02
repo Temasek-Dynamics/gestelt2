@@ -129,11 +129,19 @@ public:
 
   std::shared_ptr<tf2_ros::Buffer> getTfBuffer() {return tf_buffer_;}
 
+  /**
+   * @brief Get the pose of robot in global frame
+   * 
+   * @param global_pose pose of robot in global frame to be assigned
+   * @return true 
+   * @return false 
+   */
   bool getRobotPose(geometry_msgs::msg::PoseStamped & global_pose)
   {
     return nav2_util::getCurrentPose(
-      global_pose, *tf_buffer_,
-      global_frame_, base_link_frame_, transform_tolerance_);
+      global_pose, 
+      *tf_buffer_, global_frame_, 
+      base_link_frame_, transform_tolerance_);
   }
 
   bool transformPoseToGlobalFrame(
@@ -151,6 +159,15 @@ public:
     }
   }
 
+  /**
+   * @brief Transforms input pose into target frame
+   * 
+   * @param target_frame 
+   * @param input_pose 
+   * @param transformed_pose 
+   * @return true 
+   * @return false 
+   */
   bool transformPoseToTargetFrame(
     const std::string& target_frame,
     const geometry_msgs::msg::PoseStamped & input_pose,
@@ -232,7 +249,7 @@ public:
       return false;
     }
 
-    pos_map = (world_to_map_mat_ * pos_world.homogeneous()).hnormalized();  
+    pos_map = (global_to_map_mat_ * pos_world.homogeneous()).hnormalized();  
 
     return true;
   }
@@ -416,7 +433,7 @@ private:
   Eigen::Vector3d global_map_size_{0.0, 0.0, 0.0}; //  Size of global occupancy map  (m)
   Eigen::Vector3d local_map_size_{0.0, 0.0, 0.0}; //  Size of local occupancy map (m)
 
-  Eigen::Matrix4d world_to_map_mat_{Eigen::Matrix4d::Identity(4, 4)};
+  Eigen::Matrix4d global_to_map_mat_{Eigen::Matrix4d::Identity(4, 4)};
   Eigen::Matrix4d map_to_world_mat_{Eigen::Matrix4d::Identity(4, 4)};
 
   double resolution_{0.0};   // Also defined as the size of each individual voxel                 

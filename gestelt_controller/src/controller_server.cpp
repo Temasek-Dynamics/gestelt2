@@ -570,7 +570,7 @@ void ControllerServer::computeAndPublishControl()
     tm_compute_controls_.stop(false);
     tm_compute_controls_.getWallAvg(print_runtime_);
 
-
+    // Use first index of optimal controls
     traj_sp.position = 
       {(float) mpc_pred_pos[0](0) , (float) mpc_pred_pos[0](1), (float) mpc_pred_pos[0](2)};
     traj_sp.velocity = 
@@ -587,7 +587,9 @@ void ControllerServer::computeAndPublishControl()
   } catch (gestelt_core::NoValidControl & e) {
     if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
       RCLCPP_WARN(this->get_logger(), "%s", e.what());
-      traj_sp.position = {(float) pose.pose.position.x , (float) pose.pose.position.y, (float) pose.pose.position.z};
+      traj_sp.position = {(float) pose.pose.position.x , 
+                          (float) pose.pose.position.y, 
+                          (float) pose.pose.position.z};
       traj_sp.velocity = {0.0, 0.0, 0.0};
       traj_sp.acceleration = {0.0, 0.0, 0.0};
       traj_sp.yaw = NAN;

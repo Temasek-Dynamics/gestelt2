@@ -239,8 +239,6 @@ private:
 	bool pub_map_to_baselink_tf_{false}; // If enabled, publish map to base link transformation
 	bool correct_for_ground_height_{true}; // If true and in IDLE mode, set current z position as 0.0 i.e. at ground height
 
-	bool bypass_transform_cmd_{true}; // If true, then do not transform commands from ENU to NED frame.
-
 	bool mode_trajectory_enable_pos_{true};
 	bool mode_trajectory_enable_vel_{true};
 	bool mode_trajectory_enable_acc_{true};

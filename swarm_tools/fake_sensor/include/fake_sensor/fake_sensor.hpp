@@ -44,9 +44,7 @@ class FakeSensor : public rclcpp::Node
         void sensorUpdateTimerCB();
 
         /* Subscription callbacks */
-        void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
-
-        void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr& msg, int id);
+        // void odomSubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
 
     private:
 	    rclcpp::CallbackGroup::SharedPtr reentrant_cb_grp_;
@@ -54,9 +52,7 @@ class FakeSensor : public rclcpp::Node
         /* Publishers, subscribers, timers and services */
         rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_pc_pub_; // Publisher of sensor point cloud
 
-        rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
-        std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> 
-            swarm_odom_subs_;  // Subscription to odometry from other agents
+        // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
 
         rclcpp::TimerBase::SharedPtr tf_listen_timer_;	    // Timer for planning front end path
         rclcpp::TimerBase::SharedPtr sensor_update_timer_;	    // Timer for planning front end path
@@ -66,8 +62,6 @@ class FakeSensor : public rclcpp::Node
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
 
         /* Params */
-        int drone_id_{-1};    // ID of drone
-
         int num_drones_{1}; // Number of drones, used to create subscription for odom
 
         std::string global_frame_; // Global map frame
@@ -80,29 +74,11 @@ class FakeSensor : public rclcpp::Node
         double voxel_size_; // downsampling voxel size
 
         /* Data */
-        pcl::PointCloud<pcl::PointXYZ>::Ptr fake_map_cloud_; // [map_frame] Global point cloud map
-        pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_; //[map_frame] Point cloud from fake laser
-
-        std::vector<Eigen::Vector3d> swarm_poses_;
-
-        geometry_msgs::msg::TransformStamped sensor_to_map_tf_; // sensor to global frame transform
+        pcl::PointCloud<pcl::PointXYZ>::Ptr fake_map_cloud_; // [global frame] Global point cloud map
+        pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_; //[global frame] Point cloud from fake laser
             
         // sensor frame to global frame homogenous transformation matrix
-        Eigen::Matrix4d sensor_to_gbl_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
-        Eigen::Matrix4d gbl_to_sensor_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
-
-        Eigen::Matrix4d gbl_to_map_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; // global to map TF matrix
-        Eigen::Matrix4d map_to_sensor_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; // map to sensor TF matrix
-        Eigen::Matrix4d sensor_to_map_tf_mat_{Eigen::Matrix4d::Identity(4, 4)}; // map to sensor TF matrix
-
-        nav_msgs::msg::Odometry cur_odom_;// Last received odom 
-        
-        /* Flags */
-        bool cam_tf_valid_{false}; // True if camera transform is valid
-        bool pose_rcv_{false}; // True if camera transform is valid
-
-        /* Mutexes */
-        std::mutex odom_mutex_; // Mutex for pose_ data
+        Eigen::Matrix4d global_to_sensor_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
 
         /* Voxel filter for downsampling*/
         std::shared_ptr<pcl::VoxelGrid<pcl::PointXYZ>> vox_grid_{nullptr};

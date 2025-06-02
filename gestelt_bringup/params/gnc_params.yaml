@@ -10,7 +10,7 @@ planner_server:
       plugin: "astar_planner::AStarPlanner"
       tolerance: 0.5
       max_iterations: 99999
-      tie_breaker: 1.0000
+      tie_breaker: 1.00001
       allow_unknown: true
       cost_function_type: 1
 
@@ -34,17 +34,17 @@ controller_server:
       xyz_goal_tolerance: 0.25 # [m] 
       # yaw_goal_tolerance: 0.25 # Not used
       stateful: True
-    # DWB parameters
+    # Local Controller
     FollowPath:
-      plugin: "linear_mpc_controller::LinearMPCController"
+      plugin: "linear_mpc_controller::LinearMPCController" 
       control_yaw: false # Enable simple control of the yaw
       yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
-        plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
-        bbox_x: 2.0 # [m] Bounding box in x axis
+        plan_sample_interval: 2 #[] Uses every N point on global plan as the safe flight corridor seed 
+        bbox_x: 1.0 # [m] Bounding box in x axis
         bbox_y: 2.0 # [m] Bounding box in y axis
-        bbox_z: 2.0 # [m] Bounding box in z axis
+        bbox_z: 1.0 # [m] Bounding box in z axis
       mpc:
         plan_sample_interval: 1 # [] Uses every N point on global plan as reference path
         # MPC parameters
