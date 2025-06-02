@@ -21,6 +21,9 @@ ros2 launch gestelt_bringup offboard_launch.py
 #####
 # GCS
 #####
+# Start QGRoundControl
+
+# Start RVIZ Visualization
 ros2 launch gestelt_bringup rviz_viz.py
 
 # Take off and start point goal script

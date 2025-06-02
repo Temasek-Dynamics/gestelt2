@@ -50,7 +50,8 @@ class FakeSensor : public rclcpp::Node
 	    rclcpp::CallbackGroup::SharedPtr reentrant_cb_grp_;
 
         /* Publishers, subscribers, timers and services */
-        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_pc_pub_; // Publisher of sensor point cloud
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_cloud_pub_; // Publisher of sensor point cloud
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_cloud_global_pub_; // Publisher of sensor point cloud
 
         // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
 
@@ -68,14 +69,13 @@ class FakeSensor : public rclcpp::Node
         std::string map_frame_; // Fixed map origin frame
         std::string sensor_frame_;  // Frame of sensor on UAV
 
-        bool listen_to_tf_; // If true, then use /tf to determine camera to map transform, else use the odom topic
-
         bool voxel_filter_enable_; // True if downsampler is active
         double voxel_size_; // downsampling voxel size
 
         /* Data */
         pcl::PointCloud<pcl::PointXYZ>::Ptr fake_map_cloud_; // [global frame] Global point cloud map
         pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_; //[global frame] Point cloud from fake laser
+        pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_global_; //[Global frame] Point cloud from fake laser
             
         // sensor frame to global frame homogenous transformation matrix
         Eigen::Matrix4d global_to_sensor_mat_{Eigen::Matrix4d::Identity(4, 4)}; 

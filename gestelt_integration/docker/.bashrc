@@ -106,6 +106,7 @@ source /opt/ros/noetic/setup.bash
 # ROS2 
 export RCUTILS_COLORIZED_OUTPUT=1
 export RCUTILS_LOGGING_USE_STDOUT=1
+export RCUTILS_LOGGING_BUFFERED_STREAM=0
 
 export ROS_DISTRO="jazzy"
 source /opt/ros/jazzy/setup.bash

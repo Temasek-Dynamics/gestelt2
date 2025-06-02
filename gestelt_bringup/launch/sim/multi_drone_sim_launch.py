@@ -178,8 +178,8 @@ def generate_launch_description():
 
     ld.add_action(declare_rviz_config_file_cmd)
 
-    ld.add_action(start_gazebo_cmd)
-    ld.add_action(ros_gz_bridge_action)
+    # ld.add_action(start_gazebo_cmd)
+    # ld.add_action(ros_gz_bridge_action)
     ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)
     ld.add_action(exit_event_handler)
@@ -251,6 +251,7 @@ def generate_launch_description():
                         output='screen',
                         # shell=False,
                         parameters=[
+                            {'use_sim_time': use_sim_time},
                             {'global_frame': global_frame},
                             {'map_frame': map_frame},
                             {'sensor_frame': camera_frame},
@@ -270,11 +271,11 @@ def generate_launch_description():
                         name=['px4_sitl_', str(drone_id)],
                         cmd=[
                             # Environment variables
+                            # 'PX4_GZ_STANDALONE=1',
                             'PX4_SYS_AUTOSTART=4001',
                             'PX4_GZ_WORLD=default',
                             # 'PX4_SIM_MODEL=gz_x500_depth',
                             'PX4_SIM_MODEL=gz_x500',
-                            'PX4_GZ_STANDALONE=1',
                             ['PX4_GZ_MODEL_POSE="', 
                                 str(scenario.spawns_pos[drone_id][0]), ',', 
                                 str(scenario.spawns_pos[drone_id][1]), 

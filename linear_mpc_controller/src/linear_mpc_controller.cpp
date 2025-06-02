@@ -423,7 +423,7 @@ void LinearMPCController::computeCommands(
 
       // Check if position, velocity and acceleration at valid values
       if (!checkValidCmd(x_current.segment<3>(0), -100.0, 100.0) ){
-        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f) at ", 
+        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f)", 
           i, x_current.segment<3>(0)(0), 
           x_current.segment<3>(0)(1), 
           x_current.segment<3>(0)(2));
@@ -432,7 +432,7 @@ void LinearMPCController::computeCommands(
         break;
       }
       if (!checkValidCmd(x_current.segment<3>(3), -5.0, 5.0) ){
-        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f) at ", 
+        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f)", 
           i, x_current.segment<3>(3)(0), 
           x_current.segment<3>(3)(1), 
           x_current.segment<3>(3)(2));
@@ -441,7 +441,7 @@ void LinearMPCController::computeCommands(
         break;
       }
       if (!checkValidCmd(x_current.segment<3>(6), -60.0, 60.0) ){
-        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f) at ", 
+        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f)", 
           i, x_current.segment<3>(6)(0), 
           x_current.segment<3>(6)(1), 
           x_current.segment<3>(6)(2));

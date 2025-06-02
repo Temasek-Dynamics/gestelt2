@@ -75,7 +75,8 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
 sudo apt-get install -y ros-$ROS_DISTRO-pcl*
-sudo apt-get install -y ros-$ROS_DISTRO-ros-gz
+sudo apt-get install -y ros-$ROS_DISTRO-ros-gz-*
+sudo apt-get install -y ros-humble-ros-gzharmonic*
 ```
 
 ## 2. Clone repos, including PX4-Autopilot repo and px4_msgs
@@ -95,6 +96,7 @@ cd ~/gestelt_ws/ && colcon build --symlink-install
 
 ## 4. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
+# The cloning step should be handled by the earlier installation instruction "vcs import < simulation.repos --recursive --debug"
 git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
 cd ~/PX4-Autopilot
 git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28 
@@ -103,6 +105,7 @@ make distclean
 bash ./Tools/setup/ubuntu.sh 
 # Make SITL target for simulation
 # NOTE: Enter 'u' to update all submodules when prompted
+make px4_sitl
 DONT_RUN=1 make px4_sitl gz_x500
 ```
 
@@ -140,7 +143,7 @@ git clone https://github.com/robotology/osqp-eigen.git \
 
 # Quick start
 
-To enable repeatability of experiments. We make use of scenarios which are configurations of drone spawn locations and environments stored in [gestelt_mission/scenarios.json](gestelt_mission/scenarios.json). Refer to [gestelt_mission/README.md](gestelt_mission/README.md) for more information.
+To ease repeatability of experiments. We make use of scenarios which are configurations of drone spawn locations and environments stored in [gestelt_mission/scenarios.json](gestelt_mission/scenarios.json). Refer to [gestelt_mission/README.md](gestelt_mission/README.md) for more information.
 
 ## With PX4-SITL 
 To run a simulation with a dynamical model (with physics).

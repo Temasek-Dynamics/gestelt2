@@ -12,9 +12,9 @@ FakeSensor::FakeSensor()
 		std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 	fake_map_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 	sensor_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+	sensor_cloud_global_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
 	this->declare_parameter("drone_id", -1);
-	this->declare_parameter("tf.listen_to_tf", true);
 
 	// Frame parameters
 	this->declare_parameter("global_frame", "world");
@@ -36,9 +36,6 @@ FakeSensor::FakeSensor()
 	// Downsampler parameters
 	this->declare_parameter("pcd_voxel_filter.enable", true);
 	this->declare_parameter("pcd_voxel_filter.voxel_size", -1.0);
-
-	/* Get Parameters */
-	listen_to_tf_ = this->get_parameter("tf.listen_to_tf").as_bool();
 
 	// Frame parameters
 	global_frame_ = this->get_parameter("global_frame").as_string();
@@ -68,8 +65,11 @@ FakeSensor::FakeSensor()
 	reentrant_sub_opt.callback_group = reentrant_cb_grp_;
 
 	/* Publishers */
-    sensor_pc_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+    sensor_cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
 		"cloud", rclcpp::SensorDataQoS());
+
+	sensor_cloud_global_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+		"cloud_global", rclcpp::SensorDataQoS());
 
 	if (voxel_filter_enable_){
 		vox_grid_ = std::make_shared<pcl::VoxelGrid<pcl::PointXYZ>>();
@@ -144,13 +144,13 @@ void FakeSensor::sensorUpdateTimerCB()
 			tf_res.transform.rotation.y,
 			tf_res.transform.rotation.z).toRotationMatrix();
 
-		global_to_sensor_mat_.block<3,1>(0,3) = Eigen::Vector3d(
+		global_to_sensor_mat_.block<3,1>(0, 3) = Eigen::Vector3d(
 			tf_res.transform.translation.x,
 			tf_res.transform.translation.y,
 			tf_res.transform.translation.z);
 
 		sensor_ori = global_to_sensor_mat_.block<3, 3>(0, 0);
-		sensor_pos = global_to_sensor_mat_.block<3,1>(0,3);
+		sensor_pos = global_to_sensor_mat_.block<3,1>(0, 3);
 	} 
 	catch (const tf2::TransformException & ex) {
 		RCLCPP_ERROR(this->get_logger(), 
@@ -168,10 +168,16 @@ void FakeSensor::sensorUpdateTimerCB()
 	sensor_renderer_.render_sensed_points(
 		sensor_pos,  // sensor position in global frame
 		sensor_ori,  // sensor orientation in global frame
-		*sensor_cloud_);
+		*sensor_cloud_global_);
+
+
+	// RCLCPP_INFO(this->get_logger(),
+	// 	"sensor_pos (%f, %f, %f), size(%ld), width(%ld), height(%ld)",
+	// 	sensor_pos(0), sensor_pos(1), sensor_pos(2), 
+	// 	sensor_cloud_global_->points.size(), sensor_cloud_global_->width, sensor_cloud_global_->height);
 
 	// sensor_cloud_ is in [map_frame], we transform it to [sensor_frame]
-	pcl::transformPointCloud (*sensor_cloud_, *sensor_cloud_, global_to_sensor_mat_);
+	pcl::transformPointCloud (*sensor_cloud_global_, *sensor_cloud_, global_to_sensor_mat_);
 
 	// Downsample cloud
 	if (voxel_filter_enable_){
@@ -188,14 +194,11 @@ void FakeSensor::sensorUpdateTimerCB()
 	pass_fil_z_-> setInputCloud (sensor_cloud_);
 	pass_fil_z_-> filter (*sensor_cloud_);
 
-	printf("sensor_cloud_ size(%ld), width(%ld), height(%ld)",
-			sensor_cloud_->size(), sensor_cloud_->width, sensor_cloud_->height); 
-
 	sensor_msgs::msg::PointCloud2 sensor_cloud_msg;
 
 	if (!sensor_cloud_->points.empty()){
-		sensor_cloud_->width = sensor_cloud_->points.size();
-		sensor_cloud_->height = 1;
+		// sensor_cloud_->width = sensor_cloud_->points.size();
+		// sensor_cloud_->height = 1;
 
 		pcl::toROSMsg(*sensor_cloud_, sensor_cloud_msg);
 	}
@@ -206,5 +209,30 @@ void FakeSensor::sensorUpdateTimerCB()
 	sensor_cloud_msg.header.frame_id = sensor_frame_;
 	sensor_cloud_msg.header.stamp = this->get_clock()->now();
 
-	sensor_pc_pub_->publish(sensor_cloud_msg);
+	sensor_cloud_pub_->publish(sensor_cloud_msg);
+
+
+	// Publish sensor cloud message in global frame 
+
+	// pass_fil_x_-> setInputCloud (sensor_cloud_global_);
+	// pass_fil_x_-> filter (*sensor_cloud_global_);
+	// pass_fil_y_-> setInputCloud (sensor_cloud_global_);
+	// pass_fil_y_-> filter (*sensor_cloud_global_);
+	// pass_fil_z_-> setInputCloud (sensor_cloud_global_);
+	// pass_fil_z_-> filter (*sensor_cloud_global_);
+
+	// sensor_msgs::msg::PointCloud2 sensor_cloud_global_msg;
+	// if (!sensor_cloud_global_->points.empty()){
+
+	// 	pcl::toROSMsg(*sensor_cloud_global_, sensor_cloud_global_msg);
+	// }
+	// else {
+	// 	RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, 
+	// 							"Publishing empty sensor cloud global");
+	// }
+	// sensor_cloud_global_msg.header.frame_id = global_frame_;
+	// sensor_cloud_global_msg.header.stamp = this->get_clock()->now();
+
+	// sensor_cloud_global_pub_->publish(sensor_cloud_global_msg);
+
 }
