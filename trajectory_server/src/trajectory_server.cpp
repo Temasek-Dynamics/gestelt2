@@ -691,15 +691,15 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
 
 	// Correct YAW to transfrom from ENU to NED frame
-	// float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
+	float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
 
-	// yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
-	// yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
+	yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
+	yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
 
 	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
-	msg.yaw = yaw_yawrate(0); // [-PI:PI]
+	msg.yaw = yaw_corr; // [-PI:PI]
 	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
 	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 
