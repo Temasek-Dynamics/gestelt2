@@ -49,17 +49,24 @@ The `MissionManager` class is located at [gestelt_commander/gestelt_commander/mi
 
 ## 0. Dependencies:
 - System
-    - Ubuntu 22.04 (Jammy)
-    - ROS2 Humble
+    - [Ubuntu 22.04 (Jammy)](https://releases.ubuntu.com/jammy/)
+    - [ROS2 Humble](https://docs.ros.org/en/humble/Installation.html)
+    - [QGroundControl](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html)
 - Communications
-    - eProsima/Micro-XRCE-DDS-Agent: Tag `v2.4.3`
-    - PX4-msgs repo: Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
+    - [eProsima/Micro-XRCE-DDS-Agent](https://github.com/eProsima/Micro-XRCE-DDS-Agent/releases/tag/v2.4.3): Tag `v2.4.3`
+    - [PX4-msgs](https://github.com/PX4/px4_msgs/tree/bcb3d020bd2f2a994b0633a6fccf8ae47190d867): Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
 - Simulation 
-    - PX4-Autopilot repo: Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
+    - [PX4-Autopilot](https://github.com/PX4/PX4-Autopilot/tree/3d36c8519de83afd7b4617c3496d0304fb17cc28): Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
 
 ## 1. Install ROS2 and associated dependencies
 ```bash
 # Install the Desktop version of ROS2 at https://docs.ros.org/en/humble/Installation.html 
+
+# After installation, add the following commands to your .bashrc to enable colorized output and unbuffered output
+export ROS_DISTRO="humble"
+export RCUTILS_LOGGING_USE_STDOUT=1
+export RCUTILS_LOGGING_BUFFERED_STREAM=0
+exoirt RCUTILS_COLORIZED_OUTPUT=1
 
 # Install Package dependencies
 sudo apt-get update && sudo apt-get install --no-install-recommends -y \
@@ -75,8 +82,8 @@ sudo apt-get update && sudo apt-get install --no-install-recommends -y \
 sudo apt-get install -y ros-$ROS_DISTRO-geometry*
 sudo apt-get install -y ros-$ROS_DISTRO-tf2*
 sudo apt-get install -y ros-$ROS_DISTRO-pcl*
-sudo apt-get install -y ros-$ROS_DISTRO-ros-gz-*
-sudo apt-get install -y ros-humble-ros-gzharmonic*
+# Install ROS2 to Gazebo bridge
+sudo apt-get install -y ros-$ROS_DISTRO-ros-gzharmonic*
 ```
 
 ## 2. Clone repos, including PX4-Autopilot repo and px4_msgs
@@ -84,32 +91,32 @@ sudo apt-get install -y ros-humble-ros-gzharmonic*
 mkdir -p ~/gestelt_ws/src/
 git clone https://github.com/Temasek-Dynamics/gestelt2.git
 cd ~/gestelt_ws/src/gestelt2
+# Clone PX4-SITL Simulation
 vcs import < simulation.repos --recursive --debug
+# Clone px4_msgs library
 vcs import < thirdparty.repos --recursive --debug
+
+# Build OSQP and OSQP-Eigen libraries
+mkdir -p ~/libraries/
+cd ~/libraries
+git clone https://github.com/osqp/osqp.git \
+&& cd osqp \
+&& mkdir build \
+&& cd build \
+&& sudo cmake -G "Unix Makefiles" .. \
+&& sudo cmake --build . --target install
+
+cd ~/libraries
+git clone https://github.com/robotology/osqp-eigen.git \
+&& cd osqp-eigen \
+&& mkdir build \
+&& cd build \
+&& cmake ../ \
+&& sudo make \
+&& sudo make install 
 ```
 
-## 3. Build workspace
-```bash
-# Assuming your workspace is named as follows
-cd ~/gestelt_ws/ && colcon build --symlink-install
-```
-
-## 4. (OPTIONAL FOR PX4 SITL Simulation) Build PX4-autopilot 
-```bash
-# The cloning step should be handled by the earlier installation instruction "vcs import < simulation.repos --recursive --debug"
-git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
-cd ~/PX4-Autopilot
-git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28 
-# Clean just in case
-make distclean
-bash ./Tools/setup/ubuntu.sh 
-# Make SITL target for simulation
-# NOTE: Enter 'u' to update all submodules when prompted
-make px4_sitl
-DONT_RUN=1 make px4_sitl gz_x500
-```
-
-## 5. Install dependencies for communication with FCU via MicroXCRE-DDS
+## 3. Install dependencies for communication with FCU via MicroXCRE-DDS
 
 (a) XRCE DDS installation
 ```bash
@@ -123,31 +130,40 @@ sudo make install
 sudo ldconfig /usr/local/lib/
 ```
 
-## 6. Install dependencies for linear MPC Controller
+## 4. (OPTIONAL, build if doing PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
-git clone https://github.com/osqp/osqp.git \
-&& cd osqp \
-&& mkdir build \
-&& cd build \
-&& sudo cmake -G "Unix Makefiles" .. \
-&& sudo cmake --build . --target install
+# The cloning step should be handled by the earlier installation instruction "vcs import < simulation.repos --recursive --debug"
+git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
+cd ~/PX4-Autopilot
+git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28 
+# Clean just in case
+make distclean
+# Install system dependencies 
+bash ./Tools/setup/ubuntu.sh 
+# Make SITL target for simulation
+# NOTE: Enter 'u' to update all submodules when prompted
+make px4_sitl
+# Make x500 model, and check if it works successfully
+make px4_sitl gz_x500
+```
 
-git clone https://github.com/robotology/osqp-eigen.git \
-&& cd osqp-eigen \
-&& mkdir build \
-&& cd build \
-&& cmake ../ \
-&& sudo make \
-&& sudo make install 
+## 5. Build ROS2 workspace
+```bash
+# Assuming your workspace is named as follows
+cd ~/gestelt_ws/ && colcon build --symlink-install
 ```
 
 # Quick start
-
 To ease repeatability of experiments. We make use of scenarios which are configurations of drone spawn locations and environments stored in [gestelt_mission/scenarios.json](gestelt_mission/scenarios.json). Refer to [gestelt_mission/README.md](gestelt_mission/README.md) for more information.
 
 ## With PX4-SITL 
 To run a simulation with a dynamical model (with physics).
 ```bash
+# Start QGroundControl, get it from https://docs.qgroundcontrol.com/master/en/qgc-user-guide/getting_started/download_and_install.html
+# This is because the PX4 parameters are such that a ground control station is required for operation, but it can be disabled
+# via a PX4 parameter.
+/QGroundControl.AppImage
+
 # Launch the simulation
 ros2 launch gestelt_bringup multi_drone_sim_launch.py 
 
