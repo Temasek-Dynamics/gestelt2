@@ -448,11 +448,14 @@ void ControllerServer::computeControl()
     action_server_->terminate_current(result);
     return;
   } catch (gestelt_core::NoValidControl & e) {
+
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
-    onGoalExit();
-    std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
-    // result->error_code = Action::Result::NO_VALID_CONTROL;
-    action_server_->terminate_current(result);
+
+    // onGoalExit();
+    // std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
+    // // result->error_code = Action::Result::NO_VALID_CONTROL;
+    // action_server_->terminate_current(result);
+
     return;
   } catch (gestelt_core::FailedToMakeProgress & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());

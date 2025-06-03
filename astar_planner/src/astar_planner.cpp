@@ -160,11 +160,11 @@ AStarPlanner::makePlan(
   occ_map_->worldToMap(start, map_start);
   occ_map_->worldToMap(goal, map_goal);
 
-  RCLCPP_INFO(
-    logger_, "AStarPlanner::makePlan in map_frame from " 
-    "(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f).", 
-    map_start(0), map_start(1), map_start(2),
-    map_goal(0), map_goal(1), map_goal(2));
+  // RCLCPP_INFO(
+  //   logger_, "AStarPlanner::makePlan in map_frame from " 
+  //   "(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f).", 
+  //   map_start(0), map_start(1), map_start(2),
+  //   map_goal(0), map_goal(1), map_goal(2));
 
   // clear the starting cell within the occupancy map because we know it can't be an obstacle
   // clearRobotCell(map_start);

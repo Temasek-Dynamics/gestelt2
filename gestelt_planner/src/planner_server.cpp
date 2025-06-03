@@ -596,7 +596,7 @@ PlannerServer::getPlan(
 
   if (planners_.find(planner_id) != planners_.end()) {
 
-    RCLCPP_INFO(get_logger(), "Creating plan with specified planner_id");
+    RCLCPP_INFO(get_logger(), "Creating plan with specified planner_id %s", planner_id.c_str());
 
     return planners_[planner_id]->createPlan(start_eig, goal_eig, cancel_checker);
   } 

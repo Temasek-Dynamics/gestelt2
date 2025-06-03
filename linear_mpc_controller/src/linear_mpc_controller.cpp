@@ -241,6 +241,10 @@ void LinearMPCController::computeCommands(
   std::vector<Eigen::Vector3d>& mpc_pred_u,
   Eigen::Vector2d& mpc_yaw)
 {
+
+  RCLCPP_INFO(logger_, "[MPC] computeCommands. Position (%0.2f, %0.2f, %0.2f) Velocity (%0.2f, %0.2f, %0.2f)", 
+    position(0), position(1), position(2), velocity(0), velocity(1), velocity(2));
+
   std::lock_guard<std::mutex> lock_reinit(mutex_);
 
   // Transform path to map frame
@@ -260,11 +264,14 @@ void LinearMPCController::computeCommands(
    * Generate safe flight corridor
    */
 
-  // Sample the global path
-  std::vector<int> ref_plan_sfc_idx;
+  // Sample the global path for SFC Generation
+
   // [MAP FRAME] Global plan used by safe flight corridor 
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> ref_plan_sfc; 
-  for (size_t i = 0; i < plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
+  // Sampled Indices of original reference plan
+  std::vector<int> ref_plan_sfc_idx; 
+
+  for (int i = 0; i < (int)plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
     ref_plan_sfc.push_back(Eigen::Vector3d(
       plan_map.poses[i].pose.position.x, 
       plan_map.poses[i].pose.position.y, 
@@ -280,7 +287,7 @@ void LinearMPCController::computeCommands(
   ref_plan_sfc_idx.push_back(plan_map.poses.size()-1);
 
   if (!sfc_gen_->generateSFC(occ_map_->getLocalPtsInMapFrame(), ref_plan_sfc)){
-    throw gestelt_core::ControllerException("Failed to generate Safe Flight Corridor");
+    throw gestelt_core::NoValidControl("Failed to generate Safe Flight Corridor");
   }
 
   std::vector<Polyhedron3D, Eigen::aligned_allocator<Polyhedron3D>> sfc_polyhedrons 
@@ -294,13 +301,32 @@ void LinearMPCController::computeCommands(
    * Generate MPC controls
    */
 
+  // Sample the global path for MPC reference path
+
+  // [MAP FRAME] global plan used by safe flight corridor 
+  std::vector<Eigen::Vector3d> ref_plan_mpc; 
+
+  for (int i = 0; i < mpc_controller_->MPC_HORIZON && i < (int)plan_map.poses.size(); i++){
+    ref_plan_mpc.push_back(Eigen::Vector3d(
+      plan_map.poses[i].pose.position.x,
+      plan_map.poses[i].pose.position.y,
+      plan_map.poses[i].pose.position.z));
+  } 
+  
+  int poly_idx = 0; // current index of SFC polyhedron
+  Eigen::Vector3d last_ref_pos = position; // last pos reference
+
+  nav_msgs::msg::Path mpc_ref_path_msg;
+  mpc_ref_path_msg.header.frame_id = occ_map_->getMapFrameID();
+  mpc_ref_path_msg.header.stamp = clock_->now();
+
   auto polyhedronToPlanes = [&](const Polyhedron3D& polyhedron, 
-      Eigen::MatrixX4d& planes) 
+    Eigen::MatrixX4d& planes) 
   {
     int num_planes = (int) polyhedron.vs_.size();
     planes.resize(num_planes, 4);
 
-    for (int i = 0; i < num_planes; ++i) // for each plane
+    for (int i = 0; i < num_planes; i++) // for each plane
     {
       Eigen::Vector3d normal = polyhedron.vs_[i].n_; // normal points outward (a,b,c) as in ax+by+cz = d
       Eigen::Vector3d pt = polyhedron.vs_[i].p_; // Point on plane
@@ -313,78 +339,81 @@ void LinearMPCController::computeCommands(
     }
   };
 
-  // Sample the global path
-  std::vector<int> ref_plan_mpc_idx;
-  std::vector<Eigen::Vector3d> ref_plan_mpc; // [MAP FRAME] global plan used by safe flight corridor 
-  for (size_t i = 0; i < plan_map.poses.size()-1; i += mpc_controller_->getPlanSampleInterval()){
-    ref_plan_mpc.push_back(Eigen::Vector3d(
-      plan_map.poses[i].pose.position.x,
-      plan_map.poses[i].pose.position.y,
-      plan_map.poses[i].pose.position.z));
-    ref_plan_mpc_idx.push_back(i);
-  } 
-  // Add end of plan
-  ref_plan_mpc.push_back(Eigen::Vector3d(
-    plan_map.poses.back().pose.position.x, 
-    plan_map.poses.back().pose.position.y, 
-    plan_map.poses.back().pose.position.z));
-  ref_plan_mpc_idx.push_back(plan_map.poses.size()-1);
-  
-  int sfc_idx = 0; // current index of SFC polyhedron
-  Eigen::Vector3d last_pos_ref = position; // last position reference
-
-  nav_msgs::msg::Path mpc_ref_path_msg;
-
-  mpc_ref_path_msg.header.frame_id = occ_map_->getMapFrameID();
-  mpc_ref_path_msg.header.stamp = clock_->now();
-
-  for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) // for each MPC reference point
+  for (int k = 0; k < mpc_controller_->MPC_HORIZON; k++) // for each k-th control iteration
   {
-    // i: index for mpc control stage
+    // k: MPC control iteration
+    // ref_idx: index for MPC reference path 
+    // ref_pos: reference position from MPC reference path
 
-    // ref_idx: index for reference path 'ref_plan_mpc'
-    int ref_idx = i >= (int)ref_plan_mpc_idx.size() 
-      ? (int)ref_plan_mpc_idx.back(): ref_plan_mpc_idx[i];
+    // Constrain ref_idx to never exceed the size of reference plan
+    int ref_idx = k > (int)ref_plan_mpc.size() -1 ? (int) ref_plan_mpc.size() - 1 : k;
+    auto ref_pos = ref_plan_mpc[ref_idx];
 
-    // pos_ref: reference position
-    auto pos_ref = ref_plan_mpc[ref_idx];
+    RCLCPP_INFO(logger_, "[MPC] ref_pos (%0.2f, %0.2f, %0.2f) at ref_idx %d", 
+      ref_pos(0), ref_pos(1), ref_pos(2), ref_idx);
 
-    // get sfc_idx that current pos_ref belongs in
-    int sfc_seg_end_idx = ref_plan_sfc_idx[sfc_idx + 1];
-    if (ref_idx >= sfc_seg_end_idx) // if reference index exceeds sfc 
+    // poly_idx: index for SFC Polyhedron
+    // sfc_start_idx: End ref path index of current SFC segment
+    // sfc_end_idx: End ref path index of current SFC segment
+
+    // get index of current polygon that ref_pos belongs in
+    int sfc_start_idx = ref_plan_sfc_idx[poly_idx];
+    int sfc_end_idx = ref_plan_sfc_idx[poly_idx + 1];
+
+    RCLCPP_INFO(logger_, "[MPC] SFC Polygon (%d) at with segment[%d] (%0.2f, %0.2f, %0.2f) -> [%d](%0.2f, %0.2f, %0.2f)", 
+      poly_idx, 
+      sfc_start_idx,
+      ref_plan_sfc[poly_idx](0), ref_plan_sfc[poly_idx](1), ref_plan_sfc[poly_idx](2), 
+      sfc_end_idx,
+      ref_plan_sfc[poly_idx+1](0), ref_plan_sfc[poly_idx+1](1), ref_plan_sfc[poly_idx+1](2));
+
+    if (ref_idx > sfc_end_idx) 
     {
-      // clamp sfc idx to be the last sfc
-      sfc_idx = sfc_idx >= (int)sfc_polyhedrons.size() - 2 
-        ? (int)sfc_polyhedrons.size() - 1 : sfc_idx + 1;
+      RCLCPP_INFO(logger_, "[MPC] Incrementing from polygon %d to polygon %d", poly_idx, poly_idx+1);
+
+      // if MPC ref index exceeds end of current SFC segment, then increment to next polygon
+      poly_idx++;
+
+      // Constrain poly_idx to never exceed the number of polygons
+      if (poly_idx > (int)sfc_polyhedrons.size() - 1){
+        poly_idx = (int)sfc_polyhedrons.size() - 1;
+      }
       // RCLCPP_ERROR(logger_, 
-      //   "[MPC] ERROR: Ref Path idx %d exceeds SFC Segment end %d", ref_idx, sfc_seg_end_idx );
+      //   "[MPC] ERROR: Ref Path idx %d exceeds SFC Segment end %d", ref_idx, sfc_end_idx );
     }
 
-    // Set PVA reference at given step i
-    Eigen::Vector3d vel_ref(0, 0, 0); // vel reference
-    Eigen::Vector3d acc_ref(0, 0, 0); // acc reference
-    if (i < mpc_controller_->MPC_HORIZON-1){
-      // If not last velocity reference
-      vel_ref = (pos_ref - last_pos_ref) / mpc_controller_->TIME_STEP;
-    }
-    mpc_controller_->setReference(pos_ref, vel_ref, acc_ref, i);
-    last_pos_ref = pos_ref;
+    // At k-th control iteration, set PVA reference 
+    Eigen::Vector3d ref_vel(0, 0, 0); // vel reference
+    Eigen::Vector3d ref_acc(0, 0, 0); // acc reference
 
-    // Set safe flight corridor for i-th control iteration
+    if (k == 0) // First iteration
+    {
+      ref_vel = (ref_pos - position) / mpc_controller_->TIME_STEP;
+    }
+    else // rest of the iteration
+    {
+      ref_vel = (ref_pos - last_ref_pos) / mpc_controller_->TIME_STEP;
+    }
+    mpc_controller_->setReference(ref_pos, ref_vel, ref_acc, k);
+
+    // At k-th control iteration, set SFC linear constraints
     Eigen::MatrixX4d sfc_planes;
-    polyhedronToPlanes(sfc_polyhedrons[sfc_idx], sfc_planes);
-    if (!mpc_controller_->isInFSC(pos_ref, sfc_planes)) { 
+    polyhedronToPlanes(sfc_polyhedrons[poly_idx], sfc_planes);
+    if (!mpc_controller_->isInFSC(ref_pos, sfc_planes)) { 
       RCLCPP_ERROR(logger_, 
-        "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, sfc_idx );
-      throw gestelt_core::ControllerException("MPC Reference path not in SFC");
+        "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, poly_idx );
+      throw gestelt_core::NoValidControl("MPC Reference path not in SFC");
     }
-    mpc_controller_->assignSFCToRefPt(sfc_planes, i); 
+    mpc_controller_->assignSFCToRefPt(sfc_planes, k); 
 
+    // Assign pose values for visualizing reference path
     geometry_msgs::msg::PoseStamped pose;
-    pose.pose.position.x = pos_ref(0);
-    pose.pose.position.y = pos_ref(1);
-    pose.pose.position.z = pos_ref(2);
+    pose.pose.position.x = ref_pos(0);
+    pose.pose.position.y = ref_pos(1);
+    pose.pose.position.z = ref_pos(2);
     mpc_ref_path_msg.poses.push_back(pose);
+
+    last_ref_pos = ref_pos;
   }
 
   mpc_ref_path_pub_->publish(mpc_ref_path_msg);
@@ -392,18 +421,8 @@ void LinearMPCController::computeCommands(
   // Set initial condition
   mpc_controller_->setInitialCondition(position, velocity, Eigen::Vector3d::Zero());
   if (!mpc_controller_->run()){ // Successful MPC solve
-    throw gestelt_core::ControllerException("MPC solve failure!");
+    throw gestelt_core::NoValidControl("MPC solve failure!");
   }
-
-  // Check if MPC command values are valid
-  auto checkValidCmd = [&](const Eigen::Vector3d& vec, const int& min_val, const int& max_val){
-    for (const auto& val : vec){
-      if (val < min_val || val > max_val){
-        return false;
-      }
-    }
-    return true;
-  };
 
   Eigen::MatrixXd A1, B1; // system transition matrix
   mpc_controller_->getSystemModel(A1, B1, mpc_controller_->TIME_STEP);
@@ -416,15 +435,26 @@ void LinearMPCController::computeCommands(
   mpc_pred_acc.clear();
   mpc_pred_u.clear();
 
+  // Check if MPC command values are valid
+  auto checkValidCmd = [&](const Eigen::Vector3d& vec, const int& min_val, const int& max_val){
+    for (const auto& val : vec){
+      if (val < min_val || val > max_val){
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Get predicted MPC path based on controls and check if valid
-  for (int i = 0; i < mpc_controller_->MPC_HORIZON; i++) {
-      mpc_controller_->getOptimalControl(u_optimal, i);
+  for (int k = 0; k < mpc_controller_->MPC_HORIZON; k++) {
+      mpc_controller_->getOptimalControl(u_optimal, k);
       x_current = A1 * x_current + B1 * u_optimal;
 
       // Check if position, velocity and acceleration at valid values
       if (!checkValidCmd(x_current.segment<3>(0), -100.0, 100.0) ){
-        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f)", 
-          i, x_current.segment<3>(0)(0), 
+        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC pos: (%f, %f, %f)", 
+          k, 
+          x_current.segment<3>(0)(0), 
           x_current.segment<3>(0)(1), 
           x_current.segment<3>(0)(2));
         
@@ -432,8 +462,9 @@ void LinearMPCController::computeCommands(
         break;
       }
       if (!checkValidCmd(x_current.segment<3>(3), -5.0, 5.0) ){
-        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f)", 
-          i, x_current.segment<3>(3)(0), 
+        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC pos: (%f, %f, %f)", 
+          k, 
+          x_current.segment<3>(3)(0), 
           x_current.segment<3>(3)(1), 
           x_current.segment<3>(3)(2));
 
@@ -441,8 +472,9 @@ void LinearMPCController::computeCommands(
         break;
       }
       if (!checkValidCmd(x_current.segment<3>(6), -60.0, 60.0) ){
-        RCLCPP_ERROR(logger_, "Segment %d has invalid MPC pos: (%f, %f, %f)", 
-          i, x_current.segment<3>(6)(0), 
+        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC pos: (%f, %f, %f)", 
+          k, 
+          x_current.segment<3>(6)(0), 
           x_current.segment<3>(6)(1), 
           x_current.segment<3>(6)(2));
 
@@ -457,7 +489,7 @@ void LinearMPCController::computeCommands(
   }
 
   if (!valid_cmd){
-    throw gestelt_core::ControllerException("Invalid controller input from MPC solution");
+    throw gestelt_core::NoValidControl("Invalid controller input from MPC solution");
   }
 
   // Publish MPC path for visualization
@@ -483,7 +515,6 @@ void LinearMPCController::computeCommands(
 
     if (0 < ref_plan_mpc.size() - lookahead_idx - 1) 
     {
-
       Eigen::Vector2d dir_vec(
         ref_plan_mpc[lookahead_idx](1) - position(1),
         ref_plan_mpc[lookahead_idx](0) - position(0)

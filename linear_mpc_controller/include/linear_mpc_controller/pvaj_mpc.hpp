@@ -292,6 +292,7 @@ namespace pvaj_mpc
 			} 
 			else {
 				std::cerr << "[MPC]: Can't set mpc problem!" << std::endl;
+				return false;
 			}
 
 			// fps_++;
@@ -301,6 +302,12 @@ namespace pvaj_mpc
 			{
 
 				mpc_.u_optimal = solver.getSolution();
+				
+				// check if initial position is in SFC
+				bool in_sfc = isInFSC(X_0_.block<3,1>(0,0), planes_[0]);
+				// std::cout << "planes: " << std::endl << planes_ << std::endl;
+				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " 
+							<< std::boolalpha << in_sfc << std::endl;
 
 				// static double cur_vel = 0.0;
 				// if (cur_vel < X_0_.block<3,1>(3,0).norm()) {
@@ -321,7 +328,8 @@ namespace pvaj_mpc
 			else { // FAILURE
 				bool in_sfc = isInFSC(X_0_.block<3,1>(0,0), planes_[0]);
 				// std::cout << "planes: " << std::endl << planes_ << std::endl;
-				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " << std::boolalpha << in_sfc << std::endl;
+				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " 
+							<< std::boolalpha << in_sfc << std::endl;
 				if (init_flag) {
 					OsqpEigen::Status status = solver.getStatus();
 					if (status == OsqpEigen::Status::DualInfeasibleInaccurate) {
@@ -359,7 +367,7 @@ namespace pvaj_mpc
 		 * 
 		 * @param planes Each row of the matrix is a half plane equation 
 		 * in the form (a,b,c,d) corr. to equation ax + by + cx + d
-		 * @param step Timestep
+		 * @param step Current control iteration
 		 */
 		void assignSFCToRefPt(Eigen::MatrixX4d& planes, int step)
 		{
@@ -780,7 +788,7 @@ namespace pvaj_mpc
 				return false;
 			}
 			
-			for (int i = 0; i < planes.rows(); i++) {
+			for (int i = 0; i < planes.rows(); i++) { // for each plane
 				// fulfilling this means on wrong side of plane (outside SFC)
 				if (pos.x()*planes(i,0) 
 					+ pos.y()*planes(i,1) 
@@ -789,7 +797,6 @@ namespace pvaj_mpc
 				{ 
 					std::cout << "NOT IN SFC:"  << std::endl;
 					std::cout << "		pos:" << pos.transpose() << std::endl;
-					// std::cout << "		point:" << pos.transpose() << std::endl;
 					std::cout << "		plane_" << i << ": " << planes.block<1, 4>(i, 0) << std::endl;
 					return false;
 				}

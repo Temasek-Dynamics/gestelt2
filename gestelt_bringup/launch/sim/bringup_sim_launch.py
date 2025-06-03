@@ -206,9 +206,7 @@ def generate_launch_description():
                 remappings=remappings,
             ),
         ],
-
     )
-
 
     # Create the launch description and populate
     ld = LaunchDescription()

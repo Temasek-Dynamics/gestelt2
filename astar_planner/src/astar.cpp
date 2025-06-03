@@ -51,11 +51,11 @@ int AStar::computePath(const int& max_iterations,
     const auto start_idx = occ_map_->posToIdx(start_pos_);
     const auto goal_idx = occ_map_->posToIdx(goal_pos_);
 
-    std::cout << "AStar::computePath in map frame from " 
-    << start_pos_.transpose() << " to " << goal_pos_.transpose() << std::endl;
+    // std::cout << "AStar::computePath in map frame from " 
+    // << start_pos_.transpose() << " to " << goal_pos_.transpose() << std::endl;
 
-    std::cout << "AStar::computePath in idx frame from " 
-            << start_idx.transpose() << " to " << goal_idx.transpose() << std::endl;
+    // std::cout << "AStar::computePath in idx frame from " 
+    //         << start_idx.transpose() << " to " << goal_idx.transpose() << std::endl;
         
     // RCLCPP_INFO(
     //     logger_, "AStar::computePath in map_frame from (%.2f, %.2f, %.2f) to "
@@ -85,7 +85,7 @@ int AStar::computePath(const int& max_iterations,
     
         if (cur_idx == goal_idx)
         {
-            std::cout << "got goal with num_iter=" << num_iter << std::endl;
+            // std::cout << "got goal with num_iter=" << num_iter << std::endl;
             planned_path_idx_ = tracePath(cur_idx);
 
             return planned_path_idx_.size();
