@@ -66,17 +66,6 @@ class MissionManager(Node):
         # Sleep for init_delay
         time.sleep(self.init_delay)
 
-        if (no_scenario):
-            self.get_logger().info("No scenario required! Only initializing publisher to '/global_uav_command'")
-            return
-
-        """ 
-        Read scenario JSON to get goal positions 
-        """
-        self.scenario = Scenario(
-            os.path.join(get_package_share_directory('gestelt_commander'), 'scenarios.json'),
-            self.scenario_name
-        )
 
         """
         Subscribers
@@ -91,6 +80,18 @@ class MissionManager(Node):
         # Publish to all UAVs
         self.uav_cmd_global_pub = self.create_publisher(
             AllUAVCommand, '/global_uav_command', rclpy.qos.qos_profile_services_default)
+
+        if (no_scenario):
+            self.get_logger().info("No scenario required! Only initializing publisher to '/global_uav_command'")
+            return
+
+        """ 
+        Read scenario JSON to get goal positions 
+        """
+        self.scenario = Scenario(
+            os.path.join(get_package_share_directory('gestelt_commander'), 'scenarios.json'),
+            self.scenario_name
+        )
 
         # Publish to individual UAV
         self.uav_cmd_pubs = []

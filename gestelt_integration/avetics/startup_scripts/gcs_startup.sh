@@ -35,7 +35,7 @@ RVIZ="ros2 launch gestelt_bringup rviz_viz.py"
 MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=single_drone_test"
 
 # Reset map
-RESET_MAP="ros2 topic pub /reset_map std_msgs/msg/Empty {} -5"
+RESET_MAP="ros2 topic pub /reset_map std_msgs/msg/Empty {}"
 
 # Land
 LAND_NODES="ros2 run gestelt_commander land scenario_name:=single_drone_test"
