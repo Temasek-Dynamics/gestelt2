@@ -302,12 +302,6 @@ namespace pvaj_mpc
 			{
 
 				mpc_.u_optimal = solver.getSolution();
-				
-				// check if initial position is in SFC
-				bool in_sfc = isInFSC(X_0_.block<3,1>(0,0), planes_[0]);
-				// std::cout << "planes: " << std::endl << planes_ << std::endl;
-				std::cout << "pos: " << X_0_.block(0,0,3,1).transpose() << "  isInFSC: " 
-							<< std::boolalpha << in_sfc << std::endl;
 
 				// static double cur_vel = 0.0;
 				// if (cur_vel < X_0_.block<3,1>(3,0).norm()) {

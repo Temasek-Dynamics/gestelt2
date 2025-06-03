@@ -29,7 +29,7 @@ Panels:
         - /controller1
         - /controller1/mpc_traj1/Topic1
       Splitter Ratio: 0.653333306312561
-    Tree Height: 719
+    Tree Height: 363
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -1614,25 +1614,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/XYOrbit
-      Distance: 8.641435623168945
+      Distance: 16.29595375061035
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.14786303043365479
-        Y: 0.49462950229644775
+        X: -0.5566760301589966
+        Y: 2.2662110328674316
         Z: 4.603053639584687e-06
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6147975921630859
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 2.4211208820343018
+      Yaw: 1.971121072769165
     Saved: ~
 Window Geometry:
   Displays:

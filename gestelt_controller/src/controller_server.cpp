@@ -456,7 +456,7 @@ void ControllerServer::computeControl()
     // // result->error_code = Action::Result::NO_VALID_CONTROL;
     // action_server_->terminate_current(result);
 
-    return;
+    // return;
   } catch (gestelt_core::FailedToMakeProgress & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
     onGoalExit();
