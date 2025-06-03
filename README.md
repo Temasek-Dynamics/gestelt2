@@ -57,6 +57,9 @@ The `MissionManager` class is located at [gestelt_commander/gestelt_commander/mi
     - [PX4-msgs](https://github.com/PX4/px4_msgs/tree/bcb3d020bd2f2a994b0633a6fccf8ae47190d867): Commit `bcb3d020bd2f2a994b0633a6fccf8ae47190d867`
 - Simulation 
     - [PX4-Autopilot](https://github.com/PX4/PX4-Autopilot/tree/3d36c8519de83afd7b4617c3496d0304fb17cc28): Commit `3d36c8519de83afd7b4617c3496d0304fb17cc28`
+- Planning/Controls
+    - [OSQP](https://github.com/osqp/osqp/tree/e8fe4de264d167a67b2e704a2c03807c97af2080) Commit `e8fe4de264d167a67b2e704a2c03807c97af2080`
+    - [osqp-eigen](https://github.com/robotology/osqp-eigen/tree/e4cb498faad37f03579f81f10c941f334a2a282f) Commit `e4cb498faad37f03579f81f10c941f334a2a282f`
 
 ## 1. Install ROS2 and associated dependencies
 ```bash
@@ -100,6 +103,7 @@ vcs import < thirdparty.repos --recursive --debug
 mkdir -p ~/libraries/
 cd ~/libraries
 git clone https://github.com/osqp/osqp.git \
+&& git checkout e8fe4de264d167a67b2e704a2c03807c97af2080 \
 && cd osqp \
 && mkdir build \
 && cd build \
@@ -108,6 +112,7 @@ git clone https://github.com/osqp/osqp.git \
 
 cd ~/libraries
 git clone https://github.com/robotology/osqp-eigen.git \
+&& git checkout e4cb498faad37f03579f81f10c941f334a2a282f \
 && cd osqp-eigen \
 && mkdir build \
 && cd build \
@@ -132,6 +137,7 @@ sudo ldconfig /usr/local/lib/
 
 ## 4. (OPTIONAL, build if doing PX4 SITL Simulation) Build PX4-autopilot 
 ```bash
+# DO NOT CLONE THE PX4-AUTOPILOT REPO in the `src` folder of your colcon workspace. 
 # The cloning step should be handled by the earlier installation instruction "vcs import < simulation.repos --recursive --debug"
 git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
 cd ~/PX4-Autopilot
