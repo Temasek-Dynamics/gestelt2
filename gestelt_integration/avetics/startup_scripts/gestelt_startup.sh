@@ -25,10 +25,12 @@ done
 #####
 # Commands
 #####
-# Start gcs node
-VILOTA_BRIDGE=""
+# Start vilota bridge
+VILOTA_BRIDGE="ros2 launch gestelt_bringup vilota_launch.py"
 
-# Start Zenoh
+# VILOTA_VIO_ONLY="ros2 run vision vio_bridge_px4"
+
+# Start gestelt nodes
 GESTELT_NODE="ros2 launch gestelt_bringup offboard_launch.py "
 
 if [ "$SESSIONEXISTS" = "" ]
@@ -37,7 +39,6 @@ then
     tmux new-session -d -s $SESSION
 
     tmux split-window -t $SESSION:0.0 -v
-    tmux split-window -t $SESSION:0.1 -h
 
     tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m 
     sleep 1

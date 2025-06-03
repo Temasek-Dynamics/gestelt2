@@ -179,3 +179,14 @@ ros2 launch gestelt_bringup test_point_goal_sim.py
 # Land the drone after it is done
 ros2 run gestelt_commander land_sim
 ```
+
+## Actual drone
+To test a single drone together with ground control computer (for visualization and mission commands), the following helper scripts are provided (TMUX required).
+
+```bash
+# On the drone
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
+
+# On the ground control computer
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gcs_startup.sh
+```
