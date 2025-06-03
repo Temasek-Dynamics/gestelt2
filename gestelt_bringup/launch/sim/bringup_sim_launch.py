@@ -98,6 +98,7 @@ def generate_launch_description():
     remappings = [
         # (['/', namespace, '/tf'], '/tf'), 
         # (['/', namespace, '/tf_static'], '/tf_static'),
+        ('occ_map/cloud_in', '/cloud'), 
     ]
 
     global_frame = 'world' # Fixed

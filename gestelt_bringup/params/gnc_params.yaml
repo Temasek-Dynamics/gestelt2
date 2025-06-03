@@ -37,11 +37,11 @@ controller_server:
     # Local Controller
     FollowPath:
       plugin: "linear_mpc_controller::LinearMPCController" 
-      control_yaw: false # Enable simple control of the yaw
-      yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
+      control_yaw: true # Enable simple control of the yaw
+      yaw_lookahead_dist: 3 # [] Number of points on global plan for calculating yaw
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
-        plan_sample_interval: 4 #[] Uses every N point on global plan as the safe flight corridor seed 
+        plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
         bbox_x: 1.0 # [m] Bounding box in x axis
         bbox_y: 2.0 # [m] Bounding box in y axis
         bbox_z: 1.0 # [m] Bounding box in z axis
@@ -61,12 +61,12 @@ controller_server:
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.1
-        vy_min:     -0.1
-        vz_min:     -0.1
-        vx_max:      0.1
-        vy_max:      0.1
-        vz_max:      0.1
+        vx_min:     -0.25
+        vy_min:     -0.25
+        vz_min:     -0.25
+        vx_max:      0.25
+        vy_max:      0.25
+        vz_max:      0.25
 
         # vx_min:     -0.1
         # vy_min:     -0.1
@@ -125,10 +125,11 @@ global_occ_map:
       max_range: 5.0   # [m] Maximum range of sensor
 
     # Passthrough filter for input point cloud
-    cloud_in_min_z: -0.5 # [m] Minimum height for point cloud to be included in map
+    cloud_in_min_z: -0.25 # [m] Minimum height for point cloud to be included in map
     cloud_in_max_z: 4.0 # [m] Maximum height for point cloud to be included in map
 
     # Noise filter by checking clusters
+    enable_noise_filter: false
     noise_search_radius: 0.17  # Radius to search for neighbouring points
     noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point
 
@@ -144,8 +145,8 @@ local_occ_map:
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
-      size_x: 20.0  # [m]
-      size_y: 20.0  # [m]
+      size_x: 10.0  # [m]
+      size_y: 10.0  # [m]
       size_z: 5.0  # [m]
 
     local_map:  # Local map used by controllers
@@ -168,9 +169,10 @@ local_occ_map:
       max_range: 5.0   # [m] Maximum range of sensor
 
     # Passthrough filter for input point cloud
-    cloud_in_min_z: -0.5 # [m] Minimum height for point cloud to be included in map
+    cloud_in_min_z: 0.25 # [m] Minimum height for point cloud to be included in map
     cloud_in_max_z: 4.0 # [m] Maximum height for point cloud to be included in map
 
     # Noise filter by checking clusters
+    enable_noise_filter: false
     noise_search_radius: 0.17  # Radius to search for neighbouring points
     noise_min_neighbors: 1 # Minimum number of neighbors within 'search_radius' to be a valid point

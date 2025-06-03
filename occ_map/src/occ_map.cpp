@@ -143,7 +143,7 @@ void OccMap::init()
   declare_parameter("cloud_in_passthrough.max_z", 5.0);
 
   /* Noise filter */
-  declare_parameter("enable_noise_filter", true);
+  declare_parameter("enable_noise_filter", false);
   declare_parameter("noise_search_radius", 0.2);
   declare_parameter("noise_min_neighbors", 3);
 
@@ -187,7 +187,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
   /* Initialize Publishers */
   occ_map_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(
-    "occ_map", rclcpp::SensorDataQoS());
+    name_ + "/" + "occ_map", rclcpp::SensorDataQoS());
   local_map_bounds_pub_ = create_publisher<geometry_msgs::msg::PolygonStamped>(
     "local_map/bounds", rclcpp::SensorDataQoS());
   
@@ -529,6 +529,14 @@ void OccMap::updateLocalMap(){
 
       // lcl_pts_map_: Used for SFC
       lcl_pts_map_.push_back(obs_pt_map_eig);
+      // add inflated obstacles
+
+      lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{inflation_, 0.0, 0.0}); 
+      lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{-inflation_, 0.0, 0.0}); 
+      lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{0.0, inflation_, 0.0}); 
+      lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{0.0, -inflation_, 0.0}); 
+      lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{0.0, 0.0, inflation_}); 
+      lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{0.0, 0.0, -inflation_}); 
 
       // lcl_pcd_map_: Used for visualization
       lcl_pcd_map_->push_back(obs_pt_map);

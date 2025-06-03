@@ -242,8 +242,8 @@ void LinearMPCController::computeCommands(
   Eigen::Vector2d& mpc_yaw)
 {
 
-  // RCLCPP_INFO(logger_, "[MPC] computeCommands. Position (%0.2f, %0.2f, %0.2f) Velocity (%0.2f, %0.2f, %0.2f)", 
-  //   position(0), position(1), position(2), velocity(0), velocity(1), velocity(2));
+  RCLCPP_INFO(logger_, "[MPC] computeCommands. Position (%0.2f, %0.2f, %0.2f) Velocity (%0.2f, %0.2f, %0.2f)", 
+    position(0), position(1), position(2), velocity(0), velocity(1), velocity(2));
 
   std::lock_guard<std::mutex> lock_reinit(mutex_);
 
@@ -349,8 +349,8 @@ void LinearMPCController::computeCommands(
     int ref_idx = k > (int)ref_plan_mpc.size() -1 ? (int) ref_plan_mpc.size() - 1 : k;
     auto ref_pos = ref_plan_mpc[ref_idx];
 
-    // RCLCPP_INFO(logger_, "[MPC] ref_pos (%0.2f, %0.2f, %0.2f) at ref_idx %d", 
-    //   ref_pos(0), ref_pos(1), ref_pos(2), ref_idx);
+    RCLCPP_INFO(logger_, "[MPC] ref_pos (%0.2f, %0.2f, %0.2f) at ref_idx %d", 
+      ref_pos(0), ref_pos(1), ref_pos(2), ref_idx);
 
     // poly_idx: index for SFC Polyhedron
     // sfc_start_idx: End ref path index of current SFC segment
@@ -360,16 +360,16 @@ void LinearMPCController::computeCommands(
     int sfc_start_idx = ref_plan_sfc_idx[poly_idx];
     int sfc_end_idx = ref_plan_sfc_idx[poly_idx + 1];
 
-    // RCLCPP_INFO(logger_, "[MPC] SFC Polygon (%d) at with segment[%d] (%0.2f, %0.2f, %0.2f) -> [%d](%0.2f, %0.2f, %0.2f)", 
-    //   poly_idx, 
-    //   sfc_start_idx,
-    //   ref_plan_sfc[poly_idx](0), ref_plan_sfc[poly_idx](1), ref_plan_sfc[poly_idx](2), 
-    //   sfc_end_idx,
-    //   ref_plan_sfc[poly_idx+1](0), ref_plan_sfc[poly_idx+1](1), ref_plan_sfc[poly_idx+1](2));
+    RCLCPP_INFO(logger_, "[MPC] SFC Polygon (%d) at with segment[%d] (%0.2f, %0.2f, %0.2f) -> [%d](%0.2f, %0.2f, %0.2f)", 
+      poly_idx, 
+      sfc_start_idx,
+      ref_plan_sfc[poly_idx](0), ref_plan_sfc[poly_idx](1), ref_plan_sfc[poly_idx](2), 
+      sfc_end_idx,
+      ref_plan_sfc[poly_idx+1](0), ref_plan_sfc[poly_idx+1](1), ref_plan_sfc[poly_idx+1](2));
 
     if (ref_idx > sfc_end_idx) 
     {
-      // RCLCPP_INFO(logger_, "[MPC] Incrementing from polygon %d to polygon %d", poly_idx, poly_idx+1);
+      RCLCPP_INFO(logger_, "[MPC] Incrementing from polygon %d to polygon %d", poly_idx, poly_idx+1);
 
       // if MPC ref index exceeds end of current SFC segment, then increment to next polygon
       poly_idx++;

@@ -699,8 +699,7 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
 	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
 
-	// msg.yaw = yaw_yawrate(0); // [-PI:PI]
-	msg.yaw = NAN; // [-PI:PI]
+	msg.yaw = yaw_yawrate(0); // [-PI:PI]
 	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
 	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
 
