@@ -1,5 +1,22 @@
 # tests
 
+# Test Obstacle Avoidance (3/6/25)
+
+Goals:
+    - Test controls and planning with basic obstacle avoidance
+
+```bash
+#####
+# Drone
+#####
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
+
+#####
+# GCS
+#####
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gcs_startup.sh
+```
+
 # Test take off with point goal (30/5/25)
 
 Goals:
