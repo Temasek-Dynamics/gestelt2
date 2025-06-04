@@ -77,6 +77,8 @@ void LinearMPCController::configure(
   node->get_parameter(name + ".control_yaw", control_yaw_);
   declare_parameter_if_not_declared(node, name + ".yaw_lookahead_dist", rclcpp::ParameterValue(5));
   node->get_parameter(name + ".yaw_lookahead_dist", yaw_lookahead_dist_);
+  declare_parameter_if_not_declared(node, name + ".yawspeed_max", rclcpp::ParameterValue(1.57));
+  node->get_parameter(name + ".yawspeed_max", yawspeed_max_);
 
   declare_parameter_if_not_declared(node, name + ".max_robot_pose_search_dist", rclcpp::ParameterValue(1.0));
   node->get_parameter(name + ".max_robot_pose_search_dist", max_robot_pose_search_dist_);
@@ -388,11 +390,11 @@ void LinearMPCController::computeCommands(
 
     if (k == 0) // First iteration
     {
-      ref_vel = (ref_pos - position) / mpc_controller_->TIME_STEP;
+      ref_vel = (ref_pos - position) / mpc_controller_->getTimeStep();
     }
     else // rest of the iteration
     {
-      ref_vel = (ref_pos - last_ref_pos) / mpc_controller_->TIME_STEP;
+      ref_vel = (ref_pos - last_ref_pos) / mpc_controller_->getTimeStep();
     }
     mpc_controller_->setReference(ref_pos, ref_vel, ref_acc, k);
 
@@ -425,7 +427,7 @@ void LinearMPCController::computeCommands(
   }
 
   Eigen::MatrixXd A1, B1; // system transition matrix
-  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->TIME_STEP);
+  mpc_controller_->getSystemModel(A1, B1, mpc_controller_->getTimeStep());
   Eigen::VectorXd x_current = mpc_controller_->X_0_; // Current state
   Eigen::Vector3d u_optimal; 
   bool valid_cmd = true;
@@ -508,30 +510,42 @@ void LinearMPCController::computeCommands(
 
   if (control_yaw_){
     double cmd_yaw = 0.0;
-    // double dt = 1.0/mpc_controller_->getControlSampFreq();
 
     // Calculate commanded yaw
-    int lookahead_idx = yaw_lookahead_dist_;
-
-    if (0 < ref_plan_mpc.size() - lookahead_idx - 1) 
+    if (yaw_lookahead_dist_ < ref_plan_mpc.size()) 
     {
+      // if lookahead point is not yet final pos
       Eigen::Vector2d dir_vec(
-        ref_plan_mpc[lookahead_idx](1) - position(1),
-        ref_plan_mpc[lookahead_idx](0) - position(0)
+        ref_plan_mpc[yaw_lookahead_dist_](1) - position(1),
+        ref_plan_mpc[yaw_lookahead_dist_](0) - position(0)
       );
       cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
     else {
-      Eigen::Vector2d dir_vec(
-        ref_plan_mpc.back()(1) - position(1),
-        ref_plan_mpc.back()(0) - position(0)
-      );
-      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
+      cmd_yaw = prev_cmd_yaw_;
+      // // if lookahead point is beyond final reference pos
+      // Eigen::Vector2d dir_vec(
+      //   ref_plan_mpc.back()(1) - position(1),
+      //   ref_plan_mpc.back()(0) - position(0)
+      // );
+      // cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
-    mpc_yaw(0) = cmd_yaw;
-    mpc_yaw(1) = NAN;
-  }
 
+    double cmd_dyaw = 0.0;
+    // Compute commanded yaw speed
+    if (std::isnan(prev_cmd_yaw_)){
+      // d_theta / d_t
+      double cmd_dyaw = (cmd_yaw - prev_cmd_yaw_) / mpc_controller_->getTimeStep();
+      
+      // Clamp dyaw to allowable value
+      cmd_dyaw = std::clamp(cmd_dyaw, -yawspeed_max_, yawspeed_max_);
+    }
+
+    mpc_yaw(0) = cmd_yaw;
+    mpc_yaw(1) = cmd_dyaw;
+
+    prev_cmd_yaw_ = cmd_yaw;
+  }
 }
 
 void LinearMPCController::setPlan(const nav_msgs::msg::Path & path)

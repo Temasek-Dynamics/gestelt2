@@ -50,8 +50,8 @@ class FakeSensor : public rclcpp::Node
 	    rclcpp::CallbackGroup::SharedPtr reentrant_cb_grp_;
 
         /* Publishers, subscribers, timers and services */
-        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_cloud_pub_; // Publisher of sensor point cloud
-        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sensor_cloud_global_pub_; // Publisher of sensor point cloud
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sensor_pub_; // Publisher of sensor point cloud
+        rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_global_pub_; // Publisher of sensor point cloud
 
         // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;               // Subscriber to odometry
 
@@ -74,11 +74,12 @@ class FakeSensor : public rclcpp::Node
 
         /* Data */
         pcl::PointCloud<pcl::PointXYZ>::Ptr fake_map_cloud_; // [global frame] Global point cloud map
-        pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_; //[global frame] Point cloud from fake laser
-        pcl::PointCloud<pcl::PointXYZ>::Ptr sensor_cloud_global_; //[Global frame] Point cloud from fake laser
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_sensor_; //[Sensor frame] Point cloud from fake laser
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_global_; //[Global frame] Point cloud from fake laser
             
         // sensor frame to global frame homogenous transformation matrix
         Eigen::Matrix4d global_to_sensor_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
+        Eigen::Matrix4d sensor_to_global_mat_{Eigen::Matrix4d::Identity(4, 4)}; 
 
         /* Voxel filter for downsampling*/
         std::shared_ptr<pcl::VoxelGrid<pcl::PointXYZ>> vox_grid_{nullptr};

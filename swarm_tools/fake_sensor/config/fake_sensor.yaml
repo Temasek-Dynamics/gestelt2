@@ -1,17 +1,8 @@
 /**: 
   ros__parameters:
-    # drone_id: 
-
-    # map_frame: 
-    # local_map_frame:
-    # sensor_frame: 
-
-    # pcd_map:
-      # filepath: 
-
     pcd_voxel_filter:
       # Enable voxel filter for downsampling points
-      enable: true
+      enable: false
       # [m] Size of voxels
       voxel_size: 0.1
 
@@ -21,7 +12,7 @@
       # [m] Cut-off range of laser lines
       sensor_range: 5.0
       # [m] Resolution of sensor
-      resolution: 0.1
+      resolution: 0.05
 
       # horizontal:
       #   # Number of horizontal laser lines 
@@ -45,5 +36,5 @@
         # Number of vertical laser lines 
         laser_line_num: 15
         # [degrees] vertical angle range
-        laser_range_dgr: 40.0
+        laser_range_dgr: 60.0
 

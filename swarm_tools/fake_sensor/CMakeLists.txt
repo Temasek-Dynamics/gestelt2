@@ -14,12 +14,14 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
 
 add_executable(fake_sensor_node 
   src/fake_sensor_node.cpp 
@@ -31,6 +33,7 @@ ament_target_dependencies(fake_sensor_node
   rclcpp
   tf2
   tf2_ros
+  tf2_eigen
   pcl_conversions
   sensor_msgs
   nav_msgs
@@ -41,6 +44,7 @@ target_include_directories(fake_sensor_node PUBLIC
 target_compile_features(fake_sensor_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_link_libraries(fake_sensor_node
   ${PCL_LIBRARIES}
+  Eigen3::Eigen
 )
 
 # Install config files

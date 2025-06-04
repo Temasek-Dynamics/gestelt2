@@ -448,7 +448,7 @@ void ControllerServer::computeControl()
     action_server_->terminate_current(result);
     return;
   } catch (gestelt_core::NoValidControl & e) {
-
+    RCLCPP_ERROR(this->get_logger(), "ControllerServer::computeControl(): gestelt_core::NoValidControl!");
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
 
     // onGoalExit();
@@ -588,24 +588,37 @@ void ControllerServer::computeAndPublishControl()
     // Only no valid control exception types are valid to attempt to have control patience, as
     // other types will not be resolved with more attempts
   } catch (gestelt_core::NoValidControl & e) {
-    if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
-      RCLCPP_WARN(this->get_logger(), "%s", e.what());
-      traj_sp.position = {(float) pose.pose.position.x , 
-                          (float) pose.pose.position.y, 
-                          (float) pose.pose.position.z};
-      traj_sp.velocity = {0.0, 0.0, 0.0};
-      traj_sp.acceleration = {0.0, 0.0, 0.0};
-      traj_sp.yaw = NAN;
-      traj_sp.yawspeed = NAN;
-      traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
-      if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
-        failure_tolerance_ != -1.0)
-      {
-        throw gestelt_core::PatienceExceeded("Controller patience exceeded");
-      }
-    } else {
-      throw gestelt_core::NoValidControl(e.what());
-    }
+    RCLCPP_ERROR(this->get_logger(), "ControllerServer::computeAndPublishControl(): gestelt_core::NoValidControl!");
+
+    RCLCPP_WARN(this->get_logger(), "%s", e.what());
+    traj_sp.position = {(float) pose.pose.position.x , 
+                        (float) pose.pose.position.y, 
+                        (float) pose.pose.position.z};
+    traj_sp.velocity = {0.0, 0.0, 0.0};
+    traj_sp.acceleration = {0.0, 0.0, 0.0};
+    traj_sp.yaw = NAN;
+    traj_sp.yawspeed = NAN;
+    traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+
+    // if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
+    //   RCLCPP_WARN(this->get_logger(), "%s", e.what());
+    //   traj_sp.position = {(float) pose.pose.position.x , 
+    //                       (float) pose.pose.position.y, 
+    //                       (float) pose.pose.position.z};
+    //   traj_sp.velocity = {0.0, 0.0, 0.0};
+    //   traj_sp.acceleration = {0.0, 0.0, 0.0};
+    //   traj_sp.yaw = NAN;
+    //   traj_sp.yawspeed = NAN;
+    //   traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+    //   if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
+    //     failure_tolerance_ != -1.0)
+    //   {
+    //     throw gestelt_core::PatienceExceeded("Controller patience exceeded");
+    //   }
+    // } else {
+    //   throw gestelt_core::NoValidControl(e.what());
+    // }
+
   }
 
   std::shared_ptr<Action::Feedback> feedback = std::make_shared<Action::Feedback>();

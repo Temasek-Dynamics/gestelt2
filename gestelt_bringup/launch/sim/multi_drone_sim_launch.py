@@ -169,6 +169,23 @@ def generate_launch_description():
         output="own_log",
     )
 
+    fake_map_publisher = Node(
+        package='fake_map',
+        executable='fake_map_publisher_node',
+        output='screen',
+        shell=False,
+        name='fake_map_publisher_node',
+        parameters=[
+            {'fake_map.pcd_filepath': os.path.join(
+                get_package_share_directory('gestelt_bringup'), 
+                'pcd_maps',
+                scenario.map + '.pcd'
+            )},
+            {'fake_map.frame_id': "world"},
+            {'fake_map.publishing_frequency': 0.5},
+        ],
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -183,6 +200,8 @@ def generate_launch_description():
     ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)
     ld.add_action(exit_event_handler)
+
+    ld.add_action(fake_map_publisher)
 
     # Generate nodes of SITL drone instances according to scenario
     for drone_id in range(scenario.num_agents):
@@ -240,7 +259,7 @@ def generate_launch_description():
                         executable = "static_transform_publisher",
                         output="own_log",
                         arguments = ["0.0", "0.0", "0.0", 
-                                     "0", "0", "0", "1",
+                                     "0.0", "0.0", "0.0", "1.0",
                                      base_link_frame, camera_frame],
                     ),
                     # Fake sensor node

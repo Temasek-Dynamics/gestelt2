@@ -33,7 +33,6 @@
 
 namespace pvaj_mpc
 {
-
 	/* QP formulation:
 		min 1/2* x^T H x + f^T x   subject to
 		b <= Ax <= b (Ax = b),  
@@ -722,9 +721,8 @@ namespace pvaj_mpc
 			u = mpc_.u_optimal.block<3,1>(segment * 3, 0);
 		}
 
-		int getPlanSampleInterval() const
-		{
-			return plan_samp_intv_;
+		double getTimeStep() const {
+			return TIME_STEP;
 		}
 
 		/* Setters */
@@ -812,7 +810,6 @@ namespace pvaj_mpc
 			}
 		}
 
-
 	public:
 		mpc_osqp_t mpc_; // MPC data
 		// int fps_;
@@ -857,9 +854,6 @@ namespace pvaj_mpc
 		Eigen::Vector3d u_max_{50.0, 50.0, 50.0};
 
 	}; // class MPCController
-
-
-
 
 } // namespace pvaj_mpc
 

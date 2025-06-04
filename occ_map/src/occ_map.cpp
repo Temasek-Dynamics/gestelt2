@@ -298,15 +298,19 @@ OccMap::on_activate(const rclcpp_lifecycle::State & /*state*/)
       map_frame_, global_frame_, tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(initial_transform_timeout_)));
 
-    global_to_map_mat_.block<3,3>(0,0) = Eigen::Quaterniond(
-      tf_res.transform.rotation.w,
-      tf_res.transform.rotation.x,
-      tf_res.transform.rotation.y,
-      tf_res.transform.rotation.z).toRotationMatrix();
-    global_to_map_mat_.block<3,1>(0,3) = Eigen::Vector3d(
-      tf_res.transform.translation.x,
-      tf_res.transform.translation.y,
-      tf_res.transform.translation.z);
+
+    global_to_map_mat_ = tf2::transformToEigen(
+      tf_res.transform).matrix().cast<double>();
+
+    // global_to_map_mat_.block<3,3>(0,0) = Eigen::Quaterniond(
+    //   tf_res.transform.rotation.w,
+    //   tf_res.transform.rotation.x,
+    //   tf_res.transform.rotation.y,
+    //   tf_res.transform.rotation.z).toRotationMatrix();
+    // global_to_map_mat_.block<3,1>(0,3) = Eigen::Vector3d(
+    //   tf_res.transform.translation.x,
+    //   tf_res.transform.translation.y,
+    //   tf_res.transform.translation.z);
 
     map_to_world_mat_ = global_to_map_mat_.inverse();
 
@@ -445,13 +449,13 @@ void OccMap::getParameters()
 void OccMap::updateLocalMap(){
   try {
     // map to base_link
-    auto tf_bl_to_map = tf_buffer_->lookupTransform(
+    auto tf_res = tf_buffer_->lookupTransform(
       map_frame_, base_link_frame_,
       tf2::TimePointZero,
       tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(1.0)));
 
     bl_to_map_mat_ = tf2::transformToEigen(
-      tf_bl_to_map.transform).matrix().cast<double>();
+      tf_res.transform).matrix().cast<double>();
   } 
   catch (const tf2::TransformException & ex) {
     logger_->logError(strFmt("Could not get transform from base link frame '%s' to map frame '%s': %s",
@@ -673,13 +677,13 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
   // Get camera to map frame TF
   try {
-    auto tf_cam_to_map = tf_buffer_->lookupTransform(
+    auto tf_res = tf_buffer_->lookupTransform(
       map_frame_, camera_frame_,
       msg->header.stamp,
       rclcpp::Duration::from_seconds(1.0));
 
       cam_to_map_mat_ = tf2::transformToEigen(
-        tf_cam_to_map.transform).matrix().cast<double>();
+        tf_res.transform).matrix().cast<double>();
   } 
   catch (const tf2::TransformException & ex) {
     logger_->logError(strFmt("Could not get transform from camera frame '%s' to map frame '%s': %s",

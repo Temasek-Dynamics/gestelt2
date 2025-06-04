@@ -186,23 +186,17 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	std::vector<double> vel = std::vector<double>(msg->velocity.begin(), msg->velocity.end());
 	std::vector<double> ang_vel = std::vector<double>(msg->angular_velocity.begin(), msg->angular_velocity.end());
 
-	auto pos_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
-	if (msg->pose_frame == px4_msgs::msg::VehicleOdometry::POSE_FRAME_NED 
-		|| msg->pose_frame == px4_msgs::msg::VehicleOdometry::POSE_FRAME_FRD){	// NED Earth-fixed frame or FRD world-fixed frame
-		pos_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
-	}
-	auto vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
-	if (msg->velocity_frame == px4_msgs::msg::VehicleOdometry::VELOCITY_FRAME_NED
-		|| msg->velocity_frame == px4_msgs::msg::VehicleOdometry::VELOCITY_FRAME_FRD){	// NED Earth-fixed frame or FRD world-fixed frame
-		vel_frame_tf = frame_transforms::StaticTF::NED_TO_ENU;
-	}
-
-	cur_pos_enu_ = transform_static_frame(
-		Eigen::Vector3d(pos.data()), pos_frame_tf);
+	cur_ori_enu_ = frame_transforms::px4_to_ros_orientation(
+		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q));
+	cur_pos_enu_ = 
+		frame_transforms::ned_to_enu_local_frame(Eigen::Vector3d(pos.data()));
+	cur_vel_enu_ = 
+		frame_transforms::ned_to_enu_local_frame(Eigen::Vector3d(vel.data()));
+	cur_ang_vel_enu_ = 
+		frame_transforms::ned_to_enu_local_frame(Eigen::Vector3d(ang_vel.data()));
 
 	if (UAV::is_in_state<Idle>())
 	{
-
 		logger_->logInfoThrottle(strFmt("Using current height %f as ground height", 
 										cur_pos_enu_(2)), 5.0);
 		// Set ground height as the height at which the UAV is resting on the ground
@@ -214,15 +208,6 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	// Correct for camera_link to base_link offset, since VIO is with 
 	// reference to camera link
 	cur_pos_enu_corr_(0) = cur_pos_enu_corr_(0) + 0.085;
-
-	cur_ori_enu_ = frame_transforms::px4_to_ros_orientation(
-		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q));
-
-	cur_vel_enu_ = transform_static_frame(
-		Eigen::Vector3d(vel.data()), vel_frame_tf);
-	cur_ang_vel_enu_ = transform_static_frame(
-		Eigen::Vector3d(ang_vel.data()), vel_frame_tf);
-
 
 	nav_msgs::msg::Odometry odom_msg;
 
@@ -669,21 +654,9 @@ void TrajectoryServer::publishTrajectorySetpoint(
 {
 	px4_msgs::msg::TrajectorySetpoint msg{};
 
-	// Convert from ENU to NED
-	// Eigen::Vector3d pos_ned = frame_transforms::aircraft_to_baselink_body_frame(
-	// 	frame_transforms::enu_to_ned_local_frame(pos));
-	// Eigen::Vector3d vel_ned = frame_transforms::aircraft_to_baselink_body_frame(
-	// 	frame_transforms::enu_to_ned_local_frame(vel));
-	// Eigen::Vector3d acc_ned = frame_transforms::aircraft_to_baselink_body_frame(
-	// 	frame_transforms::enu_to_ned_local_frame(acc));
-
-	Eigen::Vector3d pos_ned = pos;
-	Eigen::Vector3d vel_ned = vel;
-	Eigen::Vector3d acc_ned = acc;
-
-	pos_ned = frame_transforms::enu_to_ned_local_frame(pos_ned);
-	vel_ned = frame_transforms::enu_to_ned_local_frame(vel_ned);
-	acc_ned = frame_transforms::enu_to_ned_local_frame(acc_ned);
+	auto pos_ned = frame_transforms::enu_to_ned_local_frame(pos);
+	auto vel_ned = frame_transforms::enu_to_ned_local_frame(vel);
+	auto acc_ned = frame_transforms::enu_to_ned_local_frame(acc);
 
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000; // In microseconds
 	msg.position = {(float) pos_ned(0), (float) pos_ned(1), (float) pos_ned(2)};
@@ -691,17 +664,30 @@ void TrajectoryServer::publishTrajectorySetpoint(
 	msg.acceleration = {(float) acc_ned(0), (float) acc_ned(1), (float) acc_ned(2)};
 
 	// Correct YAW to transfrom from ENU to NED frame
-	float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
+	// float yaw_corr = (float) -yaw_yawrate(0) + M_PI/2;
 
-	yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
-	yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
+	// yaw_corr = yaw_corr >= M_PI ? yaw_corr - 2*M_PI : yaw_corr;
+	// yaw_corr = yaw_corr <= -M_PI ? yaw_corr + 2*M_PI : yaw_corr;
 
-	// float32 yaw # euler angle of desired attitude in radians -PI..+PI
-	// float32 yawspeed # angular velocity around NED frame z-axis in radians/second
+	double yaw_ned = NAN, yawspeed_ned = NAN;
+	// Transform yaw from ENU to NED frame
+	if (!std::isnan(yaw_yawrate(0))){
+		auto q_enu = frame_transforms::utils::quaternion::quaternion_from_euler(
+			0.0, 0.0, yaw_yawrate(0));
+		auto q_ned = frame_transforms::ros_to_px4_orientation(q_enu);
+		yaw_ned = frame_transforms::utils::quaternion::quaternion_get_yaw(q_ned);
+	}
+	// Transform yaw speed from ENU to NED frame
+	if (!std::isnan(yaw_yawrate(1))){
+		yawspeed_ned = -yaw_yawrate(1);
+	}
 
-	msg.yaw = yaw_corr; // [-PI:PI]
-	msg.yawspeed = NAN; // angular velocity around NED frame z-axis in radians/second
-	// msg.yawspeed = (float) yaw_yawrate(1); // angular velocity around NED frame z-axis in radians/second
+	// logger_->logWarn(strFmt("yaw(%0.2f -> %0.2f), dyaw(%0.2f -> %0.2f)", 
+	// 	yaw_yawrate(0), yaw_ned * (180.0/3.14), 
+	// 	yaw_yawrate(1), yawspeed_ned * (180.0/3.14)));
+
+	msg.yaw = yaw_ned; // [-PI:PI]
+	msg.yawspeed = yawspeed_ned; // angular velocity around NED frame z-axis in radians/second
 
 	trajectory_setpoint_pub_->publish(msg);
 }

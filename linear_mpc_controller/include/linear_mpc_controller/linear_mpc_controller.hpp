@@ -192,7 +192,7 @@
        }
      }
      return lowest_it;
-   }
+  }
    
    // /**
    //  * @brief Callback executed when a parameter change is detected
@@ -212,10 +212,14 @@
    double max_robot_pose_search_dist_{1.0};
    bool control_yaw_{true};
    int yaw_lookahead_dist_{5};
+
+   double yawspeed_max_{1.57}; // [Radians] Maximum allowable yaw speed
+
    // tf2::Duration transform_tolerance_;
  
    // Data
    nav_msgs::msg::Path global_plan_; // Global plan in global frame
+   double prev_cmd_yaw_{NAN};
  
    // Publishers
    std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> 
