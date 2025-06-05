@@ -142,13 +142,13 @@ sudo ldconfig /usr/local/lib/
 git clone https://github.com/PX4/PX4-Autopilot.git --recursive 
 cd ~/PX4-Autopilot
 git checkout 3d36c8519de83afd7b4617c3496d0304fb17cc28 
-# Clean just in case
-make distclean
+
 # Install system dependencies 
 bash ./Tools/setup/ubuntu.sh 
 # Make SITL target for simulation
 # NOTE: Enter 'u' to update all submodules when prompted
 make px4_sitl
+# IF you fail to build, run 'make distclean'
 # Make x500 model, and check if it works successfully
 make px4_sitl gz_x500
 ```
@@ -157,6 +157,9 @@ make px4_sitl gz_x500
 ```bash
 # Assuming your workspace is named as follows
 cd ~/gestelt_ws/ && colcon build --symlink-install
+
+# Add to .bashrc 
+
 ```
 
 # Quick start
