@@ -69,7 +69,7 @@ The `MissionManager` class is located at [gestelt_commander/gestelt_commander/mi
 export ROS_DISTRO="humble"
 export RCUTILS_LOGGING_USE_STDOUT=1
 export RCUTILS_LOGGING_BUFFERED_STREAM=0
-exoirt RCUTILS_COLORIZED_OUTPUT=1
+export RCUTILS_COLORIZED_OUTPUT=1
 
 # Install Package dependencies
 sudo apt-get update && sudo apt-get install --no-install-recommends -y \
@@ -103,8 +103,8 @@ vcs import < thirdparty.repos --recursive --debug
 mkdir -p ~/libraries/
 cd ~/libraries
 git clone https://github.com/osqp/osqp.git \
-&& git checkout e8fe4de264d167a67b2e704a2c03807c97af2080 \
 && cd osqp \
+&& git checkout e8fe4de264d167a67b2e704a2c03807c97af2080 \
 && mkdir build \
 && cd build \
 && sudo cmake -G "Unix Makefiles" .. \
@@ -112,8 +112,8 @@ git clone https://github.com/osqp/osqp.git \
 
 cd ~/libraries
 git clone https://github.com/robotology/osqp-eigen.git \
-&& git checkout e4cb498faad37f03579f81f10c941f334a2a282f \
 && cd osqp-eigen \
+&& git checkout e4cb498faad37f03579f81f10c941f334a2a282f \
 && mkdir build \
 && cd build \
 && cmake ../ \
