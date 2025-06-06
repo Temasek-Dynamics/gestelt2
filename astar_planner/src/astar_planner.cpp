@@ -185,7 +185,7 @@ AStarPlanner::makePlan(
 
   lock.unlock();
 
-  RCLCPP_INFO(logger_, "Size of path: %d", path_len);
+  // RCLCPP_INFO(logger_, "Size of path: %d", path_len);
 
   // Obtain planned path in map frame
   auto map_planned_path = planner_->getPath();

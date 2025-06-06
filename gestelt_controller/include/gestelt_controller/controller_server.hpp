@@ -163,7 +163,7 @@ protected:
   void setPlannerPath(const nav_msgs::msg::Path & path);
 
   /**
-   * @brief Calculates velocity and publishes to intermediate_cmd topic
+   * @brief Calculates velocity and publishes to intmd_cmd topic
    */
   void computeAndPublishControl();
 

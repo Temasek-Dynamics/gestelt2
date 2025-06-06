@@ -41,7 +41,7 @@ def generate_launch_description():
         "/received_global_plan",
         "/mpc_ref_path",
         "/mpc_traj",
-        "/intermediate_cmd",
+        "/intmd_cmd",
 
         # Transformations
         "/tf",

@@ -157,7 +157,9 @@ class MissionManager(Node):
             gbl_path = navigator.getPath(PoseStamped(), self.point_goal_pose, 
                 planner_id='GridBased', use_start=False)
             # Request for controller to follow global path
-            navigator.followPath(gbl_path)
+            navigator.followPath(gbl_path, 
+                                 controller_id='FollowPath', 
+                                 goal_checker_id='goal_checker')
 
             if navigator.isTaskComplete(): # timeout of 0.1 s
                 self.get_logger().info(f"Navigation task complete! Disabling planning and controls!")

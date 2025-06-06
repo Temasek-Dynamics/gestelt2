@@ -119,7 +119,7 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         arguments=['-d', rviz_config_file],
-        output='screen',
+        output='own_log',
         parameters=[{'use_sim_time': use_sim_time}],
     )
     exit_event_handler = RegisterEventHandler(
@@ -195,7 +195,7 @@ def generate_launch_description():
 
     ld.add_action(declare_rviz_config_file_cmd)
 
-    ld.add_action(start_gazebo_cmd)
+    # ld.add_action(start_gazebo_cmd)
     ld.add_action(ros_gz_bridge_action)
     ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)
@@ -290,7 +290,7 @@ def generate_launch_description():
                         name=['px4_sitl_', str(drone_id)],
                         cmd=[
                             # Environment variables
-                            'PX4_GZ_STANDALONE=1',
+                            # 'PX4_GZ_STANDALONE=1',
                             'PX4_SYS_AUTOSTART=4001',
                             'PX4_GZ_WORLD=default',
                             # 'PX4_SIM_MODEL=gz_x500_depth',

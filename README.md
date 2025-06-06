@@ -8,6 +8,20 @@ The architecture below illustrates the high-level architecture of Gestelt. Commu
 
 The sections below go into more detail about each module and links are provided to their inner workings.
 
+<!-- ## How does sending goals translate into plans and commands?
+- Planner Server
+    - Subscribes to 'goal' topic
+    - Compute and publish global plan on 'plan' topic
+
+- Controller Server
+    - Subscribes to 'plan' topic
+    - Compute commands and publish on 'intmd_cmd' topic
+
+- Trajectory Server
+    - Subscribes to 'intmd_cmd' topic
+    - Performs ENU to NED conversion on `intmd_cmd` and correct for initial ground height
+    - Sends 'trajectory_setpoint topic to PX4 Autopilot -->
+
 ## PlannerServer
 Plugin-based server that generates a global plan.   
 

@@ -98,10 +98,6 @@ void LinearMPCController::configure(
   // MPC
   pvaj_mpc::MPCControllerParams mpc_params;
 
-  declare_parameter_if_not_declared(node, name + ".mpc.plan_sample_interval", rclcpp::ParameterValue(1));
-  node->get_parameter(name + ".mpc.plan_sample_interval", mpc_params.plan_samp_intv);
-
-
   declare_parameter_if_not_declared(node, name + ".mpc.horizon", rclcpp::ParameterValue(15));
   node->get_parameter(name + ".mpc.horizon", mpc_params.MPC_HORIZON);
   declare_parameter_if_not_declared(node, name + ".mpc.time_step", rclcpp::ParameterValue(0.1));
@@ -243,6 +239,8 @@ void LinearMPCController::computeCommands(
   std::vector<Eigen::Vector3d>& mpc_pred_u,
   Eigen::Vector2d& mpc_yaw)
 {
+  // Reset controller data from previous runs (if any)
+  mpc_controller_->reset();
 
   // RCLCPP_INFO(logger_, "[MPC] computeCommands. Position (%0.2f, %0.2f, %0.2f) Velocity (%0.2f, %0.2f, %0.2f)", 
   //   position(0), position(1), position(2), velocity(0), velocity(1), velocity(2));
@@ -296,8 +294,9 @@ void LinearMPCController::computeCommands(
     = sfc_gen_->getPolyVec();
 
   sfc_pub_->publish(sfc_gen_->toSFCMsg(occ_map_->getMapFrameID()));
-  // RCLCPP_INFO(logger_, "[SFC] Number of polyhedrons: %ld", 
-  //   sfc_polyhedrons.size());
+
+  RCLCPP_INFO(logger_, "[SFC] Generated SFC with %ld polyhedrons", 
+    sfc_polyhedrons.size());
 
   /**
    * Generate MPC controls
@@ -557,13 +556,13 @@ nav_msgs::msg::Path LinearMPCController::transformPlanFromGlobalToMap(
   const geometry_msgs::msg::PoseStamped & pose)
 {
   if (global_plan_.poses.empty()) {
-    throw gestelt_core::ControllerException("Received plan with zero length");
+    throw gestelt_core::InvalidPath("Received plan with zero length");
   }
 
   // let's get the pose of the robot in the frame of the plan
   geometry_msgs::msg::PoseStamped robot_pose;
   if (!occ_map_->transformPoseToTargetFrame(global_plan_.header.frame_id, pose, robot_pose)) {
-    throw gestelt_core::ControllerException("Unable to transform robot pose into global plan's frame");
+    throw gestelt_core::ControllerTFError("Unable to transform robot pose into global plan's frame");
   }
 
   // We'll discard points on the plan that are outside the local costmap
@@ -617,7 +616,7 @@ nav_msgs::msg::Path LinearMPCController::transformPlanFromGlobalToMap(
   global_path_pub_->publish(transformed_plan);
 
   if (transformed_plan.poses.empty()) {
-    throw gestelt_core::ControllerException("Resulting transformed plan has 0 poses in it.");
+    throw gestelt_core::ControllerTFError("Resulting transformed plan has 0 poses in it.");
   }
 
   return transformed_plan;

@@ -200,7 +200,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
     std::bind(&ControllerServer::odometrySubCB, this, _1));
 
   cmd_pub_ = node->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
-    "intermediate_cmd", rclcpp::SensorDataQoS());
+    "intmd_cmd", rclcpp::SensorDataQoS());
 
   double action_server_result_timeout;
   get_parameter("action_server_result_timeout", action_server_result_timeout);
@@ -215,7 +215,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
       std::bind(&ControllerServer::computeControl, this),
       nullptr,
       std::chrono::milliseconds(500),
-      true);
+      false);
 
   } catch (const std::runtime_error & e) {
     RCLCPP_ERROR(get_logger(), "Error creating action server! %s", e.what());
@@ -501,14 +501,13 @@ void ControllerServer::computeControl()
     return;
   }
 
-  RCLCPP_DEBUG(get_logger(), "Controller succeeded, setting result");
+  RCLCPP_INFO(get_logger(), "Controller succeeded, setting result");
 
   onGoalExit();
 
   // TODO(orduno) #861 Handle a pending preemption and set controller name
   action_server_->succeeded_current();
 }
-
 
 void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
 {

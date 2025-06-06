@@ -141,7 +141,7 @@ TrajectoryServer::TrajectoryServer()
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	lin_mpc_cmd_sub_ = this->create_subscription<px4_msgs::msg::TrajectorySetpoint>(
-		"intermediate_cmd", rclcpp::SensorDataQoS(),
+		"intmd_cmd", rclcpp::SensorDataQoS(),
 		std::bind(&TrajectoryServer::intmdCmdSubCB, this, _1), fcu_sub_opt);
 
 	global_uav_cmd_sub_ = this->create_subscription<gestelt_interfaces::msg::AllUAVCommand>(

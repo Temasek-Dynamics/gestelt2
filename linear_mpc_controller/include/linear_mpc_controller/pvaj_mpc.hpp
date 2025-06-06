@@ -168,6 +168,15 @@ namespace pvaj_mpc
 			planes_.resize(MPC_HORIZON);
 		}
 
+		void reset()
+		{
+			setProblem();
+
+			X_0_.resize(mpc_.M.cols(), 1);
+			X_r_.resize(mpc_.M.rows(), 1);
+			planes_.resize(MPC_HORIZON);
+		}
+
 		/**
 		 * @brief Initialize parameteres for MPC problem
 		 * 

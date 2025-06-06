@@ -67,7 +67,7 @@ The State Trajectory Loop loop handles the transition between different states. 
     - Subscribe to vehicle odometry from FCU.
 - `~/fmu/out/vehicle_status` <nav_msgs::msg::VehicleStatus>
     - Subscribe to vehicle status from FCU. Used to check vehicle mode (offboard, landing etc.) and arming state.
-- `intermediate_cmd` <px4_msgs::msg::TrajectorySetpoint>
+- `intmd_cmd` <px4_msgs::msg::TrajectorySetpoint>
     - Control input command sent by Controller Server. 
 - `\global_uav_command` <gestelt_interfaces::msg::AllUAVCommand>
     - Global topic used to send state transition commands to all drones

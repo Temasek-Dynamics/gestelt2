@@ -289,7 +289,7 @@ protected:
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr plan_publisher_;
 
   // Subscribers to the path
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_; // Goal subscriber
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_; // Subscriber to goal
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_; // Point goal subscriber
 
   // Service to determine if the path is valid
