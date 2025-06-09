@@ -125,20 +125,6 @@ def generate_launch_description():
         shell=True
     )
 
-    # # Send single test goal
-    # mission_node = Node(
-    #     package='gestelt_commander',
-    #     # executable='test_take_off_goal',
-    #     executable='test_planning',
-    #     output='screen',
-    #     emulate_tty=False,
-    #     shell=True,
-    #     parameters = [
-    #         {'scenario': scenario.name},
-    #         {'init_delay': 1},
-    #     ]
-    # )
-
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -152,8 +138,6 @@ def generate_launch_description():
 
     ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)
-
-    # ld.add_action(mission_node)
 
     drone_id = 0
     ns = "d" + str(drone_id)
