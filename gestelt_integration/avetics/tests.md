@@ -1,5 +1,50 @@
 # tests
 
+# Test Static planning (9/6/25)
+Goals: 
+    - Test planning around obstacles without the drone taking off i.e. handheld planning tests
+
+```bash
+#####
+# Drone
+#####
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
+
+#####
+# GCS
+#####
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gcs_debug.sh
+```
+
+
+# Test Planning and Yaw, along with obstacle avoidance (9/6/25)
+
+Goals:
+    - Safety pilot to 
+        - Try kill switch (Emphasize that switch needs to be held, not just toggled)
+        - Try switching between modes
+        - Understand that throttle is centered (and not at it's lowest in default state)
+        - familiarize flying in position mode
+    - Test point goal 
+    - Test point goal with obstacles
+
+```bash
+#####
+# Drone
+#####
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
+
+#####
+# GCS
+#####
+~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gcs_startup.sh
+```
+
+Result:
+1. Yaw is too aggressive
+2. Drone plans too close to obstacle
+
+
 # Test Obstacle Avoidance (3/6/25)
 
 Goals:

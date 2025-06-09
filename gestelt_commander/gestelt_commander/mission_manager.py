@@ -156,13 +156,16 @@ class MissionManager(Node):
             # sanity check a valid path exists
             gbl_path = navigator.getPath(PoseStamped(), self.point_goal_pose, 
                 planner_id='GridBased', use_start=False)
+            if gbl_path == None:
+                print("Global path planning failed, not sending reference plan to controller")
+                return
             # Request for controller to follow global path
             navigator.followPath(gbl_path, 
                                  controller_id='FollowPath', 
                                  goal_checker_id='goal_checker')
 
             if navigator.isTaskComplete(): # timeout of 0.1 s
-                self.get_logger().info(f"Navigation task complete! Disabling planning and controls!")
+                self.get_logger().info(f"Navigation task complete! Disabling planning and control loop!")
                 self.enable_planning = False
 
     def cmdAllDronesPubGlobal(self, command, req_state=None, value=0.0, mode=0):
