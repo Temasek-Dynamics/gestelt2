@@ -1,8 +1,0 @@
-source;share/gestelt_core/hook/cmake_prefix_path.ps1
-source;share/gestelt_core/hook/cmake_prefix_path.dsv
-source;share/gestelt_core/hook/cmake_prefix_path.sh
-source;share/gestelt_core/local_setup.bash
-source;share/gestelt_core/local_setup.dsv
-source;share/gestelt_core/local_setup.ps1
-source;share/gestelt_core/local_setup.sh
-source;share/gestelt_core/local_setup.zsh

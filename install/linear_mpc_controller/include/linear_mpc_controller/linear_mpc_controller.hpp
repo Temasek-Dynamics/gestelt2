@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/linear_mpc_controller/include/linear_mpc_controller/linear_mpc_controller.hpp

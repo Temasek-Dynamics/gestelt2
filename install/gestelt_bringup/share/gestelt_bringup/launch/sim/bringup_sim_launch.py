@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/gestelt_bringup/launch/sim/bringup_sim_launch.py

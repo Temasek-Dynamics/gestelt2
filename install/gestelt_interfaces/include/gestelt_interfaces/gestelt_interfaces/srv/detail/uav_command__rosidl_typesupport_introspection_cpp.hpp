@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_interfaces/rosidl_typesupport_introspection_cpp/gestelt_interfaces/srv/detail/uav_command__rosidl_typesupport_introspection_cpp.hpp

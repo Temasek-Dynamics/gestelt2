@@ -10,6 +10,7 @@ Panels:
         - /TF1/Tree1
         - /WorldFrame1
         - //point_cloud/downsample1/Topic1
+        - //occ_map1
         - /controller1/mpc_traj1/Topic1
         - /SFC1/Topic1
       Splitter Ratio: 0.6205882430076599
@@ -224,7 +225,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /occ_map
+        Value: /local_occ_map/occ_map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -531,10 +532,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.30979597568511963
+      Pitch: 1.5197956562042236
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 4.902372360229492
+      Yaw: 4.73737096786499
     Saved: ~
 Window Geometry:
   Displays:
@@ -554,5 +555,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 925
-  X: 70
+  X: 995
   Y: 27

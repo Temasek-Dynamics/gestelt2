@@ -1,1 +1,0 @@
-astar_planner:fake_map:fake_sensor:gestelt_commander:gestelt_controller:gestelt_planner:launch_ros:linear_mpc_controller:nav2_common:ros_gz_bridge:trajectory_server

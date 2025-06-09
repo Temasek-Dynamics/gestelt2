@@ -1,1 +1,0 @@
-/home/nvidia/gestelt_ws/src/gestelt2/gestelt_planner/include/gestelt_planner/planner_server.hpp
