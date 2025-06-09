@@ -1,9 +1,24 @@
 # Avetics Integration
 
-## Installing dependencies
+# Hardware on Avetics drone
+- Onboard computer: Nvidia Orin NX
+- Flight Controller Unit:
+- Network adaptor: Viumesh
+- VIO: Vilota VK180Pro (forward facing) and VK180 (Backward facing)
+
+# Authentication
+
+On the drone
+```bash
+User: nvidia
+pass: nvidia
+```
+
+# Installing dependencies
 - Follow README.md at top directory
 
 ## Additional dependencies
+These additional dependencies are for the vilota bridge
 ```bash
 # opencv library dependency version mismatch https://github.com/IntelRealSense/realsense-ros/issues/3203 
 sudo apt install libopencv-dev=4.5.4+dfsg-9ubuntu4
@@ -16,7 +31,7 @@ pip install pycapnp==1.3.0 # importing doesn't seem to work well for 2.0.0
 pip3 install "numpy<2.0"
 ```
 
-## Clone repos
+## Clone repos for vilot bridge and depth_map_to_pcl conversion
 ```bash
 # Vilota (ecal <-> ROS2 DDS) depth map bridge
 https://bitbucket.org/nusuav/vilota_bridge/src/master/
@@ -24,16 +39,11 @@ https://bitbucket.org/nusuav/vilota_bridge/src/master/
 https://bitbucket.org/nusuav/depth2pcl/src/master/
 ```
 
-## Hardware
-- Onboard computer: Nvidia Orin NX
-- Flight Controller Unit:
-- Network adaptor: Viumesh
-- VIO: Vilota VK180Pro (forward facing) and VK180 (Backward facing)
 
-## Authentication
-User: nvidia, pass: nvidia
 
-## Start up vilota VIO
+# Vilota VIO 
+
+## Running the VIO bridge alone
 ```bash
 ros2 run vision vio_bridge_px4
 # 1 (VK180Pro)
@@ -41,13 +51,19 @@ ros2 run vision vio_bridge_px4
 # 0 -10 0 (Roll, Pitch, Yaw)
 ```
 
+## Access GUI
+
 To access Vilota camera settings via browser-based GUI:
 - Vilota IP (VK180Pro): 10.42.0.64
 - Vilota IP (VK180): 10.42.0.65
 
+## Viewing topics as received by PX4 FCU
+
+1. Open QGroundControl > Analyze Tools > MavLINK Console
+
 To debug on nuttx shell use `listener vehicle_visual_odometry`
 
-### SSH into vilota computer
+## SSH into vilota computer
 ```bash
 ssh compulab@10.42.0.64 
 # password is compulab
@@ -66,26 +82,21 @@ ssh compulab@10.42.0.64
         }
 ```
 
-## Zenoh
-1. Using the standalone plugin from https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds
-```bash
-echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" | sudo tee -a /etc/apt/sources.list > /dev/null
-sudo apt update
-sudo apt install zenoh-bridge-dds
+# Networking
 
-# On drone
-zenoh-bridge-ros2dds -c /home/nvidia/gestelt_ws/src/gestelt2/gestelt_network/zenoh_d0_cfg.json5
-
-# On host
-zenoh-bridge-ros2dds -c /home/john/gestelt_ws/src/gestelt_network/zenoh_host_cfg.json5
-```
-
-## Networking
-
-### Accesing router
+## Accesing router
 User: admin, pass: admin
 
-### Network manager settings
+## IP Addresses
+```
+GCS: 192.168.17.100
+GCS-Viumesh: 192.168.17.1
+
+Drone0-Viumesh: 192.168.17.11
+Drone0: 192.168.17.10
+```
+
+## Network manager settings
 
 For GCS computer:
 
@@ -96,81 +107,53 @@ For Drone 0:
 
 <img src="images/drone0_network_settings.png" alt="Gestelt Architecture" style="width: 500px;"/>
 
-GCS: 192.168.17.100
-GCS-Viumesh: 192.168.17.1
 
-Drone0-Viumesh: 192.168.17.11
-Drone0: 192.168.17.10
 
-### [DOES NOT WORK] Set up a network bridge on the GCS computer
-A network bridge would allow us to forward packets between network interfaces. In this case, we want to have internet access on the drones and therefore we would forward packets within the wireless interface (e.g. wlp5s0) on the GCS and the wired interface (e.g. enp2s0) connected to the GCS viumesh.
+# Uinsg Zenoh to namespace
+
+## Setup
+
+1. Install the standalone plugin from https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds
 
 ```bash
-# Use ip link to get the name of the network interfaces you wish to connect
-# In this example, we use the wired interface 'enp2s0' and the wireless interface 'wlp5s0'
-ip link
-# Create bridge named br0
-sudo ip link add br0 type bridge
-# Show bridge details
-ip -d link show br0
-# Show bridge details in a pretty JSON format (which is a good way to get bridge key-value pairs):
-ip -j -p -d link show br0
-
-# Enable 4addr on wireless interface
-sudo iw dev wlp5s0 set 4addr on
-
-# Add interfaces to the bridge
-sudo ip link set enp2s0 master br0
-sudo ip link set wlp5s0 master br0
-
-
-# Bring down bridge
-sudo ip link set br0 down
-# Delete bridge
-sudo ip link delete br0 type bridge
+echo "deb [trusted=yes] https://download.eclipse.org/zenoh/debian-repo/ /" | sudo tee -a /etc/apt/sources.list > /dev/null
+sudo apt update
+sudo apt install zenoh-bridge-ros2dds
 ```
 
-References:
-1. https://developers.redhat.com/articles/2022/04/06/introduction-linux-bridging-commands-and-features#spanning_tree_protocol
-2. https://serverfault.com/questions/152363/bridging-wlan0-to-eth0
-
-### [DOES NOT WORK] Set up NAT on GCS for internet access on drones
+2. Ensure that LOCALHOST_ONLY is enabled on all machines
 ```bash
-# Use ip link to get the name of the network interfaces you wish to connect
-# In this example, we use the wired interface 'enp2s0' and the wireless interface 'wlp5s0'
-ip link
-
-echo 1 > /proc/sys/net/ipv4/ip_forward
-
-# Refer to https://linux.die.net/man/8/iptables for flag usage
-iptables -t nat -A POSTROUTING -o wlp5s0 -j MASQUERADE
-
-# Assign IP address to yourself:
-ifconfig enp2s0 192.168.17.100 netmask 255.255.255.0 up
-
-# Update /etc/dhcp/dhcpd.conf
-vim /etc/dhcp/dhcpd.conf
-subnet 192.168.17.100 netmask 255.255.255.0 {
-    range 192.168.17.0 192.168.17.120;
-    option routers 192.168.17.100;
-    option domain-name-servers 127.0.0.53;
-}
-
-# Start dhcp server
-sudo /etc/init.d/isc-dhcp-server start
-
-# Check status of dhcp server
-sudo systemctl status isc-dhcp-server
-
-# Check Iptable rules
-sudo iptables --table nat --list
+# Add to ~/.bashrc
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 ```
 
-References:
-1. https://serverfault.com/questions/152363/bridging-wlan0-to-eth0
-2. https://medium.com/@sydasif78/setting-up-a-dhcp-server-on-ubuntu-a-guide-for-network-engineer-d620c5d7afb2
+3. Get IP Addresses of all machines
+```bash
+# Drone 0: 192.168.17.10
+# GCS: 192.168.17.100
+```
 
-## Known issues
+4. Configure Zenoh
+```bash
+
+```
+
+## Running Zenoh
+```bash
+# On drone
+zenoh-bridge-ros2dds -c /home/john/gestelt_ws/src/gestelt2/gestelt_integration/zenoh/zenoh_d0_cfg.json5
+# On ground control station
+zenoh-bridge-ros2dds -c /home/john/gestelt_ws/src/gestelt2/gestelt_integration/zenoh/zenoh_gcs_cfg.json5
+```
+
+
+# Micro-XRCE Client
+In order for ROS2 <-> Micro-XRCE DDS communication to take place, there are 2 nodes required, the Micro-XRCE Client and the MicroXRCE Agent. More information can be found [here](https://github.com/eProsima/Micro-XRCE-DDS-Agent).
+
+A Micro-XRCE Client is running as an application in the PX4 Flight Controller Unit and the script for starting the `uxrce_dds_client` is located in the FCU filesystem path at `/etc/init.d/rc.serial`. 
+
+
+# Known issues
 
 1. Transmitter must be switched on before the FCU is switched on. Failing which, the transmitter is not able to change flight modes on the FCU.s
 
