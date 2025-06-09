@@ -1,0 +1,34 @@
+[0.117s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper -- -j8 -l8
+[0.261s] [100%] Built target logger_wrapper
+[0.294s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper -- -j8 -l8
+[0.316s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper
+[0.345s] -- Install configuration: "Release"
+[0.347s] -- Execute custom install script
+[0.350s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/definitions.hpp
+[0.353s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/logger_wrapper.hpp
+[0.353s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/timer.hpp
+[0.353s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/visibility_control.h
+[0.354s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/library_path.sh
+[0.354s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/library_path.dsv
+[0.355s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/ament_index/resource_index/package_run_dependencies/logger_wrapper
+[0.357s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/ament_index/resource_index/parent_prefix_path/logger_wrapper
+[0.357s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/ament_prefix_path.sh
+[0.361s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/ament_prefix_path.dsv
+[0.362s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/path.sh
+[0.372s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/path.dsv
+[0.372s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.bash
+[0.373s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.sh
+[0.373s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.zsh
+[0.373s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.dsv
+[0.373s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/package.dsv
+[0.421s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/ament_index/resource_index/packages/logger_wrapper
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/ament_cmake_export_libraries-extras.cmake
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/ament_cmake_export_targets-extras.cmake
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/logger_wrapperConfig.cmake
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/logger_wrapperConfig-version.cmake
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/package.xml
+[0.423s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib/liblogger_wrapper.so
+[0.428s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/export_logger_wrapperExport.cmake
+[0.428s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/export_logger_wrapperExport-release.cmake
+[0.440s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/logger_wrapper

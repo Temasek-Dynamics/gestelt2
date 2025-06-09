@@ -152,11 +152,11 @@ std::vector<Eigen::Vector3i> AStar::getNeighbours(const Eigen::Vector3i& idx)
                 if (!occ_map_->inGlobalMapIdx(nb_idx)){
                     continue;
                 }
-                
 
+                auto nb_map_pos = occ_map_->idxToPos(nb_idx);
+                
                 // Check if position is within a given inflation radius of an obstacle
-                if (occ_map_->withinObstacleInflation(
-                        occ_map_->idxToPos(nb_idx), occ_map_->getInflation())){
+                if (occ_map_->withinObstacleInflation(nb_map_pos)){
                     continue;
                 }
 

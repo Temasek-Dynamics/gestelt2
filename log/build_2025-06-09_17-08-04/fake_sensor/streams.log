@@ -1,0 +1,101 @@
+[0.115s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor -- -j8 -l8
+[0.512s] -- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.741s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.935s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[1.069s] -- FLANN found (include: /usr/include, lib: /usr/lib/aarch64-linux-gnu/libflann_cpp.so)
+[2.243s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.257s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/aarch64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.259s] [0m** WARNING ** io features related to pcap will be disabled[0m
+[2.590s] -- Eigen found (include: /usr/include/eigen3, version: 3.4.0)
+[2.604s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[2.618s] -- OpenNI2 found (version: 2.2.0.33, include: /usr/include/openni2, lib: /usr/lib/aarch64-linux-gnu/libOpenNI2.so;libusb::libusb)
+[2.946s] -- Found Qhull version 8.0.2
+[3.292s] -- OpenNI found (version: 1.5.4.0, include: /usr/include/ni, lib: /usr/lib/libOpenNI.so;libusb::libusb)
+[3.608s] -- looking for PCL_COMMON
+[3.609s] -- looking for PCL_KDTREE
+[3.610s] -- looking for PCL_OCTREE
+[3.610s] -- looking for PCL_SEARCH
+[3.611s] -- looking for PCL_SAMPLE_CONSENSUS
+[3.612s] -- looking for PCL_FILTERS
+[3.613s] -- looking for PCL_2D
+[3.613s] -- looking for PCL_GEOMETRY
+[3.614s] -- looking for PCL_IO
+[3.615s] -- looking for PCL_FEATURES
+[3.616s] -- looking for PCL_ML
+[3.616s] -- looking for PCL_SEGMENTATION
+[3.617s] -- looking for PCL_VISUALIZATION
+[3.618s] -- looking for PCL_SURFACE
+[3.619s] -- looking for PCL_REGISTRATION
+[3.620s] -- looking for PCL_KEYPOINTS
+[3.621s] -- looking for PCL_TRACKING
+[3.621s] -- looking for PCL_RECOGNITION
+[3.624s] -- looking for PCL_STEREO
+[3.624s] -- looking for PCL_APPS
+[3.626s] -- looking for PCL_IN_HAND_SCANNER
+[3.627s] -- looking for PCL_MODELER
+[3.627s] -- looking for PCL_POINT_CLOUD_EDITOR
+[3.628s] -- looking for PCL_OUTOFCORE
+[3.629s] -- looking for PCL_PEOPLE
+[3.632s] -- Found pcl_conversions: 2.4.5 (/opt/ros/humble/share/pcl_conversions/cmake)
+[3.699s] -- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[3.704s] -- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[3.715s] -- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[3.736s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[3.764s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[3.875s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[3.883s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[4.238s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[4.583s] -- Found nav_msgs: 4.8.0 (/opt/ros/humble/share/nav_msgs/cmake)
+[4.630s] -- Found tf2: 0.25.12 (/opt/ros/humble/share/tf2/cmake)
+[4.650s] -- Found tf2_ros: 0.25.12 (/opt/ros/humble/share/tf2_ros/cmake)
+[4.901s] -- Found tf2_eigen: 0.25.12 (/opt/ros/humble/share/tf2_eigen/cmake)
+[4.941s] -- Found ament_lint_auto: 0.12.12 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[5.134s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[5.134s] -- Configured cppcheck include dirs: $<BUILD_INTERFACE:/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include>
+[5.134s] -- Configured cppcheck exclude dirs and/or files: 
+[5.135s] -- Added test 'lint_cmake' to check CMake code style
+[5.138s] -- Added test 'uncrustify' to check C / C++ code style
+[5.138s] -- Configured uncrustify additional arguments: 
+[5.139s] -- Added test 'xmllint' to check XML markup files
+[5.144s] -- Configuring done
+[5.377s] -- Generating done
+[5.409s] -- Build files have been written to: /home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor
+[5.519s] [35m[1mConsolidate compiler generated dependencies of target fake_sensor_node[0m
+[5.599s] [ 33%] [32mBuilding CXX object CMakeFiles/fake_sensor_node.dir/src/fake_sensor_node.cpp.o[0m
+[5.601s] [ 66%] [32mBuilding CXX object CMakeFiles/fake_sensor_node.dir/src/fake_sensor.cpp.o[0m
+[23.216s] In file included from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/fake_sensor/fake_sensor.hpp:27[m[K,
+[23.216s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/src/fake_sensor_node.cpp:1[m[K:
+[23.217s] [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/fake_sensor/sensor_renderer.hpp:[m[K In member function ‘[01m[Kbool SensorRenderer::pt_to_idx(Eigen::Vector2i&, const Vector3d&, const Vector3d&, const Matrix3d&)[m[K’:
+[23.217s] [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/fake_sensor/sensor_renderer.hpp:132:12:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kdis_pt_to_laser_plane[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[23.217s]   132 |     double [01;35m[Kdis_pt_to_laser_plane[m[K = line_intersect_plane(inter_p, pt, laser_R.col(2), laser_t, laser_R.col(2));
+[23.217s]       |            [01;35m[K^~~~~~~~~~~~~~~~~~~~~[m[K
+[23.846s] In file included from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/fake_sensor/fake_sensor.hpp:27[m[K,
+[23.846s]                  from [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/src/fake_sensor.cpp:1[m[K:
+[23.846s] [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/fake_sensor/sensor_renderer.hpp:[m[K In member function ‘[01m[Kbool SensorRenderer::pt_to_idx(Eigen::Vector2i&, const Vector3d&, const Vector3d&, const Matrix3d&)[m[K’:
+[23.846s] [01m[K/home/nvidia/gestelt_ws/src/gestelt2/swarm_tools/fake_sensor/include/fake_sensor/sensor_renderer.hpp:132:12:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kdis_pt_to_laser_plane[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[23.846s]   132 |     double [01;35m[Kdis_pt_to_laser_plane[m[K = line_intersect_plane(inter_p, pt, laser_R.col(2), laser_t, laser_R.col(2));
+[23.847s]       |            [01;35m[K^~~~~~~~~~~~~~~~~~~~~[m[K
+[55.570s] [100%] [32m[1mLinking CXX executable fake_sensor_node[0m
+[58.696s] [100%] Built target fake_sensor_node
+[58.724s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor -- -j8 -l8
+[58.730s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor
+[58.749s] -- Install configuration: "Release"
+[58.749s] -- Execute custom install script
+[58.750s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor//config/fake_sensor.yaml
+[58.772s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/lib/fake_sensor/fake_sensor_node
+[58.772s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/ament_index/resource_index/package_run_dependencies/fake_sensor
+[58.794s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/ament_index/resource_index/parent_prefix_path/fake_sensor
+[58.816s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/ament_prefix_path.sh
+[58.839s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/ament_prefix_path.dsv
+[58.860s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/path.sh
+[58.882s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/environment/path.dsv
+[58.904s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.bash
+[58.926s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.sh
+[58.947s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.zsh
+[58.970s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/local_setup.dsv
+[58.990s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/package.dsv
+[59.011s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/ament_index/resource_index/packages/fake_sensor
+[59.032s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/cmake/fake_sensorConfig.cmake
+[59.053s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/cmake/fake_sensorConfig-version.cmake
+[59.074s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_sensor/share/fake_sensor/package.xml
+[59.101s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/fake_sensor

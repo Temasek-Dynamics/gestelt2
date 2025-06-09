@@ -1,0 +1,3 @@
+gmake[2]: *** [CMakeFiles/controller_server.dir/build.make:76: CMakeFiles/controller_server.dir/src/main.cpp.o] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:173: CMakeFiles/controller_server.dir/all] Interrupt
+gmake: *** [Makefile:146: all] Interrupt

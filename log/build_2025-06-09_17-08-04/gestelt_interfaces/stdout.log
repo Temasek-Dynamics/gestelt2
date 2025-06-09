@@ -1,0 +1,271 @@
+-- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Override CMake install command with custom implementation using symlinks instead of copying resources
+-- Found rosidl_default_generators: 1.2.0 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found std_msgs: 4.8.0 (/opt/ros/humble/share/std_msgs/cmake)
+-- Found geometry_msgs: 4.8.0 (/opt/ros/humble/share/geometry_msgs/cmake)
+-- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+-- Using PYTHON_EXECUTABLE: /usr/bin/python3
+-- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+-- Using PYTHON_LIBRARIES: /usr/lib/aarch64-linux-gnu/libpython3.10.so
+-- Found ament_lint_auto: 0.12.12 (/opt/ros/humble/share/ament_lint_auto/cmake)
+-- Added test 'lint_cmake' to check CMake code style
+-- Added test 'xmllint' to check XML markup files
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_interfaces
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_generator_c[0m
+[  1%] Built target ament_cmake_python_symlink_gestelt_interfaces
+[  1%] [32m[1mLinking C shared library libgestelt_interfaces__rosidl_generator_c.so[0m
+[  2%] Built target gestelt_interfaces__cpp
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_cpp[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_fastrtps_cpp[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_introspection_cpp[0m
+[  4%] [32m[1mLinking CXX shared library libgestelt_interfaces__rosidl_typesupport_cpp.so[0m
+[  5%] [32mBuilding CXX object CMakeFiles/gestelt_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/gestelt_interfaces/msg/detail/dds_fastrtps/all_uav_command__type_support.cpp.o[0m
+[ 15%] Built target gestelt_interfaces__rosidl_generator_c
+[ 16%] [32m[1mLinking CXX shared library libgestelt_interfaces__rosidl_typesupport_introspection_cpp.so[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_introspection_c[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_fastrtps_c[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_c[0m
+[ 18%] [32m[1mLinking C shared library libgestelt_interfaces__rosidl_typesupport_introspection_c.so[0m
+[ 28%] Built target gestelt_interfaces__rosidl_typesupport_cpp
+[ 29%] [32m[1mLinking CXX shared library libgestelt_interfaces__rosidl_typesupport_fastrtps_c.so[0m
+[ 30%] [32m[1mLinking CXX shared library libgestelt_interfaces__rosidl_typesupport_c.so[0m
+[ 40%] Built target gestelt_interfaces__rosidl_typesupport_introspection_c
+[ 59%] Built target gestelt_interfaces__rosidl_typesupport_c
+[ 60%] Built target gestelt_interfaces__rosidl_typesupport_introspection_cpp
+[ 70%] Built target gestelt_interfaces__rosidl_typesupport_fastrtps_c
+running egg_info
+writing gestelt_interfaces.egg-info/PKG-INFO
+writing dependency_links to gestelt_interfaces.egg-info/dependency_links.txt
+writing top-level names to gestelt_interfaces.egg-info/top_level.txt
+reading manifest file 'gestelt_interfaces.egg-info/SOURCES.txt'
+writing manifest file 'gestelt_interfaces.egg-info/SOURCES.txt'
+[ 70%] Built target ament_cmake_python_build_gestelt_interfaces_egg
+[ 71%] [32m[1mLinking CXX shared library libgestelt_interfaces__rosidl_typesupport_fastrtps_cpp.so[0m
+[ 80%] Built target gestelt_interfaces__rosidl_typesupport_fastrtps_cpp
+[ 80%] Built target gestelt_interfaces
+[ 81%] Built target gestelt_interfaces__py
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_generator_py[0m
+[ 83%] [32m[1mLinking C shared library rosidl_generator_py/gestelt_interfaces/libgestelt_interfaces__rosidl_generator_py.so[0m
+[ 91%] Built target gestelt_interfaces__rosidl_generator_py
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_c__pyext[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_introspection_c__pyext[0m
+[35m[1mConsolidate compiler generated dependencies of target gestelt_interfaces__rosidl_typesupport_fastrtps_c__pyext[0m
+[ 94%] [32m[1mLinking C shared library rosidl_generator_py/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_introspection_c.cpython-310-aarch64-linux-gnu.so[0m
+[ 94%] [32m[1mLinking C shared library rosidl_generator_py/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_c.cpython-310-aarch64-linux-gnu.so[0m
+[ 95%] [32m[1mLinking C shared library rosidl_generator_py/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_fastrtps_c.cpython-310-aarch64-linux-gnu.so[0m
+[ 97%] Built target gestelt_interfaces__rosidl_typesupport_introspection_c__pyext
+[ 98%] Built target gestelt_interfaces__rosidl_typesupport_fastrtps_c__pyext
+[100%] Built target gestelt_interfaces__rosidl_typesupport_c__pyext
+-- Install configuration: ""
+-- Execute custom install script
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/ament_index/resource_index/rosidl_interfaces/gestelt_interfaces
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/all_uav_command.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/goals.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/nav_state.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/plan_request.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/rosidl_generator_c__visibility_control.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/space_time_path.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/uav_state.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__functions.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__struct.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__type_support.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/uav_command.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/library_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/library_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__rosidl_typesupport_fastrtps_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__rosidl_typesupport_introspection_c.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/all_uav_command.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/goals.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/nav_state.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/plan_request.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/rosidl_generator_cpp__visibility_control.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/space_time_path.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/uav_state.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__builder.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__struct.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__traits.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__type_support.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/uav_command.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__rosidl_typesupport_fastrtps_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/all_uav_command__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/goals__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/nav_state__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/plan_request__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/space_time_path__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/msg/detail/uav_state__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/include/gestelt_interfaces/gestelt_interfaces/srv/detail/uav_command__rosidl_typesupport_introspection_cpp.hpp
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/pythonpath.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/pythonpath.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces-0.0.0-py3.10.egg-info/PKG-INFO
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces-0.0.0-py3.10.egg-info/SOURCES.txt
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces-0.0.0-py3.10.egg-info/dependency_links.txt
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces-0.0.0-py3.10.egg-info/top_level.txt
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/__init__.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/_gestelt_interfaces_s.ep.rosidl_typesupport_c.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/_gestelt_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/_gestelt_interfaces_s.ep.rosidl_typesupport_introspection_c.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_c.cpython-310-aarch64-linux-gnu.so
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_fastrtps_c.cpython-310-aarch64-linux-gnu.so
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_introspection_c.cpython-310-aarch64-linux-gnu.so
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/libgestelt_interfaces__rosidl_generator_py.so
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/__init__.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_all_uav_command.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_all_uav_command_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_goals.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_goals_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_nav_state.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_nav_state_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_plan_request.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_plan_request_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_space_time_path.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_space_time_path_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_uav_state.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg/_uav_state_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/srv/__init__.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/srv/_uav_command.py
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/srv/_uav_command_s.c
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_fastrtps_c.cpython-310-aarch64-linux-gnu.so
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_introspection_c.cpython-310-aarch64-linux-gnu.so
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/gestelt_interfaces_s__rosidl_typesupport_c.cpython-310-aarch64-linux-gnu.so
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/AllUAVCommand.idl
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/Goals.idl
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/PlanRequest.idl
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/SpaceTimePath.idl
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/UAVState.idl
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/NavState.idl
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/AllUAVCommand.msg
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/Goals.msg
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/PlanRequest.msg
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/SpaceTimePath.msg
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/UAVState.msg
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/msg/NavState.msg
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/ament_index/resource_index/package_run_dependencies/gestelt_interfaces
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/ament_index/resource_index/parent_prefix_path/gestelt_interfaces
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/ament_index/resource_index/packages/gestelt_interfaces
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/rosidl_cmake-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/ament_cmake_export_libraries-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/ament_cmake_export_targets-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfacesConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfacesConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/package.xml
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_generator_c.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_generator_c.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_fastrtps_c.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_fastrtps_c.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_introspection_c.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_introspection_c.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_c.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_c.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_fastrtps_cpp.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_fastrtps_cpp.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_introspection_cpp.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_introspection_cpp.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_cpp.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_typesupport_cpp.so" to ""
+Listing '/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces'...
+Compiling '/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/__init__.py'...
+Listing '/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/msg'...
+Listing '/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/local/lib/python3.10/dist-packages/gestelt_interfaces/srv'...
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_generator_py.so
+-- Set runtime path of "/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/lib/libgestelt_interfaces__rosidl_generator_py.so" to ""
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_generator_cExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_generator_cExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_typesupport_fastrtps_cExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_introspection_cExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_introspection_cExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_cExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_cExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_generator_cppExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_typesupport_fastrtps_cppExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_introspection_cppExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_cppExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/gestelt_interfaces__rosidl_typesupport_cppExport-noconfig.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_generator_pyExport.cmake
+-- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_interfaces/share/gestelt_interfaces/cmake/export_gestelt_interfaces__rosidl_generator_pyExport-noconfig.cmake

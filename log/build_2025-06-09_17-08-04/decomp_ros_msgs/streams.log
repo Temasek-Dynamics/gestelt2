@@ -1,0 +1,171 @@
+[0.105s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs -- -j8 -l8
+[0.395s] [  1%] Built target decomp_ros_msgs__cpp
+[0.424s] [  1%] Built target ament_cmake_python_symlink_decomp_ros_msgs
+[0.492s] [ 12%] Built target decomp_ros_msgs__rosidl_generator_c
+[0.502s] [ 23%] Built target decomp_ros_msgs__rosidl_typesupport_fastrtps_cpp
+[0.524s] [ 41%] Built target decomp_ros_msgs__rosidl_typesupport_introspection_cpp
+[0.525s] [ 45%] Built target decomp_ros_msgs__rosidl_typesupport_cpp
+[0.610s] [ 56%] Built target decomp_ros_msgs__rosidl_typesupport_fastrtps_c
+[0.630s] [ 67%] Built target decomp_ros_msgs__rosidl_typesupport_introspection_c
+[0.630s] [ 78%] Built target decomp_ros_msgs__rosidl_typesupport_c
+[0.707s] [ 78%] Built target decomp_ros_msgs
+[0.810s] [ 80%] Built target decomp_ros_msgs__py
+[0.896s] [ 89%] Built target decomp_ros_msgs__rosidl_generator_py
+[0.965s] [ 92%] Built target decomp_ros_msgs__rosidl_typesupport_fastrtps_c__pyext
+[0.992s] [ 96%] Built target decomp_ros_msgs__rosidl_typesupport_introspection_c__pyext
+[1.021s] [100%] Built target decomp_ros_msgs__rosidl_typesupport_c__pyext
+[1.173s] running egg_info
+[1.174s] writing decomp_ros_msgs.egg-info/PKG-INFO
+[1.175s] writing dependency_links to decomp_ros_msgs.egg-info/dependency_links.txt
+[1.175s] writing top-level names to decomp_ros_msgs.egg-info/top_level.txt
+[1.178s] reading manifest file 'decomp_ros_msgs.egg-info/SOURCES.txt'
+[1.181s] writing manifest file 'decomp_ros_msgs.egg-info/SOURCES.txt'
+[1.273s] [100%] Built target ament_cmake_python_build_decomp_ros_msgs_egg
+[2.077s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs -- -j8 -l8
+[2.084s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs
+[2.109s] -- Install configuration: ""
+[2.110s] -- Execute custom install script
+[2.112s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/ament_index/resource_index/rosidl_interfaces/decomp_ros_msgs
+[2.133s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__functions.h
+[2.155s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__struct.h
+[2.177s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__type_support.h
+[2.195s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__functions.h
+[2.215s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__struct.h
+[2.239s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__type_support.h
+[2.260s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__functions.h
+[2.278s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__struct.h
+[2.303s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__type_support.h
+[2.323s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__functions.h
+[2.342s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__struct.h
+[2.363s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__type_support.h
+[2.383s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/ellipsoid.h
+[2.406s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/ellipsoid_array.h
+[2.425s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/polyhedron.h
+[2.444s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/polyhedron_array.h
+[2.463s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/rosidl_generator_c__visibility_control.h
+[2.484s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/library_path.sh
+[2.505s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/library_path.dsv
+[2.526s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__rosidl_typesupport_fastrtps_c.h
+[2.546s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__rosidl_typesupport_fastrtps_c.h
+[2.566s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__rosidl_typesupport_fastrtps_c.h
+[2.591s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__rosidl_typesupport_fastrtps_c.h
+[2.611s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[2.631s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__rosidl_typesupport_introspection_c.h
+[2.651s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__rosidl_typesupport_introspection_c.h
+[2.672s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__rosidl_typesupport_introspection_c.h
+[2.692s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__rosidl_typesupport_introspection_c.h
+[2.713s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[2.734s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__builder.hpp
+[2.754s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__struct.hpp
+[2.773s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__traits.hpp
+[2.793s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__type_support.hpp
+[2.812s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__builder.hpp
+[2.831s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__struct.hpp
+[2.850s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__traits.hpp
+[2.871s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__type_support.hpp
+[2.898s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__builder.hpp
+[2.917s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__struct.hpp
+[2.937s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__traits.hpp
+[2.956s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__type_support.hpp
+[2.976s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__builder.hpp
+[2.996s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__struct.hpp
+[3.016s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__traits.hpp
+[3.036s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__type_support.hpp
+[3.057s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/ellipsoid.hpp
+[3.077s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/ellipsoid_array.hpp
+[3.103s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/polyhedron.hpp
+[3.122s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/polyhedron_array.hpp
+[3.150s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/rosidl_generator_cpp__visibility_control.hpp
+[3.170s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__rosidl_typesupport_fastrtps_cpp.hpp
+[3.190s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__rosidl_typesupport_fastrtps_cpp.hpp
+[3.210s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__rosidl_typesupport_fastrtps_cpp.hpp
+[3.230s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__rosidl_typesupport_fastrtps_cpp.hpp
+[3.250s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[3.276s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid__rosidl_typesupport_introspection_cpp.hpp
+[3.297s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/ellipsoid_array__rosidl_typesupport_introspection_cpp.hpp
+[3.317s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron__rosidl_typesupport_introspection_cpp.hpp
+[3.338s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/include/decomp_ros_msgs/decomp_ros_msgs/msg/detail/polyhedron_array__rosidl_typesupport_introspection_cpp.hpp
+[3.358s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/pythonpath.sh
+[3.377s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/pythonpath.dsv
+[3.399s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs-0.0.0-py3.10.egg-info/PKG-INFO
+[3.399s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs-0.0.0-py3.10.egg-info/SOURCES.txt
+[3.400s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs-0.0.0-py3.10.egg-info/dependency_links.txt
+[3.400s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs-0.0.0-py3.10.egg-info/top_level.txt
+[3.403s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/__init__.py
+[3.403s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/_decomp_ros_msgs_s.ep.rosidl_typesupport_c.c
+[3.404s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/_decomp_ros_msgs_s.ep.rosidl_typesupport_fastrtps_c.c
+[3.404s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/_decomp_ros_msgs_s.ep.rosidl_typesupport_introspection_c.c
+[3.404s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/decomp_ros_msgs_s__rosidl_typesupport_c.cpython-310-aarch64-linux-gnu.so
+[3.405s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/decomp_ros_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-aarch64-linux-gnu.so
+[3.405s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/decomp_ros_msgs_s__rosidl_typesupport_introspection_c.cpython-310-aarch64-linux-gnu.so
+[3.406s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/libdecomp_ros_msgs__rosidl_generator_py.so
+[3.407s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/__init__.py
+[3.408s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_ellipsoid.py
+[3.409s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_ellipsoid_array.py
+[3.410s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_ellipsoid_array_s.c
+[3.411s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_ellipsoid_s.c
+[3.412s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_polyhedron.py
+[3.413s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_polyhedron_array.py
+[3.415s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_polyhedron_array_s.c
+[3.415s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg/_polyhedron_s.c
+[3.417s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/decomp_ros_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-aarch64-linux-gnu.so
+[3.418s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/decomp_ros_msgs_s__rosidl_typesupport_introspection_c.cpython-310-aarch64-linux-gnu.so
+[3.421s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/decomp_ros_msgs_s__rosidl_typesupport_c.cpython-310-aarch64-linux-gnu.so
+[3.422s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/Ellipsoid.idl
+[3.451s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/EllipsoidArray.idl
+[3.465s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/Polyhedron.idl
+[3.487s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/PolyhedronArray.idl
+[3.508s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/Ellipsoid.msg
+[3.527s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/EllipsoidArray.msg
+[3.545s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/Polyhedron.msg
+[3.566s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/msg/PolyhedronArray.msg
+[3.587s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/ament_index/resource_index/package_run_dependencies/decomp_ros_msgs
+[3.605s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/ament_index/resource_index/parent_prefix_path/decomp_ros_msgs
+[3.624s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/ament_prefix_path.sh
+[3.645s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/ament_prefix_path.dsv
+[3.666s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/path.sh
+[3.687s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/environment/path.dsv
+[3.707s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/local_setup.bash
+[3.726s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/local_setup.sh
+[3.747s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/local_setup.zsh
+[3.766s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/local_setup.dsv
+[3.786s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/package.dsv
+[3.805s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/ament_index/resource_index/packages/decomp_ros_msgs
+[3.826s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/rosidl_cmake-extras.cmake
+[3.845s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/ament_cmake_export_dependencies-extras.cmake
+[3.866s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/ament_cmake_export_include_directories-extras.cmake
+[3.887s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/ament_cmake_export_libraries-extras.cmake
+[3.905s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/ament_cmake_export_targets-extras.cmake
+[3.925s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[3.946s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[3.970s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgsConfig.cmake
+[4.002s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgsConfig-version.cmake
+[4.029s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/package.xml
+[4.073s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_generator_c.so
+[4.073s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_typesupport_fastrtps_c.so
+[4.075s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_typesupport_introspection_c.so
+[4.075s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_typesupport_c.so
+[4.076s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_typesupport_fastrtps_cpp.so
+[4.078s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_typesupport_introspection_cpp.so
+[4.079s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_typesupport_cpp.so
+[4.212s] Listing '/home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs'...
+[4.223s] Listing '/home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/local/lib/python3.10/dist-packages/decomp_ros_msgs/msg'...
+[4.245s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/lib/libdecomp_ros_msgs__rosidl_generator_py.so
+[4.251s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_generator_cExport.cmake
+[4.254s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_generator_cExport-noconfig.cmake
+[4.257s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_typesupport_fastrtps_cExport.cmake
+[4.261s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[4.262s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_introspection_cExport.cmake
+[4.263s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[4.264s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_cExport.cmake
+[4.267s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_cExport-noconfig.cmake
+[4.269s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_generator_cppExport.cmake
+[4.271s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_typesupport_fastrtps_cppExport.cmake
+[4.272s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[4.276s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_introspection_cppExport.cmake
+[4.282s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[4.285s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_cppExport.cmake
+[4.285s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/decomp_ros_msgs__rosidl_typesupport_cppExport-noconfig.cmake
+[4.289s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_generator_pyExport.cmake
+[4.290s] -- Installing: /home/nvidia/gestelt_ws/src/gestelt2/install/decomp_ros_msgs/share/decomp_ros_msgs/cmake/export_decomp_ros_msgs__rosidl_generator_pyExport-noconfig.cmake
+[4.303s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/decomp_ros_msgs

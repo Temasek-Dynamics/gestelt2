@@ -1,0 +1,23 @@
+[0.075s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_map': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/fake_map -- -j8 -l8
+[0.311s] [100%] Built target fake_map_publisher_node
+[0.512s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_map' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/fake_map -- -j8 -l8
+[0.516s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_map': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/fake_map
+[0.612s] -- Install configuration: "Release"
+[0.612s] -- Execute custom install script
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/lib/fake_map/fake_map_publisher_node
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/ament_index/resource_index/package_run_dependencies/fake_map
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/ament_index/resource_index/parent_prefix_path/fake_map
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/environment/ament_prefix_path.sh
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/environment/ament_prefix_path.dsv
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/environment/path.sh
+[0.613s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/environment/path.dsv
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/local_setup.bash
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/local_setup.sh
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/local_setup.zsh
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/local_setup.dsv
+[0.614s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/package.dsv
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/ament_index/resource_index/packages/fake_map
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/cmake/fake_mapConfig.cmake
+[0.614s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/cmake/fake_mapConfig-version.cmake
+[0.615s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/fake_map/share/fake_map/package.xml
+[1.348s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/fake_map' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/fake_map

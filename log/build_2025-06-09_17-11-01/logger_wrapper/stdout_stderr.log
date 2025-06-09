@@ -1,0 +1,30 @@
+[100%] Built target logger_wrapper
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/definitions.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/logger_wrapper.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/timer.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/include/logger_wrapper/logger_wrapper/visibility_control.h
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/library_path.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/library_path.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/ament_index/resource_index/package_run_dependencies/logger_wrapper
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/ament_index/resource_index/parent_prefix_path/logger_wrapper
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/ament_prefix_path.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/ament_prefix_path.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/path.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/environment/path.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.bash
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.zsh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/package.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/ament_index/resource_index/packages/logger_wrapper
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/ament_cmake_export_targets-extras.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/logger_wrapperConfig.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/logger_wrapperConfig-version.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/package.xml
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib/liblogger_wrapper.so
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/export_logger_wrapperExport.cmake
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/share/logger_wrapper/cmake/export_logger_wrapperExport-release.cmake

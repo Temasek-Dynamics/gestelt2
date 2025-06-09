@@ -1,0 +1,24 @@
+[35m[1mConsolidate compiler generated dependencies of target frame_transforms[0m
+[ 28%] Built target frame_transforms
+[35m[1mConsolidate compiler generated dependencies of target trajectory_server[0m
+[ 71%] Built target trajectory_server
+[35m[1mConsolidate compiler generated dependencies of target trajectory_server_node[0m
+[100%] Built target trajectory_server_node
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/lib/trajectory_server/trajectory_server_node
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/ament_index/resource_index/package_run_dependencies/trajectory_server
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/ament_index/resource_index/parent_prefix_path/trajectory_server
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/ament_prefix_path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/ament_prefix_path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/path.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/environment/path.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.bash
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.sh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.zsh
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/package.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/ament_index/resource_index/packages/trajectory_server
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/cmake/trajectory_serverConfig.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/cmake/trajectory_serverConfig-version.cmake
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/trajectory_server/share/trajectory_server/package.xml

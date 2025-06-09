@@ -1,0 +1,30 @@
+[100%] Built target bonxai
+-- Install configuration: "Release"
+-- Execute custom install script
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/bonxai.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/pcl_utils.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/probabilistic_map.hpp
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/visibility_control.h
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/library_path.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/library_path.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/ament_index/resource_index/package_run_dependencies/bonxai
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/ament_index/resource_index/parent_prefix_path/bonxai
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/ament_prefix_path.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/ament_prefix_path.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/path.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/path.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.bash
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.sh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.zsh
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.dsv
+-- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/package.dsv
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/ament_index/resource_index/packages/bonxai
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/ament_cmake_export_targets-extras.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/bonxaiConfig.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/bonxaiConfig-version.cmake
+-- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/package.xml
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib/libbonxai.so
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/export_bonxaiExport.cmake
+-- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/export_bonxaiExport-release.cmake

@@ -1,0 +1,18 @@
+[0.063s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_controller': AMENT_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/gestelt_core:/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai:/home/nvidia/gestelt_ws/install/gestelt_bringup:/home/nvidia/gestelt_ws/install/trajectory_server:/home/nvidia/gestelt_ws/install/linear_mpc_controller:/home/nvidia/gestelt_ws/install/gestelt_planner:/home/nvidia/gestelt_ws/install/gestelt_controller:/home/nvidia/gestelt_ws/install/astar_planner:/home/nvidia/gestelt_ws/install/gestelt_core:/home/nvidia/gestelt_ws/install/occ_map:/home/nvidia/gestelt_ws/install/logger_wrapper:/home/nvidia/gestelt_ws/install/ikd_tree:/home/nvidia/gestelt_ws/install/gestelt_interfaces:/home/nvidia/gestelt_ws/install/fake_sensor:/home/nvidia/gestelt_ws/install/fake_map:/home/nvidia/gestelt_ws/install/decomp_ros_utils:/home/nvidia/gestelt_ws/install/decomp_util:/home/nvidia/gestelt_ws/install/decomp_ros_msgs:/home/nvidia/gestelt_ws/install/bonxai:/home/nvidia/tl_vision2/install/vrpn_mocap:/home/nvidia/tl_vision2/install/px4_msgs:/home/nvidia/bridge_ws/install/depth2pcl:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble LD_LIBRARY_PATH=/home/nvidia/gestelt_ws/src/gestelt2/install/occ_map/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/logger_wrapper/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/ikd_tree/lib:/home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib:${LD_LIBRARY_PATH} /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/gestelt_controller -- -j8 -l8
+[0.189s] [35m[1mConsolidate compiler generated dependencies of target controller_server_core[0m
+[0.226s] [  8%] [32m[1mLinking CXX shared library libsimple_goal_checker.so[0m
+[0.230s] [ 16%] [32m[1mLinking CXX shared library libsimple_progress_checker.so[0m
+[0.291s] [ 25%] [32mBuilding CXX object CMakeFiles/controller_server_core.dir/src/controller_server.cpp.o[0m
+[1.654s] [ 33%] Built target simple_progress_checker
+[1.793s] [ 41%] Built target simple_goal_checker
+[1.862s] [ 50%] [32m[1mLinking CXX shared library libpose_progress_checker.so[0m
+[1.950s] [ 58%] [32m[1mLinking CXX shared library libstopped_goal_checker.so[0m
+[3.223s] [ 66%] Built target pose_progress_checker
+[3.348s] [ 75%] Built target stopped_goal_checker
+[55.137s] [ 83%] [32m[1mLinking CXX shared library libcontroller_server_core.so[0m
+[60.620s] [ 83%] Built target controller_server_core
+[60.666s] [35m[1mConsolidate compiler generated dependencies of target controller_server[0m
+[60.743s] [ 91%] [32mBuilding CXX object CMakeFiles/controller_server.dir/src/main.cpp.o[0m
+[79.040s] gmake[2]: *** [CMakeFiles/controller_server.dir/build.make:76: CMakeFiles/controller_server.dir/src/main.cpp.o] Interrupt
+[79.043s] gmake[1]: *** [CMakeFiles/Makefile2:173: CMakeFiles/controller_server.dir/all] Interrupt
+[79.043s] gmake: *** [Makefile:146: all] Interrupt

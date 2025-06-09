@@ -291,7 +291,7 @@ public:
   }
 
   // Check if given position is within inflation distance of an obstacle
-  bool withinObstacleInflation(const Eigen::Vector3d& pos, const double& inf_radius);
+  bool withinObstacleInflation(const Eigen::Vector3d& pos);
   
 protected:
 

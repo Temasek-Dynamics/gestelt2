@@ -1,0 +1,15 @@
+[35m[1mConsolidate compiler generated dependencies of target astar_planner[0m
+[ 33%] [32mBuilding CXX object CMakeFiles/astar_planner.dir/src/astar_planner.cpp.o[0m
+[ 66%] [32mBuilding CXX object CMakeFiles/astar_planner.dir/src/astar.cpp.o[0m
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:[m[K In member function ‘[01m[Kbool astar_planner::AStarPlanner::makePlan(const Vector3d&, const Vector3d&, double, std::function<bool()>, nav_msgs::msg::Path&)[m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar_planner.cpp:148:12:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktolerance[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+  148 |     [01;35m[Kdouble tolerance[m[K,
+      |     [01;35m[K~~~~~~~^~~~~~~~~[m[K
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar.cpp:[m[K In member function ‘[01m[Kstd::vector<Eigen::Matrix<int, 3, 1> > astar_planner::AStar::getNeighbours(const Vector3i&)[m[K’:
+[01m[K/home/nvidia/gestelt_ws/src/gestelt2/astar_planner/src/astar.cpp:158:17:[m[K [01;31m[Kerror: [m[K‘[01m[KmapToWorld[m[K’ was not declared in this scope
+  158 |                 [01;31m[KmapToWorld[m[K(nb_map_pos, nb_gbl_pos);
+      |                 [01;31m[K^~~~~~~~~~[m[K
+gmake[2]: *** [CMakeFiles/astar_planner.dir/build.make:90: CMakeFiles/astar_planner.dir/src/astar.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/astar_planner.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

@@ -1,0 +1,34 @@
+[0.110s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/bonxai': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/bonxai -- -j8 -l8
+[0.258s] [100%] Built target bonxai
+[0.355s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/bonxai' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --build /home/nvidia/gestelt_ws/src/gestelt2/build/bonxai -- -j8 -l8
+[0.356s] Invoking command in '/home/nvidia/gestelt_ws/src/gestelt2/build/bonxai': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/bonxai
+[0.421s] -- Install configuration: "Release"
+[0.421s] -- Execute custom install script
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/bonxai.hpp
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/pcl_utils.hpp
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/probabilistic_map.hpp
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/include/bonxai/bonxai/visibility_control.h
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/library_path.sh
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/library_path.dsv
+[0.422s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/ament_index/resource_index/package_run_dependencies/bonxai
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/ament_index/resource_index/parent_prefix_path/bonxai
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/ament_prefix_path.sh
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/ament_prefix_path.dsv
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/path.sh
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/environment/path.dsv
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.bash
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.sh
+[0.423s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.zsh
+[0.424s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/local_setup.dsv
+[0.424s] -- Symlinking: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/package.dsv
+[0.457s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/ament_index/resource_index/packages/bonxai
+[0.457s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.457s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/ament_cmake_export_libraries-extras.cmake
+[0.457s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/ament_cmake_export_targets-extras.cmake
+[0.458s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/bonxaiConfig.cmake
+[0.458s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/bonxaiConfig-version.cmake
+[0.458s] -- Up-to-date symlink: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/package.xml
+[0.458s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/lib/libbonxai.so
+[0.458s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/export_bonxaiExport.cmake
+[0.459s] -- Up-to-date: /home/nvidia/gestelt_ws/src/gestelt2/install/bonxai/share/bonxai/cmake/export_bonxaiExport-release.cmake
+[0.625s] Invoked command in '/home/nvidia/gestelt_ws/src/gestelt2/build/bonxai' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/nvidia/gestelt_ws/install/gestelt_commander:/home/nvidia/tl_vision2/install/vision:/home/nvidia/bridge_ws/install/vilota_bridge:/opt/ros/humble /usr/bin/cmake --install /home/nvidia/gestelt_ws/src/gestelt2/build/bonxai
