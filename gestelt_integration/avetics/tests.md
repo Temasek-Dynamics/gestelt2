@@ -62,6 +62,9 @@ Goals:
 ~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gcs_startup.sh
 ```
 
+Result:
+1. Drone plans very close to obstacle
+
 # Test take off with point goal (30/5/25)
 
 Goals:

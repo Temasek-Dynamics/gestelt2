@@ -201,8 +201,8 @@ def generate_launch_description():
                     {'state_machine_tick_freq': 30.0},
                     {'pub_ctrl_freq': 25.0},
                     {'publish_map_to_baselink_tf': True},
-
-                    {'correct_for_ground_height': True},
+                    # Disable 'correct_for_ground_height' when doing debugging planning without taking off
+                    {'correct_for_ground_height': False},   
 
                     {'mode_trajectory_enable_pos': True},
                     {'mode_trajectory_enable_vel': True},

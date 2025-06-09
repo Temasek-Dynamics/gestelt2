@@ -499,7 +499,8 @@ void OccMap::updateLocalMap(){
     for (auto& coord : occ_coords) 
     {
       // obs_pos_map: obstacle pos in fixed map frame i.e. with respect to (0,0,0) of fixed map frame
-      Eigen::Vector3d obs_pos_map = Bonxai::ConvertPoint<Eigen::Vector3d>(bonxai_map_->grid().coordToPos(coord));
+      Eigen::Vector3d obs_pos_map = 
+        Bonxai::ConvertPoint<Eigen::Vector3d>(bonxai_map_->grid().coordToPos(coord));
 
       if (!inLocalMap(obs_pos_map)){  // Point is outside the local map
         continue;
@@ -542,7 +543,7 @@ void OccMap::updateLocalMap(){
       lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{0.0, 0.0, inflation_}); 
       lcl_pts_map_.push_back(obs_pt_map_eig + Eigen::Vector3d{0.0, 0.0, -inflation_}); 
 
-      // lcl_pcd_map_: Used for visualization
+      // lcl_pcd_map_: Used for visualization and checking obstacle inflation
       lcl_pcd_map_->push_back(obs_pt_map);
     }
 
@@ -560,11 +561,11 @@ void OccMap::updateLocalMap(){
   }
 }
 
-bool OccMap::withinObstacleInflation(const Eigen::Vector3d& pos, const double& inf_radius)
+bool OccMap::withinObstacleInflation(const Eigen::Vector3d& pos)
 {
   pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
   std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
-  kdtree_lcl_->Radius_Search(search_point, inf_radius, nb_points);
+  kdtree_lcl_->Radius_Search(search_point, inflation_, nb_points);
 
   return !nb_points.empty();
 }
@@ -707,6 +708,8 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
 
   // Getting the Translation from the sensor to the Global Reference Frame
   const pcl::PointXYZ sensor_origin(
+    cam_to_map_mat_(0, 3), cam_to_map_mat_(1, 3), cam_to_map_mat_(2, 3));
+  RCLCPP_INFO( get_logger(), "Sensor origin (%0.2f, %0.2f, %0.2f)",
     cam_to_map_mat_(0, 3), cam_to_map_mat_(1, 3), cam_to_map_mat_(2, 3));
 
   z_filter_cloud_in_.setInputCloud(pcd_in_map_frame);

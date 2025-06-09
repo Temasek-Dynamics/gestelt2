@@ -203,7 +203,12 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 		ground_height_ = Eigen::Vector3d(0.0, 0.0, cur_pos_enu_(2));
 	}
 
-	cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
+	if (correct_for_ground_height_){
+		cur_pos_enu_corr_ = cur_pos_enu_ - ground_height_;
+	}
+	else{
+		cur_pos_enu_corr_ = cur_pos_enu_;
+	}
 
 	// Correct for camera_link to base_link offset, since VIO is with 
 	// reference to camera link
