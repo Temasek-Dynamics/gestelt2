@@ -116,6 +116,7 @@ def generate_launch_description():
     )
 
     # XRCE Agent that will connect to ALL XRCE-DDS clients
+    # Agent CLI: https://micro-xrce-dds.docs.eprosima.com/en/latest/agent.html 
     xrce_agent = ExecuteProcess(
         cmd=[[
             'MicroXRCEAgent serial --dev /dev/ttyTHS1 -b 921600'
