@@ -127,7 +127,7 @@ global_occ_map:
 
     # Passthrough filter for input point cloud
     cloud_in_min_z: -0.25 # [m] Minimum height for point cloud to be included in map
-    cloud_in_max_z: 2.5 # [m] Maximum height for point cloud to be included in map
+    cloud_in_max_z: 1.75 # [m] Maximum height for point cloud to be included in map
 
     # Noise filter by checking clusters
     enable_noise_filter: false
@@ -172,7 +172,7 @@ local_occ_map:
 
     # Passthrough filter for input point cloud
     cloud_in_min_z: -0.25 # [m] Minimum height for point cloud to be included in map
-    cloud_in_max_z: 2.5 # [m] Maximum height for point cloud to be included in map
+    cloud_in_max_z: 1.75 # [m] Maximum height for point cloud to be included in map
 
     # Noise filter by checking clusters
     enable_noise_filter: false

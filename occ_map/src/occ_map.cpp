@@ -709,8 +709,6 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // Getting the Translation from the sensor to the Global Reference Frame
   const pcl::PointXYZ sensor_origin(
     cam_to_map_mat_(0, 3), cam_to_map_mat_(1, 3), cam_to_map_mat_(2, 3));
-  RCLCPP_INFO( get_logger(), "Sensor origin (%0.2f, %0.2f, %0.2f)",
-    cam_to_map_mat_(0, 3), cam_to_map_mat_(1, 3), cam_to_map_mat_(2, 3));
 
   z_filter_cloud_in_.setInputCloud(pcd_in_map_frame);
   z_filter_cloud_in_.filter(*pcd_in_map_frame);
