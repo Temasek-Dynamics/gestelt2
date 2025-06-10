@@ -2,7 +2,7 @@
 
 usage() { echo "Usage: $0 [-s <scenario_name>]" 1>&2; exit 1; }
 
-SESSION="gestelt_startup"
+SESSION="sim_point_goal"
 SESSIONEXISTS=$(tmux list-sessions | grep $SESSION)
 
 #####

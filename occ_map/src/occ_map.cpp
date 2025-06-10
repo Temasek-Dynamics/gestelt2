@@ -547,7 +547,10 @@ void OccMap::updateLocalMap(){
       lcl_pcd_map_->push_back(obs_pt_map);
     }
 
-    kdtree_lcl_->Build(lcl_pcd_map_->points);
+    {
+      std::lock_guard<std::mutex> kdtree_lcl_guard(kdtree_lcl_mtx_);
+      kdtree_lcl_->Build(lcl_pcd_map_->points);
+    }
 
     lcl_pcd_map_raw_->header.frame_id = map_frame_;
     lcl_pcd_map_raw_->width = lcl_pcd_map_raw_->points.size();
@@ -563,9 +566,13 @@ void OccMap::updateLocalMap(){
 
 bool OccMap::withinObstacleInflation(const Eigen::Vector3d& pos)
 {
+
   pcl::PointXYZ search_point(pos(0), pos(1), pos(2));
   std::vector<pcl::PointXYZ, Eigen::aligned_allocator<pcl::PointXYZ>> nb_points;
-  kdtree_lcl_->Radius_Search(search_point, inflation_, nb_points);
+  {
+    std::lock_guard<std::mutex> kdtree_lcl_guard(kdtree_lcl_mtx_);
+    kdtree_lcl_->Radius_Search(search_point, inflation_, nb_points);
+  }
 
   return !nb_points.empty();
 }

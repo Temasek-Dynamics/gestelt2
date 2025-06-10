@@ -492,6 +492,7 @@ private:
 
   std::mutex bonxai_map_mtx_;  // Mutex lock for bonxai map
   std::mutex lcl_occ_map_mtx_;  // Mutex lock for 
+  std::mutex kdtree_lcl_mtx_;  // Mutex lock for 
 
   /* Stopwatch for profiling performance */
   // logger_wrapper::Timer tm_update_local_map_{"OccMap::updateLocalMap"};  // Time required for map construction

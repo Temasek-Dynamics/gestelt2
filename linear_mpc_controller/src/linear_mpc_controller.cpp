@@ -566,27 +566,27 @@ nav_msgs::msg::Path LinearMPCController::transformPlanFromGlobalToMap(
   }
 
   // We'll discard points on the plan that are outside the local costmap
-  double max_occ_map_extent = occ_map_->getLocalMapMaxExtent()/2.0;
+  // double max_occ_map_extent = occ_map_->getLocalMapMaxExtent()/2.0;
 
-  auto closest_pose_upper_bound = first_after_integrated_distance(
-    global_plan_.poses.begin(), global_plan_.poses.end(), max_robot_pose_search_dist_);
+  // auto closest_pose_upper_bound = first_after_integrated_distance(
+  //   global_plan_.poses.begin(), global_plan_.poses.end(), max_robot_pose_search_dist_);
 
   // First find the closest pose on the path to the robot
   // bounded by when the path turns around (if it does) so we don't get a pose from a later
   // portion of the path
-  auto transformation_begin =
-    min_by(
-    global_plan_.poses.begin(), closest_pose_upper_bound,
-    [&](const geometry_msgs::msg::PoseStamped & ps) {
-      return euclidean_distance(robot_pose, ps);
-    });
+  // auto transformation_begin =
+  //   min_by(
+  //   global_plan_.poses.begin(), closest_pose_upper_bound,
+  //   [&](const geometry_msgs::msg::PoseStamped & ps) {
+  //     return euclidean_distance(robot_pose, ps);
+  //   });
 
-  // Find points up to max_transform_dist so we only transform them.
-  auto transformation_end = std::find_if(
-    transformation_begin, global_plan_.poses.end(),
-    [&](const auto & pose) {
-      return euclidean_distance(pose, robot_pose) > max_occ_map_extent;
-    });
+  // // Find points up to max_transform_dist so we only transform them.
+  // auto transformation_end = std::find_if(
+  //   transformation_begin, global_plan_.poses.end(),
+  //   [&](const auto & pose) {
+  //     return euclidean_distance(pose, robot_pose) > max_occ_map_extent;
+  //   });
 
   // Lambda to transform a PoseStamped from global frame to local
   auto transformGlobalPoseToLocal = [&](const auto & global_plan_pose) {
@@ -601,18 +601,22 @@ nav_msgs::msg::Path LinearMPCController::transformPlanFromGlobalToMap(
       return transformed_pose;
     };
 
+  auto transformation_begin = global_plan_.poses.begin();
+  auto transformation_end = global_plan_.poses.end();
+
   // Transform the near part of the global plan into the robot's frame of reference.
   nav_msgs::msg::Path transformed_plan;
   std::transform(
     transformation_begin, transformation_end,
     std::back_inserter(transformed_plan.poses),
-    transformGlobalPoseToLocal);
+    transformGlobalPoseToLocal); 
   transformed_plan.header.frame_id = occ_map_->getMapFrameID();
   transformed_plan.header.stamp = robot_pose.header.stamp;
 
   // Remove the portion of the global plan that we've already passed so we don't
   // process it on the next iteration (this is called path pruning)
-  global_plan_.poses.erase(begin(global_plan_.poses), transformation_begin);
+  // global_plan_.poses.erase(begin(global_plan_.poses), transformation_begin);
+  
   global_path_pub_->publish(transformed_plan);
 
   if (transformed_plan.poses.empty()) {
