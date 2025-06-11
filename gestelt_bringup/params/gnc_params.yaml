@@ -31,7 +31,7 @@ controller_server:
     # Goal checker parameters
     goal_checker:
       plugin: "gestelt_controller::SimpleGoalChecker"
-      xyz_goal_tolerance: 0.25 # [m] 
+      xyz_goal_tolerance: 0.1 # [m] 
       # yaw_goal_tolerance: 0.25 # Not used
       stateful: True
     # Local Controller
@@ -42,13 +42,13 @@ controller_server:
       yawspeed_max: 0.785 # [rad/s] Maximum yaw speed
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
-        plan_sample_interval: 4 #[] Uses every N point on global plan as the safe flight corridor seed 
-        bbox_x: 1.0 # [m] Bounding box in x axis
+        plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
+        bbox_x: 1.5 # [m] Bounding box in x axis
         bbox_y: 2.0 # [m] Bounding box in y axis
         bbox_z: 1.0 # [m] Bounding box in z axis
       mpc:
         # MPC parameters
-        horizon: 15
+        horizon: 10
         time_step: 0.1 #[s]
         # Objective Weights
         R_p: 1000.0 # Error from reference position
@@ -61,12 +61,12 @@ controller_server:
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.15
-        vy_min:     -0.15
-        vz_min:     -0.15
-        vx_max:      0.15
-        vy_max:      0.15
-        vz_max:      0.15
+        vx_min:     -0.25
+        vy_min:     -0.25
+        vz_min:     -0.25
+        vx_max:      0.25
+        vy_max:      0.25
+        vz_max:      0.25
 
         # vx_min:     -0.1
         # vy_min:     -0.1
@@ -75,19 +75,19 @@ controller_server:
         # vy_max:      0.1
         # vz_max:      0.1
 
-        ax_min:     -15.0
-        ay_min:     -15.0
-        az_min:     -15.0
-        ax_max:      15.0
-        ay_max:      15.0
-        az_max:      15.0
+        ax_min:     -7.5
+        ay_min:     -7.5
+        az_min:     -7.5
+        ax_max:      7.5
+        ay_max:      7.5
+        az_max:      7.5
 
-        ux_min:     -40.0
-        uy_min:     -40.0
-        uz_min:     -40.0
-        ux_max:      40.0
-        uy_max:      40.0
-        uz_max:      40.0
+        ux_min:     -15.0
+        uy_min:     -15.0
+        uz_min:     -15.0
+        ux_max:      15.0
+        uy_max:      15.0
+        uz_max:      15.0
 
 global_occ_map:
   ros__parameters:
@@ -107,8 +107,8 @@ global_occ_map:
       size_z: 5.0  # [m]
 
     local_map:  # Local map used by controllers
-      size_x: 12.0  # [m]
-      size_y: 12.0  # [m]
+      size_x: 10.0  # [m]
+      size_y: 10.0  # [m]
       size_z: 5.0   # [m]
 
     prob_map:  # Occupancy map parameters
@@ -147,13 +147,13 @@ local_occ_map:
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
-      size_x: 10.0  # [m]
-      size_y: 10.0  # [m]
-      size_z: 5.0  # [m]
+      size_x: 6.0  # [m]
+      size_y: 6.0  # [m]
+      size_z: 4.0  # [m]
 
-    local_map:  # Local map used by controllers
-      size_x: 5.0  # [m]
-      size_y: 5.0  # [m]
+    local_map:  # Local map used by safe flight corridor
+      size_x: 4.0  # [m]
+      size_y: 4.0  # [m]
       size_z: 4.0   # [m]
 
     prob_map:  # Occupancy map parameters
@@ -165,7 +165,7 @@ local_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.1   # [m] Resolution of voxel
-      static_inflation: 0.2    # [m] Static obstacle inflation
+      static_inflation: 0.1    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor

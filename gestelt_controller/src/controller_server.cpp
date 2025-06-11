@@ -429,7 +429,6 @@ void ControllerServer::computeControl()
 
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
-        start_publish_cmd_ = false;
         break;
       }
 
@@ -521,7 +520,7 @@ void ControllerServer::computeControl()
 
   RCLCPP_INFO(get_logger(), "Controller succeeded, setting result");
 
-  start_publish_cmd_ = false;
+  // start_publish_cmd_ = false;
   onGoalExit();
 
   // TODO(orduno) #861 Handle a pending preemption and set controller name
