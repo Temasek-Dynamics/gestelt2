@@ -60,74 +60,83 @@
  class LinearMPCController : public gestelt_core::Controller
  {
  public:
-   /**
-    * @brief Constructor for linear_mpc_controller::LinearMPCController
-    */
-   LinearMPCController() = default;
- 
-   /**
-    * @brief Destrructor for linear_mpc_controller::LinearMPCController
-    */
-   ~LinearMPCController() override = default;
- 
-   /**
-    * @brief Configure controller state machine
-    * @param parent WeakPtr to node
-    * @param name Name of plugin
-    * @param tf TF buffer
-    * @param costmap_ros Costmap2DROS object of environment
-    */
-   void configure(
-     const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-     std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
-     std::shared_ptr<occ_map::OccMap> occ_map) override;
- 
-   /**
-    * @brief Cleanup controller state machine
-    */
-   void cleanup() override;
- 
-   /**
-    * @brief Activate controller state machine
-    */
-   void activate() override;
- 
-   /**
-    * @brief Deactivate controller state machine
-    */
-   void deactivate() override;
- 
-   /**
-    * @brief Compute the best command given the current pose and velocity, with possible debug information
-    *
-    * @param pose      Current robot pose
-    * @param orientation  Current robot orientation
-    * @param velocity  Current robot velocity
-    * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
-    * @param mpc_pred_pos   Vector of MPC predicted pose
-    * @param mpc_pred_vel   Vector of MPC predicted velocity
-    * @param mpc_pred_acc   Vector of MPC predicted acceleration
-    * @param mpc_pred_u   Vector of MPC predicted controls
-    * @param mpc_yaw   Vector of yaw commands (not from MPC)
-    * @return          Best command
-    */
-   void computeCommands(
-     const Eigen::Vector3d & pose,
-     const Eigen::Quaterniond & orientation,
-     const Eigen::Vector3d & velocity,
-     gestelt_core::GoalChecker * goal_checker,
-     std::vector<Eigen::Vector3d>& mpc_pred_pos,
-     std::vector<Eigen::Vector3d>& mpc_pred_vel,
-     std::vector<Eigen::Vector3d>& mpc_pred_acc,
-     std::vector<Eigen::Vector3d>& mpc_pred_u,
-     Eigen::Vector2d& mpc_yaw) override;
- 
-   /**
-    * @brief gestelt_core setPlan - Sets the global plan
-    * @param path The global plan
-    */
-   void setPlan(const nav_msgs::msg::Path & path) override;
- 
+  /**
+  * @brief Constructor for linear_mpc_controller::LinearMPCController
+  */
+  LinearMPCController() = default;
+
+  /**
+  * @brief Destrructor for linear_mpc_controller::LinearMPCController
+  */
+  ~LinearMPCController() override = default;
+
+  /**
+  * @brief Configure controller state machine
+  * @param parent WeakPtr to node
+  * @param name Name of plugin
+  * @param tf TF buffer
+  * @param costmap_ros Costmap2DROS object of environment
+  */
+  void configure(
+    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+    std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
+    std::shared_ptr<occ_map::OccMap> occ_map) override;
+
+  /**
+  * @brief Cleanup controller state machine
+  */
+  void cleanup() override;
+
+  /**
+  * @brief Activate controller state machine
+  */
+  void activate() override;
+
+  /**
+  * @brief Deactivate controller state machine
+  */
+  void deactivate() override;
+
+  /**
+  * @brief Compute the best command given the current pose and velocity, with possible debug information
+  *
+  * @param pose      Current robot pose
+  * @param orientation  Current robot orientation
+  * @param velocity  Current robot velocity
+  * @param goal_checker   Ptr to the goal checker for this task in case useful in computing commands
+  * @param mpc_pred_pos   Vector of MPC predicted pose
+  * @param mpc_pred_vel   Vector of MPC predicted velocity
+  * @param mpc_pred_acc   Vector of MPC predicted acceleration
+  * @param mpc_pred_u   Vector of MPC predicted controls
+  * @param mpc_yaw   Vector of yaw commands (not from MPC)
+  * @return          Best command
+  */
+  void computeCommands(
+    const Eigen::Vector3d & pose,
+    const Eigen::Quaterniond & orientation,
+    const Eigen::Vector3d & velocity,
+    gestelt_core::GoalChecker * goal_checker,
+    std::vector<Eigen::Vector3d>& mpc_pred_pos,
+    std::vector<Eigen::Vector3d>& mpc_pred_vel,
+    std::vector<Eigen::Vector3d>& mpc_pred_acc,
+    std::vector<Eigen::Vector3d>& mpc_pred_u,
+    Eigen::Vector2d& mpc_yaw) override;
+
+  /**
+  * @brief gestelt_core setPlan - Sets the global plan
+  * @param path The global plan
+  */
+  void setPlan(const nav_msgs::msg::Path & path) override;
+  
+  /**
+   * @brief Get the Timestep of controller
+   * 
+   * @return double 
+   */
+  double getControllerTimestep() const{
+    return mpc_controller_->getTimeStep();
+  }
+
  protected:
    /**
     * @brief Transforms global plan into same frame as pose and clips poses ineligible for lookaheadPoint
@@ -220,7 +229,7 @@
    // Data
    nav_msgs::msg::Path global_plan_; // Global plan in global frame
    double prev_cmd_yaw_{NAN};
- 
+   
    // Publishers
    std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> 
      global_path_pub_;

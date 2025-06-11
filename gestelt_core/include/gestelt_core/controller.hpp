@@ -101,6 +101,12 @@ public:
   virtual void setPlan(const nav_msgs::msg::Path & path) = 0;
 
   /**
+   * @brief Get the timestep of controller
+   * 
+   */
+  virtual double getControllerTimestep() const = 0;
+
+  /**
    * @brief Controller computeCommands - calculates the best command given the current pose and velocity
    *
    * It is presumed that the global plan is already set.
@@ -118,11 +124,11 @@ public:
     const Eigen::Quaterniond & orientation,
     const Eigen::Vector3d & velocity,
     gestelt_core::GoalChecker * goal_checker,
-    std::vector<Eigen::Vector3d>& mpc_pred_pos,
-    std::vector<Eigen::Vector3d>& mpc_pred_vel,
-    std::vector<Eigen::Vector3d>& mpc_pred_acc,
-    std::vector<Eigen::Vector3d>& mpc_pred_u,
-    Eigen::Vector2d& mpc_yaw) = 0;
+    std::vector<Eigen::Vector3d>& cmd_pos,
+    std::vector<Eigen::Vector3d>& cmd_vel,
+    std::vector<Eigen::Vector3d>& cmd_acc,
+    std::vector<Eigen::Vector3d>& cmd_jerk,
+    Eigen::Vector2d& cmd_yaw) = 0;
 
   /**
    * @brief Cancel the current control action

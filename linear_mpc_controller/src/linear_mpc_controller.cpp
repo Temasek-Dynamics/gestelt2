@@ -358,7 +358,7 @@ void LinearMPCController::computeCommands(
     // sfc_end_idx: End ref path index of current SFC segment
 
     // get index of current polygon that ref_pos belongs in
-    int sfc_start_idx = ref_plan_sfc_idx[poly_idx];
+    // int sfc_start_idx = ref_plan_sfc_idx[poly_idx];
     int sfc_end_idx = ref_plan_sfc_idx[poly_idx + 1];
 
     // RCLCPP_INFO(logger_, "[MPC] SFC Polygon (%d) at with segment[%d] (%0.2f, %0.2f, %0.2f) -> [%d](%0.2f, %0.2f, %0.2f)", 
@@ -511,7 +511,7 @@ void LinearMPCController::computeCommands(
     double cmd_yaw = 0.0;
 
     // Calculate commanded yaw
-    if (yaw_lookahead_dist_ < ref_plan_mpc.size()) 
+    if (yaw_lookahead_dist_ < (int)ref_plan_mpc.size()) 
     {
       // if lookahead point is not yet final pos
       Eigen::Vector2d dir_vec(
@@ -625,17 +625,6 @@ nav_msgs::msg::Path LinearMPCController::transformPlanFromGlobalToMap(
 
   return transformed_plan;
 }
-
-// rcl_interfaces::msg::SetParametersResult
-// LinearMPCController::dynamicParametersCallback(
-//   std::vector<rclcpp::Parameter> parameters)
-// {
-//   rcl_interfaces::msg::SetParametersResult result;
-//   std::lock_guard<std::mutex> lock_reinit(mutex_);
-
-//   result.successful = true;
-//   return result;
-// }
 
 }  // namespace linear_mpc_controller
 

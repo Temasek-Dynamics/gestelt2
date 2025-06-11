@@ -163,9 +163,15 @@ protected:
   void setPlannerPath(const nav_msgs::msg::Path & path);
 
   /**
-   * @brief Calculates velocity and publishes to intmd_cmd topic
+   * @brief Calculates controls 
    */
-  void computeAndPublishControl();
+  void getControllerCommand();
+
+  /**
+   * @brief Timer callback for publishgin controls
+   * 
+   */
+  void publishCmdTimerCB();
 
   /**
    * @brief Calls setPlannerPath method with an updated path received from
@@ -213,7 +219,6 @@ protected:
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr cmd_pub_;
 
-
   // Progress Checker Plugin
   pluginlib::ClassLoader<gestelt_core::ProgressChecker> progress_checker_loader_;
   gestelt_core::ProgressChecker::Ptr progress_checker_;
@@ -240,6 +245,10 @@ protected:
   std::vector<std::string> controller_types_;
   std::string controller_ids_concat_, current_controller_;
 
+  // Timers
+  rclcpp::TimerBase::SharedPtr pub_cmd_timer_; // Timer for publishing commands
+
+  // params
   bool publish_zero_velocity_;
   rclcpp::Duration occ_map_update_timeout_;
   double failure_tolerance_{0.0};
@@ -248,8 +257,7 @@ protected:
 
   bool print_runtime_{false}; // true if timer information is to be printed
 
-  rclcpp::Time last_valid_cmd_time_;
-
+  // Data
   Eigen::Vector3d cur_pos_; // Current position
   Eigen::Vector3d cur_vel_; // Current velocity vector
   geometry_msgs::msg::Twist cur_twist_; // Current twist
@@ -259,6 +267,14 @@ protected:
 
   // Current path container
   nav_msgs::msg::Path current_path_;
+
+  // Previous valid MPC Trajectory
+  std::vector<Eigen::Vector3d> cmd_pos_prev_, cmd_vel_prev_, cmd_acc_prev_;
+  Eigen::Vector2d cmd_yaw_prev_;
+  bool start_publish_cmd_{false}; // Start publishing command 
+  rclcpp::Time last_valid_cmd_time_;
+
+  std::mutex mpc_pred_mtx_;
 
   logger_wrapper::Timer tm_compute_controls_{rclcpp::get_logger("ControllerServer"), "computeControls"};  // Time required for map construction
 

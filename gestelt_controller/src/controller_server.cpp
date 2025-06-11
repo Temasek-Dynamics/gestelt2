@@ -223,6 +223,11 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
     return nav2_util::CallbackReturn::FAILURE;
   }
 
+  // Create timer for publishing commands
+	pub_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
+                                            std::bind(&ControllerServer::publishCmdTimerCB, this));
+  pub_cmd_timer_->cancel(); // Stop timer immediately
+
   return nav2_util::CallbackReturn::SUCCESS;
 }
 
@@ -241,6 +246,8 @@ ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
   }
   cmd_pub_->on_activate();
   action_server_->activate();
+
+  pub_cmd_timer_->reset(); // Starts timer
 
   auto node = shared_from_this();
   // Add callback for dynamic parameters
@@ -418,10 +425,11 @@ void ControllerServer::computeControl()
 
       updateGlobalPath();
 
-      computeAndPublishControl();
+      getControllerCommand();
 
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
+        start_publish_cmd_ = false;
         break;
       }
 
@@ -435,6 +443,8 @@ void ControllerServer::computeControl()
     }
   } catch (gestelt_core::InvalidController & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
+
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::INVALID_CONTROLLER;
@@ -442,14 +452,16 @@ void ControllerServer::computeControl()
     return;
   } catch (gestelt_core::ControllerTFError & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
+
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::TF_ERROR;
     action_server_->terminate_current(result);
     return;
   } catch (gestelt_core::NoValidControl & e) {
-    RCLCPP_ERROR(this->get_logger(), "ControllerServer::computeControl(): gestelt_core::NoValidControl!");
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
 
     // onGoalExit();
     // std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
@@ -459,6 +471,7 @@ void ControllerServer::computeControl()
     // return;
   } catch (gestelt_core::FailedToMakeProgress & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::FAILED_TO_MAKE_PROGRESS;
@@ -466,6 +479,7 @@ void ControllerServer::computeControl()
     return;
   } catch (gestelt_core::PatienceExceeded & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::PATIENCE_EXCEEDED;
@@ -473,6 +487,7 @@ void ControllerServer::computeControl()
     return;
   } catch (gestelt_core::InvalidPath & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::INVALID_PATH;
@@ -480,6 +495,7 @@ void ControllerServer::computeControl()
     return;
   } catch (gestelt_core::ControllerTimedOut & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::CONTROLLER_TIMED_OUT;
@@ -487,6 +503,7 @@ void ControllerServer::computeControl()
     return;
   } catch (gestelt_core::ControllerException & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::UNKNOWN;
@@ -494,6 +511,7 @@ void ControllerServer::computeControl()
     return;
   } catch (std::exception & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    start_publish_cmd_ = false;
     onGoalExit();
     std::shared_ptr<Action::Result> result = std::make_shared<Action::Result>();
     // result->error_code = Action::Result::UNKNOWN;
@@ -503,6 +521,7 @@ void ControllerServer::computeControl()
 
   RCLCPP_INFO(get_logger(), "Controller succeeded, setting result");
 
+  start_publish_cmd_ = false;
   onGoalExit();
 
   // TODO(orduno) #861 Handle a pending preemption and set controller name
@@ -530,7 +549,63 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
   current_path_ = path;
 }
 
-void ControllerServer::computeAndPublishControl()
+void ControllerServer::publishCmdTimerCB()
+{
+  if (!start_publish_cmd_){
+    return;
+  }
+
+  if (cmd_pos_prev_.empty() 
+      || cmd_vel_prev_.empty() 
+      || cmd_acc_prev_.empty())
+  {
+    RCLCPP_ERROR(this->get_logger(), "  cmd_pos_prev_ is empty!");
+    return;
+  }
+
+  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+
+  // Get time t relative to start of MPC trajectory
+  double e_t_start = now().nanoseconds()/1e9 - last_valid_cmd_time_.nanoseconds()/1e9; 
+  double total_traj_duration = (int)cmd_pos_prev_.size() * controllers_[current_controller_]->getControllerTimestep();
+
+  if (e_t_start < 0.0 || e_t_start >= total_traj_duration)
+  {
+    // Exceeded duration of trajectory or trajectory timestamp invalid
+    RCLCPP_ERROR(this->get_logger(), " e_t_start(%f) exceeded total_traj_duration(%f)!", e_t_start, total_traj_duration);
+    return;
+  }
+
+  // Get index of point closest to current time
+  //  elapsed time from start divided by time step of MPC
+  int idx =  std::floor(e_t_start / controllers_[current_controller_]->getControllerTimestep()); 
+
+  if (idx >= (int) cmd_pos_prev_.size()){
+    RCLCPP_ERROR(this->get_logger(), "FATAL DEVELOPMENT ERROR: idx of sampled command trajectory exceeded size!");
+    return;
+  }
+
+
+  // Trajectory setpoint is in ENU frame 
+  // (Transforming to NED frame is done by trajectory server)
+  px4_msgs::msg::TrajectorySetpoint traj_sp;
+
+  // Use first index of optimal controls
+  traj_sp.position = 
+    {(float) cmd_pos_prev_[idx].x() , (float) cmd_pos_prev_[idx].y(), (float) cmd_pos_prev_[idx].z()};
+  traj_sp.velocity = 
+    {(float) cmd_vel_prev_[idx].x() , (float) cmd_vel_prev_[idx].y(), (float) cmd_vel_prev_[idx].z()};
+  traj_sp.acceleration = 
+    {(float) cmd_acc_prev_[idx].x() , (float) cmd_acc_prev_[idx].y(), (float) cmd_acc_prev_[idx].z()};
+    
+  traj_sp.yaw = cmd_yaw_prev_(0);
+  traj_sp.yawspeed = cmd_yaw_prev_(1);
+  traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+  cmd_pub_->publish(traj_sp);
+  RCLCPP_DEBUG(get_logger(), "Publishing command at time %.2f", now().seconds());
+}
+
+void ControllerServer::getControllerCommand()
 {
   geometry_msgs::msg::PoseStamped pose;
 
@@ -554,50 +629,49 @@ void ControllerServer::computeAndPublishControl()
     pose.pose.orientation.z
   );
 
-  // Trajectory setpoint is in ENU frame 
-  // (Transforming to NED frame is done by trajectory server)
-  px4_msgs::msg::TrajectorySetpoint traj_sp;
-
   try {
-    std::vector<Eigen::Vector3d> mpc_pred_pos, mpc_pred_vel, mpc_pred_acc, mpc_pred_u;
-    Eigen::Vector2d mpc_yaw( NAN, NAN);
+    std::vector<Eigen::Vector3d> cmd_pos, cmd_vel, cmd_acc, cmd_jerk;
+    Eigen::Vector2d cmd_yaw( NAN, NAN);
 
     tm_compute_controls_.start();
 
     controllers_[current_controller_]->computeCommands(
       cur_pos, cur_ori, cur_vel_,
       goal_checkers_[current_goal_checker_].get(),
-      mpc_pred_pos, mpc_pred_vel, mpc_pred_acc, mpc_pred_u, mpc_yaw);
+      cmd_pos, cmd_vel, cmd_acc, cmd_jerk, cmd_yaw);
 
-    tm_compute_controls_.stop(false);
-    tm_compute_controls_.getWallAvg(print_runtime_);
-
-    // Use first index of optimal controls
-    traj_sp.position = 
-      {(float) mpc_pred_pos[0](0) , (float) mpc_pred_pos[0](1), (float) mpc_pred_pos[0](2)};
-    traj_sp.velocity = 
-      {(float) mpc_pred_vel[0](0) , (float) mpc_pred_vel[0](1), (float) mpc_pred_vel[0](2)};
-    traj_sp.acceleration = 
-      {(float) mpc_pred_acc[0](0) , (float) mpc_pred_acc[0](1), (float) mpc_pred_acc[0](2)};
-    traj_sp.yaw = mpc_yaw(0);
-    traj_sp.yawspeed = mpc_yaw(1);
+    tm_compute_controls_.stop(print_runtime_);
+    // tm_compute_controls_.getWallAvg(print_runtime_);
 
     last_valid_cmd_time_ = now();
-    traj_sp.timestamp = last_valid_cmd_time_.nanoseconds() / 1000; // In microseconds
+
+    {
+    // Save previous valid trajector
+      std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+      cmd_pos_prev_ = cmd_pos;
+      cmd_vel_prev_ = cmd_vel;
+      cmd_acc_prev_ = cmd_acc;
+      cmd_yaw_prev_ = cmd_yaw;
+    }
+
+    start_publish_cmd_ = true;
+
     // Only no valid control exception types are valid to attempt to have control patience, as
     // other types will not be resolved with more attempts
-  } catch (gestelt_core::NoValidControl & e) {
-    RCLCPP_ERROR(this->get_logger(), "ControllerServer::computeAndPublishControl(): gestelt_core::NoValidControl!");
+  } 
+  catch (gestelt_core::NoValidControl & e) {
+    RCLCPP_ERROR(this->get_logger(), "%s", e.what());
 
-    RCLCPP_WARN(this->get_logger(), "%s", e.what());
-    traj_sp.position = {(float) pose.pose.position.x , 
-                        (float) pose.pose.position.y, 
-                        (float) pose.pose.position.z};
-    traj_sp.velocity = {0.0, 0.0, 0.0};
-    traj_sp.acceleration = {0.0, 0.0, 0.0};
-    traj_sp.yaw = NAN;
-    traj_sp.yawspeed = NAN;
-    traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+    // Select the MPC command from the previous trajectory that is closest to the current time
+    
+    // traj_sp.position = {(float) cmd_pos.x(), 
+    //                     (float) cmd_pos.y(), 
+    //                     (float) cmd_pos.z()};
+    // traj_sp.velocity = {0.0, 0.0, 0.0};
+    // traj_sp.acceleration = {0.0, 0.0, 0.0};
+    // traj_sp.yaw = NAN;
+    // traj_sp.yawspeed = NAN;
+    // traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
 
     // if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
     //   RCLCPP_WARN(this->get_logger(), "%s", e.what());
@@ -617,12 +691,11 @@ void ControllerServer::computeAndPublishControl()
     // } else {
     //   throw gestelt_core::NoValidControl(e.what());
     // }
-
   }
 
+  // TODO: Speed feedback here is not implemented
   std::shared_ptr<Action::Feedback> feedback = std::make_shared<Action::Feedback>();
-  feedback->speed = Eigen::Vector3d(
-    traj_sp.velocity[0], traj_sp.velocity[1], traj_sp.velocity[2]).norm();
+  feedback->speed = Eigen::Vector3d(0.0, 0.0, 0.0).norm();
     
   nav_msgs::msg::Path & current_path = current_path_;
   auto find_closest_pose_idx =
@@ -644,10 +717,6 @@ void ControllerServer::computeAndPublishControl()
     nav2_util::geometry_utils::calculate_path_length(current_path_, find_closest_pose_idx());
 
   action_server_->publish_feedback(feedback);
-
-  RCLCPP_DEBUG(get_logger(), "Publishing command at time %.2f", now().seconds());
-  
-  cmd_pub_->publish(traj_sp);
 }
 
 void ControllerServer::updateGlobalPath()
@@ -684,7 +753,7 @@ void ControllerServer::onGoalExit()
 {
   if (publish_zero_velocity_) {
     px4_msgs::msg::TrajectorySetpoint traj_sp;
-    traj_sp.position = {(float) cur_pos_(0) , (float) cur_pos_(1), (float) cur_pos_(2)};
+    traj_sp.position = {(float) cur_pos_.x() , (float) cur_pos_.y(), (float) cur_pos_.z()};
     traj_sp.velocity = {0.0, 0.0, 0.0};
     traj_sp.acceleration = {0.0, 0.0, 0.0};
     traj_sp.yaw = NAN;
@@ -718,7 +787,6 @@ bool ControllerServer::isGoalReached()
     pose.pose, transformed_end_pose.pose,
     cur_twist_);
 }
-
 
 bool ControllerServer::getRobotPose(geometry_msgs::msg::PoseStamped & pose)
 {
