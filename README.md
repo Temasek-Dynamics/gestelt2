@@ -171,13 +171,12 @@ make px4_sitl gz_x500
 ```bash
 # Assuming your workspace is named as follows
 cd ~/gestelt_ws/ && colcon build --symlink-install
-
-# Add to .bashrc 
-
 ```
 
 # Quick start
 To ease repeatability of experiments. We make use of scenarios which are configurations of drone spawn locations and environments stored in [gestelt_mission/scenarios.json](gestelt_mission/scenarios.json). Refer to [gestelt_mission/README.md](gestelt_mission/README.md) for more information.
+
+For more details on what each launch file does, refer to [gestelt_bringup/README.md](gestelt_bringup/README.md)
 
 ## With PX4-SITL 
 To run a simulation with a dynamical model (with physics).
@@ -187,7 +186,8 @@ To run a simulation with a dynamical model (with physics).
 # via a PX4 parameter.
 /QGroundControl.AppImage
 
-# Launch the simulation
+# Launch the simulation.
+# To change the scenario, modify the `SCENARIO_NAME` in the launch file 
 ros2 launch gestelt_bringup multi_drone_sim_launch.py 
 
 # Command take-off and sending of goals
@@ -197,13 +197,25 @@ ros2 launch gestelt_bringup test_point_goal_sim.py
 ros2 run gestelt_commander land_sim
 ```
 
+### Known Issues
+
+- Drone cannot take off
+    - Look at QGroundControl logs, are there missing sensors? If so, it could be a compatability with the ros_gz_bridge, of which there is no known solution, only a workaround.
+    - The workaround is to launch gazebo using the PX4-SITL executable. In the simulation launch file [multi_drone_sim_launch.py](gestelt_bringup/launch/sim/multi_drone_sim_launch.py), make sure `PX4_GZ_STANDALONE=1` is commented out. Relaunch and check if the sensors can be detected in QGroundControl.
+
+- Drone executes most of the path but is not able to move towards the goal when within 0.5m of it.
+    - The suspicion is that the controller and planner algorithm is working as expected but the controller server might not have been calling the controller properly. 
+    - The fact is that the commands that are output from the controller server looks to be in the correct magnitude and sign but the drone is not executing them.
+
 ## Actual drone
 To test a single drone together with ground control computer (for visualization and mission commands), the following helper scripts are provided (TMUX required).
 
 ```bash
+# Change directory to root of this repository
+
 # On the drone
-~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
+gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
 
 # On the ground control computer
-~/gestelt_ws/src/gestelt2/gestelt_integration/avetics/startup_scripts/gcs_startup.sh
+gestelt_integration/avetics/startup_scripts/gcs_startup.sh
 ```
