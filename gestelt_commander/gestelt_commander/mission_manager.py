@@ -164,9 +164,9 @@ class MissionManager(Node):
                                  controller_id='FollowPath', 
                                  goal_checker_id='goal_checker')
 
-            if navigator.isTaskComplete(): # timeout of 0.1 s
-                self.get_logger().info(f"Navigation task complete! Disabling planning and control loop!")
-                self.enable_planning = False
+            # if navigator.isTaskComplete(): # timeout of 0.1 s
+            #     self.get_logger().info(f"Navigation task complete! Disabling planning and control loop!")
+            #     self.enable_planning = False
 
     def cmdAllDronesPubGlobal(self, command, req_state=None, value=0.0, mode=0):
         """Command all drones without namespace
