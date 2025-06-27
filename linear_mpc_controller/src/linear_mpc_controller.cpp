@@ -458,12 +458,12 @@ void LinearMPCController::computeCommands(
           x_current.segment<3>(0)(0), 
           x_current.segment<3>(0)(1), 
           x_current.segment<3>(0)(2));
-        
+          
         valid_cmd = false;
         break;
       }
       if (!checkValidCmd(x_current.segment<3>(3), -5.0, 5.0) ){
-        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC pos: (%f, %f, %f)", 
+        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC vel: (%f, %f, %f)", 
           k, 
           x_current.segment<3>(3)(0), 
           x_current.segment<3>(3)(1), 
@@ -473,7 +473,7 @@ void LinearMPCController::computeCommands(
         break;
       }
       if (!checkValidCmd(x_current.segment<3>(6), -60.0, 60.0) ){
-        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC pos: (%f, %f, %f)", 
+        RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC acc: (%f, %f, %f)", 
           k, 
           x_current.segment<3>(6)(0), 
           x_current.segment<3>(6)(1), 
@@ -509,39 +509,26 @@ void LinearMPCController::computeCommands(
 
   if (control_yaw_){
     double cmd_yaw = 0.0;
+    double dx = pose_stamped.pose.position.x - plan_map.poses.back().pose.position.x,
+      dy = pose_stamped.pose.position.y - plan_map.poses.back().pose.position.y,
+      dz = pose_stamped.pose.position.z - plan_map.poses.back().pose.position.z;
 
     // Calculate commanded yaw
-    if (yaw_lookahead_dist_ < (int)ref_plan_mpc.size()) 
-    {
-      // if lookahead point is not yet final pos
-      Eigen::Vector2d dir_vec(
-        ref_plan_mpc[yaw_lookahead_dist_](1) - position(1),
-        ref_plan_mpc[yaw_lookahead_dist_](0) - position(0)
-      );
-      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
-    }
-    else {
-      cmd_yaw = prev_cmd_yaw_;
-      // // if lookahead point is beyond final reference pos
-      // Eigen::Vector2d dir_vec(
-      //   ref_plan_mpc.back()(1) - position(1),
-      //   ref_plan_mpc.back()(0) - position(0)
-      // );
-      // cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
-    }
+    Eigen::Vector2d dir_vec(
+      plan_map.poses.back().pose.position.y - position(1),
+      plan_map.poses.back().pose.position.x - position(0)
+    );
+    cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
 
-    double cmd_dyaw = 0.0;
-    // Compute commanded yaw speed
-    if (std::isnan(prev_cmd_yaw_)){
-      // d_theta / d_t
-      double cmd_dyaw = (cmd_yaw - prev_cmd_yaw_) / mpc_controller_->getTimeStep();
-      
-      // Clamp dyaw to allowable value
-      cmd_dyaw = std::clamp(cmd_dyaw, -yawspeed_max_, yawspeed_max_);
+    // Yaw = 0 when drone has reached its endpoint
+    if (dx * dx + dy * dy + dz * dz < 0.0625){
+      mpc_yaw(0) = 0.0;
+      mpc_yaw(1) = 0.0;
     }
-
-    mpc_yaw(0) = cmd_yaw;
-    mpc_yaw(1) = cmd_dyaw;
+    else{
+      mpc_yaw(0) = cmd_yaw;
+      mpc_yaw(1) = 0.0;
+    }
 
     prev_cmd_yaw_ = cmd_yaw;
   }

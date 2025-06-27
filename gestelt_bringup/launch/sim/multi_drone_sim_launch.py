@@ -195,7 +195,8 @@ def generate_launch_description():
 
     ld.add_action(declare_rviz_config_file_cmd)
 
-    ld.add_action(start_gazebo_cmd)
+    # Some workstations can't start Gazebo and PX4 seperately
+    # ld.add_action(start_gazebo_cmd)
     ld.add_action(ros_gz_bridge_action)
     ld.add_action(xrce_agent)
     ld.add_action(start_rviz_cmd)

@@ -584,6 +584,10 @@ void ControllerServer::publishCmdTimerCB()
     return;
   }
 
+  // Set index to take one timestep forward
+  if (idx < (int) cmd_pos_prev_.size() - 1){
+    idx += 1;
+  }
 
   // Trajectory setpoint is in ENU frame 
   // (Transforming to NED frame is done by trajectory server)
