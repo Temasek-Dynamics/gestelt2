@@ -584,10 +584,23 @@ void ControllerServer::publishCmdTimerCB()
     return;
   }
 
-  // Set index to take one timestep forward
-  if (idx < (int) cmd_pos_prev_.size() - 1){
+  // Take the cmd_pos > 0.05m/s and cmd_vel > 0.05m/s
+  while (idx < (int) cmd_pos_prev_.size() - 1){
+    double dx = cur_pos_.x() - cmd_pos_prev_[idx].x(),
+      dy = cur_pos_.y() - cmd_pos_prev_[idx].y(),
+
+      dVx = cmd_vel_prev_[idx].x(),
+      dVy = cmd_vel_prev_[idx].y();
+
+    if (dx * dx + dy * dy >= 0.0025 && dVx * dVx + dVy * dVy >= 0.0025){
+      break;
+    }
+
     idx += 1;
   }
+
+  // For checking idx position
+  // RCLCPP_INFO(get_logger(), "Idx is at: %d", idx);
 
   // Trajectory setpoint is in ENU frame 
   // (Transforming to NED frame is done by trajectory server)
