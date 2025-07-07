@@ -507,6 +507,8 @@ void LinearMPCController::computeCommands(
   }
   mpc_traj_pub_->publish(mpc_traj_msg);
 
+  static bool end_yaw_flag;
+
   if (control_yaw_){
     double cmd_yaw = 0.0;
     double dx = pose_stamped.pose.position.x - plan_map.poses.back().pose.position.x,
@@ -522,15 +524,18 @@ void LinearMPCController::computeCommands(
 
     // Yaw = 0 when drone has reached its endpoint
     if (dx * dx + dy * dy + dz * dz < 0.0625){
-      mpc_yaw(0) = 0.0;
-      mpc_yaw(1) = 0.0;
+      if (!end_yaw_flag) {
+        mpc_yaw(0) = cmd_yaw;
+        mpc_yaw(1) = 0.0;
+        end_yaw_flag = true;
+      }
+
     }
     else{
       mpc_yaw(0) = cmd_yaw;
       mpc_yaw(1) = 0.0;
+      end_yaw_flag = false;
     }
-
-    prev_cmd_yaw_ = cmd_yaw;
   }
 }
 
