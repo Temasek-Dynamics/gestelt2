@@ -490,6 +490,13 @@ void LinearMPCController::computeCommands(
   }
 
   if (!valid_cmd){
+    // If MPC command is not valid, then we will use the first point of the reference path
+    // pos_corr = Eigen::Vector3d(
+    //   mpc_ref_path_msg.poses[0].pose.position.x,
+    //   mpc_ref_path_msg.poses[0].pose.position.y,
+    //   mpc_ref_path_msg.poses[0].pose.position.z
+    // );
+
     throw gestelt_core::NoValidControl("Invalid controller input from MPC solution");
   }
 

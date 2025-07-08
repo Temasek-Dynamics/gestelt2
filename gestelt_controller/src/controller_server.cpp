@@ -678,35 +678,36 @@ void ControllerServer::getControllerCommand()
   catch (gestelt_core::NoValidControl & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
 
-    // Select the MPC command from the previous trajectory that is closest to the current time
-    
-    // traj_sp.position = {(float) cmd_pos.x(), 
-    //                     (float) cmd_pos.y(), 
-    //                     (float) cmd_pos.z()};
-    // traj_sp.velocity = {0.0, 0.0, 0.0};
-    // traj_sp.acceleration = {0.0, 0.0, 0.0};
-    // traj_sp.yaw = NAN;
-    // traj_sp.yawspeed = NAN;
-    // traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+    // Select the MPC command based on its current trajectory
+    px4_msgs::msg::TrajectorySetpoint traj_sp;
+    traj_sp.position = {(float) cur_pos.x(), 
+                        (float) cur_pos.y(), 
+                        (float) cur_pos.z()};
+    traj_sp.velocity = {0.0, 0.0, 0.0};
+    traj_sp.acceleration = {0.0, 0.0, 0.0};
+    traj_sp.yaw = NAN;
+    traj_sp.yawspeed = NAN;
+    traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
 
-    // if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
-    //   RCLCPP_WARN(this->get_logger(), "%s", e.what());
-    //   traj_sp.position = {(float) pose.pose.position.x , 
-    //                       (float) pose.pose.position.y, 
-    //                       (float) pose.pose.position.z};
-    //   traj_sp.velocity = {0.0, 0.0, 0.0};
-    //   traj_sp.acceleration = {0.0, 0.0, 0.0};
-    //   traj_sp.yaw = NAN;
-    //   traj_sp.yawspeed = NAN;
-    //   traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
-    //   if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
-    //     failure_tolerance_ != -1.0)
-    //   {
-    //     throw gestelt_core::PatienceExceeded("Controller patience exceeded");
-    //   }
-    // } else {
-    //   throw gestelt_core::NoValidControl(e.what());
-    // }
+    if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
+      RCLCPP_WARN(this->get_logger(), "%s", e.what());
+      traj_sp.position = {(float) pose.pose.position.x , 
+                          (float) pose.pose.position.y, 
+                          (float) pose.pose.position.z};
+      traj_sp.velocity = {0.0, 0.0, 0.0};
+      traj_sp.acceleration = {0.0, 0.0, 0.0};
+      traj_sp.yaw = NAN;
+      traj_sp.yawspeed = NAN;
+      traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+      if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
+        failure_tolerance_ != -1.0)
+      {
+        throw gestelt_core::PatienceExceeded("Controller patience exceeded");
+      }
+      cmd_pub_->publish(traj_sp);
+    } else {
+      throw gestelt_core::NoValidControl(e.what());
+    }
   }
 
   // TODO: Speed feedback here is not implemented
