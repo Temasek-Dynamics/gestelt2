@@ -554,6 +554,8 @@ void ControllerServer::publishCmdTimerCB()
     return;
   }
 
+  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+
   if (cmd_pos_prev_.empty() 
       || cmd_vel_prev_.empty() 
       || cmd_acc_prev_.empty())
@@ -561,8 +563,6 @@ void ControllerServer::publishCmdTimerCB()
     RCLCPP_ERROR(this->get_logger(), "  cmd_pos_prev_ is empty!");
     return;
   }
-
-  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
   // Get time t relative to start of MPC trajectory
   double e_t_start = now().nanoseconds()/1e9 - last_valid_cmd_time_.nanoseconds()/1e9; 
@@ -676,38 +676,98 @@ void ControllerServer::getControllerCommand()
     // other types will not be resolved with more attempts
   } 
   catch (gestelt_core::NoValidControl & e) {
-    RCLCPP_ERROR(this->get_logger(), "%s", e.what());
+    RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] %s", e.what());
 
-    // Select the MPC command based on its current trajectory
-    px4_msgs::msg::TrajectorySetpoint traj_sp;
-    traj_sp.position = {(float) cur_pos.x(), 
-                        (float) cur_pos.y(), 
-                        (float) cur_pos.z()};
-    traj_sp.velocity = {0.0, 0.0, 0.0};
-    traj_sp.acceleration = {0.0, 0.0, 0.0};
-    traj_sp.yaw = NAN;
-    traj_sp.yawspeed = NAN;
-    traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+    // // Select the MPC command based on its current trajectory
+    // px4_msgs::msg::TrajectorySetpoint traj_sp;
+    // traj_sp.position = {(float) cur_pos.x(), 
+    //                     (float) cur_pos.y(), 
+    //                     (float) cur_pos.z()};
+    // traj_sp.velocity = {0.0, 0.0, 0.0};
+    // traj_sp.acceleration = {0.0, 0.0, 0.0};
+    // traj_sp.yaw = NAN;
+    // traj_sp.yawspeed = NAN;
+    // traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
 
-    if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
-      RCLCPP_WARN(this->get_logger(), "%s", e.what());
-      traj_sp.position = {(float) pose.pose.position.x , 
-                          (float) pose.pose.position.y, 
-                          (float) pose.pose.position.z};
-      traj_sp.velocity = {0.0, 0.0, 0.0};
-      traj_sp.acceleration = {0.0, 0.0, 0.0};
-      traj_sp.yaw = NAN;
-      traj_sp.yawspeed = NAN;
-      traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
-      if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
-        failure_tolerance_ != -1.0)
-      {
-        throw gestelt_core::PatienceExceeded("Controller patience exceeded");
-      }
-      cmd_pub_->publish(traj_sp);
-    } else {
-      throw gestelt_core::NoValidControl(e.what());
-    }
+    //look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint
+    std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+
+    Eigen::Vector3d nearest_cmd_pos;
+    auto nearest_cmd_dist = std::numeric_limits<double>::max();
+
+    for (const auto check_cmd_pos : cmd_pos_prev_) {
+      const auto deltaVector = cur_pos - check_cmd_pos; //vector from check_cmd_pos to cur_pos
+      const auto delta = deltaVector.squaredNorm();
+
+      if (delta < nearest_cmd_dist) {
+        nearest_cmd_dist = delta;
+        // nearest_cmd_pos = check_cmd_pos; //go back to nearest point
+        nearest_cmd_pos = check_cmd_pos + (deltaVector * 1.1); //go back to nearest point, but a bit further
+      } //if
+    } //for
+
+    //we now have the nearest waypoint in cmd_pos
+
+    //set the desired position
+    cmd_pos_prev_ = { cur_pos };
+
+    //set the desired velocity
+    static const double MAX_VEL_COMPONENT = 0.25;
+    static const double MAX_VEL_COMPONENT_SQ = std::pow(MAX_VEL_COMPONENT, 2);
+    Eigen::Vector3d nearest_cmd_vel = nearest_cmd_pos - cur_pos;
+
+    if (nearest_cmd_vel.x() > MAX_VEL_COMPONENT)
+      nearest_cmd_vel[0] = MAX_VEL_COMPONENT;
+    else if (nearest_cmd_vel.x() < -MAX_VEL_COMPONENT)
+      nearest_cmd_vel[0] = -MAX_VEL_COMPONENT;
+    //else it is 0 or MAX_VEL_COMPONENT
+
+    if (nearest_cmd_vel.y() > MAX_VEL_COMPONENT)
+      nearest_cmd_vel[1] = MAX_VEL_COMPONENT;
+    else if (nearest_cmd_vel.y() < -MAX_VEL_COMPONENT)
+      nearest_cmd_vel[1] = -MAX_VEL_COMPONENT;
+    //else it is 0 or MAX_VEL_COMPONENT
+
+    if (nearest_cmd_vel.z() > MAX_VEL_COMPONENT)
+      nearest_cmd_vel[2] = MAX_VEL_COMPONENT;
+    else if (nearest_cmd_vel.z() < -MAX_VEL_COMPONENT)
+      nearest_cmd_vel[2] = -MAX_VEL_COMPONENT;
+    //else it is 0 or MAX_VEL_COMPONENT
+
+    // cmd_vel_prev_ = { nearest_cmd_vel };
+    cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
+
+    //set the desired acceleration
+    // cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
+    cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
+
+    RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
+      nearest_cmd_pos.x(),
+      nearest_cmd_pos.y(),
+      nearest_cmd_pos.z());
+    
+    last_valid_cmd_time_ = now();
+    start_publish_cmd_ = true;
+
+    // if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
+    //   RCLCPP_WARN(this->get_logger(), "%s", e.what());
+    //   traj_sp.position = {(float) pose.pose.position.x , 
+    //                       (float) pose.pose.position.y, 
+    //                       (float) pose.pose.position.z};
+    //   traj_sp.velocity = {0.0, 0.0, 0.0};
+    //   traj_sp.acceleration = {0.0, 0.0, 0.0};
+    //   traj_sp.yaw = NAN;
+    //   traj_sp.yawspeed = NAN;
+    //   traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
+    //   if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
+    //     failure_tolerance_ != -1.0)
+    //   {
+    //     throw gestelt_core::PatienceExceeded("Controller patience exceeded");
+    //   }
+    //   cmd_pub_->publish(traj_sp);
+    // } else {
+    //   throw gestelt_core::NoValidControl(e.what());
+    // }
   }
 
   // TODO: Speed feedback here is not implemented
