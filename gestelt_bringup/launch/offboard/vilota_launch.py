@@ -32,8 +32,25 @@ def generate_launch_description():
         ]
     )
 
+    vilota_bridge_front_right_node = Node(
+        package='vilota_bridge',
+        executable='vilota_bridge_node',
+        output='screen',
+        
+        name='vilota_bridge_front_right',
+        parameters=[
+            {'bridge_name': 'front_right'},
+            {'map_frame_id': 'd0_map'},
+            {'camera_frame_id': 'camera_front_right'},
+            {'disparity_topic': 'S1/stereo2_r/disparity'},
+            {'image_topic': 'S1/stereo2_r'},
+            # {'odom_topic': 'S1/vio_odom'},
+            {'odom_topic': 'S1/vio_odom_ned'},
+        ]
+    )
+
     # Depth map to PCL conversion
-    depth2pcl_node = Node(
+    depth2pcl_front_left_node = Node(
         package='depth2pcl',
         executable='depth2pcl_node',
         output='screen',
@@ -42,14 +59,74 @@ def generate_launch_description():
         remappings=[
             ('/depth/rect', '/front_left/depth/rect'),
             ('/depth/camera_info', '/front_left/depth/camera_info'),
+            ('/point_cloud/downsample', '/front_left/point_cloud/downsample'),
+            ('/point_cloud/full', '/front_left/point_cloud/full')
         ],
         parameters=[
             {'min_dist': 0.01},
             {'max_dist': 6.0},
-            {'pcl_frame_id': 'camera_front_left'},
+            # {'pcl_frame_id': 'camera_front_left'},
+            {'pcl_frame_id': 'camera_link'},
             # {'pcl_frame_id': 'base_link'},
             {'downsample_leaf_size': 0.1},
             {'minimum_points_per_voxel': 3},
+        ]
+    )
+
+    depth2pcl_front_right_node = Node(
+        package='depth2pcl',
+        executable='depth2pcl_node',
+        output='screen',
+        # Change below for new node
+        name='depth2pcl_front_right',
+        remappings=[
+            ('/depth/rect', '/front_right/depth/rect'),
+            ('/depth/camera_info', '/front_right/depth/camera_info'),
+            ('/point_cloud/downsample', '/front_right/point_cloud/downsample'),
+            ('/point_cloud/full', '/front_right/point_cloud/full')
+        ],
+        parameters=[
+            {'min_dist': 0.01},
+            {'max_dist': 6.0},
+            {'pcl_frame_id': 'camera_link'},
+            # {'pcl_frame_id': 'camera_front_right'},
+            # {'pcl_frame_id': 'base_link'},
+            {'downsample_leaf_size': 0.1},
+            {'minimum_points_per_voxel': 3},
+        ]
+    )
+
+    # Concat PCL topics
+    pcl_topics_arg = DeclareLaunchArgument(
+        'pcl_topics',
+        default_value = "['/front_left/point_cloud/downsample','/front_right/point_cloud/downsample']",
+        description='Topics to concatenate'
+    )
+
+    concat_pcl_topic_arg = DeclareLaunchArgument(
+        'concat_pcl_topic',
+        default_value = '/point_cloud/concat',
+        description='Concatenate output topic'
+    )
+
+    concat_pub_interval_arg = DeclareLaunchArgument(
+        'concat_pub_interval',
+        default_value = '62', # in ms, ~16 hz
+        description='Concatenate output topic publish interval'
+    )
+
+    concat_pcl_node = Node(
+        package='depth2pcl',
+        executable='concat_pcl_node',
+        output='screen',
+        # prefix=['gdbserver localhost:3000'],
+
+        name='concat_pcl_node',
+
+        parameters=[
+            {'pcl_topics': LaunchConfiguration('pcl_topics')},
+            {'concat_pcl_topic': LaunchConfiguration('concat_pcl_topic')},
+            {'concat_pub_interval': LaunchConfiguration('concat_pub_interval')},
         ]
     )
 
@@ -65,7 +142,16 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     ld.add_action(vilota_bridge_front_left_node)
-    ld.add_action(depth2pcl_node)
+    ld.add_action(vilota_bridge_front_right_node)
+
+    ld.add_action(depth2pcl_front_left_node)
+    ld.add_action(depth2pcl_front_right_node)
+
+    ld.add_action(pcl_topics_arg)
+    ld.add_action(concat_pcl_topic_arg)
+    ld.add_action(concat_pub_interval_arg)
+    ld.add_action(concat_pcl_node)
+
     ld.add_action(vio_bridge_px4_node)
     
     return ld
