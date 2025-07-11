@@ -34,13 +34,14 @@ public:
             rclcpp::SensorDataQoS(),
             std::bind(&DepthToPCLConverter::cameraInfoCallback, this, std::placeholders::_1));
 
-        pcl_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cloud", rclcpp::SensorDataQoS());
+        pcl_downsample_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cloud/downsample", rclcpp::SensorDataQoS());
+        pcl_full_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/point_cloud/full", rclcpp::SensorDataQoS());
 
         min_dist_ = this->declare_parameter("min_dist", 0.1);
         max_dist_ = this->declare_parameter("max_dist", 20.0);
         pcl_frame_ = this->declare_parameter("pcl_frame_id", std::string("odom")); //frame to publish the point cloud in
 
-        downsample_leaf_size_ = this->declare_parameter("downsample_leaf_size", 0.01f);
+        downsample_leaf_size_ = this->declare_parameter("downsample_leaf_size", 0.1);
         minimum_points_per_voxel_ = this->declare_parameter("minimum_points_per_voxel", 1);
 
         has_camera_info_ = false;
@@ -49,7 +50,8 @@ public:
 private:
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_sub_;
     rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_sub_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_full_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcl_downsample_pub_;
 
     bool has_camera_info_;
     float fx_, fy_, cx_, cy_;
@@ -128,7 +130,7 @@ private:
             }
         }
 
-        pcl::PointCloud<pcl::PointXYZ>::Ptr filterInput(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr transformedPointCloud(new pcl::PointCloud<pcl::PointXYZ>);
 
         if (depth_msg.header.frame_id != pcl_frame_)
         {
@@ -136,7 +138,7 @@ private:
             try
             {
                 RCLCPP_INFO_ONCE(this->get_logger(), "[depthCallback] Transforming frame %s to %s", depth_msg.header.frame_id.c_str(), pcl_frame_.c_str());
-                pcl_ros::transformPointCloud<pcl::PointXYZ>(pcl_frame_, *cloud, *filterInput, *tfBuffer);
+                pcl_ros::transformPointCloud<pcl::PointXYZ>(pcl_frame_, *cloud, *transformedPointCloud, *tfBuffer);
             }
             catch (std::runtime_error &ex)
             {
@@ -146,18 +148,29 @@ private:
         }
         else
         {
-            filterInput = cloud;
+            transformedPointCloud = cloud;
         }
+
+        // Convert to ROS message and publish
+        sensor_msgs::msg::PointCloud2 rosPointCloud;
+
+        //full pcl
+        pcl::toROSMsg(*transformedPointCloud, rosPointCloud);
+
+        rosPointCloud.header = depth_msg.header;
+        rosPointCloud.header.frame_id = pcl_frame_;
+
+        pcl_full_pub_->publish(rosPointCloud);
 
         // Downsample
         // https://pcl.readthedocs.io/projects/tutorials/en/master/voxel_grid.html
-        pcl::PointCloud<pcl::PointXYZ> filterOutput;
+        pcl::PointCloud<pcl::PointXYZ> downsampledPointCloud;
 
         pcl::VoxelGrid<pcl::PointXYZ> sor;
-        sor.setInputCloud(filterInput);
+        sor.setInputCloud(transformedPointCloud);
         sor.setLeafSize(downsample_leaf_size_, downsample_leaf_size_, downsample_leaf_size_);
         sor.setMinimumPointsNumberPerVoxel(minimum_points_per_voxel_);
-        sor.filter(filterOutput);
+        sor.filter(downsampledPointCloud);
 
         /*
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2(new pcl::PointCloud<pcl::PointXYZ>(filterOutput));
@@ -170,15 +183,13 @@ private:
         sor2.filter(filterOutput2);
         */
 
-        // Convert to ROS message and publish
-        sensor_msgs::msg::PointCloud2 output;
-        pcl::toROSMsg(filterOutput, output); //downsample
-        // pcl::toROSMsg(*cloud, output); //don't downsample
+        //downsample pcl
+        pcl::toROSMsg(downsampledPointCloud, rosPointCloud);
 
-        output.header = depth_msg.header;
-        output.header.frame_id = pcl_frame_;
+        rosPointCloud.header = depth_msg.header;
+        rosPointCloud.header.frame_id = pcl_frame_;
 
-        pcl_pub_->publish(output);
+        pcl_downsample_pub_->publish(rosPointCloud);
     }
 };
 

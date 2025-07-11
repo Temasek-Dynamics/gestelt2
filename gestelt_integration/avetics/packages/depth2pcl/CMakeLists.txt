@@ -32,7 +32,25 @@ ament_target_dependencies(depth2pcl_node
   "image_transport"
 )
 
+add_executable(concat_pcl_node src/concat_pcl_node.cpp)
+target_include_directories(concat_pcl_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(concat_pcl_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+
+ament_target_dependencies(concat_pcl_node
+  "rclcpp"
+  "sensor_msgs"
+  "cv_bridge"
+  "pcl_ros"
+  "pcl_conversions"
+  "image_transport"
+)
+
 install(TARGETS depth2pcl_node
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS concat_pcl_node
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
