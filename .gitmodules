@@ -1,0 +1,6 @@
+[submodule "gestelt_integration/avetics/packages/vilota_bridge"]
+	path = gestelt_integration/avetics/packages/vilota_bridge
+	url = git@bitbucket.org:nusuav/vilota_bridge.git
+[submodule "gestelt_integration/avetics/packages/depth2pcl"]
+	path = gestelt_integration/avetics/packages/depth2pcl
+	url = git@bitbucket.org:nusuav/depth2pcl.git
