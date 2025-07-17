@@ -709,7 +709,8 @@ void ControllerServer::getControllerCommand()
     //we now have the nearest waypoint in cmd_pos
 
     //set the desired position
-    cmd_pos_prev_ = { cur_pos };
+    // cmd_pos_prev_ = { cur_pos };
+    cmd_pos_prev_ = { nearest_cmd_pos };
 
     //set the desired velocity
     static const double MAX_VEL_COMPONENT = 0.25;
@@ -734,12 +735,12 @@ void ControllerServer::getControllerCommand()
       nearest_cmd_vel[2] = -MAX_VEL_COMPONENT;
     //else it is 0 or MAX_VEL_COMPONENT
 
-    // cmd_vel_prev_ = { nearest_cmd_vel };
-    cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
+    cmd_vel_prev_ = { nearest_cmd_vel };
+    // cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
 
     //set the desired acceleration
-    // cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
-    cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
+    cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
+    // cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
 
     RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
       nearest_cmd_pos.x(),
