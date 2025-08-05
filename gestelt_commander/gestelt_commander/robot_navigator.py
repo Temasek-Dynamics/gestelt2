@@ -351,7 +351,7 @@ class BasicNavigator(Node):
         rclpy.spin_until_future_complete(self, self.result_future)
         self.status = self.result_future.result().status
         if self.status != GoalStatus.STATUS_SUCCEEDED:
-            self.warn(f'Getting path failed with status code: {self.status}')
+            self.warn(f'[_getPathImpl]Getting path failed with status code: {self.status}')
             return None
 
         self.info('Get path succeeded')
@@ -391,7 +391,7 @@ class BasicNavigator(Node):
         rclpy.spin_until_future_complete(self, self.result_future)
         self.status = self.result_future.result().status
         if self.status != GoalStatus.STATUS_SUCCEEDED:
-            self.warn(f'Getting path failed with status code: {self.status}')
+            self.warn(f'[getPathThroughPoses]Getting path failed with status code: {self.status}')
             return None
 
         return self.result_future.result().result.path
@@ -425,7 +425,7 @@ class BasicNavigator(Node):
         rclpy.spin_until_future_complete(self, self.result_future)
         self.status = self.result_future.result().status
         if self.status != GoalStatus.STATUS_SUCCEEDED:
-            self.warn(f'Getting path failed with status code: {self.status}')
+            self.warn(f'[_smoothPathImpl]Getting path failed with status code: {self.status}')
             return None
 
         return self.result_future.result().result

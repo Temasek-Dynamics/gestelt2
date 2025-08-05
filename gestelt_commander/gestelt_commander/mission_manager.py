@@ -159,7 +159,7 @@ class MissionManager(Node):
             if gbl_path == None:
                 print("Global path planning failed, not sending reference plan to controller")
                 return
-            self.get_logger().info(f"[pubScenarioGoals]Robot current position: {gbl_path.poses[0].pose.position.x:.2f}, {gbl_path.poses[0].pose.position.y:.2f}, {gbl_path.poses[0].pose.position.z:.2f}")
+            self.get_logger().info(f"[planningTimerCB]Robot current position: {gbl_path.poses[0].pose.position.x:.2f}, {gbl_path.poses[0].pose.position.y:.2f}, {gbl_path.poses[0].pose.position.z:.2f}")
             # Request for controller to follow global path
             navigator.followPath(gbl_path, 
                                  controller_id='FollowPath', 
