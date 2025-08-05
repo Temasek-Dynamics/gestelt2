@@ -48,8 +48,8 @@ controller_server:
         bbox_z: 1.0 # [m] Bounding box in z axis
       mpc:
         # MPC parameters
-        horizon: 10
-        time_step: 0.1 #[s]
+        horizon: 6
+        time_step: 0.2 #[s]
         # Objective Weights
         R_p: 1000.0 # Error from reference position
         R_v: 0.0  # Velocity magnitude
@@ -119,7 +119,7 @@ global_occ_map:
       clamp_max_log: 0.90 # 
       occupancy_threshold_log: 0.5 # 
 
-      resolution: 0.1   # [m] Resolution of voxel
+      resolution: 0.2   # [m] Resolution of voxel
       static_inflation: 0.5    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
