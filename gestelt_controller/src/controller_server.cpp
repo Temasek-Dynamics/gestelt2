@@ -584,15 +584,17 @@ void ControllerServer::publishCmdTimerCB()
     return;
   }
 
-  // Take the cmd_pos > 0.05m/s and cmd_vel > 0.05m/s
+  // Take the cmd_pos > 0.05m and cmd_vel > 0.05m/s
   while (idx < (int) cmd_pos_prev_.size() - 1){
     double dx = cur_pos_.x() - cmd_pos_prev_[idx].x(),
       dy = cur_pos_.y() - cmd_pos_prev_[idx].y(),
+      dz = cur_pos_.z() - cmd_pos_prev_[idx].z(),
 
       dVx = cmd_vel_prev_[idx].x(),
-      dVy = cmd_vel_prev_[idx].y();
+      dVy = cmd_vel_prev_[idx].y(),
+      dVz = cmd_vel_prev_[idx].z();
 
-    if (dx * dx + dy * dy >= 0.0025 && dVx * dVx + dVy * dVy >= 0.0025){
+    if (dx * dx + dy * dy + dz * dz >= 0.0025 && dVx * dVx + dVy * dVy + dVz * dVz >= 0.0025){
       break;
     }
 
@@ -689,6 +691,7 @@ void ControllerServer::getControllerCommand()
     // traj_sp.yawspeed = NAN;
     // traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
 
+    
     //look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint
     std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
@@ -750,6 +753,7 @@ void ControllerServer::getControllerCommand()
     last_valid_cmd_time_ = now();
     start_publish_cmd_ = true;
 
+    
     // if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
     //   RCLCPP_WARN(this->get_logger(), "%s", e.what());
     //   traj_sp.position = {(float) pose.pose.position.x , 
