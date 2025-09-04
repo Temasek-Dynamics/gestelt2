@@ -48,25 +48,25 @@ controller_server:
         bbox_z: 1.0 # [m] Bounding box in z axis
       mpc:
         # MPC parameters
-        horizon: 6
-        time_step: 0.2 #[s]
+        horizon: 20
+        time_step: 0.06 #[s]
         # Objective Weights
-        R_p: 1000.0 # Error from reference position
-        R_v: 0.0  # Velocity magnitude
-        R_a: 0.0  # Acceleration magnitude
-        R_u: 0.0  # Control magnitude
-        R_u_con: 0.2  # Continuity in controls
+        R_p: 2400.0 # Error from reference position
+        R_v: 240.0  # Velocity magnitude
+        R_a: 40.0  # Acceleration magnitude
+        R_u: 0.1  # Control magnitude
+        R_u_con: 0.12  # Continuity in controls
         R_pN: 2000.0 # Terminal position
-        R_vN: 1000.0 # Terminal velocity
-        R_aN: 1000.0 # Terminal acceleration
+        R_vN: 25.0 # Terminal velocity
+        R_aN: 25.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -0.25
-        vy_min:     -0.25
-        vz_min:     -0.25
-        vx_max:      0.25
-        vy_max:      0.25
-        vz_max:      0.25
+        vx_min:     -4.00
+        vy_min:     -4.00
+        vz_min:     -4.00
+        vx_max:      4.00
+        vy_max:      4.00
+        vz_max:      4.00
 
         # vx_min:     -0.1
         # vy_min:     -0.1
@@ -82,12 +82,12 @@ controller_server:
         ay_max:      7.5
         az_max:      7.5
 
-        ux_min:     -15.0
-        uy_min:     -15.0
-        uz_min:     -15.0
-        ux_max:      15.0
-        uy_max:      15.0
-        uz_max:      15.0
+        ux_min:     -34.0
+        uy_min:     -34.0
+        uz_min:     -34.0
+        ux_max:      34.0
+        uy_max:      34.0
+        uz_max:      34.0
 
 global_occ_map:
   ros__parameters:
@@ -120,7 +120,7 @@ global_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.2   # [m] Resolution of voxel
-      static_inflation: 0.5    # [m] Static obstacle inflation
+      static_inflation: 0.6    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor
