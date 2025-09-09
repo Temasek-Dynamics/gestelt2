@@ -51,6 +51,7 @@ def generate_launch_description():
         f"{ns}/sfc",
         f"{ns}/received_global_plan",
         f"{ns}/mpc_ref_path",
+        f"{ns}/mpc_curr_traj",
         f"{ns}/mpc_traj",
         f"{ns}/intmd_cmd",
         f"{ns}/plan",
