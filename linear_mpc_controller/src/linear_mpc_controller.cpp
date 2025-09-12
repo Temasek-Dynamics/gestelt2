@@ -266,18 +266,45 @@ void LinearMPCController::computeCommands(
 
   // Sample the global path for SFC Generation
 
+  // Find the idx position on the plan_map closest to current position
+  // To get an mpc_ref_path wrt current position
+  // To get SFC wrt current position
+  auto nearest_gap_dist = std::numeric_limits<double>::max();
+  int nearest_plan_idx = (int)plan_map.poses.size() - 1;
+  if ((int)plan_map.poses.size() < 3){
+    nearest_plan_idx = 0;
+  }
+  else{
+    for (int i = (int)plan_map.poses.size() - 2; i >= 0; i--){ // cannot check from right at the end, as generating SFC needs a start and an end
+      auto distGapVector = Eigen::Vector3d(
+        plan_map.poses[i].pose.position.x - position(0),
+        plan_map.poses[i].pose.position.y - position(1),
+        plan_map.poses[i].pose.position.z - position(2)
+      );
+      auto distGap = distGapVector.squaredNorm();
+
+      if (distGap < nearest_gap_dist){
+        nearest_gap_dist = distGap;
+        nearest_plan_idx = i;
+      }
+    }
+    if (nearest_plan_idx < (int)plan_map.poses.size() - 2) {
+      nearest_plan_idx += 1;
+    }
+  }
+
   // [MAP FRAME] Global plan used by safe flight corridor 
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> ref_plan_sfc; 
   // Sampled Indices of original reference plan
   std::vector<int> ref_plan_sfc_idx; 
 
-  for (int i = 0; i < (int)plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
+  for (int i = nearest_plan_idx; i < (int)plan_map.poses.size()-1; i += sfc_gen_->getPlanSampleInterval()){
     ref_plan_sfc.push_back(Eigen::Vector3d(
       plan_map.poses[i].pose.position.x, 
       plan_map.poses[i].pose.position.y, 
       plan_map.poses[i].pose.position.z));
 
-      ref_plan_sfc_idx.push_back(i);
+      ref_plan_sfc_idx.push_back(i - nearest_plan_idx);
   } 
   // Add end of plan
   ref_plan_sfc.push_back(Eigen::Vector3d(
@@ -307,12 +334,12 @@ void LinearMPCController::computeCommands(
   // [MAP FRAME] global plan used by safe flight corridor 
   std::vector<Eigen::Vector3d> ref_plan_mpc; 
 
-  for (int i = 0; i < mpc_controller_->MPC_HORIZON && i < (int)plan_map.poses.size(); i++){
+  for (int i = nearest_plan_idx; i < (mpc_controller_->MPC_HORIZON + nearest_plan_idx)&& i < (int)plan_map.poses.size(); i++){
     ref_plan_mpc.push_back(Eigen::Vector3d(
       plan_map.poses[i].pose.position.x,
       plan_map.poses[i].pose.position.y,
       plan_map.poses[i].pose.position.z));
-  } 
+  }
   
   int poly_idx = 0; // current index of SFC polyhedron
   Eigen::Vector3d last_ref_pos = position; // last pos reference
@@ -390,11 +417,41 @@ void LinearMPCController::computeCommands(
     if (k == 0) // First iteration
     {
       ref_vel = (ref_pos - position) / mpc_controller_->getTimeStep();
+      if (ref_vel.x() > 0.0){
+        ref_vel.x() = 3.33;
+      } 
+      else if (ref_vel.x() < 0.0){
+        ref_vel.x() = -3.33;
+      }
+      else {
+        ref_vel.x() = 0.0;
+      }
+      if (ref_vel.y() > 0.0){
+        ref_vel.y() = 3.33;
+      } 
+      else if (ref_vel.y() < 0.0){
+        ref_vel.y() = -3.33;
+      }
+      else {
+        ref_vel.y() = 0.0;
+      }
     }
     else // rest of the iteration
     {
       ref_vel = (ref_pos - last_ref_pos) / mpc_controller_->getTimeStep();
+      // ref_vel = (ref_plan_mpc[ref_plan_mpc.size() - 1] - last_ref_pos) / mpc_controller_->getTimeStep();
+      // if (ref_vel.x() >= 0){
+      //   ref_vel.x() = 3.0;
+      // } else {
+      //   ref_vel.x() = -3.0;
+      // }
+      // if (ref_vel.y() >= 0){
+      //   ref_vel.y() = 3.0;
+      // } else {
+      //   ref_vel.y() = -3.0;
+      // }
     }
+    // RCLCPP_INFO(logger_, "[computeCommands]Ref Vel is %0.2f, %0.2f, %0.2f", ref_vel.x(), ref_vel.y(), ref_vel.z());
     mpc_controller_->setReference(ref_pos, ref_vel, ref_acc, k);
 
     // At k-th control iteration, set SFC linear constraints
