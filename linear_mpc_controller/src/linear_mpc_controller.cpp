@@ -546,6 +546,41 @@ void LinearMPCController::computeCommands(
       mpc_pred_u.push_back(u_optimal);
   }
 
+  // // Interpolation method (KIV)
+  // int n = 0.02 * 50; // set controller frequency at 50hz
+
+  // Eigen::Vector3d delta_acce = (mpc_pred_acc[1] - mpc_pred_acc[0]) / (mpc_controller_->getTimeStep() / 0.02);
+  // Eigen::Vector3d delta_velo = (mpc_pred_vel[1] - mpc_pred_vel[0]) / (mpc_controller_->getTimeStep() / 0.02);
+  // Eigen::Vector3d delta_posi = (mpc_pred_pos[1] - mpc_pred_pos[0]) / (mpc_controller_->getTimeStep() / 0.02);
+
+  // Eigen::Vector3d acce = mpc_pred_acc[0];
+  // Eigen::Vector3d velo = mpc_pred_vel[0];
+  // Eigen::Vector3d posi = mpc_pred_pos[0];
+  // while (n < mpc_controller_->getTimeStep() * 50 && mpc_pred_pos.size()){
+
+  //   // Interpolate from trajectory initial position
+  //   double curr_timestep = (double)n / 50.0;
+  //   // Eigen::Vector3d jerk = mpc_pred_u[n-1];
+  //   acce += delta_acce;
+  //   velo += delta_velo;
+  //   posi += delta_posi;
+  //   // insert into mpc path
+  //   mpc_pred_pos.insert(mpc_pred_pos.begin() + n, posi);
+  //   mpc_pred_vel.insert(mpc_pred_vel.begin() + n, velo);
+  //   mpc_pred_acc.insert(mpc_pred_acc.begin() + n, acce);
+  //   // mpc_pred_u.insert(mpc_pred_u.begin() + n, jerk);
+  //   n++;
+  // }
+
+  // for (int i = 0; i < (int)mpc_pred_u.size(); i++){
+  //   RCLCPP_INFO(logger_, "[MPC] Pred %d: u (%0.2f, %0.2f, %0.2f) a (%0.2f, %0.2f, %0.2f) v (%0.2f, %0.2f, %0.2f)", 
+  //     i, 
+  //     mpc_pred_u[i](0), mpc_pred_u[i](1), mpc_pred_u[i](2),
+  //     mpc_pred_acc[i](0), mpc_pred_acc[i](1), mpc_pred_acc[i](2),
+  //     mpc_pred_vel[i](0), mpc_pred_vel[i](1), mpc_pred_vel[i](2)
+  //   );
+  // }
+
   if (!valid_cmd){
     // If MPC command is not valid, then we will use the first point of the reference path
     // pos_corr = Eigen::Vector3d(
