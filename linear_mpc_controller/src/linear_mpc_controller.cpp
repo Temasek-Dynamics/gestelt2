@@ -606,35 +606,43 @@ void LinearMPCController::computeCommands(
   }
   mpc_traj_pub_->publish(mpc_traj_msg);
 
-  static bool end_yaw_flag;
-
   if (control_yaw_){
     double cmd_yaw = 0.0;
-    double dx = pose_stamped.pose.position.x - plan_map.poses.back().pose.position.x,
-      dy = pose_stamped.pose.position.y - plan_map.poses.back().pose.position.y,
-      dz = pose_stamped.pose.position.z - plan_map.poses.back().pose.position.z;
 
     // Calculate commanded yaw
-    Eigen::Vector2d dir_vec(
-      plan_map.poses.back().pose.position.y - position(1),
-      plan_map.poses.back().pose.position.x - position(0)
-    );
-    cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
-
-    // Yaw = 0 when drone has reached its endpoint
-    if (dx * dx + dy * dy + dz * dz < 0.0625){
-      if (!end_yaw_flag) {
-        mpc_yaw(0) = cmd_yaw;
-        mpc_yaw(1) = 0.0;
-        end_yaw_flag = true;
-      }
-
+    if (yaw_lookahead_dist_ < (int)ref_plan_mpc.size()) 
+    {
+      // if lookahead point is not yet final pos
+      Eigen::Vector2d dir_vec(
+        ref_plan_mpc[yaw_lookahead_dist_](1) - position(1),
+        ref_plan_mpc[yaw_lookahead_dist_](0) - position(0)
+      );
+      cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
-    else{
-      mpc_yaw(0) = cmd_yaw;
-      mpc_yaw(1) = 0.0;
-      end_yaw_flag = false;
+    else {
+      cmd_yaw = prev_cmd_yaw_;
+      // // if lookahead point is beyond final reference pos
+      // Eigen::Vector2d dir_vec(
+      //   ref_plan_mpc.back()(1) - position(1),
+      //   ref_plan_mpc.back()(0) - position(0)
+      // );
+      // cmd_yaw = std::atan2(dir_vec(0), dir_vec(1));
     }
+
+    double cmd_dyaw = 0.0;
+    // Compute commanded yaw speed
+    if (std::isnan(prev_cmd_yaw_)){
+      // d_theta / d_t
+      double cmd_dyaw = (cmd_yaw - prev_cmd_yaw_) / mpc_controller_->getTimeStep();
+      
+      // Clamp dyaw to allowable value
+      cmd_dyaw = std::clamp(cmd_dyaw, -yawspeed_max_, yawspeed_max_);
+    }
+
+    mpc_yaw(0) = cmd_yaw;
+    mpc_yaw(1) = cmd_dyaw;
+
+    prev_cmd_yaw_ = cmd_yaw;
   }
 }
 
