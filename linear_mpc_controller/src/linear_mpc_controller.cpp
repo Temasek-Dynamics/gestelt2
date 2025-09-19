@@ -417,39 +417,28 @@ void LinearMPCController::computeCommands(
     if (k == 0) // First iteration
     {
       ref_vel = (ref_pos - position) / mpc_controller_->getTimeStep();
-      if (ref_vel.x() > 0.0){
-        ref_vel.x() = 3.33;
-      } 
-      else if (ref_vel.x() < 0.0){
-        ref_vel.x() = -3.33;
-      }
-      else {
-        ref_vel.x() = 0.0;
-      }
-      if (ref_vel.y() > 0.0){
-        ref_vel.y() = 3.33;
-      } 
-      else if (ref_vel.y() < 0.0){
-        ref_vel.y() = -3.33;
-      }
-      else {
-        ref_vel.y() = 0.0;
-      }
+      // if (ref_vel.x() > 0.0){
+      //   ref_vel.x() = 10.00;
+      // } 
+      // else if (ref_vel.x() < 0.0){
+      //   ref_vel.x() = -10.00;
+      // }
+      // else {
+      //   ref_vel.x() = 0.0;
+      // }
+      // if (ref_vel.y() > 0.0){
+      //   ref_vel.y() = 10.00;
+      // } 
+      // else if (ref_vel.y() < 0.0){
+      //   ref_vel.y() = -10.00;
+      // }
+      // else {
+      //   ref_vel.y() = 0.0;
+      // }
     }
     else // rest of the iteration
     {
       ref_vel = (ref_pos - last_ref_pos) / mpc_controller_->getTimeStep();
-      // ref_vel = (ref_plan_mpc[ref_plan_mpc.size() - 1] - last_ref_pos) / mpc_controller_->getTimeStep();
-      // if (ref_vel.x() >= 0){
-      //   ref_vel.x() = 3.0;
-      // } else {
-      //   ref_vel.x() = -3.0;
-      // }
-      // if (ref_vel.y() >= 0){
-      //   ref_vel.y() = 3.0;
-      // } else {
-      //   ref_vel.y() = -3.0;
-      // }
     }
     // RCLCPP_INFO(logger_, "[computeCommands]Ref Vel is %0.2f, %0.2f, %0.2f", ref_vel.x(), ref_vel.y(), ref_vel.z());
     mpc_controller_->setReference(ref_pos, ref_vel, ref_acc, k);
