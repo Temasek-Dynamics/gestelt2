@@ -512,7 +512,9 @@ PlannerServer::computePlan()
     };
 
     tm_compute_plan_.start();
+    auto plan_start = this->now();
     result->path = getPlan(start, goal_pose, goal->planner_id, cancel_checker);
+    RCLCPP_INFO(get_logger(), "[getPlan]Astar planning duration %.6f milliseconds", ((this->now() - plan_start).nanoseconds())/1e6);
     tm_compute_plan_.stop(false);
     tm_compute_plan_.getWallAvg(print_runtime_);
 
