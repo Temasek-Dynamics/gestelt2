@@ -1,6 +1,6 @@
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
+    expected_planner_frequency: 100.0
     planner_plugins: ["GridBased"]
     occ_map_update_timeout: 1.0
 
@@ -9,14 +9,14 @@ planner_server:
     GridBased:
       plugin: "astar_planner::AStarPlanner"
       tolerance: 0.5
-      max_iterations: 99999
+      max_iterations: 9999
       tie_breaker: 1.00001
       allow_unknown: true
       # cost_function_type: 1 # [Unimplemented] To switch between different cost metrics such as L1 and L2 cost
 
 controller_server:
   ros__parameters:
-    controller_frequency: 10.0 # [hz] Frequency to call controller
+    controller_frequency: 50.0 # [hz] Frequency to call controller
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
@@ -98,8 +98,8 @@ global_occ_map:
     base_link_frame: "base_link"
 
     print_timer: false       # If enabled, print debug information such as timing information
-    update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
-    viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
+    update_local_map_frequency: 50.0 # [Hz] Frequency to update the local map
+    viz_map_frequency: 20.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
       size_x: 15.0  # [m]
@@ -143,8 +143,8 @@ local_occ_map:
     base_link_frame: "base_link"
 
     print_timer: false       # If enabled, print debug information such as timing information
-    update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
-    viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
+    update_local_map_frequency: 50.0 # [Hz] Frequency to update the local map
+    viz_map_frequency: 20.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
       size_x: 6.0  # [m]

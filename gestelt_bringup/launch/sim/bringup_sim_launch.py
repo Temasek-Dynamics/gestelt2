@@ -192,9 +192,9 @@ def generate_launch_description():
                     {'safety.geofence.max_y': 50.0},
                     {'safety.geofence.max_z': 3.0},
                     {'set_offb_ctrl_freq': 10.0},
-                    {'pub_state_freq': 30.0},
-                    {'state_machine_tick_freq': 30.0},
-                    {'pub_ctrl_freq': 25.0},
+                    {'pub_state_freq': 100.0},
+                    {'state_machine_tick_freq': 100.0},
+                    {'pub_ctrl_freq': 100.0},
                     {'publish_map_to_baselink_tf': True},
 
                     {'correct_for_ground_height': True},
