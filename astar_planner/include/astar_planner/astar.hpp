@@ -144,7 +144,7 @@ private:
 
   bool set_occ_map_{false};
 
-  double h_weight_{1.0};
+  double h_weight_{1.2};
 
   Eigen::Vector3d goal_pos_, start_pos_;  // start and goal in index coordinates
 
