@@ -584,21 +584,71 @@ void ControllerServer::publishCmdTimerCB()
     return;
   }
 
-  // Take the cmd_pos > 0.05m and cmd_vel > 0.05m/s
-  while (idx < (int) cmd_pos_prev_.size() - 1){
-    double dx = cur_pos_.x() - cmd_pos_prev_[idx].x(),
-      dy = cur_pos_.y() - cmd_pos_prev_[idx].y(),
-      dz = cur_pos_.z() - cmd_pos_prev_[idx].z(),
+  // // Follow the whole PVA trajectory. Usable with interpolation method (New method, WIP)
+  // static int idx_path;
+  // static std::vector<Eigen::Vector3d> cmd_pos_path, cmd_vel_path, cmd_acc_path;
+  // if (!obstacle_avoidance_){
 
-      dVx = cmd_vel_prev_[idx].x(),
-      dVy = cmd_vel_prev_[idx].y(),
-      dVz = cmd_vel_prev_[idx].z();
+  //   if (idx_path >= cmd_pos_path.size()){
+  //     idx_path = 0;
+  //     cmd_pos_path = cmd_pos_prev_;
+  //     cmd_vel_path = cmd_vel_prev_;
+  //     cmd_acc_path = cmd_acc_prev_;
+  //   }
+  //   // if (cmd_pos_path.size()){
+  //   //   idx = idx_path;
+  //   //   if (!(idx_path >= (int)cmd_pos_path.size() - 1 && arePlansSame(cmd_pos_path, cmd_pos_prev_))){
+  //   //       idx_path += 1;
+  //   //   }
+      
+  //   //   cmd_pos_prev_ = cmd_pos_path;
+  //   //   cmd_vel_prev_ = cmd_vel_path;
+  //   //   cmd_acc_prev_ = cmd_acc_path; 
+  //   // }
+  //   idx = idx_path;
+  //   idx_path += 1;
+  //   cmd_pos_prev_ = cmd_pos_path;
+  //   cmd_vel_prev_ = cmd_vel_path;
+  //   cmd_acc_prev_ = cmd_acc_path; 
 
-    if (dx * dx + dy * dy + dz * dz >= 0.0025 && dVx * dVx + dVy * dVy + dVz * dVz >= 0.0025){
-      break;
-    }
+  //   if (idx >= 4 || isGoalReached()){
+  //     idx_path = cmd_pos_path.size(); // reset to new path
+  //   }
 
-    idx += 1;
+  // }
+
+  // // Take the cmd_pos > 0.05m and cmd_vel > 0.05m/s (Taking only one waypoint per path) (Old method)
+  // while (idx < (int) cmd_pos_prev_.size() - 1){
+  //   double dx = cur_pos_.x() - cmd_pos_prev_[idx].x(),
+  //     dy = cur_pos_.y() - cmd_pos_prev_[idx].y(),
+  //     dz = cur_pos_.z() - cmd_pos_prev_[idx].z(),
+
+  //     dVx = cmd_vel_prev_[idx].x(),
+  //     dVy = cmd_vel_prev_[idx].y(),
+  //     dVz = cmd_vel_prev_[idx].z();
+
+  //   // if (dx * dx + dy * dy + dz * dz >= 1.00 && dVx * dVx + dVy * dVy + dVz * dVz >= 1.00){
+  //   //   break;
+  //   // }
+
+  //   idx += 1;
+  //   if (idx >= 2){
+  //     break;
+  //   }
+  // }
+
+  // // To use with interpolation method
+  // int largest_vel_idx = 0;
+  // for (int i=0; i < 3; i++){
+  //   if (cmd_vel_prev_[i].squaredNorm() > cmd_vel_prev_[largest_vel_idx].squaredNorm()){
+  //     largest_vel_idx = i;
+  //   }
+  // }
+  // idx = largest_vel_idx;
+
+  // Failsafe when stuck in obstacle
+  if (cmd_pos_prev_.size() == 1){
+    idx = 0;
   }
 
   // For checking idx position
@@ -715,30 +765,37 @@ void ControllerServer::getControllerCommand()
     // }
 
     
-    //look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint (New method)
+    // Select a single PVA waypoint to send (New method) 
     std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
 
     Eigen::Vector3d nearest_cmd_pos;
     auto nearest_cmd_dist = std::numeric_limits<double>::max();
 
-    for (const auto check_cmd_pos : cmd_pos_prev_) {
-      const auto deltaVector = check_cmd_pos - cur_pos; //vector from check_cmd_pos to cur_pos
-      const auto delta = deltaVector.squaredNorm();
+    // // look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint (1st workaround)
+    // for (const auto check_cmd_pos : cmd_pos_prev_) {
+    //   const auto deltaVector = check_cmd_pos - cur_pos; //vector from check_cmd_pos to cur_pos
+    //   const auto delta = deltaVector.squaredNorm();
 
-      if (delta < nearest_cmd_dist) {
-        nearest_cmd_dist = delta;
-        // nearest_cmd_pos = check_cmd_pos; //go back to nearest point
-        nearest_cmd_pos = cur_pos + (deltaVector * 1.1); //go back to nearest point, but a bit further
-      } //if
-    } //for
+    //   if (delta < nearest_cmd_dist) {
+    //     nearest_cmd_dist = delta;
+    //     // nearest_cmd_pos = check_cmd_pos; //go back to nearest point
+    //     nearest_cmd_pos = cur_pos + (deltaVector * 1.1); //go back to nearest point, but a bit further
+    //   } //if
+    // } //for
 
-    //we now have the nearest waypoint in cmd_pos
-
-    //set the desired position
+    // Go to 3rd point in trajectory
+    if (cmd_pos_prev_.size() < 2){
+      nearest_cmd_pos = cmd_pos_prev_[0];
+    }
+    else{
+      nearest_cmd_pos = cmd_pos_prev_[2];
+    }
+    
+    // set the desired position
     // cmd_pos_prev_ = { cur_pos };
     cmd_pos_prev_ = { nearest_cmd_pos };
 
-    //set the desired velocity
+    //set the desired velocity, according to closest waypoint
     static const double MAX_VEL_COMPONENT = 0.25;
     static const double MAX_VEL_COMPONENT_SQ = std::pow(MAX_VEL_COMPONENT, 2);
     Eigen::Vector3d nearest_cmd_vel = nearest_cmd_pos - cur_pos;
@@ -762,11 +819,28 @@ void ControllerServer::getControllerCommand()
     //else it is 0 or MAX_VEL_COMPONENT
 
     // cmd_vel_prev_ = { nearest_cmd_vel };
-    cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
+    // cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
+    cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
 
     //set the desired acceleration
     // cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
-    cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
+    // cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
+    cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+
+    RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
+      nearest_cmd_pos.x(),
+      nearest_cmd_pos.y(),
+      nearest_cmd_pos.z());
+    
+    last_valid_cmd_time_ = now();
+    // cmd_vel_prev_ = { nearest_cmd_vel };
+    // cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
+    cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+
+    //set the desired acceleration
+    // cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
+    // cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
+    cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
 
     RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
       nearest_cmd_pos.x(),
