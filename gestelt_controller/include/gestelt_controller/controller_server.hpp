@@ -269,9 +269,10 @@ protected:
   nav_msgs::msg::Path current_path_;
 
   // Previous valid MPC Trajectory
-  std::vector<Eigen::Vector3d> cmd_pos_prev_, cmd_vel_prev_, cmd_acc_prev_;
+  std::vector<Eigen::Vector3d> cmd_pos_prev_, cmd_vel_prev_, cmd_acc_prev_, cmd_jerk_prev_;
   Eigen::Vector2d cmd_yaw_prev_;
   bool start_publish_cmd_{false}; // Start publishing command 
+  bool obstacle_avoidance_{false}; // True if in failsafe mode. Not in use
   rclcpp::Time last_valid_cmd_time_;
 
   std::mutex mpc_pred_mtx_;

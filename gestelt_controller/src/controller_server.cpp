@@ -615,6 +615,8 @@ void ControllerServer::publishCmdTimerCB()
     {(float) cmd_vel_prev_[idx].x() , (float) cmd_vel_prev_[idx].y(), (float) cmd_vel_prev_[idx].z()};
   traj_sp.acceleration = 
     {(float) cmd_acc_prev_[idx].x() , (float) cmd_acc_prev_[idx].y(), (float) cmd_acc_prev_[idx].z()};
+  traj_sp.jerk = 
+    {(float) cmd_jerk_prev_[idx].x() , (float) cmd_jerk_prev_[idx].y(), (float) cmd_jerk_prev_[idx].z()};
     
   traj_sp.yaw = cmd_yaw_prev_(0);
   traj_sp.yawspeed = cmd_yaw_prev_(1);
@@ -669,6 +671,7 @@ void ControllerServer::getControllerCommand()
       cmd_pos_prev_ = cmd_pos;
       cmd_vel_prev_ = cmd_vel;
       cmd_acc_prev_ = cmd_acc;
+      cmd_jerk_prev_ = cmd_jerk;
       cmd_yaw_prev_ = cmd_yaw;
     }
 
