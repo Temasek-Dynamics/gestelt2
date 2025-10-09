@@ -338,9 +338,15 @@ class BasicNavigator(Node):
         goal_msg.planner_id = planner_id
         goal_msg.use_start = use_start
 
+        # timeout to correspond with global_planning_frequency
+        timeout = 0.2
+
         self.info('Getting path...')
         send_goal_future = self.compute_path_to_pose_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self, send_goal_future)
+        rclpy.spin_until_future_complete(self, send_goal_future, timeout_sec = timeout)
+        if not send_goal_future.done():
+            self.get_logger().warn(f"[send_goal_async]Action server didn't respond within {timeout} seconds!")
+            return None
         self.goal_handle = send_goal_future.result()
 
         if not self.goal_handle.accepted:
@@ -348,7 +354,10 @@ class BasicNavigator(Node):
             return None
 
         self.result_future = self.goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, self.result_future)
+        rclpy.spin_until_future_complete(self, self.result_future, timeout_sec = timeout)
+        if not self.result_future.done():
+            self.get_logger().warn(f"[get_result_async]Action server didn't respond within {timeout} seconds!")
+            return None
         self.status = self.result_future.result().status
         if self.status != GoalStatus.STATUS_SUCCEEDED:
             self.warn(f'[_getPathImpl]Getting path failed with status code: {self.status}')
