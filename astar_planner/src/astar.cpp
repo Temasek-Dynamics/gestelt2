@@ -125,6 +125,12 @@ int AStar::computePath(const int& max_iterations,
     }
 
     std::cout << "num_iter: " << num_iter << std::endl;
+   
+    // Check if goal is within a given inflation radius of an obstacle
+    // Astar traces a path from the goal to current position, so you will trace from the start_pos_ == goal
+    if (occ_map_->withinObstacleInflation(start_pos_)){
+        throw gestelt_core::PlannerException("Goal is within inflation");
+    }
 
     throw gestelt_core::PlannerException("Open list is empty. No more valid nodes to search");
 
