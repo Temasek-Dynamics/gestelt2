@@ -288,6 +288,7 @@ void PlannerServer::getPreemptedGoalIfRequested(
   typename std::shared_ptr<const typename T::Goal> goal)
 {
   if (action_server->is_preempt_requested()) {
+    RCLCPP_INFO(get_logger(), "[getPreemptedGoalIfRequested]");
     goal = action_server->accept_pending_goal();
   }
 }
@@ -344,133 +345,134 @@ bool PlannerServer::validatePath(
 
 void PlannerServer::computePlanThroughPoses()
 {
+  assert(false);
   // std::lock_guard<std::mutex> lock(dynamic_params_lock_);
 
-  auto start_time = this->now();
+  // auto start_time = this->now();
 
-  // Initialize the ComputePathThroughPoses goal and result
-  auto goal = action_server_poses_->get_current_goal();
-  auto result = std::make_shared<ActionThroughPoses::Result>();
-  nav_msgs::msg::Path concat_path;
+  // // Initialize the ComputePathThroughPoses goal and result
+  // auto goal = action_server_poses_->get_current_goal();
+  // auto result = std::make_shared<ActionThroughPoses::Result>();
+  // nav_msgs::msg::Path concat_path;
 
-  geometry_msgs::msg::PoseStamped curr_start, curr_goal;
+  // geometry_msgs::msg::PoseStamped curr_start, curr_goal;
 
-  try {
-    if (isServerInactive(action_server_poses_) || isCancelRequested(action_server_poses_)) {
-      return;
-    }
+  // try {
+  //   if (isServerInactive(action_server_poses_) || isCancelRequested(action_server_poses_)) {
+  //     return;
+  //   }
 
-    waitForOccMap();
+  //   // waitForOccMap(); //nothing inside
 
-    getPreemptedGoalIfRequested(action_server_poses_, goal);
+  //   getPreemptedGoalIfRequested(action_server_poses_, goal);
 
-    if (goal->goals.empty()) {
-      throw gestelt_core::NoViapointsGiven("No viapoints given");
-    }
+  //   if (goal->goals.empty()) {
+  //     throw gestelt_core::NoViapointsGiven("No viapoints given");
+  //   }
 
-    // Use start pose if provided otherwise use current robot pose
-    geometry_msgs::msg::PoseStamped start;
-    if (!getStartPose<ActionThroughPoses>(goal, start)) {
-      throw gestelt_core::PlannerTFError("Unable to get start pose");
-    }
+  //   // Use start pose if provided otherwise use current robot pose
+  //   geometry_msgs::msg::PoseStamped start;
+  //   if (!getStartPose<ActionThroughPoses>(goal, start)) {
+  //     throw gestelt_core::PlannerTFError("Unable to get start pose");
+  //   }
 
-    auto cancel_checker = [this]() {
-      return action_server_poses_->is_cancel_requested();
-    };
+  //   auto cancel_checker = [this]() {
+  //     return action_server_poses_->is_cancel_requested();
+  //   };
 
-    // Get consecutive paths through these points
-    for (unsigned int i = 0; i != goal->goals.size(); i++) {
-      // Get starting point
-      if (i == 0) {
-        curr_start = start;
-      } else {
-        // pick the end of the last planning task as the start for the next one
-        // to allow for path tolerance deviations
-        curr_start = concat_path.poses.back();
-        curr_start.header = concat_path.header;
-      }
-      curr_goal = goal->goals[i];
+  //   // Get consecutive paths through these points
+  //   for (unsigned int i = 0; i != goal->goals.size(); i++) {
+  //     // Get starting point
+  //     if (i == 0) {
+  //       curr_start = start;
+  //     } else {
+  //       // pick the end of the last planning task as the start for the next one
+  //       // to allow for path tolerance deviations
+  //       curr_start = concat_path.poses.back();
+  //       curr_start.header = concat_path.header;
+  //     }
+  //     curr_goal = goal->goals[i];
 
-      // Transform them into the global frame
-      if (!transformPosesToGlobalFrame(curr_start, curr_goal)) {
-        throw gestelt_core::PlannerTFError("Unable to transform poses to global frame");
-      }
+  //     // Transform them into the global frame
+  //     if (!transformPosesToGlobalFrame(curr_start, curr_goal)) {
+  //       throw gestelt_core::PlannerTFError("Unable to transform poses to global frame");
+  //     }
 
-      // Get plan from start -> goal
-      nav_msgs::msg::Path curr_path = getPlan(
-        curr_start, curr_goal, goal->planner_id,
-        cancel_checker);
+  //     // Get plan from start -> goal
+  //     nav_msgs::msg::Path curr_path = getPlan(
+  //       curr_start, curr_goal, goal->planner_id,
+  //       cancel_checker);
 
-      if (!validatePath<ActionThroughPoses>(curr_goal, curr_path, goal->planner_id)) {
-        throw gestelt_core::NoValidPathCouldBeFound(goal->planner_id + " generated a empty path");
-      }
+  //     if (!validatePath<ActionThroughPoses>(curr_goal, curr_path, goal->planner_id)) {
+  //       throw gestelt_core::NoValidPathCouldBeFound(goal->planner_id + " generated a empty path");
+  //     }
 
-      // Concatenate paths together
-      concat_path.poses.insert(
-        concat_path.poses.end(), curr_path.poses.begin(), curr_path.poses.end());
-      concat_path.header = curr_path.header;
-    }
+  //     // Concatenate paths together
+  //     concat_path.poses.insert(
+  //       concat_path.poses.end(), curr_path.poses.begin(), curr_path.poses.end());
+  //     concat_path.header = curr_path.header;
+  //   }
 
-    // Publish the plan for visualization purposes
-    result->path = concat_path;
-    publishPlan(result->path);
+  //   // Publish the plan for visualization purposes
+  //   result->path = concat_path;
+  //   publishPlan(result->path);
 
-    auto cycle_duration = this->now() - start_time;
-    result->planning_time = cycle_duration;
+  //   auto cycle_duration = this->now() - start_time;
+  //   result->planning_time = cycle_duration;
 
-    if (max_planner_duration_ && cycle_duration.seconds() > max_planner_duration_) {
-      RCLCPP_WARN(
-        get_logger(),
-        "Planner loop missed its desired rate of %.4f Hz. Current loop rate is %.4f Hz",
-        1 / max_planner_duration_, 1 / cycle_duration.seconds());
-    }
+  //   if (max_planner_duration_ && cycle_duration.seconds() > max_planner_duration_) {
+  //     RCLCPP_WARN(
+  //       get_logger(),
+  //       "Planner loop missed its desired rate of %.4f Hz. Current loop rate is %.4f Hz",
+  //       1 / max_planner_duration_, 1 / cycle_duration.seconds());
+  //   }
 
-    action_server_poses_->succeeded_current(result);
+  //   action_server_poses_->succeeded_current(result);
 
-  } catch (gestelt_core::InvalidPlanner & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::INVALID_PLANNER;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::StartOccupied & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::START_OCCUPIED;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::GoalOccupied & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::GOAL_OCCUPIED;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::NoValidPathCouldBeFound & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::NO_VALID_PATH;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::PlannerTimedOut & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::TIMEOUT;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::StartOutsideMapBounds & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::START_OUTSIDE_MAP;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::GoalOutsideMapBounds & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::GOAL_OUTSIDE_MAP;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::PlannerTFError & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::TF_ERROR;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::NoViapointsGiven & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::NO_VIAPOINTS_GIVEN;
-    action_server_poses_->terminate_current(result);
-  } catch (gestelt_core::PlannerCancelled &) {
-    RCLCPP_INFO(get_logger(), "Goal was canceled. Canceling planning action.");
-    action_server_poses_->terminate_all();
-  } catch (std::exception & ex) {
-    exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
-    // result->error_code = ActionThroughPosesResult::UNKNOWN;
-    action_server_poses_->terminate_current(result);
-  }
+  // } catch (gestelt_core::InvalidPlanner & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::INVALID_PLANNER;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::StartOccupied & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::START_OCCUPIED;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::GoalOccupied & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::GOAL_OCCUPIED;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::NoValidPathCouldBeFound & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::NO_VALID_PATH;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::PlannerTimedOut & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::TIMEOUT;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::StartOutsideMapBounds & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::START_OUTSIDE_MAP;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::GoalOutsideMapBounds & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::GOAL_OUTSIDE_MAP;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::PlannerTFError & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::TF_ERROR;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::NoViapointsGiven & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::NO_VIAPOINTS_GIVEN;
+  //   action_server_poses_->terminate_current(result);
+  // } catch (gestelt_core::PlannerCancelled &) {
+  //   RCLCPP_INFO(get_logger(), "Goal was canceled. Canceling planning action.");
+  //   action_server_poses_->terminate_all();
+  // } catch (std::exception & ex) {
+  //   exceptionWarning(curr_start, curr_goal, goal->planner_id, ex);
+  //   // result->error_code = ActionThroughPosesResult::UNKNOWN;
+  //   action_server_poses_->terminate_current(result);
+  // }
   
 }
 
@@ -478,6 +480,7 @@ void
 PlannerServer::computePlan()
 {
   // std::lock_guard<std::mutex> lock(dynamic_params_lock_);
+  RCLCPP_INFO(get_logger(),"Start of planner's action server");
 
   auto start_time = this->now();
 
@@ -488,7 +491,13 @@ PlannerServer::computePlan()
   geometry_msgs::msg::PoseStamped start;
 
   try {
-    if (isServerInactive(action_server_pose_) || isCancelRequested(action_server_pose_)) {
+    if (isServerInactive(action_server_pose_) ) {
+      RCLCPP_WARN(get_logger(),"[computePlan] Action server inactive");
+      return;
+    }
+
+    if (isCancelRequested(action_server_pose_)) {
+      RCLCPP_WARN(get_logger(),"[computePlan] Cancel requested");
       return;
     }
 
@@ -508,6 +517,7 @@ PlannerServer::computePlan()
     }
 
     auto cancel_checker = [this]() {
+      RCLCPP_WARN(get_logger(),"[computePlan] [cancel_checker] Cancel requested");
       return action_server_pose_->is_cancel_requested();
     };
 
@@ -535,7 +545,9 @@ PlannerServer::computePlan()
         1 / max_planner_duration_, 1 / cycle_duration.seconds());
     }
 
+    RCLCPP_INFO(get_logger(),"End of planner's action server");
     action_server_pose_->succeeded_current(result);
+    RCLCPP_INFO(get_logger(),"End of planner's action server (Success)");
 
   } catch (gestelt_core::InvalidPlanner & ex) {
     exceptionWarning(start, goal->goal, goal->planner_id, ex);
@@ -636,7 +648,20 @@ PlannerServer::publishPlan(const nav_msgs::msg::Path & path)
 {
   auto msg = std::make_unique<nav_msgs::msg::Path>(path);
   if (plan_publisher_->is_activated() && plan_publisher_->get_subscription_count() > 0) {
+    //TODO: print message
+    RCLCPP_INFO(get_logger(), "Plan publisher is active. Subscriber count: %ld", plan_publisher_->get_subscription_count());
     plan_publisher_->publish(std::move(msg));
+  }
+  else
+  {
+    //TODO: print message
+    if (!(plan_publisher_->is_activated())){
+      RCLCPP_WARN(get_logger(), "Plan publisher is not active"); // Have yet to test if this can be triggered
+    }
+    else{
+      RCLCPP_WARN(get_logger(), "Plan publisher is active");
+    }
+    RCLCPP_WARN(get_logger(), "Subscriber count: %ld", plan_publisher_->get_subscription_count());
   }
 
 }
