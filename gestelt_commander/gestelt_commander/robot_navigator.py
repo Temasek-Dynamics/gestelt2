@@ -338,32 +338,24 @@ class BasicNavigator(Node):
         goal_msg.planner_id = planner_id
         goal_msg.use_start = use_start
 
-        # timeout to correspond with global_planning_frequency
-        timeout = 0.2
-
-        self.info('Getting path...')
+        self.info('[_getPathImpl] Send goal...')
         send_goal_future = self.compute_path_to_pose_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self, send_goal_future, timeout_sec = timeout)
-        if not send_goal_future.done():
-            self.get_logger().warn(f"[send_goal_async]Action server didn't respond within {timeout} seconds!")
-            return None
+        rclpy.spin_until_future_complete(self, send_goal_future)
         self.goal_handle = send_goal_future.result()
-
         if not self.goal_handle.accepted:
             self.error('Get path was rejected!')
             return None
+        self.info('[_getPathImpl] Send goal succeeded')
 
+        self.info('[_getPathImpl] Get result...')
         self.result_future = self.goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, self.result_future, timeout_sec = timeout)
-        if not self.result_future.done():
-            self.get_logger().warn(f"[get_result_async]Action server didn't respond within {timeout} seconds!")
-            return None
+        rclpy.spin_until_future_complete(self, self.result_future)
         self.status = self.result_future.result().status
         if self.status != GoalStatus.STATUS_SUCCEEDED:
             self.warn(f'[_getPathImpl]Getting path failed with status code: {self.status}')
             return None
 
-        self.info('Get path succeeded')
+        self.info('[_getPathImpl] Get path succeeded')
 
         return self.result_future.result().result
 
@@ -376,6 +368,7 @@ class BasicNavigator(Node):
             return rtn.path
 
     def getPathThroughPoses(self, start, goals, planner_id='', use_start=False):
+        assert(false)
         """Send a `ComputePathThroughPoses` action request."""
         self.debug("Waiting for 'ComputePathThroughPoses' action server")
         while not self.compute_path_through_poses_client.wait_for_server(timeout_sec=1.0):

@@ -379,6 +379,7 @@ void ControllerServer::computeControl()
   try {
     auto goal = action_server_->get_current_goal();
     if (!goal) {
+      RCLCPP_INFO(get_logger(), "No goal received. Returning...");
       return;  //  goal would be nullptr if action_server_ is inactivate.
     }
 
@@ -440,6 +441,7 @@ void ControllerServer::computeControl()
           controller_frequency_, 1 / cycle_duration.seconds());
       }
     }
+    RCLCPP_INFO(get_logger(),"End of controller's action server (Success)");
   } catch (gestelt_core::InvalidController & e) {
     RCLCPP_ERROR(this->get_logger(), "%s", e.what());
     start_publish_cmd_ = false;

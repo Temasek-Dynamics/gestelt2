@@ -122,6 +122,19 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
       ") was outside bounds");
   }
 
+  //TODO CHECK AND THROW START AND GOAL OCCUPIED
+  if (occ_map_->withinObstacleInflation(start)){
+    throw gestelt_core::StartOccupied("Start Coordinates of(" + std::to_string(start(0)) + ", " +
+        std::to_string(start(1)) + ", " + std::to_string(start(2)) + 
+        ") was in inflation");
+  }
+
+  if (occ_map_->withinObstacleInflation(goal)){
+    throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
+        ") was in inflation");
+  }
+
   if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
     throw gestelt_core::GoalOccupied(
@@ -149,6 +162,8 @@ AStarPlanner::makePlan(
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path &plan)
 {
+  RCLCPP_INFO(logger_, "[makePlan] Start");
+  
   // clear the plan, just in case
   plan.poses.clear();
 
@@ -169,7 +184,9 @@ AStarPlanner::makePlan(
   // clear the starting cell within the occupancy map because we know it can't be an obstacle
   // clearRobotCell(map_start);
 
+  RCLCPP_INFO(logger_, "[makePlan] Acquiring lock occ_map_->getMutex()");
   std::unique_lock<occ_map::OccMap::mutex_t> lock(*(occ_map_->getMutex()));
+  RCLCPP_INFO(logger_, "[makePlan] Acquired lock occ_map_->getMutex()");
 
   planner_->resetData();
 
@@ -180,10 +197,12 @@ AStarPlanner::makePlan(
 
   int path_len = planner_->computePath(max_iterations_, cancel_checker);
   if (path_len == 0) {
+    RCLCPP_INFO(logger_, "[makePlan] path_len == 0, returning");
     return false;
   }
 
   lock.unlock();
+  RCLCPP_INFO(logger_, "[makePlan] Unlocked occ_map_->getMutex()");
 
   // RCLCPP_INFO(logger_, "Size of path: %d", path_len);
 
@@ -213,6 +232,8 @@ AStarPlanner::makePlan(
 
     plan.poses.push_back(pose);
   }
+
+  RCLCPP_INFO(logger_, "[makePlan] plan.poses.size() %ld", plan.poses.size());
 
   return !plan.poses.empty();
 }
