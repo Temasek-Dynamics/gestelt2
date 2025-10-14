@@ -372,9 +372,9 @@ bool ControllerServer::findGoalCheckerId(
 
 void ControllerServer::computeControl()
 {
-  RCLCPP_INFO(logger_, "[computeControl] Acquiring lock(dynamic_params_lock_)");
+  RCLCPP_INFO(get_logger(), "[computeControl] Acquiring lock(dynamic_params_lock_)");
   std::lock_guard<std::mutex> lock(dynamic_params_lock_);
-  RCLCPP_INFO(logger_, "[computeControl] Acquired lock(dynamic_params_lock_)");
+  RCLCPP_INFO(get_logger(), "[computeControl] Acquired lock(dynamic_params_lock_)");
 
   RCLCPP_INFO(get_logger(), "Received a goal, begin computing control effort.");
 
