@@ -372,7 +372,9 @@ bool ControllerServer::findGoalCheckerId(
 
 void ControllerServer::computeControl()
 {
+  RCLCPP_INFO(logger_, "[computeControl] Acquiring lock(dynamic_params_lock_)");
   std::lock_guard<std::mutex> lock(dynamic_params_lock_);
+  RCLCPP_INFO(logger_, "[computeControl] Acquired lock(dynamic_params_lock_)");
 
   RCLCPP_INFO(get_logger(), "Received a goal, begin computing control effort.");
 
@@ -531,6 +533,7 @@ void ControllerServer::computeControl()
 
 void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
 {
+  RCLCPP_INFO(get_logger(), "[setPlannerPath] Setting planner path");
   RCLCPP_DEBUG(
     get_logger(),
     "Providing path to the controller %s", current_controller_.c_str());
@@ -548,6 +551,7 @@ void ControllerServer::setPlannerPath(const nav_msgs::msg::Path & path)
     end_pose_.pose.position.x, end_pose_.pose.position.y);
 
   current_path_ = path;
+  RCLCPP_INFO(get_logger(), "[setPlannerPath] Set planner path");
 }
 
 void ControllerServer::publishCmdTimerCB()
@@ -555,8 +559,11 @@ void ControllerServer::publishCmdTimerCB()
   if (!start_publish_cmd_){
     return;
   }
+  RCLCPP_INFO(get_logger(), "[publishCmdTimerCB] Start publishing command");
 
+  RCLCPP_INFO(get_logger(), "[publishCmdTimerCB] Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
   std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+  RCLCPP_INFO(get_logger(), "[publishCmdTimerCB] Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
 
   if (cmd_pos_prev_.empty() 
       || cmd_vel_prev_.empty() 
@@ -706,11 +713,12 @@ void ControllerServer::getControllerCommand()
     Eigen::Vector2d cmd_yaw( NAN, NAN);
 
     tm_compute_controls_.start();
-
+    RCLCPP_INFO(get_logger(), "[getControllerCommand] Start computing command from mpc");
     controllers_[current_controller_]->computeCommands(
       cur_pos, cur_ori, cur_vel_,
       goal_checkers_[current_goal_checker_].get(),
       cmd_pos, cmd_vel, cmd_acc, cmd_jerk, cmd_yaw);
+    RCLCPP_INFO(get_logger(), "[getControllerCommand] Successful computed command from mpc");
 
     tm_compute_controls_.stop(print_runtime_);
     // tm_compute_controls_.getWallAvg(print_runtime_);
@@ -719,12 +727,15 @@ void ControllerServer::getControllerCommand()
 
     {
     // Save previous valid trajector
+      RCLCPP_INFO(get_logger(), "[getControllerCommand] Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
       std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+      RCLCPP_INFO(get_logger(), "[getControllerCommand] Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
       cmd_pos_prev_ = cmd_pos;
       cmd_vel_prev_ = cmd_vel;
       cmd_acc_prev_ = cmd_acc;
       cmd_jerk_prev_ = cmd_jerk;
       cmd_yaw_prev_ = cmd_yaw;
+      RCLCPP_INFO(get_logger(), "[getControllerCommand] Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
     }
 
     start_publish_cmd_ = true;
@@ -768,7 +779,9 @@ void ControllerServer::getControllerCommand()
 
     
     // Select a single PVA waypoint to send (New method) 
+    RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
     std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+    RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
 
     Eigen::Vector3d nearest_cmd_pos;
     auto nearest_cmd_dist = std::numeric_limits<double>::max();
@@ -851,7 +864,7 @@ void ControllerServer::getControllerCommand()
     
     last_valid_cmd_time_ = now();
     start_publish_cmd_ = true;
-
+    RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
   }
 
   // TODO: Speed feedback here is not implemented
@@ -882,6 +895,7 @@ void ControllerServer::getControllerCommand()
 
 void ControllerServer::updateGlobalPath()
 {
+  RCLCPP_INFO(get_logger(), "[updateGlobalPath] Updating global path");
   if (action_server_->is_preempt_requested()) {
     RCLCPP_INFO(get_logger(), "Passing new path to controller.");
     auto goal = action_server_->accept_pending_goal();
@@ -907,6 +921,7 @@ void ControllerServer::updateGlobalPath()
     }
 
     setPlannerPath(goal->path);
+    RCLCPP_INFO(get_logger(), "[updateGlobalPath] Updated global path");
   }
 }
 
