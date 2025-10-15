@@ -140,6 +140,9 @@ class MissionManager(Node):
         """
         self.planning_timer = self.create_timer(1.0/self.global_replanning_freq, self.planningTimerCB)
 
+        # For multi drone, when rviz is not used
+        # self.planning_timer = self.create_timer(1.0/self.global_replanning_freq, self.pubScenarioGoals)
+
         self.get_logger().info(f"Initialized mission manager")
     
     def planningTimerCB(self):

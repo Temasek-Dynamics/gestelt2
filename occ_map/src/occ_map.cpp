@@ -528,6 +528,7 @@ void OccMap::updateLocalMap(){
         // Perform radius search for each point and get nunber of points
         kdtree_lcl_raw_->Radius_Search(obs_pt_map, noise_search_radius_, nb_points);
         if ((int) nb_points.size() < noise_min_neighbors_){
+          logger_->logInfo("nb_points.size() < noise_min_neighbors_");
           continue;
         }
       }
@@ -611,7 +612,7 @@ void OccMap::vizMapTimerCB()
   // publish boundaries of local map volume
 
   geometry_msgs::msg::PolygonStamped local_map_poly;
-  local_map_poly.header.frame_id = global_frame_;
+  local_map_poly.header.frame_id = map_frame_;
   local_map_poly.header.stamp = get_clock()->now();
 
   geometry_msgs::msg::Point32 min_corner, corner_0, corner_1, max_corner;
