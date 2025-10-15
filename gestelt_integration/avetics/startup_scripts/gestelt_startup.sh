@@ -33,16 +33,21 @@ VILOTA_BRIDGE="ros2 launch gestelt_bringup vilota_launch.py"
 # Start gestelt nodes
 GESTELT_NODE="ros2 launch gestelt_bringup offboard_launch.py "
 
+# Start mission node on OBC
+MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=single_drone_test"
+
 if [ "$SESSIONEXISTS" = "" ]
 then 
 
     tmux new-session -d -s $SESSION
 
     tmux split-window -t $SESSION:0.0 -v
+    tmux split-window -t $SESSION:0.1 -h
 
     tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m 
     sleep 1
-    tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m 
+    tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m
+    tmux send-keys -t $SESSION:0.2 "$MISSION_NODES"  
 fi
 
 # Attach session on the first window
