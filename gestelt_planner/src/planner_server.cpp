@@ -517,7 +517,7 @@ PlannerServer::computePlan()
     }
 
     auto cancel_checker = [this]() {
-      RCLCPP_WARN(get_logger(),"[computePlan] [cancel_checker] Cancel requested");
+      // RCLCPP_WARN(get_logger(),"[computePlan] [cancel_checker] Cancel requested");
       return action_server_pose_->is_cancel_requested();
     };
 
