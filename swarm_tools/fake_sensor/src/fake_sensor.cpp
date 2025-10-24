@@ -38,7 +38,11 @@ FakeSensor::FakeSensor()
 	// Downsampler parameters
 	this->declare_parameter("pcd_voxel_filter.enable", true);
 	this->declare_parameter("pcd_voxel_filter.voxel_size", -1.0);
-
+	
+	// RCLCPP_INFO(this->get_logger(), "Obtaining drone id \n");
+	drone_id_ = this->get_parameter("drone_id").as_int();
+	// RCLCPP_INFO(this->get_logger(), "Obtained drone id \n");
+	
 	// Frame parameters
 	global_frame_ = this->get_parameter("global_frame").as_string();
 	map_frame_ = this->get_parameter("map_frame").as_string();
@@ -66,12 +70,14 @@ FakeSensor::FakeSensor()
 	auto reentrant_sub_opt = rclcpp::SubscriptionOptions();
 	reentrant_sub_opt.callback_group = reentrant_cb_grp_;
 
+	// RCLCPP_INFO(this->get_logger(), "Drone id in int %d\n", drone_id_);
 	/* Publishers */
     cloud_sensor_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-		"cloud", rclcpp::SensorDataQoS());
+		"d" + std::to_string(drone_id_) + "/cloud", rclcpp::SensorDataQoS());
+	// RCLCPP_INFO(this->get_logger(), "Drone id in str %s\n", std::to_string(drone_id_).c_str());
 
 	cloud_global_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-		"cloud_global", rclcpp::SensorDataQoS());
+		"d" + std::to_string(drone_id_) + "/cloud_global", rclcpp::SensorDataQoS());
 
 	if (voxel_filter_enable_){
 		vox_grid_ = std::make_shared<pcl::VoxelGrid<pcl::PointXYZ>>();

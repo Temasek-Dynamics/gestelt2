@@ -65,6 +65,7 @@ class FakeSensor : public rclcpp::Node
         /* Params */
         int num_drones_{1}; // Number of drones, used to create subscription for odom
 
+        int drone_id_;
         std::string global_frame_; // Global map frame
         std::string map_frame_; // Fixed map origin frame
         std::string sensor_frame_;  // Frame of sensor on UAV
