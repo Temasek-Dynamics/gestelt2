@@ -53,11 +53,13 @@ class MissionManager(Node):
         self.declare_parameter('init_delay', 2.0)
         self.declare_parameter('point_goal_height', 1.0)
         self.declare_parameter('global_replanning_freq', 5.0)
+        self.declare_parameter('drone_id', 0)
 
         self.scenario_name = self.get_parameter('scenario').get_parameter_value().string_value
         self.init_delay = self.get_parameter('init_delay').get_parameter_value().double_value
         self.point_goal_height = self.get_parameter('point_goal_height').get_parameter_value().double_value
         self.global_replanning_freq = self.get_parameter('global_replanning_freq').get_parameter_value().double_value
+        self.drone_id = self.get_parameter('drone_id').get_parameter_value().integer_value
 
         self.get_logger().info(f"Initializing mission manager with scenario {self.scenario_name}...")
 
@@ -96,6 +98,7 @@ class MissionManager(Node):
         # Publish to individual UAV
         self.uav_cmd_pubs = []
         for id in range(self.scenario.num_agents):
+            id = self.drone_id
             self.uav_cmd_pubs.append(self.create_publisher(
                                     AllUAVCommand, '/d' + str(id) + '/uav_command', 
                                     rclpy.qos.qos_profile_services_default))
@@ -104,6 +107,7 @@ class MissionManager(Node):
         self.occ_map_pubs_ = []
         self.goals_pubs_ = []
         for id in range(self.scenario.num_agents):
+            id = self.drone_id
             self.goals_pubs_.append(self.create_publisher(
                                     Goals, 'd' + str(id) + '/goals', 
                                     rclpy.qos.qos_profile_services_default))
@@ -114,6 +118,7 @@ class MissionManager(Node):
         # Initialize data structures
         self.uav_states = []
         for id in range(self.scenario.num_agents):
+            id = self.drone_id
             self.uav_states.append(UAVState.UNDEFINED)
 
         """
@@ -121,6 +126,7 @@ class MissionManager(Node):
         """
         self.navigators = []
         for id in range(self.scenario.num_agents):
+            id = self.drone_id
             self.navigators.append(BasicNavigator(node_name='basic_navigator', 
                                                   namespace='/d' + str(id)))
 
@@ -147,6 +153,9 @@ class MissionManager(Node):
     
     def planningTimerCB(self):
         if self.enable_planning:
+            # id = self.drone_id
+            # ns = '/d' + str(id)
+
             self.get_logger().info(f"Getting global plan to goal "
                 f"({self.point_goal_pose.pose.position.x:.2f}, {self.point_goal_pose.pose.position.y:.2f}, {self.point_goal_pose.pose.position.z:.2f})...",
                 throttle_duration_sec=1.0)
@@ -155,6 +164,10 @@ class MissionManager(Node):
                 navigator = self.navigators[0]
             else:
                 navigator = self.navigator_no_ns
+
+            # if not navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization'):
+            #     self.get_logger().error(f"Failed to activate {ns+'/planner_server'}, planning request aborted!")
+            #     return
 
             # sanity check a valid path exists
             gbl_path = navigator.getPath(PoseStamped(), self.point_goal_pose, 
@@ -192,6 +205,7 @@ class MissionManager(Node):
         # Wait for drone states to be req_state before triggering state transition
         if req_state != None:
             for id in range(self.scenario.num_agents):
+                id = self.drone_id
                 while not self.isInReqState(id, req_state):
                     time.sleep(1.0)
                     retry_num += 1
@@ -228,6 +242,7 @@ class MissionManager(Node):
         # Wait for drone states to be req_state before triggering state transition
         if req_state != None:
             for id in range(self.scenario.num_agents):
+                id = self.drone_id
                 while not self.isInReqState(id, req_state):
                     time.sleep(1.0)
                     retry_num += 1
@@ -251,15 +266,16 @@ class MissionManager(Node):
         """Publish goals to all drones from scenario.json configuration
         """
         for id in range(self.scenario.num_agents):
+            id = self.drone_id
             ns = '/d' + str(id)
-            navigator = self.navigators[id]
+            navigator = self.navigators[0]
 
             goal_pose = PoseStamped()
-            goal_pose.header.frame_id = 'world'
+            goal_pose.header.frame_id = f'd{id}_map'
             goal_pose.header.stamp = self.get_clock().now().to_msg()
-            goal_pose.pose.position.x = self.scenario.goals_pos[id][0]
-            goal_pose.pose.position.y = self.scenario.goals_pos[id][1]
-            goal_pose.pose.position.z = self.scenario.goals_pos[id][2]
+            goal_pose.pose.position.x = self.scenario.goals_pos[0][0]
+            goal_pose.pose.position.y = self.scenario.goals_pos[0][1]
+            goal_pose.pose.position.z = self.scenario.goals_pos[0][2]
             goal_pose.pose.orientation.w = 1.0
 
             if not navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization'):
@@ -269,17 +285,23 @@ class MissionManager(Node):
             # sanity check a valid path exists
             gbl_path = navigator.getPath(PoseStamped(), goal_pose, 
                                             planner_id='GridBased', use_start=False)
-            self.get_logger().info(f"[pubScenarioGoals]Robot current position: {gbl_path.poses[0].pose.position.x:.2f}, {gbl_path.poses[0].pose.position.y:.2f}, {gbl_path.poses[0].pose.position.z:.2f}")
+            if gbl_path == None:
+                self.get_logger().warn("Global path planning failed, not sending reference plan to controller")
+                continue
+            self.get_logger().info(f"[d{str(id)}.pubScenarioGoals]Robot current position: {gbl_path.poses[0].pose.position.x:.2f}, {gbl_path.poses[0].pose.position.y:.2f}, {gbl_path.poses[0].pose.position.z:.2f}")
+
             # Request for controller to follow global path
             navigator.followPath(gbl_path)
 
     def pointGoalCallback(self, msg):
         """Callback on point goal topic from RVIZ
         """
+        id = self.drone_id
         self.get_logger().info(f"Received point goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
         
         self.point_goal_pose = PoseStamped()
         self.point_goal_pose.header.frame_id = 'world'
+        # self.point_goal_pose.header.frame_id = f'd{id}_map'
         self.point_goal_pose.header.stamp = self.get_clock().now().to_msg()
         self.point_goal_pose.pose.position.x = msg.pose.position.x
         self.point_goal_pose.pose.position.y = msg.pose.position.y
@@ -291,9 +313,11 @@ class MissionManager(Node):
     def resetOccMap(self):
         """Reset occupancy map
         """
-
         for id in range(self.scenario.num_agents):
-            self.occ_map_pubs_[id].publish(Empty())
+            id = self.drone_id
+            self.get_logger().info("Resetting occ map")
+            self.occ_map_pubs_[0].publish(Empty())
+            self.get_logger().info("Reset occ map")
 
     def isInReqState(self, id, req_state):
         """Check if UAV with specified id is in required state
@@ -320,12 +344,12 @@ class MissionManager(Node):
             self.get_logger().error(f"Did not receive message from {state_topic}")
             return False
         
-        self.uav_states[id] = msg.state
+        self.uav_states[0] = msg.state
 
         # if (not in_req_state):
         #     self.get_logger().info(f'Drone{id} is in state {msg.state}. Not in required state {req_state}')
 
-        return (self.uav_states[id] == req_state)
+        return (self.uav_states[0] == req_state)
 
     def waitForReqState(self, req_state, max_retries=20):
         """Wait until the UAV state matches the required state
@@ -339,6 +363,7 @@ class MissionManager(Node):
 
         if req_state != None:
             for id in range(self.scenario.num_agents):
+                id = self.drone_id
                 while not self.isInReqState(id, req_state):
                     time.sleep(1.0)
                     retry_num += 1

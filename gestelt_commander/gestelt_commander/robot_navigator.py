@@ -254,7 +254,7 @@ class BasicNavigator(Node):
         goal_msg.controller_id = controller_id
         goal_msg.goal_checker_id = goal_checker_id
 
-        self.info('Executing path...')
+        self.info('[followPath]Executing path...')
         send_goal_future = self.follow_path_client.send_goal_async(goal_msg,
                                                                    self._feedbackCallback)
         rclpy.spin_until_future_complete(self, send_goal_future)
@@ -265,6 +265,7 @@ class BasicNavigator(Node):
             return False
 
         self.result_future = self.goal_handle.get_result_async()
+        self.info('[followPath]Executed path successfully')
         return True
 
     def cancelTask(self):

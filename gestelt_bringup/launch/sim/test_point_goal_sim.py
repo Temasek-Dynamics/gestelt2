@@ -47,6 +47,7 @@ class Scenario:
 
 def launch_setup(context):
     scenario_name = LaunchConfiguration('scenario_name').perform(context)
+    _drone_id = LaunchConfiguration('_drone_id').perform(context)
 
     scenario = Scenario(os.path.join(
         get_package_share_directory('gestelt_commander'), 'scenarios.json'),
@@ -66,6 +67,7 @@ def launch_setup(context):
             {'init_delay': 1.0},
             {'point_goal_height': 1.0},
             {'global_replanning_freq': 10.0},
+            {'drone_id' : int(_drone_id)},
         ]
     )
 
@@ -79,6 +81,7 @@ def generate_launch_description():
 
     launch_args = [
         DeclareLaunchArgument('scenario_name', default_value='single_drone_test'),
+        DeclareLaunchArgument('_drone_id', default_value='0'),
     ]
 
     ld = LaunchDescription(launch_args)
