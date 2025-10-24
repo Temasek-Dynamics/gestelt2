@@ -140,7 +140,7 @@ public:
   {
     return nav2_util::getCurrentPose(
       global_pose, 
-      *tf_buffer_, global_frame_, 
+      *tf_buffer_, map_frame_, 
       base_link_frame_, transform_tolerance_);
   }
 

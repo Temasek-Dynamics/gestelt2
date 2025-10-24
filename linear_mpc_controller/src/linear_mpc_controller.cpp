@@ -249,7 +249,7 @@ void LinearMPCController::computeCommands(
 
   // Transform path to map frame
   geometry_msgs::msg::PoseStamped pose_stamped; // Current pose in global frame
-  pose_stamped.header.frame_id = occ_map_->getGlobalFrameID();
+  pose_stamped.header.frame_id = occ_map_->getMapFrameID();
   pose_stamped.header.stamp = clock_->now();
   pose_stamped.pose.position.x = position(0);
   pose_stamped.pose.position.y = position(1);
