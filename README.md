@@ -219,3 +219,7 @@ gestelt_integration/avetics/startup_scripts/gestelt_startup.sh
 # On the ground control computer
 gestelt_integration/avetics/startup_scripts/gcs_startup.sh
 ```
+
+## Temp
+
+git push verification by NK
