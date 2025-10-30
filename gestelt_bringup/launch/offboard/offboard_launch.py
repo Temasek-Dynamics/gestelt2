@@ -14,7 +14,8 @@ from launch.actions import (
     IncludeLaunchDescription, 
     GroupAction, 
     ExecuteProcess, 
-    DeclareLaunchArgument
+    DeclareLaunchArgument,
+    OpaqueFunction
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
@@ -55,7 +56,26 @@ class Scenario:
         if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
-def generate_launch_description():
+# def generate_launch_description():
+def launch_setup(context):
+
+    ## Declare launch arguments ##
+    SCENARIO_NAME = LaunchConfiguration('scenario_name').perform(context)
+    _drone_id = LaunchConfiguration('_drone_id').perform(context)
+
+    
+    declare_scenario_config_cmd = DeclareLaunchArgument(
+        'scenario_name',
+        default_value='single_drone_test',
+        description='Select a scenario containing an empty or fake map and spawn position',
+    )
+    declare_drone_id_cmd = DeclareLaunchArgument(
+        '_drone_id',
+        default_value='0',
+        description='Drone identity for the drone using this script',
+    )
+    ## Declare launch arguments ##
+
     scenario = Scenario(
         os.path.join(get_package_share_directory('gestelt_commander'), 'scenarios.json'),
         SCENARIO_NAME
@@ -75,7 +95,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='d0', description='Top-level namespace'
+        'namespace', default_value='d'+'_drone_id', description='Top-level namespace'
     )
 
     declare_params_file_cmd = DeclareLaunchArgument(
@@ -125,19 +145,19 @@ def generate_launch_description():
         shell=True
     )
 
-    # Create the launch description and populate
-    ld = LaunchDescription()
+    # # Create the launch description and populate
+    # ld = LaunchDescription()
 
-    ld.add_action(declare_namespace_cmd)
-    ld.add_action(declare_use_namespace_cmd)
-    ld.add_action(declare_params_file_cmd)
-    ld.add_action(declare_use_sim_time_cmd)
+    # ld.add_action(declare_namespace_cmd)
+    # ld.add_action(declare_use_namespace_cmd)
+    # ld.add_action(declare_params_file_cmd)
+    # ld.add_action(declare_use_sim_time_cmd)
 
-    ld.add_action(declare_rviz_config_file_cmd)
-    ld.add_action(declare_use_rviz_cmd)
+    # ld.add_action(declare_rviz_config_file_cmd)
+    # ld.add_action(declare_use_rviz_cmd)
 
-    ld.add_action(xrce_agent)
-    ld.add_action(start_rviz_cmd)
+    # ld.add_action(xrce_agent)
+    # ld.add_action(start_rviz_cmd)
 
     drone_id = 0
     ns = "d" + str(drone_id)
@@ -152,7 +172,8 @@ def generate_launch_description():
     camera_front_right_frame = "camera_front_right"
     camera_front_left_frame = "camera_front_left"
 
-    ld.add_action(
+    # ld.add_action
+    drone_bringup = 
         GroupAction(
             actions=[
                 IncludeLaunchDescription(
@@ -173,10 +194,10 @@ def generate_launch_description():
                     name=ns+'_world_to_map_tf',
                     executable = "static_transform_publisher",
                     output="own_log",
-                    arguments = [str(scenario.spawns_pos[drone_id][0]), 
-                                str(scenario.spawns_pos[drone_id][1]), 
+                    arguments = [str(scenario.spawns_pos[0][0]), 
+                                str(scenario.spawns_pos[0][1]), 
                                 "0", 
-                                str(scenario.spawns_pos[drone_id][2]), 
+                                str(scenario.spawns_pos[0][2]), 
                                 "0", "0", 
                                 global_frame, map_frame],
                 ),
@@ -220,6 +241,29 @@ def generate_launch_description():
                 ),
             ]
         )
-    )
+    
+
+    return [
+        declare_scenario_config_cmd,
+        declare_drone_id_cmd,
+        declare_namespace_cmd,
+        declare_use_namespace_cmd,
+        declare_params_file_cmd,
+        declare_use_sim_time_cmd,
+
+        declare_rviz_config_file_cmd,
+        declare_use_rviz_cmd,
+        ros_gz_bridge_action,
+        xrce_agent,
+        # start_rviz_cmd,
+
+        drone_bringup,  
+    ]
+
+def generate_launch_description():
+    opfunc = OpaqueFunction(function = launch_setup)
+
+    ld = LaunchDescription()
+    ld.add_action(opfunc)
 
     return ld
