@@ -172,6 +172,13 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   mtex_callback_grp2_ = create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive, false);
 
+  // // Part of odom subscription (WIP)
+  // swarm_plan_cb_group_ = this->create_callback_group(
+  //   rclcpp::CallbackGroupType::Reentrant); 
+
+  // auto swarm_plan_sub_opt = rclcpp::SubscriptionOptions();
+  // swarm_plan_sub_opt.callback_group = swarm_plan_cb_group_;
+
   // Create the transform-related objects
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(get_clock());
   auto timer_interface = std::make_shared<tf2_ros::CreateTimerROS>(
@@ -195,6 +202,49 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   reset_map_sub_ = create_subscription<std_msgs::msg::Empty>(
     "reset_map", rclcpp::ServicesQoS(), 
     std::bind(&OccMap::resetMapCB, this, _1) );
+
+  // Part of odom subscription (WIP) //
+  RCLCPP_INFO(get_logger(), "drone full id: %s", parent_namespace_.c_str());
+  drone_id_ = parent_namespace_[parent_namespace_.size() - 1] - '0'; // Take just the last number id, by offsetting from int value of '0'
+  // for (int i = 0; i < num_drones_; i++){
+
+  //   if (i == drone_id_){
+  //     continue;
+  //   }
+
+  //   std::function<void(const nav_msgs::msg::Odometry::UniquePtr msg)> bound_callback_func =
+  //     std::bind(&OccMap::swarmOdomCB, this, _1, i);
+
+  //   swarm_odom_subs_.push_back(
+  //     create_subscription<nav_msgs::msg::Odometry>(
+  //     "/d"+ std::to_string(i) + "/" + "odom", 
+  //     rclcpp::SensorDataQoS(), 
+  //     bound_callback_func,
+  //     swarm_plan_sub_opt)
+  //   );
+  // }
+
+  if ((int)(drone_poses_.size()) < num_drones_){
+    for (int i = 0; i < num_drones_; i++){
+      drone_poses_.push_back(Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")));
+    }
+  }
+
+  int i = 0;
+  RCLCPP_INFO(get_logger(), "drone id: %d", drone_id_);
+  if (drone_id_ == 0){
+    i = 1;
+  }
+  else{
+    i = 0;
+  }
+
+  swarm_odom_subs_ = create_subscription<nav_msgs::msg::Odometry>(
+    "/d"+ std::to_string(i) + "/" + "odom", 
+    rclcpp::SensorDataQoS(), 
+    std::bind(&OccMap::swarmOdomCB, this, _1));
+  RCLCPP_INFO(get_logger(), "swarmOdomCB callback success");
+  // Part of odom subscription (WIP) //
 
   /* Initialize ROS Timers */
   viz_map_timer_ = create_wall_timer((1.0/viz_occ_map_freq_) *1000ms, 
@@ -510,6 +560,36 @@ void OccMap::updateLocalMap(){
         pcl::PointXYZ(obs_pos_map(0), obs_pos_map(1), obs_pos_map(2)));
     }
 
+    // Part of odom subscription (WIP) //
+    // fill the neighbour around 
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sending drone poses to lcl pcd map");
+    for (int i = 0; i < (int)(drone_poses_.size()); i++)
+    {
+      for (int dx = -2; dx <= 2; dx++)
+      {
+          for (int dy = -2; dy <= 2; dy++)
+          {
+              for (int dz = -2; dz <= 2; dz++)
+              {
+                Eigen::Vector3d odom_pos_map = Eigen::Vector3d(
+                  drone_poses_[i](0) + ((double)dx * 0.1), // res of 0.2m
+                  drone_poses_[i](1) + ((double)dy * 0.1),
+                  drone_poses_[i](2) + ((double)dz * 0.1)
+                );
+
+                if (!inLocalMap(odom_pos_map)){  // Point is outside the local map
+                  continue;
+                }
+
+                lcl_pcd_map_raw_->push_back(
+                  pcl::PointXYZ(odom_pos_map(0), odom_pos_map(1), odom_pos_map(2)));
+              }
+          }
+      }
+    }
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sent drone poses to lcl pcd map");
+    // Part of odom subscription (WIP) //
+
     if (enable_noise_filter_){
       // Add local occ points in fixed map frame to KDTree
       kdtree_lcl_raw_->Build(lcl_pcd_map_raw_->points);
@@ -728,6 +808,44 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   bonxai_map_->insertPointCloud(pcd_in_map_frame->points, sensor_origin, max_range_);
   // tm_bonxai_insert_.stop(false);
 }
+
+// Part of odom subscription (WIP) //
+void OccMap::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg){
+  Eigen::Vector3d pose = Eigen::Vector3d{msg->pose.pose.position.x,  
+                          msg->pose.pose.position.y,  
+                          msg->pose.pose.position.z};
+
+  // Eigen::Vector3d vel = Eigen::Vector3d{msg->twist.twist.linear.x, 
+  //                       msg->twist.twist.linear.y, 
+  //                       msg->twist.twist.linear.z};
+
+   // Get other agent's frame to map_frame transform
+  RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from other drone at %.2f, %.2f, %.2f", pose(0), pose(1), pose(2));
+  try {
+    auto tf = tf_buffer_->lookupTransform(
+      map_frame_, msg->header.frame_id, 
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.5)));
+    // Set fixed map origin
+    pose(0) += tf.transform.translation.x;
+    pose(1) += tf.transform.translation.y;
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from other drone after transform at %.2f, %.2f, %.2f", pose(0), pose(1), pose(2)); 
+  }
+  
+  catch (const tf2::TransformException & ex) {
+		RCLCPP_ERROR(
+			this->get_logger(), "Could not get transform from agent(%s) to map_frame_(%s): %s",
+			msg->header.frame_id.c_str(), map_frame_.c_str(), ex.what());
+    return;
+  }
+
+  drone_poses_[0] = pose; // set as index 0 first
+
+  // if (id == drone_id_){
+  //   return;
+  // }
+}
+// Part of odom subscription (WIP) //
 
 rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::vector<rclcpp::Parameter> & parameters)
 {
