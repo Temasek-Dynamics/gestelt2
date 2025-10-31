@@ -95,7 +95,7 @@ def launch_setup(context):
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     declare_namespace_cmd = DeclareLaunchArgument(
-        'namespace', default_value='d'+'_drone_id', description='Top-level namespace'
+        'namespace', default_value='d'+str(_drone_id), description='Top-level namespace'
     )
 
     declare_params_file_cmd = DeclareLaunchArgument(
@@ -106,7 +106,7 @@ def launch_setup(context):
 
     declare_use_namespace_cmd = DeclareLaunchArgument(
         'use_namespace',
-        default_value='false',
+        default_value='true',
         description='Whether to apply a namespace to the navigation stack',
     )
 
@@ -159,7 +159,7 @@ def launch_setup(context):
     # ld.add_action(xrce_agent)
     # ld.add_action(start_rviz_cmd)
 
-    drone_id = 0
+    drone_id = int(_drone_id)
     ns = "d" + str(drone_id)
 
     global_frame = "world" # Fixed
@@ -173,74 +173,73 @@ def launch_setup(context):
     camera_front_left_frame = "camera_front_left"
 
     # ld.add_action
-    drone_bringup = 
-        GroupAction(
-            actions=[
-                IncludeLaunchDescription(
-                    PythonLaunchDescriptionSource(
-                        os.path.join(launch_dir, 'offboard', 'bringup_launch.py')),
-                    launch_arguments={
-                        'namespace': namespace,
-                        'use_namespace': use_namespace,
-                        'use_sim_time': use_sim_time,
-                        'params_file': params_file,
-                        'autostart': 'True',
-                        'use_composition': 'False',
-                        'use_respawn': 'False',
-                    }.items(),
-                ),
-                Node( 
-                    package = "tf2_ros", 
-                    name=ns+'_world_to_map_tf',
-                    executable = "static_transform_publisher",
-                    output="own_log",
-                    arguments = [str(scenario.spawns_pos[0][0]), 
-                                str(scenario.spawns_pos[0][1]), 
-                                "0", 
-                                str(scenario.spawns_pos[0][2]), 
-                                "0", "0", 
-                                global_frame, map_frame],
-                ),
-                Node(
-                    package = "tf2_ros", 
-                    name=ns+'_base_link_to_cam_tf',
-                    executable = "static_transform_publisher",
-                    output="own_log",
-                    arguments = [ "-0.085", "0.0", "0.0", 
-                                    "0.0993197", "0.0", "-0.9950556", "0.0", #ZYX (-180, 11.4, 0)
-                                    # "0.0", "0.0", "1.0", "0.0", #ZYX (-180, 0, 0)
-                                    base_link_frame, camera_link],
-                ),
+    drone_bringup = GroupAction(
+                        actions=[
+                            IncludeLaunchDescription(
+                                PythonLaunchDescriptionSource(
+                                    os.path.join(launch_dir, 'offboard', 'bringup_launch.py')),
+                                launch_arguments={
+                                    'namespace': namespace,
+                                    'use_namespace': use_namespace,
+                                    'use_sim_time': use_sim_time,
+                                    'params_file': params_file,
+                                    'autostart': 'True',
+                                    'use_composition': 'False',
+                                    'use_respawn': 'False',
+                                }.items(),
+                            ),
+                            Node( 
+                                package = "tf2_ros", 
+                                name=ns+'_world_to_map_tf',
+                                executable = "static_transform_publisher",
+                                output="own_log",
+                                arguments = [str(scenario.spawns_pos[0][0]), 
+                                            str(scenario.spawns_pos[0][1]), 
+                                            "0", 
+                                            str(scenario.spawns_pos[0][2]), 
+                                            "0", "0", 
+                                            global_frame, map_frame],
+                            ),
+                            Node(
+                                package = "tf2_ros", 
+                                name=ns+'_base_link_to_cam_tf',
+                                executable = "static_transform_publisher",
+                                output="own_log",
+                                arguments = [ "-0.085", "0.0", "0.0", 
+                                                "0.0993197", "0.0", "-0.9950556", "0.0", #ZYX (-180, 11.4, 0)
+                                                # "0.0", "0.0", "1.0", "0.0", #ZYX (-180, 0, 0)
+                                                base_link_frame, camera_link],
+                            ),
 
-                Node(
-                    package = "tf2_ros", 
-                    name=ns+'_cam_to_front_cam_tf',
-                    executable = "static_transform_publisher",
-                    output="own_log",
-                    arguments = [ "-0.2", "0.0", "0.0", 
-                                    "0.5", "0.5", "-0.5", "-0.5", #ZYX (90, 0, 90)
-                                    camera_link, camera_front_frame],
-                ),
-                Node(
-                    package = "tf2_ros", 
-                    name=ns+'_cam_to_left_cam_tf',
-                    executable = "static_transform_publisher",
-                    output="own_log",
-                    arguments = [ "-0.159341", "-0.071877", "0.000139", 
-                                    "0.35707", "0.61104", "-0.61057", "-0.35541",
-                                    camera_link, camera_front_left_frame],
-                ),
-                Node(
-                    package = "tf2_ros", 
-                    name=ns+'_cam_to_right_cam_tf',
-                    executable = "static_transform_publisher",
-                    output="own_log",
-                    arguments = [ "-0.160507", "0.071495", "0.000393", 
-                                    "-0.605586", "-0.35930", "0.359366", "0.612390",
-                                    camera_link, camera_front_right_frame],
-                ),
-            ]
-        )
+                            Node(
+                                package = "tf2_ros", 
+                                name=ns+'_cam_to_front_cam_tf',
+                                executable = "static_transform_publisher",
+                                output="own_log",
+                                arguments = [ "-0.2", "0.0", "0.0", 
+                                                "0.5", "0.5", "-0.5", "-0.5", #ZYX (90, 0, 90)
+                                                camera_link, camera_front_frame],
+                            ),
+                            Node(
+                                package = "tf2_ros", 
+                                name=ns+'_cam_to_left_cam_tf',
+                                executable = "static_transform_publisher",
+                                output="own_log",
+                                arguments = [ "-0.159341", "-0.071877", "0.000139", 
+                                                "0.35707", "0.61104", "-0.61057", "-0.35541",
+                                                camera_link, camera_front_left_frame],
+                            ),
+                            Node(
+                                package = "tf2_ros", 
+                                name=ns+'_cam_to_right_cam_tf',
+                                executable = "static_transform_publisher",
+                                output="own_log",
+                                arguments = [ "-0.160507", "0.071495", "0.000393", 
+                                                "-0.605586", "-0.35930", "0.359366", "0.612390",
+                                                camera_link, camera_front_right_frame],
+                            ),
+                        ]
+                    )
     
 
     return [
@@ -253,7 +252,6 @@ def launch_setup(context):
 
         declare_rviz_config_file_cmd,
         declare_use_rviz_cmd,
-        ros_gz_bridge_action,
         xrce_agent,
         # start_rviz_cmd,
 
