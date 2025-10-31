@@ -112,23 +112,13 @@ def generate_launch_description():
     # Concat PCL topics
     pcl_topics_arg = DeclareLaunchArgument(
         'pcl_topics',
-        default_value = [
-            TextSubstitution(text="['/"),
-            LaunchConfiguration('namespace'),
-            TextSubstitution(text="/front_left/point_cloud/downsample, '/"),
-            LaunchConfiguration('namespace'),
-            TextSubstitution(text="/front_right/point_cloud/downsample']"),
-        ]
-        # f"['/{namespace}/front_left/point_cloud/downsample','/{namespace}/front_right/point_cloud/downsample']",
+        default_value = "['front_left/point_cloud/downsample','front_right/point_cloud/downsample']",
         description='Topics to concatenate'
     )
 
     concat_pcl_topic_arg = DeclareLaunchArgument(
         'concat_pcl_topic',
-        default_value =[
-            LaunchConfiguration('namespace'),
-            TextSubstitution(text='/point_cloud/concat')],
-        # namespace+'/point_cloud/concat',
+        default_value= 'point_cloud/concat',
         description='Concatenate output topic'
     )
 
