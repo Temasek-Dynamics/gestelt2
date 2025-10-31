@@ -565,14 +565,14 @@ void OccMap::updateLocalMap(){
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sending drone poses to lcl pcd map");
     for (int i = 0; i < (int)(drone_poses_.size()); i++)
     {
-      for (int dx = -2; dx <= 2; dx++)
+      for (int dx = -4; dx <= 4; dx++)
       {
-          for (int dy = -2; dy <= 2; dy++)
+          for (int dy = -4; dy <= 4; dy++)
           {
-              for (int dz = -2; dz <= 2; dz++)
+              for (int dz = -4; dz <= 4; dz++)
               {
                 Eigen::Vector3d odom_pos_map = Eigen::Vector3d(
-                  drone_poses_[i](0) + ((double)dx * 0.1), // res of 0.2m
+                  drone_poses_[i](0) + ((double)dx * 0.1), // res of 0.1m
                   drone_poses_[i](1) + ((double)dy * 0.1),
                   drone_poses_[i](2) + ((double)dz * 0.1)
                 );
@@ -633,12 +633,12 @@ void OccMap::updateLocalMap(){
       kdtree_lcl_->Build(lcl_pcd_map_->points);
     }
 
-    lcl_pcd_map_raw_->header.frame_id = map_frame_;
+    lcl_pcd_map_raw_->header.frame_id = global_frame_;
     lcl_pcd_map_raw_->width = lcl_pcd_map_raw_->points.size();
     lcl_pcd_map_raw_->height = 1;
     lcl_pcd_map_raw_->is_dense = true; 
 
-    lcl_pcd_map_->header.frame_id = map_frame_;
+    lcl_pcd_map_->header.frame_id = global_frame_;
     lcl_pcd_map_->width = lcl_pcd_map_->points.size();
     lcl_pcd_map_->height = 1;
     lcl_pcd_map_->is_dense = true; 
@@ -789,7 +789,7 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   }
 
   auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcd_in_map_frame->header.frame_id = map_frame_;
+  pcd_in_map_frame->header.frame_id = global_frame_;
 
   // Transform point cloud from camera frame to global_frame 
   pcl::transformPointCloud(*pcd, *pcd_in_map_frame, cam_to_map_mat_);
