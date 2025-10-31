@@ -229,7 +229,7 @@ private:
 	rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
 
 	//odom to pcl hack for obstacle avoidance
-	static constexpr std::array<int, 3> drone_ids_ { 0, 1, 2 }; //define all drone IDs
+	static constexpr std::array<int, 3> drone_ids_ { 1, 2, 3 }; //define all drone IDs
 	std::vector<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr> odom_pcl_pubs_; //publishers for odom to point cloud to emulate static obstacles
 
 	/* Subscribers */
