@@ -300,8 +300,8 @@ class MissionManager(Node):
         self.get_logger().info(f"Received point goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
         
         self.point_goal_pose = PoseStamped()
-        self.point_goal_pose.header.frame_id = 'world'
-        # self.point_goal_pose.header.frame_id = f'd{id}_map'
+        # self.point_goal_pose.header.frame_id = 'world'
+        self.point_goal_pose.header.frame_id = f'd{id}_map'
         self.point_goal_pose.header.stamp = self.get_clock().now().to_msg()
         self.point_goal_pose.pose.position.x = msg.pose.position.x
         self.point_goal_pose.pose.position.y = msg.pose.position.y
