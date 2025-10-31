@@ -26,7 +26,9 @@ set(ROS_DEPENDENCIES
 	gestelt_interfaces
 	px4_msgs
 	tf2_ros
-	logger_wrapper)
+	logger_wrapper
+	pcl_ros # odom to pcl hack
+	pcl_conversions)
 
 foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
@@ -40,7 +42,7 @@ include_directories(include)
 
 # Add frame_transforms lib
 add_library(frame_transforms SHARED src/frame_transforms.cpp)
-ament_target_dependencies(frame_transforms 
+ament_target_dependencies(frame_transforms
 	Eigen3
 	geometry_msgs
 	sensor_msgs)
@@ -51,8 +53,8 @@ target_include_directories(frame_transforms PUBLIC
 
 # Trajectory Server
 add_library(
-	trajectory_server 
-	src/trajectory_server.cpp 
+	trajectory_server
+	src/trajectory_server.cpp
 	src/uavsm.cpp
 )
 ament_target_dependencies(
@@ -70,11 +72,11 @@ target_include_directories(trajectory_server PUBLIC
 target_link_libraries(trajectory_server frame_transforms)
 
 add_executable(
-	trajectory_server_node 
-	src/main.cpp 
+	trajectory_server_node
+	src/main.cpp
 )
 target_link_libraries(
-	trajectory_server_node 
+	trajectory_server_node
 	trajectory_server
 	rclcpp::rclcpp
 )
@@ -82,7 +84,7 @@ target_link_libraries(
 ############
 # Install ##
 ############
-install(TARGETS 
+install(TARGETS
 	trajectory_server_node
 DESTINATION lib/${PROJECT_NAME})
 

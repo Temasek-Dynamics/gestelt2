@@ -33,6 +33,11 @@
 
 #include <frame_transforms.hpp>
 
+//odom to pcl hack
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 TrajectoryServer::TrajectoryServer()
 	: Node("trajectory_server")
 {
@@ -41,7 +46,7 @@ TrajectoryServer::TrajectoryServer()
 	logger_->logInfo("Initializing");
 
 	fsm_list::start(); // start UAV state machine
- 
+
 	tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 	tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
 
@@ -93,11 +98,11 @@ TrajectoryServer::TrajectoryServer()
 
 	correct_for_ground_height_ = this->get_parameter("correct_for_ground_height").as_bool();
 
-	mode_trajectory_enable_pos_ = 
+	mode_trajectory_enable_pos_ =
 		this->get_parameter("mode_trajectory_enable_pos").as_bool();
-	mode_trajectory_enable_vel_ = 
+	mode_trajectory_enable_vel_ =
 		this->get_parameter("mode_trajectory_enable_vel").as_bool();
-	mode_trajectory_enable_acc_ = 
+	mode_trajectory_enable_acc_ =
 		this->get_parameter("mode_trajectory_enable_acc").as_bool();
 
 	// Create callback groups
@@ -128,16 +133,30 @@ TrajectoryServer::TrajectoryServer()
 	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
 		"odom", rclcpp::SensorDataQoS());
 
+	//odom to pcl hack
+	for (const auto current_id : drone_ids_)
+	{
+		if (current_id == drone_id_)
+			continue;
+
+		odom_pcl_pubs_.emplace_back(
+			this->create_publisher<sensor_msgs::msg::PointCloud2>(
+				"/d" + std::to_string(current_id) + "/cloud",
+				rclcpp::SensorDataQoS()
+			)
+        );
+	}
+
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
 		"uav_state", 5);
 
 	/* Subscribers */
 	fcu_odom_sub_ = this->create_subscription<px4_msgs::msg::VehicleOdometry>(
-		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(), 
+		"fmu/out/vehicle_odometry", rclcpp::SensorDataQoS(),
 		std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
 
 	vehicle_status_sub_ = this->create_subscription<px4_msgs::msg::VehicleStatus>(
-		"fmu/out/vehicle_status_v1", rclcpp::SensorDataQoS(), 
+		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(),
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	lin_mpc_cmd_sub_ = this->create_subscription<px4_msgs::msg::TrajectorySetpoint>(
@@ -161,7 +180,7 @@ TrajectoryServer::TrajectoryServer()
 		std::bind(&TrajectoryServer::setOffboardTimerCB, this), others_cb_group_);
 	pub_state_timer_ = this->create_wall_timer((1.0 / pub_state_freq_) * 1000ms,
 		std::bind(&TrajectoryServer::pubStateTimerCB, this), others_cb_group_);
-												
+
 	logger_->logInfo("Initialized");
 }
 
@@ -188,16 +207,16 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 
 	cur_ori_enu_ = frame_transforms::px4_to_ros_orientation(
 		frame_transforms::utils::quaternion::array_to_eigen_quat(msg->q));
-	cur_pos_enu_ = 
+	cur_pos_enu_ =
 		frame_transforms::ned_to_enu_local_frame(Eigen::Vector3d(pos.data()));
-	cur_vel_enu_ = 
+	cur_vel_enu_ =
 		frame_transforms::ned_to_enu_local_frame(Eigen::Vector3d(vel.data()));
-	cur_ang_vel_enu_ = 
+	cur_ang_vel_enu_ =
 		frame_transforms::ned_to_enu_local_frame(Eigen::Vector3d(ang_vel.data()));
 
 	if (UAV::is_in_state<Idle>())
 	{
-		logger_->logInfoThrottle(strFmt("Using current height %f as ground height", 
+		logger_->logInfoThrottle(strFmt("Using current height %f as ground height",
 										cur_pos_enu_(2)), 5.0);
 		// Set ground height as the height at which the UAV is resting on the ground
 		ground_height_ = Eigen::Vector3d(0.0, 0.0, cur_pos_enu_(2));
@@ -210,7 +229,7 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 		cur_pos_enu_corr_ = cur_pos_enu_;
 	}
 
-	// Correct for camera_link to base_link offset, since VIO is with 
+	// Correct for camera_link to base_link offset, since VIO is with
 	// reference to camera link
 	cur_pos_enu_corr_(0) = cur_pos_enu_corr_(0) + 0.085;
 
@@ -239,6 +258,37 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	odom_msg.twist.twist.angular.z = cur_ang_vel_enu_(2);
 
 	odom_pub_->publish(odom_msg);
+
+	//odom to pcl hack
+	pcl::PointCloud<pcl::PointXYZ> drone_pointcloud_pcl;
+
+	//generate points (from Lin Zhi)
+	for (int dx = -2; dx <= 2; dx++)
+	{
+		for (int dy = -2; dy <= 2; dy++)
+		{
+			for (int dz = -2; dz <= 2; dz++)
+			{
+				drone_pointcloud_pcl.emplace_back(
+					pcl::PointXYZ(
+						cur_pos_enu_corr_(0) + ((double)dx * 0.1), // res of 0.2m
+						cur_pos_enu_corr_(1) + ((double)dy * 0.1),
+						cur_pos_enu_corr_(2) + ((double)dz * 0.1)
+					)
+				);
+			} //z
+		} //y
+	} //x
+
+	sensor_msgs::msg::PointCloud2 drone_pointcloud_ros;
+	pcl::toROSMsg(drone_pointcloud_pcl, drone_pointcloud_ros);
+
+	//set header
+	drone_pointcloud_ros.header.frame_id = map_frame_;
+	drone_pointcloud_ros.header.stamp = this->get_clock()->now();
+
+	for (auto& odom_pcl_pub : odom_pcl_pubs_)
+        odom_pcl_pub->publish(drone_pointcloud_ros);
 }
 
 void TrajectoryServer::vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::UniquePtr msg)
@@ -251,7 +301,7 @@ void TrajectoryServer::vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::Un
 	// 	logger_->logErrorThrottle("Failed preflight checks!", 1.0);
 	// }
 
-	// logger_->logInfoThrottle(strFmt("arming_state[%d], nav_state[%d], pre_flight_checks_pass_[%d]", 
+	// logger_->logInfoThrottle(strFmt("arming_state[%d], nav_state[%d], pre_flight_checks_pass_[%d]",
 	// 							arming_state_, nav_state_, pre_flight_checks_pass_), 1.0);
 
 	connected_to_fcu_ = true;
@@ -378,7 +428,7 @@ void TrajectoryServer::setOffboardTimerCB()
 		{
 			// Set to land mode
 			this->publish_vehicle_command(
-				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1,
 				PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_AUTO,
 				PX4_CUSTOM_SUB_MODE_AUTO::PX4_CUSTOM_SUB_MODE_AUTO_LAND);
 		}
@@ -388,35 +438,35 @@ void TrajectoryServer::setOffboardTimerCB()
 		uav_state.state = gestelt_interfaces::msg::UAVState::TAKINGOFF;
 
 		if (arming_state_ != px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED)
-		{ 
+		{
 			// Arm vehicle
 			this->publish_vehicle_command(
-				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM,
 				px4_msgs::msg::VehicleCommand::ARMING_ACTION_ARM);
 		}
 
 		if (nav_state_ != px4_msgs::msg::VehicleStatus::NAVIGATION_STATE_OFFBOARD)
-		{ 
+		{
 			// Set to custom (offboard) mode
 			this->publish_vehicle_command(
-				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1, 
+				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_DO_SET_MODE, 1,
 				PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD);
 		}
 
-		// PERIODICALLY: Publish offboard control mode message 
+		// PERIODICALLY: Publish offboard control mode message
 		publishOffboardCtrlMode(0);	// Position control
 	}
 	else if (UAV::is_in_state<Hovering>())
 	{
 		uav_state.state = gestelt_interfaces::msg::UAVState::HOVERING;
 
-		// PERIODICALLY: Publish offboard control mode message 
+		// PERIODICALLY: Publish offboard control mode message
 		publishOffboardCtrlMode(0);	// Position control
 	}
 	else if (UAV::is_in_state<Mission>())
 	{
 		uav_state.state = gestelt_interfaces::msg::UAVState::MISSION;
-		
+
 		// PERIODICALLY: Publish offboard control mode message
 		publishOffboardCtrlMode(fsm_list::fsmtype::current_state_ptr->getControlMode());
 	}
@@ -474,15 +524,15 @@ void TrajectoryServer::pubCtrlTimerCB()
 				publishTrajectorySetpoint(
 					cmd_pos_enu_corr_, cmd_yaw_yawrate_, cmd_vel_enu_, cmd_acc_enu_);
 				break;
-			case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE: 
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_ATTITUDE:
 				logger_->logErrorThrottle("ATTITUDE CONTROL UNIMPLEMENTED", 1.0);
 				// publishAttitudeSetpoint(1.0, Eigen::Vector4d(0.0, 0.0, 0.0, 1.0));
 				break;
-			case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES: 
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_RATES:
 				logger_->logErrorThrottle("RATE CONTROL UNIMPLEMENTED", 1.0);
 				// publishRatesSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
-			case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE: 
+			case gestelt_interfaces::msg::AllUAVCommand::MODE_THRUST_TORQUE:
 				logger_->logErrorThrottle("THRUST_TORQUE CONTROL UNIMPLEMENTED", 1.0);
 				// publishTorqueThrustSetpoint(1.0, Eigen::Vector3d(0.0, 0.0, 0.0));
 				break;
@@ -501,9 +551,9 @@ void TrajectoryServer::pubCtrlTimerCB()
 	{
 		// Disarm vehicle forcefully
 		if (arming_state_ != px4_msgs::msg::VehicleStatus::ARMING_STATE_DISARMED)
-		{ 
+		{
 			this->publish_vehicle_command(
-				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM,
 				px4_msgs::msg::VehicleCommand::ARMING_ACTION_DISARM,
 				21196);
 		}
@@ -530,17 +580,17 @@ void TrajectoryServer::SMTickTimerCB()
 	{
 		logger_->logInfoThrottle("[Idle]", 2.5);
 		if (arming_state_ != px4_msgs::msg::VehicleStatus::ARMING_STATE_DISARMED)
-		{ 
+		{
 			// Disarm vehicle
 			this->publish_vehicle_command(
-				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM, 
+				px4_msgs::msg::VehicleCommand::VEHICLE_CMD_COMPONENT_ARM_DISARM,
 				px4_msgs::msg::VehicleCommand::ARMING_ACTION_DISARM);
 		}
 
 		cmd_pos_enu_ = cur_pos_enu_corr_;
 
-		cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_enu_); 
-		cmd_yaw_yawrate_(1) = NAN; 
+		cmd_yaw_yawrate_(0) = frame_transforms::utils::quaternion::quaternion_get_yaw(cur_ori_enu_);
+		cmd_yaw_yawrate_(1) = NAN;
 	}
 	else if (UAV::is_in_state<Landing>())
 	{
@@ -559,7 +609,7 @@ void TrajectoryServer::SMTickTimerCB()
 		// Commanded z position needs to a given take off height above the ground height.
 		cmd_pos_enu_corr_ = cmd_pos_enu_ + ground_height_;
 
-		if (abs(cur_pos_enu_corr_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight()) 
+		if (abs(cur_pos_enu_corr_(2) - fsm_list::fsmtype::current_state_ptr->getTakeoffHeight())
 			< take_off_landing_tol_)
 		{
 			sendEvent(Hover_E());
@@ -586,12 +636,12 @@ void TrajectoryServer::SMTickTimerCB()
 void TrajectoryServer::pubStateTimerCB()
 {
 	if (pub_map_to_baselink_tf_){
-		// broadcast tf from map to base link 
+		// broadcast tf from map to base link
 		geometry_msgs::msg::TransformStamped map_to_base_link_tf;
 
 		map_to_base_link_tf.header.stamp = this->get_clock()->now();
-		map_to_base_link_tf.header.frame_id = map_frame_; 
-		map_to_base_link_tf.child_frame_id = base_link_frame_; 
+		map_to_base_link_tf.header.frame_id = map_frame_;
+		map_to_base_link_tf.child_frame_id = base_link_frame_;
 
 		map_to_base_link_tf.transform.translation.x = cur_pos_enu_corr_(0);
 		map_to_base_link_tf.transform.translation.y = cur_pos_enu_corr_(1);
@@ -601,7 +651,7 @@ void TrajectoryServer::pubStateTimerCB()
 		map_to_base_link_tf.transform.rotation.y = cur_ori_enu_.y();
 		map_to_base_link_tf.transform.rotation.z = cur_ori_enu_.z();
 		map_to_base_link_tf.transform.rotation.w = cur_ori_enu_.w();
-		
+
 		tf_broadcaster_->sendTransform(map_to_base_link_tf);
 	}
 
@@ -627,7 +677,7 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 
 	switch (offb_ctrl_mode){
 		case gestelt_interfaces::msg::AllUAVCommand::MODE_TRAJECTORY: //0
-			msg.position = mode_trajectory_enable_pos_;	
+			msg.position = mode_trajectory_enable_pos_;
 			msg.velocity = mode_trajectory_enable_vel_;
 			msg.acceleration = mode_trajectory_enable_acc_;
 			break;
@@ -647,12 +697,12 @@ void TrajectoryServer::publishOffboardCtrlMode(const int& offb_ctrl_mode)
 			// Undefined
 			break;
 	}
-	
+
 	offboard_control_mode_pub_->publish(msg);
 }
 
 void TrajectoryServer::publishTrajectorySetpoint(
-	const Eigen::Vector3d& pos, 
+	const Eigen::Vector3d& pos,
 	const Eigen::Vector2d& yaw_yawrate,
 	const Eigen::Vector3d& vel,
 	const Eigen::Vector3d& acc)
@@ -687,8 +737,8 @@ void TrajectoryServer::publishTrajectorySetpoint(
 		yawspeed_ned = -yaw_yawrate(1);
 	}
 
-	// logger_->logWarn(strFmt("yaw(%0.2f -> %0.2f), dyaw(%0.2f -> %0.2f)", 
-	// 	yaw_yawrate(0), yaw_ned * (180.0/3.14), 
+	// logger_->logWarn(strFmt("yaw(%0.2f -> %0.2f), dyaw(%0.2f -> %0.2f)",
+	// 	yaw_yawrate(0), yaw_ned * (180.0/3.14),
 	// 	yaw_yawrate(1), yawspeed_ned * (180.0/3.14)));
 
 	msg.yaw = yaw_ned; // [-PI:PI]
@@ -733,7 +783,7 @@ void TrajectoryServer::publishTorqueThrustSetpoint(const double& thrust, const E
 	px4_msgs::msg::VehicleThrustSetpoint thrust_msg{};
 
 	torque_msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;	// In microseconds
-	thrust_msg.timestamp = torque_msg.timestamp;	
+	thrust_msg.timestamp = torque_msg.timestamp;
 
 	// xyz: torque setpoint about X, Y, Z body axis (normalized)
 	torque_msg.xyz = {(float) torques(0), (float) torques(1), (float) torques(2)};
@@ -767,7 +817,7 @@ void TrajectoryServer::publish_vehicle_command(uint16_t command, float param1, f
 {
 	// Refer to https://docs.px4.io/main/en/msg_docs/VehicleCommand.html for message format
 	px4_msgs::msg::VehicleCommand msg{};
-	msg.param1 = param1;	// param1 is used to set the base_mode variable. 1 is MAV_MODE_FLAG_CUSTOM_MODE_ENABLED. See mavlink's MAV_MODE_FLAG 
+	msg.param1 = param1;	// param1 is used to set the base_mode variable. 1 is MAV_MODE_FLAG_CUSTOM_MODE_ENABLED. See mavlink's MAV_MODE_FLAG
 	// For param2 and param3, refer to https://github.com/PX4/PX4-Autopilot/blob/0186d687b2ac3d62789806d341bd868b388c2504/src/modules/commander/px4_custom_mode.h
 	msg.param2 = param2;	// custom_main_mode. 6 is PX4_CUSTOM_MAIN_MODE::PX4_CUSTOM_MAIN_MODE_OFFBOARD
 	msg.param3 = param3;	// sub mode

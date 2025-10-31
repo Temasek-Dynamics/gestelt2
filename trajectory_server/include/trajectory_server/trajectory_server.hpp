@@ -1,6 +1,6 @@
 /****************************************************************************
  * MIT License
- *  
+ *
  *	Copyright (c) 2024 John Tan. All rights reserved.
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -57,6 +57,8 @@
 
 #include <uavsm.hpp>
 
+#include <sensor_msgs/msg/point_cloud2.hpp> //odom to pcl hack
+
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -105,21 +107,21 @@ struct Geofence{
 	bool withinLimits(const Eigen::Vector3d& pos){
 
 		if (pos(0) < min_x || pos(0) > max_x){
-			logger_->logError(strFmt("Commanded x position (%f) exceeded limits (%f,%f)", 
+			logger_->logError(strFmt("Commanded x position (%f) exceeded limits (%f,%f)",
 				pos(0), min_x, max_x));
 
 			return false;
 		}
 		else if (pos(1) < min_y || pos(1) > max_y) {
 
-			logger_->logError(strFmt("Commanded y position (%f) exceeded limits (%f,%f)", 
+			logger_->logError(strFmt("Commanded y position (%f) exceeded limits (%f,%f)",
 				pos(1), min_y, max_y));
 
 			return false;
 		}
 		else if (pos(2) < min_z || pos(2) > max_z) {
 
-			logger_->logError(strFmt("Commanded z position (%f) exceeded limits (%f,%f)", 
+			logger_->logError(strFmt("Commanded z position (%f) exceeded limits (%f,%f)",
 				pos(2), min_z, max_z));
 
 			return false;
@@ -160,7 +162,7 @@ private:
 	 * @param param2    Command parameter 2
 	 */
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0, float param3=0.0);
-	
+
 	/**
 	 * @brief Publish the offboard control mode.
 	 *        For this example, only position and altitude controls are active.
@@ -170,16 +172,16 @@ private:
 
 	/**
 	 * @brief Publish a trajectory setpoint
-	 * 
+	 *
 	 * @param pos Position (ENU frame) [m]
 	 * @param yaw Yaw [degrees]
-	 * @param vel Velociyy (ENU frame) [m/s] 
+	 * @param vel Velociyy (ENU frame) [m/s]
 	 * @param acc Acceleration (ENU frame) [m/s^2]
 	 */
 	void publishTrajectorySetpoint(
-		const Eigen::Vector3d& pos, 
+		const Eigen::Vector3d& pos,
 		const Eigen::Vector2d& yaw_yawrate = Eigen::Vector2d(NAN, NAN),
-		const Eigen::Vector3d& vel = Eigen::Vector3d(NAN, NAN, NAN), 
+		const Eigen::Vector3d& vel = Eigen::Vector3d(NAN, NAN, NAN),
 		const Eigen::Vector3d& acc = Eigen::Vector3d(NAN, NAN, NAN));
 
 	void publishAttitudeSetpoint(const double& thrust, const Eigen::Vector4d& q_d);
@@ -207,7 +209,7 @@ private:
 	rclcpp::CallbackGroup::SharedPtr others_cb_group_;
 
 	/* Timers */
-	rclcpp::TimerBase::SharedPtr set_offb_timer_;	
+	rclcpp::TimerBase::SharedPtr set_offb_timer_;
 	rclcpp::TimerBase::SharedPtr pub_ctrl_timer_;
 	rclcpp::TimerBase::SharedPtr pub_state_timer_;
 	rclcpp::TimerBase::SharedPtr sm_tick_timer_;
@@ -225,6 +227,10 @@ private:
 	// State publishers
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 	rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
+
+	//odom to pcl hack for obstacle avoidance
+	static constexpr std::array<int, 3> drone_ids_ { 0, 1, 2 }; //define all drone IDs
+	std::vector<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr> odom_pcl_pubs_; //publishers for odom to point cloud to emulate static obstacles
 
 	/* Subscribers */
 	rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr fcu_odom_sub_;
@@ -244,7 +250,7 @@ private:
 	bool mode_trajectory_enable_acc_{true};
 
 	std::string map_frame_; // Origin frame of uav i.e. "world" or "map"
-	std::string base_link_frame_; // 
+	std::string base_link_frame_; //
 	std::string camera_frame_; // Frame of depth camera sensor
 
 	double take_off_landing_tol_{0.15}; // [m] Take off and landing tolerance for execution to be completed
@@ -270,20 +276,20 @@ private:
 	/* Safety */
 	std::unique_ptr<Geofence> geofence_; // Geofence to enforce positional limits
 
-	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_; 
-	std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_; 
+	std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+	std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
 
 	/* Logger */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
 
 	/* FCU interface */
 	int arming_state_; // Arming state
-	int nav_state_; // Navigation state 
+	int nav_state_; // Navigation state
 	bool pre_flight_checks_pass_; // Pre flight checks pass
 	bool connected_to_fcu_; // Indicates connection to FCU
 
 	Eigen::Vector3d ground_height_{0.0, 0.0, 0.0};		// Current position
-	
+
 	double last_cmd_pub_t_{0.0}; // Time since last flight controller command is published
 
 }; // class TrajectoryServer
