@@ -137,7 +137,7 @@ TrajectoryServer::TrajectoryServer()
 		std::bind(&TrajectoryServer::odometrySubCB, this, _1), fcu_sub_opt);
 
 	vehicle_status_sub_ = this->create_subscription<px4_msgs::msg::VehicleStatus>(
-		"fmu/out/vehicle_status", rclcpp::SensorDataQoS(), 
+		"fmu/out/vehicle_status_v1", rclcpp::SensorDataQoS(), 
 		std::bind(&TrajectoryServer::vehicleStatusSubCB, this, _1), fcu_sub_opt);
 
 	lin_mpc_cmd_sub_ = this->create_subscription<px4_msgs::msg::TrajectorySetpoint>(
