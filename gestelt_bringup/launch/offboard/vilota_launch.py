@@ -15,8 +15,10 @@ from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, 
 
 def generate_launch_description():
 
-    namespace=LaunchConfiguration('namespace')
-    declare_namespace=DeclareLaunchArgument('namespace',default_value='')
+    # namespace=LaunchConfiguration('namespace')
+    # declare_namespace=DeclareLaunchArgument('namespace',default_value='')
+
+    namespace = "d1"
 
 
     # Vilota depth image bridge
@@ -29,7 +31,9 @@ def generate_launch_description():
         parameters=[
             {'bridge_name': namespace+'/front_left'},
             {'map_frame_id': namespace+'_map'},
-            {'camera_frame_id': namespace+'_camera_front_left'},
+            {'base_link_frame_id': namespace+'_base_link'},
+            {'camera_frame_id': namespace+'_camera_link'},
+            {'stereo_camera_frame_id': namespace+'_camera_front_left'},
             {'disparity_topic': 'S1/stereo1_l/disparity'},
             {'image_topic': 'S1/stereo1_l'},
             # {'odom_topic': 'S1/vio_odom'},
@@ -46,7 +50,9 @@ def generate_launch_description():
         parameters=[
             {'bridge_name': namespace+'/front_right'},
             {'map_frame_id': namespace+'_map'},
-            {'camera_frame_id': namespace+'_camera_front_right'},
+            {'base_link_frame_id': namespace+'_base_link'},
+            {'camera_frame_id': namespace+'_camera_link'},
+            {'stereo_camera_frame_id': namespace+'_camera_front_right'},
             {'disparity_topic': 'S1/stereo2_r/disparity'},
             {'image_topic': 'S1/stereo2_r'},
             # {'odom_topic': 'S1/vio_odom'},
@@ -63,10 +69,10 @@ def generate_launch_description():
         # Change below for new node
         name='depth2pcl_front_left',
         remappings=[
-            ('/depth/rect', '/'+namespace+'/front_left/depth/rect'),
-            ('/depth/camera_info', '/'+namespace+'/front_left/depth/camera_info'),
-            ('/point_cloud/downsample', '/'+namespace+'/front_left/point_cloud/downsample'),
-            ('/point_cloud/full', '/'+namespace+'/front_left/point_cloud/full')
+            ('/depth/rect', 'front_left/depth/rect'),
+            ('/depth/camera_info', 'front_left/depth/camera_info'),
+            ('/point_cloud/downsample', 'front_left/point_cloud/downsample'),
+            ('/point_cloud/full', 'front_left/point_cloud/full')
         ],
         parameters=[
             {'min_dist': 0.01},
@@ -87,10 +93,10 @@ def generate_launch_description():
         # Change below for new node
         name='depth2pcl_front_right',
         remappings=[
-            ('/depth/rect', '/'+namespace+'/front_right/depth/rect'),
-            ('/depth/camera_info', '/'+namespace+'/front_right/depth/camera_info'),
-            ('/point_cloud/downsample', '/'+namespace+'/front_right/point_cloud/downsample'),
-            ('/point_cloud/full', '/'+namespace+'/front_right/point_cloud/full')
+            ('/depth/rect', 'front_right/depth/rect'),
+            ('/depth/camera_info', 'front_right/depth/camera_info'),
+            ('/point_cloud/downsample', 'front_right/point_cloud/downsample'),
+            ('/point_cloud/full', 'front_right/point_cloud/full')
         ],
         parameters=[
             {'min_dist': 0.01},
@@ -158,7 +164,7 @@ def generate_launch_description():
     )
 
     ld = LaunchDescription()
-    ld.add_action(declare_namespace)
+    # ld.add_action(declare_namespace)
     ld.add_action(vilota_bridge_front_left_node)
     ld.add_action(vilota_bridge_front_right_node)
 
