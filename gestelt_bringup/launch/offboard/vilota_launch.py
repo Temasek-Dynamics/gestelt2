@@ -8,10 +8,15 @@ from launch.actions import (
     ExecuteProcess, 
     DeclareLaunchArgument
 )
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, TextSubstitution
 from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
 
+
+
 def generate_launch_description():
+
+    namespace=LaunchConfiguration('namespace')
+    declare_namespace=DeclareLaunchArgument('namespace',default_value='')
 
 
     # Vilota depth image bridge
@@ -19,12 +24,12 @@ def generate_launch_description():
         package='vilota_bridge',
         executable='vilota_bridge_node',
         output='screen',
-        
+        namespace = namespace,
         name='vilota_bridge_front_left',
         parameters=[
-            {'bridge_name': 'front_left'},
-            {'map_frame_id': 'd0_map'},
-            {'camera_frame_id': 'camera_front_left'},
+            {'bridge_name': namespace+'/front_left'},
+            {'map_frame_id': namespace+'_map'},
+            {'camera_frame_id': namespace+'_camera_front_left'},
             {'disparity_topic': 'S1/stereo1_l/disparity'},
             {'image_topic': 'S1/stereo1_l'},
             # {'odom_topic': 'S1/vio_odom'},
@@ -36,12 +41,12 @@ def generate_launch_description():
         package='vilota_bridge',
         executable='vilota_bridge_node',
         output='screen',
-        
+        namespace = namespace,
         name='vilota_bridge_front_right',
         parameters=[
-            {'bridge_name': 'front_right'},
-            {'map_frame_id': 'd0_map'},
-            {'camera_frame_id': 'camera_front_right'},
+            {'bridge_name': namespace+'/front_right'},
+            {'map_frame_id': namespace+'_map'},
+            {'camera_frame_id': namespace+'_camera_front_right'},
             {'disparity_topic': 'S1/stereo2_r/disparity'},
             {'image_topic': 'S1/stereo2_r'},
             # {'odom_topic': 'S1/vio_odom'},
@@ -54,19 +59,20 @@ def generate_launch_description():
         package='depth2pcl',
         executable='depth2pcl_node',
         output='screen',
+        namespace=namespace,
         # Change below for new node
         name='depth2pcl_front_left',
         remappings=[
-            ('/depth/rect', '/front_left/depth/rect'),
-            ('/depth/camera_info', '/front_left/depth/camera_info'),
-            ('/point_cloud/downsample', '/front_left/point_cloud/downsample'),
-            ('/point_cloud/full', '/front_left/point_cloud/full')
+            ('/depth/rect', '/'+namespace+'/front_left/depth/rect'),
+            ('/depth/camera_info', '/'+namespace+'/front_left/depth/camera_info'),
+            ('/point_cloud/downsample', '/'+namespace+'/front_left/point_cloud/downsample'),
+            ('/point_cloud/full', '/'+namespace+'/front_left/point_cloud/full')
         ],
         parameters=[
             {'min_dist': 0.01},
             {'max_dist': 6.0},
             # {'pcl_frame_id': 'camera_front_left'},
-            {'pcl_frame_id': 'camera_link'},
+            {'pcl_frame_id': namespace+'_camera_link'},
             # {'pcl_frame_id': 'base_link'},
             {'downsample_leaf_size': 0.1},
             {'minimum_points_per_voxel': 3},
@@ -77,18 +83,19 @@ def generate_launch_description():
         package='depth2pcl',
         executable='depth2pcl_node',
         output='screen',
+        namespace=namespace,
         # Change below for new node
         name='depth2pcl_front_right',
         remappings=[
-            ('/depth/rect', '/front_right/depth/rect'),
-            ('/depth/camera_info', '/front_right/depth/camera_info'),
-            ('/point_cloud/downsample', '/front_right/point_cloud/downsample'),
-            ('/point_cloud/full', '/front_right/point_cloud/full')
+            ('/depth/rect', '/'+namespace+'/front_right/depth/rect'),
+            ('/depth/camera_info', '/'+namespace+'/front_right/depth/camera_info'),
+            ('/point_cloud/downsample', '/'+namespace+'/front_right/point_cloud/downsample'),
+            ('/point_cloud/full', '/'+namespace+'/front_right/point_cloud/full')
         ],
         parameters=[
             {'min_dist': 0.01},
             {'max_dist': 6.0},
-            {'pcl_frame_id': 'camera_link'},
+            {'pcl_frame_id': namespace+'_camera_link'},
             # {'pcl_frame_id': 'camera_front_right'},
             # {'pcl_frame_id': 'base_link'},
             {'downsample_leaf_size': 0.1},
@@ -99,13 +106,23 @@ def generate_launch_description():
     # Concat PCL topics
     pcl_topics_arg = DeclareLaunchArgument(
         'pcl_topics',
-        default_value = "['/front_left/point_cloud/downsample','/front_right/point_cloud/downsample']",
+        default_value = [
+            TextSubstitution(text="['/"),
+            LaunchConfiguration('namespace'),
+            TextSubstitution(text="/front_left/point_cloud/downsample, '/"),
+            LaunchConfiguration('namespace'),
+            TextSubstitution(text="/front_right/point_cloud/downsample']"),
+        ]
+        # f"['/{namespace}/front_left/point_cloud/downsample','/{namespace}/front_right/point_cloud/downsample']",
         description='Topics to concatenate'
     )
 
     concat_pcl_topic_arg = DeclareLaunchArgument(
         'concat_pcl_topic',
-        default_value = '/point_cloud/concat',
+        default_value =[
+            LaunchConfiguration('namespace'),
+            TextSubstitution(text='/point_cloud/concat')],
+        # namespace+'/point_cloud/concat',
         description='Concatenate output topic'
     )
 
@@ -118,9 +135,9 @@ def generate_launch_description():
     concat_pcl_node = Node(
         package='depth2pcl',
         executable='concat_pcl_node',
+        namespace = namespace,
         output='screen',
         # prefix=['gdbserver localhost:3000'],
-
         name='concat_pcl_node',
 
         parameters=[
@@ -133,6 +150,7 @@ def generate_launch_description():
     # VIO from vilota
     vio_bridge_px4_node = Node(
         package='vision',
+        namespace=namespace,
         executable='vio_bridge_px4',
         output='screen',
         # Change below for new node
@@ -140,7 +158,7 @@ def generate_launch_description():
     )
 
     ld = LaunchDescription()
-
+    ld.add_action(declare_namespace)
     ld.add_action(vilota_bridge_front_left_node)
     ld.add_action(vilota_bridge_front_right_node)
 

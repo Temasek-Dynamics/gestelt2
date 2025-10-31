@@ -99,7 +99,7 @@ def generate_launch_description():
         # (['/', namespace, '/tf'], '/tf'), 
         # (['/', namespace, '/tf_static'], '/tf_static'),
         # ('occ_map/cloud_in', '/point_cloud/downsample'), 
-        ('occ_map/cloud_in', '/point_cloud/concat'), 
+        ('occ_map/cloud_in', ['/', namespace, '/point_cloud/concat']), 
     ]
 
     traj_server_remappings = [
@@ -108,11 +108,11 @@ def generate_launch_description():
 
     global_frame = 'world' # Fixed
     map_frame = [namespace, "_map"]
-    # base_link_frame = [namespace, "_base_link"]
-    # camera_frame = [namespace, "_camera_link"]
-    base_link_frame = 'base_link'
+    base_link_frame = [namespace, "_base_link"]
+    camera_frame = [namespace, "_camera_link"]
+    # base_link_frame = 'base_link'
     # camera_frame = 'camera_front_right'
-    camera_frame = 'camera_link'
+    # camera_frame = 'camera_link'
 
     # Create our own temporary YAML files that include substitutions
     nav_param_substitutions = {
