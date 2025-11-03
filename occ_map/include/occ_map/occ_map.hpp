@@ -364,8 +364,8 @@ private:
 
   // Part of odom subscription (WIP) //
 
-  // Reusued odom callback
-  void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg);
+  // // Reusued odom callback
+  // void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg);
 
   rcl_interfaces::msg::SetParametersResult dynamicParametersCB(
     const std::vector<rclcpp::Parameter> & parameters);
@@ -409,7 +409,7 @@ private:
   int drone_id_{0}; //Drone ID
 
   // Part of odom subscription (WIP) //
-  int num_drones_ = 2 - 1; // Set no. of drones as 2. Exclude itself
+  // int num_drones_ = 2 - 1; // Set no. of drones as 2. Exclude itself
 
   bool print_timer_{false}; // Flag to enable printing of debug information such as timers
 
@@ -419,7 +419,7 @@ private:
   bool use_radius_{true};
 
   // Part of odom subscription (WIP) //
-  std::vector<Eigen::Vector3d> drone_poses_;
+  // std::vector<Eigen::Vector3d> drone_poses_;
 
   // Noise filter
   bool enable_noise_filter_{false}; // Enable noise filtering
@@ -475,8 +475,8 @@ private:
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_map_sub_;
   
   // Part of odom subscription (WIP) //
-  // std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> swarm_odom_subs_;  // Subscription to odometry from other agents
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr swarm_odom_subs_;
+  // // std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> swarm_odom_subs_;  // Subscription to odometry from other agents
+  // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr swarm_odom_subs_;
 
   /* Publishers  */
 	rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::PointCloud2>::SharedPtr occ_map_pub_;
