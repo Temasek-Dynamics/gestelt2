@@ -190,19 +190,21 @@ def launch_setup(context):
                             ),
                             Node( 
                                 package = "tf2_ros", 
-                                name=ns+'_world_to_map_tf',
+                                name='world_to_map_tf',
+                                namespace = ns,
                                 executable = "static_transform_publisher",
                                 output="own_log",
-                                arguments = [str(scenario.spawns_pos[drone_id][0]), 
-                                            str(scenario.spawns_pos[drone_id][1]), 
+                                arguments = [str(scenario.spawns_pos[0][0]), 
+                                            str(scenario.spawns_pos[0][1]), 
                                             "0", 
-                                            str(scenario.spawns_pos[drone_id][2]), 
+                                            str(scenario.spawns_pos[0][2]), 
                                             "0", "0", 
                                             global_frame, map_frame],
                             ),
                             Node(
                                 package = "tf2_ros", 
-                                name=ns+'_base_link_to_cam_tf',
+                                name='base_link_to_cam_tf',
+                                namespace = ns,
                                 executable = "static_transform_publisher",
                                 output="own_log",
                                 arguments = [ "-0.085", "0.0", "0.0", 
@@ -213,7 +215,8 @@ def launch_setup(context):
 
                             Node(
                                 package = "tf2_ros", 
-                                name=ns+'_cam_to_front_cam_tf',
+                                name='cam_to_front_cam_tf',
+                                namespace = ns,
                                 executable = "static_transform_publisher",
                                 output="own_log",
                                 arguments = [ "-0.2", "0.0", "0.0", 
@@ -222,7 +225,8 @@ def launch_setup(context):
                             ),
                             Node(
                                 package = "tf2_ros", 
-                                name=ns+'_cam_to_left_cam_tf',
+                                name='cam_to_left_cam_tf',
+                                namespace = ns,
                                 executable = "static_transform_publisher",
                                 output="own_log",
                                 arguments = [ "-0.159341", "-0.071877", "0.000139", 
@@ -231,7 +235,8 @@ def launch_setup(context):
                             ),
                             Node(
                                 package = "tf2_ros", 
-                                name=ns+'_cam_to_right_cam_tf',
+                                name='cam_to_right_cam_tf',
+                                namespace = ns,
                                 executable = "static_transform_publisher",
                                 output="own_log",
                                 arguments = [ "-0.160507", "0.071495", "0.000393", 
@@ -252,7 +257,7 @@ def launch_setup(context):
 
         declare_rviz_config_file_cmd,
         declare_use_rviz_cmd,
-        xrce_agent,
+        # xrce_agent,
         # start_rviz_cmd,
 
         drone_bringup,  

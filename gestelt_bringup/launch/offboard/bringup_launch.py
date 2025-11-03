@@ -130,7 +130,7 @@ def generate_launch_description():
     nav_configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params_file,
-            # root_key=namespace,
+            root_key=namespace,
             param_rewrites=nav_param_substitutions,
             convert_types=True,
         ),
