@@ -36,6 +36,9 @@ GESTELT_NODE="ros2 launch gestelt_bringup offboard_launch.py scenario_name:=star
 # Start mission node
 MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=start_1d_zero _drone_id:=1"
 
+# Reset map
+RESET_MAP="ros2 topic pub d1/reset_map std_msgs/msg/Empty {} --rate 0.5"
+
 if [ "$SESSIONEXISTS" = "" ]
 then 
 
@@ -43,11 +46,13 @@ then
 
     tmux split-window -t $SESSION:0.0 -v
     tmux split-window -t $SESSION:0.1 -h
+    tmux split-window -t $SESSION:0.0 -h
 
     tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m 
     sleep 1
     tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m
-    tmux send-keys -t $SESSION:0.2 "$MISSION_NODES" 
+    tmux send-keys -t $SESSION:0.2 "$MISSION_NODES"
+    tmux send-keys -t $SESSION:0.3 "$RESET_MAP" 
 fi
 
 # Attach session on the first window
