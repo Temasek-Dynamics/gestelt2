@@ -1,6 +1,6 @@
 /****************************************************************************
  * MIT License
- *  
+ *
  *	Copyright (c) 2024 John Tan. All rights reserved.
  *
  *	Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -92,7 +92,7 @@ public:
 
   // Get global map origin (This is defined to be a corner of the global map i.e. (-W/2, -L/2, 0))
   inline Eigen::Vector3d getGlobalMapSize() const{
-    return global_map_size_; 
+    return global_map_size_;
   }
 
   // Get local map origin (This is defined to be a corner of the local map i.e. (-local_W/2, -local_L/2, 0))
@@ -109,7 +109,7 @@ public:
   }
 
   inline Eigen::Vector3d getLocalMapMax(const double& offset = 0.0) const{
-    return local_map_max_ - Eigen::Vector3d::Constant(offset); 
+    return local_map_max_ - Eigen::Vector3d::Constant(offset);
   }
 
   inline double getTransformTolerance() const {
@@ -132,16 +132,16 @@ public:
 
   /**
    * @brief Get the pose of robot in global frame
-   * 
+   *
    * @param global_pose pose of robot in global frame to be assigned
-   * @return true 
-   * @return false 
+   * @return true
+   * @return false
    */
   bool getRobotPose(geometry_msgs::msg::PoseStamped & global_pose)
   {
     return nav2_util::getCurrentPose(
-      global_pose, 
-      *tf_buffer_, map_frame_, 
+      global_pose,
+      *tf_buffer_, map_frame_,
       base_link_frame_, transform_tolerance_);
   }
 
@@ -152,7 +152,7 @@ public:
     if (input_pose.header.frame_id == global_frame_) {
       transformed_pose = input_pose;
       return true;
-    } 
+    }
     else {
       return nav2_util::transformPoseInTargetFrame(
         input_pose, transformed_pose, *tf_buffer_,
@@ -162,12 +162,12 @@ public:
 
   /**
    * @brief Transforms input pose into target frame
-   * 
-   * @param target_frame 
-   * @param input_pose 
-   * @param transformed_pose 
-   * @return true 
-   * @return false 
+   *
+   * @param target_frame
+   * @param input_pose
+   * @param transformed_pose
+   * @return true
+   * @return false
    */
   bool transformPoseToTargetFrame(
     const std::string& target_frame,
@@ -189,8 +189,8 @@ public:
   /**
    * @brief Get local points in map frame (in fixed map frame).
    * Used by safe flight corridor generation
-   * 
-   * @return std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> 
+   *
+   * @return std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
    */
   inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLocalPtsInMapFrame(){
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
@@ -199,35 +199,35 @@ public:
 
   // Takes in position [global_frame] and check if within global map
   inline bool inGlobalMap(const Eigen::Vector3d &pos){
-    return (pos(0) >= -global_map_size_(0)/2 
+    return (pos(0) >= -global_map_size_(0)/2
       && pos(0) < global_map_size_(0)/2
-      && pos(1) >= -global_map_size_(1)/2 
+      && pos(1) >= -global_map_size_(1)/2
       && pos(1) < global_map_size_(1)/2
-      && pos(2) >= -0.5 
+      && pos(2) >= -0.5
       && pos(2) < global_map_size_(2));
   }
 
   // Takes in position [global_frame] and check if within global map
   inline bool inGlobalMapIdx(const Eigen::Vector3i &idx){
-    return (idx(0) >= -global_map_size_idx_(0)/2 
+    return (idx(0) >= -global_map_size_idx_(0)/2
       && idx(0) < global_map_size_idx_(0)/2
-      && idx(1) >= -global_map_size_idx_(1)/2 
+      && idx(1) >= -global_map_size_idx_(1)/2
       && idx(1) < global_map_size_idx_(1)/2
       && idx(2) >= -10
       && idx(2) < global_map_size_idx_(2));
   }
 
   inline bool inLocalMap(const Eigen::Vector3d &pos){
-    return (pos(0) >= local_map_origin_(0)   
+    return (pos(0) >= local_map_origin_(0)
       && pos(0) < local_map_max_(0)
-      && pos(1) >= local_map_origin_(1)  
+      && pos(1) >= local_map_origin_(1)
       && pos(1) < local_map_max_(1)
-      && pos(2) >= local_map_origin_(2)  
+      && pos(2) >= local_map_origin_(2)
       && pos(2) < local_map_max_(2));
   }
 
   inline Eigen::Vector3i posToIdx(const Eigen::Vector3d &pos){
-    return Eigen::Vector3i{ 
+    return Eigen::Vector3i{
       static_cast<int32_t>(pos(0) * inv_resolution_ - std::signbit(pos(0))),
       static_cast<int32_t>(pos(1) * inv_resolution_ - std::signbit(pos(1))),
       static_cast<int32_t>(pos(2) * inv_resolution_ - std::signbit(pos(2)))};
@@ -240,7 +240,7 @@ public:
   }
 
   bool mapToWorld(const Eigen::Vector3d& pos_map, Eigen::Vector3d& pos_world){
-    pos_world = (map_to_world_mat_ * pos_map.homogeneous()).hnormalized(); 
+    pos_world = (map_to_world_mat_ * pos_map.homogeneous()).hnormalized();
 
     return true;
   }
@@ -250,24 +250,24 @@ public:
       return false;
     }
 
-    pos_map = (global_to_map_mat_ * pos_world.homogeneous()).hnormalized();  
+    pos_map = (global_to_map_mat_ * pos_world.homogeneous()).hnormalized();
 
     return true;
   }
 
   /**
    * @brief Gets the cost of a given position in map coordinates
-   * 
-   * @param pos 
-   * @return int 
+   *
+   * @param pos
+   * @return int
    */
   int getCost(const Eigen::Vector3d &pos);
 
     /**
    * @brief Gets the cost of a given position in pixel coordinates
-   * 
-   * @param pos 
-   * @return int 
+   *
+   * @param pos
+   * @return int
    */
 
   int getCostIdx(const Eigen::Vector3i &idx);
@@ -293,7 +293,7 @@ public:
 
   // Check if given position is within inflation distance of an obstacle
   bool withinObstacleInflation(const Eigen::Vector3d& pos);
-  
+
 protected:
 
   /**
@@ -351,7 +351,7 @@ private:
   void getParameters();
 
   /* Core methods */
-  
+
   // Called by planners to update the local map
   void updateLocalMap();
 
@@ -359,7 +359,7 @@ private:
   /*Subscriber Callbacks*/
   void resetMapCB(const std_msgs::msg::Empty::SharedPtr );
 
-  // Subscriber callback to point cloud 
+  // Subscriber callback to point cloud
   void cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
   // Part of odom subscription (WIP) //
@@ -386,7 +386,7 @@ private:
   inline bool isTimeout(const double& last_state_time, const double& threshold)
   {
     return (get_clock()->now().seconds() - last_state_time) >= threshold;
-  } 
+  }
 
   bool is_lifecycle_follower_{true};   ///< whether is a child-LifecycleNode or an independent node
 
@@ -426,7 +426,7 @@ private:
   double noise_search_radius_{0.2}; // Radius to search for neighbouring points
   int noise_min_neighbors_{1}; // Minimum number of neighbors within 'search_radius' to be a valid point
 
-  // Passthrough filter for point cloud 
+  // Passthrough filter for point cloud
   double cloud_in_min_z_{0.0};
   double cloud_in_max_z_{10.0};
 
@@ -435,7 +435,7 @@ private:
   double viz_occ_map_freq_{-1.0}; // Frequency to publish occupancy map visualization
   double update_local_map_freq_{-1.0};  // Frequency to update local map
 
-  std::string global_frame_; // frame id of global/inertial reference 
+  std::string global_frame_; // frame id of global/inertial reference
   std::string map_frame_; // frame id of fixed map frame
   std::string camera_frame_; // frame id of camera link
   std::string base_link_frame_; // frame id of base_link
@@ -451,10 +451,10 @@ private:
   Eigen::Matrix4d global_to_map_mat_{Eigen::Matrix4d::Identity(4, 4)};
   Eigen::Matrix4d map_to_world_mat_{Eigen::Matrix4d::Identity(4, 4)};
 
-  double resolution_{0.0};   // Also defined as the size of each individual voxel                 
-  double inv_resolution_{0.0};   // Also defined as the size of each individual voxel                 
+  double resolution_{0.0};   // Also defined as the size of each individual voxel
+  double inv_resolution_{0.0};   // Also defined as the size of each individual voxel
   double inflation_{0.0};    // Static obstacle inflation in map units
-  int inflation_voxels_{0};  // Inflation in number of voxel 
+  int inflation_voxels_{0};  // Inflation in number of voxel
   double max_range_{0.0}; // Max sensor range
 
   // [DYNAMIC]: Homogenous Transformation matrix of camera to fixed map frame
@@ -473,7 +473,7 @@ private:
   /* Subscribers */
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_map_sub_;
-  
+
   // Part of odom subscription (WIP) //
   // // std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> swarm_odom_subs_;  // Subscription to odometry from other agents
   // rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr swarm_odom_subs_;
@@ -486,32 +486,32 @@ private:
 	rclcpp::TimerBase::SharedPtr viz_map_timer_;	 // Timer for visualizing map
 	rclcpp::TimerBase::SharedPtr update_local_map_timer_; // Timer for updating local map
 
-  // TF transformation 
+  // TF transformation
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
 
   /* Data structures for maps */
-  // [GLOBAL FRAME] Locally bounded point clouds from Bonxai probabilistic mapping 
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_map_raw_; 
+  // [GLOBAL FRAME] Locally bounded point clouds from Bonxai probabilistic mapping
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_map_raw_;
   // [GLOBAL FRAME] lcl_pcd_map_raw_ after post-processing to remove noise
-  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_map_; 
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> lcl_pcd_map_;
 
   // Vector of obstacle points used for sfc generation
   std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> lcl_pts_map_; // Local obstacle points in map frame
 
-  std::shared_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure 
+  std::shared_ptr<Bonxai::ProbabilisticMap> bonxai_map_; // Bonxai data structure
   std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_lcl_; // KD-Tree for local processed PCD
-  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_lcl_raw_; // KD-Tree for local raw PCD 
+  std::unique_ptr<KD_TREE<pcl::PointXYZ>> kdtree_lcl_raw_; // KD-Tree for local raw PCD
 
   /* Flags */
-  bool local_map_updated_{false}; // Indicates if first local map update is done 
+  bool local_map_updated_{false}; // Indicates if first local map update is done
 
   /* Mutexes */
   mutex_t * access_;
 
   std::mutex bonxai_map_mtx_;  // Mutex lock for bonxai map
-  std::mutex lcl_occ_map_mtx_;  // Mutex lock for 
-  std::mutex kdtree_lcl_mtx_;  // Mutex lock for 
+  std::mutex lcl_occ_map_mtx_;  // Mutex lock for
+  std::mutex kdtree_lcl_mtx_;  // Mutex lock for
 
   /* Stopwatch for profiling performance */
   // logger_wrapper::Timer tm_update_local_map_{"OccMap::updateLocalMap"};  // Time required for map construction
@@ -522,6 +522,9 @@ private:
 
   /* Logging */
 	std::shared_ptr<logger_wrapper::LoggerWrapper> logger_;
+
+  //object to pcl hack
+  std::unordered_map<std::string, std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>>> object_cloud_; //object's point cloud with frame_id as key
 };
 
 }  // namespace occ_map
