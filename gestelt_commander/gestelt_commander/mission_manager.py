@@ -112,7 +112,7 @@ class MissionManager(Node):
                                     Goals, 'd' + str(id) + '/goals', 
                                     rclpy.qos.qos_profile_services_default))
             self.occ_map_pubs_.append(self.create_publisher(
-                                    Empty, '/occ_map/reset_map', 
+                                    Empty, 'd' + str(id) + '/reset_map', 
                                     rclpy.qos.qos_profile_services_default))
 
         # Initialize data structures
