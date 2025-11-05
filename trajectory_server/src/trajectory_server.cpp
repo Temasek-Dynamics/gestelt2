@@ -33,11 +33,6 @@
 
 #include <frame_transforms.hpp>
 
-//odom to pcl hack
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-
 TrajectoryServer::TrajectoryServer()
 	: Node("trajectory_server")
 {
@@ -132,20 +127,6 @@ TrajectoryServer::TrajectoryServer()
 
 	odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
 		"odom", rclcpp::SensorDataQoS());
-
-	//odom to pcl hack
-	for (const auto current_id : drone_ids_)
-	{
-		if (current_id == drone_id_)
-			continue;
-
-		odom_pcl_pubs_.emplace_back(
-			this->create_publisher<sensor_msgs::msg::PointCloud2>(
-				"/d" + std::to_string(current_id) + "/cloud",
-				rclcpp::SensorDataQoS()
-			)
-        );
-	}
 
 	uav_state_pub_ = this->create_publisher<gestelt_interfaces::msg::UAVState>(
 		"uav_state", 5);
@@ -258,37 +239,6 @@ void TrajectoryServer::odometrySubCB(const px4_msgs::msg::VehicleOdometry::Uniqu
 	odom_msg.twist.twist.angular.z = cur_ang_vel_enu_(2);
 
 	odom_pub_->publish(odom_msg);
-
-	//odom to pcl hack
-	pcl::PointCloud<pcl::PointXYZ> drone_pointcloud_pcl;
-
-	//generate points (from Lin Zhi)
-	for (int dx = -2; dx <= 2; dx++)
-	{
-		for (int dy = -2; dy <= 2; dy++)
-		{
-			for (int dz = -2; dz <= 2; dz++)
-			{
-				drone_pointcloud_pcl.emplace_back(
-					pcl::PointXYZ(
-						cur_pos_enu_corr_(0) + ((double)dx * 0.1), // res of 0.2m
-						cur_pos_enu_corr_(1) + ((double)dy * 0.1),
-						cur_pos_enu_corr_(2) + ((double)dz * 0.1)
-					)
-				);
-			} //z
-		} //y
-	} //x
-
-	sensor_msgs::msg::PointCloud2 drone_pointcloud_ros;
-	pcl::toROSMsg(drone_pointcloud_pcl, drone_pointcloud_ros);
-
-	//set header
-	drone_pointcloud_ros.header.frame_id = map_frame_;
-	drone_pointcloud_ros.header.stamp = this->get_clock()->now();
-
-	for (auto& odom_pcl_pub : odom_pcl_pubs_)
-        odom_pcl_pub->publish(drone_pointcloud_ros);
 }
 
 void TrajectoryServer::vehicleStatusSubCB(const px4_msgs::msg::VehicleStatus::UniquePtr msg)

@@ -57,8 +57,6 @@
 
 #include <uavsm.hpp>
 
-#include <sensor_msgs/msg/point_cloud2.hpp> //odom to pcl hack
-
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -227,10 +225,6 @@ private:
 	// State publishers
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
 	rclcpp::Publisher<gestelt_interfaces::msg::UAVState>::SharedPtr uav_state_pub_;
-
-	//odom to pcl hack for obstacle avoidance
-	static constexpr std::array<int, 3> drone_ids_ { 1, 2, 3 }; //define all drone IDs
-	std::vector<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr> odom_pcl_pubs_; //publishers for odom to point cloud to emulate static obstacles
 
 	/* Subscribers */
 	rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr fcu_odom_sub_;

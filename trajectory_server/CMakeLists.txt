@@ -26,9 +26,7 @@ set(ROS_DEPENDENCIES
 	gestelt_interfaces
 	px4_msgs
 	tf2_ros
-	logger_wrapper
-	pcl_ros # odom to pcl hack
-	pcl_conversions)
+	logger_wrapper)
 
 foreach(dependency IN ITEMS ${ROS_DEPENDENCIES})
   find_package(${dependency} REQUIRED)
