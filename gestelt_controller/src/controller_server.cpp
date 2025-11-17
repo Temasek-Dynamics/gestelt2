@@ -88,6 +88,7 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
   RCLCPP_INFO(get_logger(), "Configuring controller interface");
 
   get_parameter("print_runtime", print_runtime_);
+  // get_parameter("publish_zero_velocity", publish_zero_velocity_); (WIP)
 
   get_parameter("progress_checker_plugin", progress_checker_id_);
   if (progress_checker_id_ == default_progress_checker_id_) {
@@ -428,12 +429,43 @@ void ControllerServer::computeControl()
 
       updateGlobalPath();
 
-      getControllerCommand();
-
+      // Reached goal algo (untested, WIP)
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
+        {
+          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+          std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+
+          Eigen::Vector3d goal_cmd_pos = Eigen::Vector3d(
+                                          end_pose_.pose.position.x,
+                                          end_pose_.pose.position.y,
+                                          end_pose_.pose.position.z
+                                          );
+          
+          RCLCPP_ERROR(this->get_logger(), "[computeControl] Setting waypoint to goal_cmd_pos (%f, %f, %f)", 
+            goal_cmd_pos.x(),
+            goal_cmd_pos.y(),
+            goal_cmd_pos.z());
+
+          cmd_pos_prev_ = {goal_cmd_pos};
+          cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+          cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+
+          last_valid_cmd_time_ = now();
+          start_publish_cmd_ = true;
+          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+        }
         break;
       }
+
+      getControllerCommand();
+
+      // if (isGoalReached()) {
+      //   RCLCPP_INFO(get_logger(), "Reached the goal!");
+      //   break;
+      // }
+      // Reached goal algo (untested, WIP)
 
       auto cycle_duration = this->now() - start_time;
       if (!loop_rate.sleep()) {
@@ -928,6 +960,7 @@ void ControllerServer::updateGlobalPath()
 void ControllerServer::onGoalExit()
 {
   if (publish_zero_velocity_) {
+    RCLCPP_INFO(get_logger(), "[onGoaExit] Publish zero vel");
     px4_msgs::msg::TrajectorySetpoint traj_sp;
     traj_sp.position = {(float) cur_pos_.x() , (float) cur_pos_.y(), (float) cur_pos_.z()};
     traj_sp.velocity = {0.0, 0.0, 0.0};
