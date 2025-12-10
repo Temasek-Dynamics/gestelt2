@@ -597,9 +597,9 @@ void OccMap::updateLocalMap(){
 
       for (const auto& [current_drone_id, current_drone_pose]: drone_poses_)
       {
-        for (int dx = -4; dx <= 4; dx++)
+        for (int dx = -1; dx <= 1; dx++)
         {
-            for (int dy = -4; dy <= 4; dy++)
+            for (int dy = -1; dy <= 1; dy++)
             {
                 for (int dz = -4; dz <= 4; dz++)
                 {

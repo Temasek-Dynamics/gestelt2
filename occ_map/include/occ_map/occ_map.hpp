@@ -213,7 +213,7 @@ public:
       && idx(0) < global_map_size_idx_(0)/2
       && idx(1) >= -global_map_size_idx_(1)/2
       && idx(1) < global_map_size_idx_(1)/2
-      && idx(2) >= -10
+      && idx(2) >= 0
       && idx(2) < global_map_size_idx_(2));
   }
 
@@ -409,7 +409,7 @@ private:
   int drone_id_{0}; //Drone ID
 
   // Part of odom subscription (WIP) //
-  static constexpr std::array<int, 3> drone_ids_ { 1, 2, 3 }; //define all drone IDs to subscribe
+  static constexpr std::array<int, 5> drone_ids_ {0, 1, 2, 3, 4}; //define all drone IDs to subscribe
   std::mutex drone_poses_mtx_;
   std::unordered_map<int, Eigen::Vector3d> drone_poses_;
 

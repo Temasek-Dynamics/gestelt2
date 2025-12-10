@@ -31,8 +31,8 @@ QGC="~/Documents/QGroundControl.AppImage"
 # Start Rviz
 RVIZ="ros2 launch gestelt_bringup rviz_viz.py"
 
-# Start mission node
-MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=single_drone_test"
+# Start zenoh bridge gcs
+ZENOH_GCS="start_zenoh"
 
 # Reset map
 RESET_MAP="ros2 topic pub /reset_map std_msgs/msg/Empty {}"
@@ -53,7 +53,7 @@ then
 
     tmux send-keys -t $SESSION:0.0 "$QGC" C-m 
     tmux send-keys -t $SESSION:0.1 "$RVIZ" C-m 
-    tmux send-keys -t $SESSION:0.2 "$MISSION_NODES" 
+    tmux send-keys -t $SESSION:0.2 "$ZENOH_GCS" 
     tmux send-keys -t $SESSION:0.3 "$RESET_MAP" 
     tmux send-keys -t $SESSION:0.4 "$LAND_NODES" 
 fi

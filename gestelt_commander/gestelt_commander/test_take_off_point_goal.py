@@ -42,7 +42,7 @@ def main(args=None):
         #########
         # Take off 
         #########
-        mission_mngr.cmdAllDronesPubGlobal(
+        mission_mngr.cmdAllDronesPubNamespaced(
             AllUAVCommand.COMMAND_TAKEOFF, 
             UAVState.IDLE,
             value=mission_mngr.scenario.take_off_height)
@@ -60,7 +60,7 @@ def main(args=None):
         #########
         # MissionManager mode
         #########
-        mission_mngr.cmdAllDronesPubGlobal(
+        mission_mngr.cmdAllDronesPubNamespaced(
             AllUAVCommand.COMMAND_START_MISSION, 
             UAVState.HOVERING,
             mode=0)

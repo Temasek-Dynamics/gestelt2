@@ -47,12 +47,17 @@ then
     tmux split-window -t $SESSION:0.0 -v
     tmux split-window -t $SESSION:0.1 -h
     tmux split-window -t $SESSION:0.0 -h
+    tmux split-window -t $SESSION:0.2 -h
+    tmux split-window -t $SESSION:0.0 -h
 
-    tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m 
+    tmux send-keys -t $SESSION:0.4 "$ZENOH_BRIDGE" C-m
+    tmux send-keys -t $SESSION:0.5 "$ZENOH_P2P" C-m
+    sleep 5
+    tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m
     sleep 1
     tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m
     tmux send-keys -t $SESSION:0.2 "$MISSION_NODES"
-    tmux send-keys -t $SESSION:0.3 "$RESET_MAP" 
+    tmux send-keys -t $SESSION:0.3 "$RECORD_ROSBAG"
 fi
 
 # Attach session on the first window

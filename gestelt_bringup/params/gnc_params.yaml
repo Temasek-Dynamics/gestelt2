@@ -31,7 +31,7 @@ controller_server:
     # Goal checker parameters
     goal_checker:
       plugin: "gestelt_controller::SimpleGoalChecker"
-      xyz_goal_tolerance: 0.1 # [m] 
+      xyz_goal_tolerance: 0.5 # [m] 
       # yaw_goal_tolerance: 0.25 # Not used
       stateful: True
     # Local Controller
@@ -49,7 +49,7 @@ controller_server:
       mpc:
         # MPC parameters
         horizon: 20
-        time_step: 0.2 #[s]
+        time_step: 0.4 #[s]
         # Objective Weights
         R_p: 2400.0 # Error from reference position
         R_v: 300.0  # Velocity magnitude
@@ -102,8 +102,8 @@ global_occ_map:
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
-      size_x: 15.0  # [m]
-      size_y: 15.0  # [m]
+      size_x: 60.0  # [m]
+      size_y: 60.0  # [m]
       size_z: 5.0  # [m]
 
     local_map:  # Local map used by controllers
@@ -147,8 +147,8 @@ local_occ_map:
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
     global_map: 
-      size_x: 6.0  # [m]
-      size_y: 6.0  # [m]
+      size_x: 60.0  # [m]
+      size_y: 60.0  # [m]
       size_z: 4.0  # [m]
 
     local_map:  # Local map used by safe flight corridor

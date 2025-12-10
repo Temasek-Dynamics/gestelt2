@@ -42,7 +42,7 @@
   },
   "start_1d_zero": {
     "description": "Spawning configs for 1 agent",
-    "map": "sutd_test_map1",
+    "map": "empty_20x20",
     "num_agents": 1,
     "take_off_height": 1.0,
     "send_goals": false,
@@ -55,9 +55,9 @@
   },
   "start_1d_one": {
     "description": "Spawning configs for 1 agent",
-    "map": "sutd_test_map1",
+    "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.2,
+    "take_off_height": 1.0,
     "send_goals": false,
     "spawns_pos": [
       [1.0, 0.0, 0.0]
@@ -68,12 +68,12 @@
   },
   "start_1d_two": {
     "description": "Spawning configs for 1 agent",
-    "map": "sutd_test_map1",
+    "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.2,
+    "take_off_height": 1.0,
     "send_goals": false,
     "spawns_pos": [
-      [0.0, 1.0, 0.0]
+      [0.0, 2.0, 0.0]
     ],
     "goals_pos": [
       [-6.0, -0.15, 1.2]
