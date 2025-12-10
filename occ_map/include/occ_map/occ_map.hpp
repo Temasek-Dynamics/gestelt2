@@ -362,7 +362,7 @@ private:
   // Subscriber callback to point cloud
   void cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-  // Part of odom subscription (WIP) //
+  // Part of odom subscription (Temp solution for swarm) //
 
   // Reusued odom callback
   void swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg, const int drone_id);
@@ -399,7 +399,7 @@ private:
 	rclcpp::CallbackGroup::SharedPtr mtex_callback_grp1_;
 	rclcpp::CallbackGroup::SharedPtr mtex_callback_grp2_;
 
-  // Part of odom subscription (WIP) //
+  // Part of odom subscription (Temp solution for swarm) //
   rclcpp::CallbackGroup::SharedPtr swarm_plan_cb_group_;
 
   std::string name_;
@@ -408,7 +408,7 @@ private:
   /* Params */
   int drone_id_{0}; //Drone ID
 
-  // Part of odom subscription (WIP) //
+  // Part of odom subscription (Temp solution for swarm) //
   static constexpr std::array<int, 5> drone_ids_ {0, 1, 2, 3, 4}; //define all drone IDs to subscribe
   std::mutex drone_poses_mtx_;
   std::unordered_map<int, Eigen::Vector3d> drone_poses_;
@@ -473,7 +473,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr reset_map_sub_;
 
-  // Part of odom subscription (WIP) //
+  // Part of odom subscription (Temp solution for swarm) //
   std::vector<rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr> swarm_odom_subs_;  // Subscription to odometry from other agents
 
   /* Publishers  */

@@ -172,7 +172,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   mtex_callback_grp2_ = create_callback_group(
     rclcpp::CallbackGroupType::MutuallyExclusive, false);
 
-  // Part of odom subscription (WIP)
+  // Part of odom subscription (Temp solution for swarm) //
   swarm_plan_cb_group_ = this->create_callback_group(
     rclcpp::CallbackGroupType::Reentrant);
 
@@ -203,7 +203,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
     "reset_map", rclcpp::ServicesQoS(),
     std::bind(&OccMap::resetMapCB, this, _1) );
 
-  // Part of odom subscription (WIP) //
+  // Part of odom subscription (Temp solution for swarm) //
   // RCLCPP_INFO(get_logger(), "drone full id: %s", parent_namespace_.c_str());
 
   // Get Params
@@ -272,7 +272,7 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   //   rclcpp::SensorDataQoS(),
   //   std::bind(&OccMap::swarmOdomCB, this, _1));
   // RCLCPP_INFO(get_logger(), "swarmOdomCB callback success");
-  // Part of odom subscription (WIP) //
+  // Part of odom subscription (Temp solution for swarm) //
 
   /* Initialize ROS Timers */
   viz_map_timer_ = create_wall_timer((1.0/viz_occ_map_freq_) *1000ms,
@@ -588,7 +588,7 @@ void OccMap::updateLocalMap(){
         pcl::PointXYZ(obs_pos_map(0), obs_pos_map(1), obs_pos_map(2)));
     }
 
-    // Part of odom subscription (WIP) //
+    // Part of odom subscription (Temp solution for swarm) //
     // fill the neighbour around
     {
       std::lock_guard<std::mutex> drone_poses_lock(drone_poses_mtx_);
@@ -623,7 +623,7 @@ void OccMap::updateLocalMap(){
       RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sent drone poses to lcl pcd map");
     } //std::lock_guard<std::mutex> drone_poses_lock(drone_poses_mtx_);
 
-    // Part of odom subscription (WIP) //
+    // Part of odom subscription (Temp solution for swarm) //
 
     if (enable_noise_filter_){
       // Add local occ points in fixed map frame to KDTree
@@ -846,7 +846,7 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   // tm_bonxai_insert_.stop(false);
 }
 
-// Part of odom subscription (WIP) //
+// Part of odom subscription (Temp solution for swarm) //
 void OccMap::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg, const int drone_id) {
   auto pose = Eigen::Vector3d(
     msg->pose.pose.position.x,
@@ -880,7 +880,7 @@ void OccMap::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg, const int
   std::lock_guard<std::mutex> drone_poses_lock(drone_poses_mtx_);
   drone_poses_[drone_id] = pose;
 }
-// Part of odom subscription (WIP) //
+// Part of odom subscription (Temp solution for swarm) //
 
 rcl_interfaces::msg::SetParametersResult OccMap::dynamicParametersCB(const std::vector<rclcpp::Parameter> & parameters)
 {
