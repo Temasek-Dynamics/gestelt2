@@ -244,8 +244,9 @@ void LinearMPCController::computeCommands(
 
   // RCLCPP_INFO(logger_, "[MPC] computeCommands. Position (%0.2f, %0.2f, %0.2f) Velocity (%0.2f, %0.2f, %0.2f)", 
   //   position(0), position(1), position(2), velocity(0), velocity(1), velocity(2));
-
+  RCLCPP_INFO_THROTTLE(logger_, *clock_, 1000, "[MPC]Aquiring lock_reinit(mutex_)");
   std::lock_guard<std::mutex> lock_reinit(mutex_);
+  RCLCPP_INFO_THROTTLE(logger_, *clock_, 1000, "[MPC]Aquired lock_reinit(mutex_)");
 
   // Transform path to map frame
   geometry_msgs::msg::PoseStamped pose_stamped; // Current pose in global frame
@@ -258,7 +259,9 @@ void LinearMPCController::computeCommands(
   pose_stamped.pose.orientation.y = orientation.y();
   pose_stamped.pose.orientation.z = orientation.z();
   pose_stamped.pose.orientation.w = orientation.w();
+  RCLCPP_INFO(logger_, "[MPC] computeCommands. Transforming plan to map frame");
   auto plan_map = transformPlanFromGlobalToMap(pose_stamped);
+  RCLCPP_INFO(logger_, "[MPC] computeCommands. Transformed plan to map frame");
   
   /**
    * Generate safe flight corridor
@@ -271,6 +274,7 @@ void LinearMPCController::computeCommands(
   // To get SFC wrt current position
   auto nearest_gap_dist = std::numeric_limits<double>::max();
   int nearest_plan_idx = (int)plan_map.poses.size() - 1;
+  RCLCPP_INFO(logger_, "[MPC] [computeCommands]. plan_map.poses size: %ld", plan_map.poses.size());
   if ((int)plan_map.poses.size() < 3){
     nearest_plan_idx = 0;
   }
