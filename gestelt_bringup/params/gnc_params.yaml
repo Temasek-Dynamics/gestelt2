@@ -49,7 +49,7 @@ controller_server:
       mpc:
         # MPC parameters
         horizon: 20
-        time_step: 0.4 #[s]
+        time_step: 0.2 #[s]
         # Objective Weights
         R_p: 2400.0 # Error from reference position
         R_v: 300.0  # Velocity magnitude
@@ -165,7 +165,7 @@ local_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.1   # [m] Resolution of voxel
-      static_inflation: 0.1    # [m] Static obstacle inflation
+      static_inflation: 0.4    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor
