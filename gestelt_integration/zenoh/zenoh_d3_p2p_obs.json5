@@ -1,0 +1,38 @@
+{
+  plugins: {
+    ros2dds: {
+      nodename: "zenoh_bridge_p2p_obs_3",
+      // namespace: "/d3",
+      ros_localhost_only: true,
+      ros_automatic_discovery_range: "LOCALHOST",
+      allow: {
+        publishers: [
+                      //"/d3/odom",
+                      //"/tf",
+                      //"/tf_static",
+                    ],
+        subscribers: [
+                      "/d0/odom",
+                      "/d1/odom",
+                      //"/tf",
+                      "/tf_static",
+                    ],
+        service_servers: [],
+        service_clients: [],
+        action_servers: [],
+        action_clients: [],
+      },
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+    endpoints: [
+      //"udp/192.168.1.102:7447",
+      "udp/192.168.1.10:7447",
+      "udp/192.168.1.20:7447"
+    ]
+  },
+
+}

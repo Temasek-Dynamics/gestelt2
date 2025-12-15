@@ -1,0 +1,35 @@
+{
+  plugins: {
+    ros2dds: {
+      nodename: "zenoh_bridge_ros2dds_3",
+      ros_localhost_only: true,
+      ros_automatic_discovery_range: "LOCALHOST",
+      allow: {
+        publishers: [ 
+                      // Transformations
+                      "/tf",
+                      "/tf_static",
+                    ],
+        subscribers: [
+                      
+                    ],
+        service_servers: [],
+        service_clients: [],
+        action_servers: [
+          
+        ],
+        action_clients: [],
+      },
+
+      //pub_max_frequencies: ["/d3/odom=50", "/tf_static=50"],
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+    endpoints: [
+      "udp/192.168.1.102:7447",
+    ]
+  },
+}
