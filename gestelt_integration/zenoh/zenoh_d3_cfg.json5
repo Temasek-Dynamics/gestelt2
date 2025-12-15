@@ -8,7 +8,7 @@
       allow: {
         publishers: [ 
                       // Mission commands
-                      "/uav_state", 
+                      //"/uav_state", 
 
                       // Perception
                       "/point_cloud/downsample", 
@@ -30,9 +30,9 @@
                       //"/tf_static",
                     ],
         subscribers: [
-                      ".*/point_goal",
-                      ".*/uav_command",
-                      ".*/reset_map",
+                      //".*/point_goal",
+                      //".*/uav_command",
+                      //".*/reset_map",
                     ],
         service_servers: [],
         service_clients: [],

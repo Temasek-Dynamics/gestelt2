@@ -6,12 +6,17 @@
       ros_automatic_discovery_range: "LOCALHOST",
       allow: {
         publishers: [ 
+                      // Mission commands
+                      ".*/uav_state", 
+
                       // Transformations
                       "/tf",
                       "/tf_static",
                     ],
         subscribers: [
-                      
+                      ".*/point_goal",
+                      ".*/uav_command",
+                      ".*/reset_map",
                     ],
         service_servers: [],
         service_clients: [],
