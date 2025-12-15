@@ -106,7 +106,7 @@ def launch_setup(context):
 
     declare_use_namespace_cmd = DeclareLaunchArgument(
         'use_namespace',
-        default_value='true',
+        default_value='false',
         description='Whether to apply a namespace to the navigation stack',
     )
 
@@ -164,13 +164,13 @@ def launch_setup(context):
 
     global_frame = "world" # Fixed
     map_frame = ns + "_map"
-    base_link_frame = ns + "_base_link"
-    camera_link = ns + "_camera_link"
-    # base_link_frame = "base_link"
-    # camera_link = "camera_link"
-    camera_front_frame = ns+"_camera_front"
-    camera_front_right_frame = ns+"_camera_front_right"
-    camera_front_left_frame = ns+"_camera_front_left"
+    # base_link_frame = ns + "_base_link"
+    # camera_link = ns + "_camera_link"
+    base_link_frame = "base_link"
+    camera_link = "camera_link"
+    camera_front_frame = "camera_front"
+    camera_front_right_frame = "camera_front_right"
+    camera_front_left_frame = "camera_front_left"
 
     # ld.add_action
     drone_bringup = GroupAction(

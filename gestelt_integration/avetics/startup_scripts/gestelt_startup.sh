@@ -26,18 +26,27 @@ done
 # Commands
 #####
 # Start vilota bridge
-VILOTA_BRIDGE="ros2 launch gestelt_bringup vilota_launch.py namespace:=d1"
+VILOTA_BRIDGE="ros2 launch gestelt_bringup vilota_launch.py"
 
 # VILOTA_VIO_ONLY="ros2 run vision vio_bridge_px4"
 
-# Start gestelt nodes
-GESTELT_NODE="ros2 launch gestelt_bringup offboard_launch.py scenario_name:=start_1d_zero _drone_id:=1"
+# Start gestelt nodes (Add alias into bashrc)
+GESTELT_NODE="start_offboard"
 
 # Start mission node
-MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=start_1d_zero _drone_id:=1"
+MISSION_NODES="start_takeoff"
 
-# Reset map
-RESET_MAP="ros2 topic pub d1/reset_map std_msgs/msg/Empty {} --rate 0.5"
+# Record bag
+RECORD_ROSBAG="ros2 launch gestelt_bringup record_rosbag.py"
+
+# Start zenoh bridge (Add alias into bashrc)
+ZENOH_BRIDGE="start_zenoh"
+
+# Start no namespace zenoh bridge (Add alias into bashrc)
+ZENOH_NONS="start_zenoh_noNS"
+
+# Start zenoh peer to peer (Add alias into bashrc)
+ZENOH_P2P="start_zenoh_p2p"
 
 if [ "$SESSIONEXISTS" = "" ]
 then 
@@ -49,9 +58,11 @@ then
     tmux split-window -t $SESSION:0.0 -h
     tmux split-window -t $SESSION:0.2 -h
     tmux split-window -t $SESSION:0.0 -h
+    tmux split-window -t $SESSION:0.5 -h
 
     tmux send-keys -t $SESSION:0.4 "$ZENOH_BRIDGE" C-m
     tmux send-keys -t $SESSION:0.5 "$ZENOH_P2P" C-m
+    tmux send-keys -t $SESSION:0.6 "$ZENOH_NONS" C-m
     sleep 5
     tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m
     sleep 1

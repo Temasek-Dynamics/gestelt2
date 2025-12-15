@@ -26,8 +26,8 @@
                       "/sfc", // Safe Flight Corridor
 
                       // Transformations
-                      "/tf",
-                      "/tf_static",
+                      //"/tf",
+                      //"/tf_static",
                     ],
         subscribers: [
                       ".*/point_goal",
@@ -43,6 +43,9 @@
         ],
         action_clients: [],
       },
+
+      //pub_max_frequencies: ["/d0/odom=50", "/tf_static=50"],
+      //pub_max_frequencies: ["/d0/odom=50"],
     },
   },
 
@@ -50,8 +53,7 @@
 
   connect: {
     endpoints: [
-      "udp/10.42.0.1:7447"
+      "udp/192.168.1.102:7447",
     ]
   },
-
 }

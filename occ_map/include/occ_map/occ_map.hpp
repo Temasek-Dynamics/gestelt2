@@ -28,6 +28,8 @@
 
 #include <Eigen/Eigen>
 
+#include <cstdlib>
+
 #include <rclcpp/rclcpp.hpp>
 #include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 
@@ -406,7 +408,9 @@ private:
   std::string parent_namespace_;
 
   /* Params */
-  int drone_id_{0}; //Drone ID
+  std::string drone_ns = std::getenv("DRONE_NS"); // Get from environment variable
+  // int drone_id_{0}; //Drone ID
+  int drone_id_{drone_ns[drone_ns.size() - 1] - '0'}; //Drone ID. Get from last char of drone_ns
 
   // Part of odom subscription (Temp solution for swarm) //
   static constexpr std::array<int, 5> drone_ids_ {0, 1, 2, 3, 4}; //define all drone IDs to subscribe

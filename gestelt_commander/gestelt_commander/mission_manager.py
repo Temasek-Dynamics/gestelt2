@@ -131,8 +131,7 @@ class MissionManager(Node):
                                                   namespace='/d' + str(id)))
 
         # Navigator without namespace
-        self.navigator_no_ns = BasicNavigator(node_name='basic_navigator', 
-                                                namespace='/d' + str(id))
+        self.navigator_no_ns = BasicNavigator(node_name='basic_navigator')
 
         # Check if all drones are in IDLE state
         # self.get_logger().info(f"Waiting for /dX/uav_state topics...")

@@ -207,15 +207,6 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   // RCLCPP_INFO(get_logger(), "drone full id: %s", parent_namespace_.c_str());
 
   // Get Params
-	std::string ns = parent_namespace_;
-	if (ns.size() < 2){
-		throw std::runtime_error("Invalid namespace provided to trajectory_server, "
-			"should be in the form of 'dX' where X is an integer");
-	}
-
-	drone_id_ = ns[ns.size()-1] - '0'; //logic from trajectory_server
-
-  RCLCPP_INFO(get_logger(), "drone_id_: %d", drone_id_);
 
   for (const auto current_id : drone_ids_)
 	{
