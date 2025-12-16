@@ -687,11 +687,8 @@ nav_msgs::msg::Path LinearMPCController::transformPlanFromGlobalToMap(
       stamped_pose.header.stamp = robot_pose.header.stamp;
       stamped_pose.pose = global_plan_pose.pose;
 
-      if(occ_map_->transformPoseToTargetFrame(
-        occ_map_->getMapFrameID(), stamped_pose, transformed_pose))
-        {
-          throw gestelt_core::ControllerTFError("Unable to transform PoseStamped from global frame to local frame");
-        }
+      occ_map_->transformPoseToTargetFrame(
+        occ_map_->getMapFrameID(), stamped_pose, transformed_pose);
 
       return transformed_pose;
     };
