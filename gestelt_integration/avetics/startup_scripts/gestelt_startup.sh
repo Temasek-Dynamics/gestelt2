@@ -37,7 +37,7 @@ GESTELT_NODE="start_offboard"
 MISSION_NODES="start_takeoff"
 
 # Record bag
-RECORD_ROSBAG="ros2 launch gestelt_bringup record_rosbag.py"
+RECORD_ROSBAG="ros2 launch gestelt_bringup record_rosbag_local.py"
 
 # Start zenoh bridge (Add alias into bashrc)
 ZENOH_BRIDGE="start_zenoh"
