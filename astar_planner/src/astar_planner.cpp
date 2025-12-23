@@ -144,48 +144,48 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   }
 
   // Stuff to test (Uninflated goal) //
-  // if (occ_map_->withinObstacleInflation(map_goal)){
-  //   // throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
-  //   //     std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
-  //   //     ") was in inflation");
-  //   if (prev_goal_ != goal){
-  //     prev_goal_ = goal;
-  //     odom_goal_ = start;
-  //   }
-  //   curr_goal_ = odom_goal_;
+  if (occ_map_->withinObstacleInflation(map_goal)){
+    throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
+        ") was in inflation");
+    // if (prev_goal_ != goal){
+    //   prev_goal_ = goal;
+    //   odom_goal_ = start;
+    // }
+    // curr_goal_ = odom_goal_;
     // RCLCPP_ERROR(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
     //                         "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
     //                         goal(0), goal(1), goal(2), 
     //                         map_goal(0), map_goal(1), map_goal(2),
     //                         odom_goal_(0), odom_goal_(1), odom_goal_(2));
-  // }
+  }
   // Stuff to test (Uninflated goal) //
 
-  // Stuff to test (Inflated goal) //
-  for (int dx = -1; dx <= 1; dx++)
-  {
-    for (int dy = -1; dy <= 1; dy++)
-    {
-      const Eigen::Vector3d goal_temp = Eigen::Vector3d(
-        goal.x() + ((double)dx * 0.2), // 0.3m away from goal point
-        goal.y() + ((double)dy * 0.2),
-        goal.z()
-      );
-      if (occ_map_->withinObstacleInflation(goal_temp)){
-        if (prev_goal_ != goal){
-          prev_goal_ = goal;
-          odom_goal_ = start;
-        }
-        curr_goal_ = odom_goal_;
-        RCLCPP_WARN(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation,"
-                                "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
-                                goal(0), goal(1), goal(2), 
-                                map_goal(0), map_goal(1), map_goal(2),
-                                odom_goal_(0), odom_goal_(1), odom_goal_(2));
-      }
-    }
-  }
-  // Stuff to test (Inflated goal) //
+  // // Stuff to test (Inflated goal) //
+  // for (int dx = -1; dx <= 1; dx++)
+  // {
+  //   for (int dy = -1; dy <= 1; dy++)
+  //   {
+  //     const Eigen::Vector3d goal_temp = Eigen::Vector3d(
+  //       goal.x() + ((double)dx * 0.2), // 0.3m away from goal point
+  //       goal.y() + ((double)dy * 0.2),
+  //       goal.z()
+  //     );
+  //     if (occ_map_->withinObstacleInflation(goal_temp)){
+  //       if (prev_goal_ != goal){
+  //         prev_goal_ = goal;
+  //         odom_goal_ = start;
+  //       }
+  //       curr_goal_ = odom_goal_;
+  //       RCLCPP_WARN(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation,"
+  //                               "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
+  //                               goal(0), goal(1), goal(2), 
+  //                               map_goal(0), map_goal(1), map_goal(2),
+  //                               odom_goal_(0), odom_goal_(1), odom_goal_(2));
+  //     }
+  //   }
+  // }
+  // // Stuff to test (Inflated goal) //
 
   if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
