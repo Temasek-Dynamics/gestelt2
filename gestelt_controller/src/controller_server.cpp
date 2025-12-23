@@ -437,16 +437,28 @@ void ControllerServer::computeControl()
           std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
           RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
 
+          // Stuff to test (Transform goal wrt global to map) //
+          geometry_msgs::msg::PoseStamped transformed_goal_pose;
+          rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
+          nav_2d_utils::transformPose(
+            occ_map_->getTfBuffer(), occ_map_->getMapFrameID(),
+            end_pose_, transformed_goal_pose, tolerance);
+
           Eigen::Vector3d goal_cmd_pos = Eigen::Vector3d(
-                                          end_pose_.pose.position.x,
-                                          end_pose_.pose.position.y,
-                                          end_pose_.pose.position.z
+                                          transformed_goal_pose.pose.position.x,
+                                          transformed_goal_pose.pose.position.y,
+                                          transformed_goal_pose.pose.position.z
                                           );
           
-          RCLCPP_ERROR(this->get_logger(), "[computeControl] Setting waypoint to goal_cmd_pos (%f, %f, %f)", 
+          RCLCPP_INFO(this->get_logger(), "[computeControl] Setting waypoint to goal_cmd_pos(Global/Map) (%f, %f, %f), (%f, %f, %f)", 
+            end_pose_.pose.position.x,
+            end_pose_.pose.position.y,
+            end_pose_.pose.position.z,
             goal_cmd_pos.x(),
             goal_cmd_pos.y(),
-            goal_cmd_pos.z());
+            goal_cmd_pos.z()
+          );
+          // Stuff to test (Transform goal wrt global to map) //
 
           cmd_pos_prev_ = {goal_cmd_pos};
           cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
@@ -1002,17 +1014,24 @@ bool ControllerServer::isGoalReached()
   geometry_msgs::msg::PoseStamped pose;
 
   if (!getRobotPose(pose)) {
+    RCLCPP_ERROR(get_logger(), "[isGoalReached]Unable to getRobotPose");
     return false;
   }
 
-  geometry_msgs::msg::PoseStamped transformed_end_pose;
+  // Stuff to test (Transform pose from map frame to global for goal checking) //
+  geometry_msgs::msg::PoseStamped transformed_pose;
   rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
   nav_2d_utils::transformPose(
     occ_map_->getTfBuffer(), occ_map_->getGlobalFrameID(),
-    end_pose_, transformed_end_pose, tolerance);
+    pose, transformed_pose, tolerance);
+  RCLCPP_INFO(get_logger(), "[isGoalReached] pose.pose: (%.2f, %.2f, %.2f), transformed_pose: (%.2f, %.2f, %.2f), end_pose_: (%.2f, %.2f, %.2f)",
+                              pose.pose.position.x, pose.pose.position.y, pose.pose.position.z,
+                              transformed_pose.pose.position.x, transformed_pose.pose.position.y, transformed_pose.pose.position.z,
+                              end_pose_.pose.position.x, end_pose_.pose.position.y, end_pose_.pose.position.z);
+  // Stuff to test (Transform pose from map frame to global for goal checking) //
 
   return goal_checkers_[current_goal_checker_]->isGoalReached(
-    pose.pose, transformed_end_pose.pose,
+    transformed_pose.pose, end_pose_.pose,
     cur_twist_);
 }
 
