@@ -659,12 +659,12 @@ void OccMap::updateLocalMap(){
       kdtree_lcl_->Build(lcl_pcd_map_->points);
     }
 
-    lcl_pcd_map_raw_->header.frame_id = global_frame_;
+    lcl_pcd_map_raw_->header.frame_id = map_frame_;
     lcl_pcd_map_raw_->width = lcl_pcd_map_raw_->points.size();
     lcl_pcd_map_raw_->height = 1;
     lcl_pcd_map_raw_->is_dense = true;
 
-    lcl_pcd_map_->header.frame_id = global_frame_;
+    lcl_pcd_map_->header.frame_id = map_frame_;
     lcl_pcd_map_->width = lcl_pcd_map_->points.size();
     lcl_pcd_map_->height = 1;
     lcl_pcd_map_->is_dense = true;
@@ -817,7 +817,7 @@ void OccMap::cloudCB(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   }
 
   auto pcd_in_map_frame = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcd_in_map_frame->header.frame_id = global_frame_;
+  pcd_in_map_frame->header.frame_id = map_frame_;
 
   // Transform point cloud from camera frame to global_frame
   pcl::transformPointCloud(*pcd, *pcd_in_map_frame, cam_to_map_mat_);

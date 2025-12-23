@@ -133,9 +133,9 @@ public:
   std::shared_ptr<tf2_ros::Buffer> getTfBuffer() {return tf_buffer_;}
 
   /**
-   * @brief Get the pose of robot in global frame
+   * @brief Get the pose of robot in map frame
    *
-   * @param global_pose pose of robot in global frame to be assigned
+   * @param global_pose pose of robot in map frame to be assigned
    * @return true
    * @return false
    */
