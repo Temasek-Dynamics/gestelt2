@@ -51,17 +51,16 @@ int AStar::computePath(const int& max_iterations,
     const auto start_idx = occ_map_->posToIdx(start_pos_);
     const auto goal_idx = occ_map_->posToIdx(goal_pos_);
 
-    //TODO: check if start or end in inflation then throw error
-    // Check if goal is within a given inflation radius of an obstacle
-    // Astar traces a path from the goal to current position, so you will trace from the start_pos_ == goal
-    if (occ_map_->withinObstacleInflation(goal_pos_)){
-        throw gestelt_core::PlannerException("Start is within inflation");
-        return 0;
-    }
-    if (occ_map_->withinObstacleInflation(start_pos_)){
-        throw gestelt_core::PlannerException("Goal is within inflation");
-        return 0;
-    }
+    // // Check if goal is within a given inflation radius of an obstacle
+    // // Astar traces a path from the goal to current position, so you will trace from the start_pos_ == goal
+    // if (occ_map_->withinObstacleInflation(goal_pos_)){
+    //     throw gestelt_core::PlannerException("Start is within inflation");
+    //     return 0;
+    // }
+    // if (occ_map_->withinObstacleInflation(start_pos_)){
+    //     throw gestelt_core::PlannerException("Goal is within inflation");
+    //     return 0;
+    // }
 
     // std::cout << "AStar::computePath in map frame from " 
     // << start_pos_.transpose() << " to " << goal_pos_.transpose() << std::endl;

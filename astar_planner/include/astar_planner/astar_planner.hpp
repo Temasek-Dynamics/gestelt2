@@ -133,6 +133,11 @@ protected:
   double tie_breaker_{1.001};
   int cost_function_type_{2};
 
+  // Stuff to test
+  Eigen::Vector3d prev_goal_;
+  Eigen::Vector3d odom_goal_;
+  Eigen::Vector3d curr_goal_;
+
   // parent node weak ptr
   rclcpp_lifecycle::LifecycleNode::WeakPtr node_;
 

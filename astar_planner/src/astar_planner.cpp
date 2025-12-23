@@ -103,13 +103,14 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
     const Eigen::Vector3d &goal,
     std::function<bool()> cancel_checker)
 {
+  curr_goal_ = goal; // For registering last goal in inflation
 
   if (!occ_map_->inGlobalMap(start))
   {
     std::cout << "start: " << start.transpose() << std::endl;
     std::cout << "global_map_size: " << occ_map_->getGlobalMapSize().transpose() << std::endl;
     throw gestelt_core::StartOutsideMapBounds(
-        "Start Coordinates of(" + std::to_string(start(0)) + ", " +
+        "Start(Global frame) Coordinates of(" + std::to_string(start(0)) + ", " +
         std::to_string(start(1)) + "," + std::to_string(start(2)) + 
         ") was outside bounds");
   }
@@ -117,23 +118,74 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   if (!occ_map_->inGlobalMap(goal))
   {
     throw gestelt_core::GoalOutsideMapBounds(
-      "Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+      "Goal(Global frame) Coordinates of(" + std::to_string(goal(0)) + ", " +
       std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
       ") was outside bounds");
   }
 
-  //TODO CHECK AND THROW START AND GOAL OCCUPIED
-  if (occ_map_->withinObstacleInflation(start)){
-    throw gestelt_core::StartOccupied("Start Coordinates of(" + std::to_string(start(0)) + ", " +
-        std::to_string(start(1)) + ", " + std::to_string(start(2)) + 
-        ") was in inflation");
+  // Stuff to test //
+  Eigen::Vector3d map_start, map_goal;
+
+  occ_map_->worldToMap(start, map_start);
+  occ_map_->worldToMap(goal, map_goal);
+  // Stuff to test //
+
+  if (occ_map_->withinObstacleInflation(map_start)){
+    throw gestelt_core::StartOccupied("Start(Global/map frame) Coordinates of(" + 
+        std::to_string(start(0)) + ", " + std::to_string(start(1)) + ", " + std::to_string(start(2)) + ") " + 
+        "(" + std::to_string(map_start(0)) + ", " + std::to_string(map_start(1)) + ", " + std::to_string(map_start(2)) +")" " was in inflation"
+        );
+
+    // Stuff to test //
+    // RCLCPP_WARN(logger_, "Start(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation,",
+    //                         start(0), start(1), start(2), 
+    //                         map_start(0), map_start(1), map_start(2));
+    // Stuff to test //
   }
 
-  if (occ_map_->withinObstacleInflation(goal)){
-    throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
-        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
-        ") was in inflation");
+  // Stuff to test (Uninflated goal) //
+  // if (occ_map_->withinObstacleInflation(map_goal)){
+  //   // throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+  //   //     std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
+  //   //     ") was in inflation");
+  //   if (prev_goal_ != goal){
+  //     prev_goal_ = goal;
+  //     odom_goal_ = start;
+  //   }
+  //   curr_goal_ = odom_goal_;
+    // RCLCPP_ERROR(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
+    //                         "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
+    //                         goal(0), goal(1), goal(2), 
+    //                         map_goal(0), map_goal(1), map_goal(2),
+    //                         odom_goal_(0), odom_goal_(1), odom_goal_(2));
+  // }
+  // Stuff to test (Uninflated goal) //
+
+  // Stuff to test (Inflated goal) //
+  for (int dx = -1; dx <= 1; dx++)
+  {
+    for (int dy = -1; dy <= 1; dy++)
+    {
+      const Eigen::Vector3d goal_temp = Eigen::Vector3d(
+        goal.x() + ((double)dx * 0.2), // 0.3m away from goal point
+        goal.y() + ((double)dy * 0.2),
+        goal.z()
+      );
+      if (occ_map_->withinObstacleInflation(goal_temp)){
+        if (prev_goal_ != goal){
+          prev_goal_ = goal;
+          odom_goal_ = start;
+        }
+        curr_goal_ = odom_goal_;
+        RCLCPP_WARN(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation,"
+                                "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
+                                goal(0), goal(1), goal(2), 
+                                map_goal(0), map_goal(1), map_goal(2),
+                                odom_goal_(0), odom_goal_(1), odom_goal_(2));
+      }
+    }
   }
+  // Stuff to test (Inflated goal) //
 
   if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
@@ -145,7 +197,7 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
 
   nav_msgs::msg::Path path;
 
-  if (!makePlan(start, goal, tolerance_, cancel_checker, path))
+  if (!makePlan(start, curr_goal_, tolerance_, cancel_checker, path))
   {
     throw gestelt_core::NoValidPathCouldBeFound(
         "Failed to create plan with tolerance of: " + std::to_string(tolerance_));
@@ -175,11 +227,11 @@ AStarPlanner::makePlan(
   occ_map_->worldToMap(start, map_start);
   occ_map_->worldToMap(goal, map_goal);
 
-  // RCLCPP_INFO(
-  //   logger_, "AStarPlanner::makePlan in map_frame from " 
-  //   "(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f).", 
-  //   map_start(0), map_start(1), map_start(2),
-  //   map_goal(0), map_goal(1), map_goal(2));
+  RCLCPP_INFO(
+    logger_, "AStarPlanner::makePlan in map_frame from " 
+    "(%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f).", 
+    map_start(0), map_start(1), map_start(2),
+    map_goal(0), map_goal(1), map_goal(2));
 
   // clear the starting cell within the occupancy map because we know it can't be an obstacle
   // clearRobotCell(map_start);
