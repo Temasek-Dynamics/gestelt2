@@ -818,26 +818,59 @@ void ControllerServer::getControllerCommand()
     Eigen::Vector3d nearest_cmd_pos;
     auto nearest_cmd_dist = std::numeric_limits<double>::max();
 
-    // // look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint (1st workaround)
-    // for (const auto check_cmd_pos : cmd_pos_prev_) {
-    //   const auto deltaVector = check_cmd_pos - cur_pos; //vector from check_cmd_pos to cur_pos
-    //   const auto delta = deltaVector.squaredNorm();
+    // Stuff to test (Use global path to get out of inflation) //
+    // Obtain current planner path
+    std::vector<Eigen::Vector3d> curr_path_;
+    for (int i = 0; i < current_path_.poses.size(); i++){
 
-    //   if (delta < nearest_cmd_dist) {
-    //     nearest_cmd_dist = delta;
-    //     // nearest_cmd_pos = check_cmd_pos; //go back to nearest point
-    //     nearest_cmd_pos = cur_pos + (deltaVector * 1.1); //go back to nearest point, but a bit further
-    //   } //if
-    // } //for
+      // Need to transfrom from global to map frame before sending flight commands //
+      geometry_msgs::msg::PoseStamped transformed_path_pose;
+      rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
+      nav_2d_utils::transformPose(
+        occ_map_->getTfBuffer(), occ_map_->getMapFrameID(),
+        current_path_.poses[i], transformed_path_pose, tolerance);
 
-    // Go to 3rd point in trajectory
-    if (cmd_pos_prev_.size() < 2){
-      nearest_cmd_pos = cmd_pos_prev_[0];
+      curr_path_.push_back(Eigen::Vector3d(
+        transformed_path_pose.pose.position.x, 
+        transformed_path_pose.pose.position.y, 
+        transformed_path_pose.pose.position.z));
+
+      // curr_path_.push_back(Eigen::Vector3d(
+      //   current_path_.poses[i].pose.position.x, 
+      //   current_path_.poses[i].pose.position.y, 
+      //   current_path_.poses[i].pose.position.z));
+    } 
+
+    // look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint (1st workaround)
+    for (const auto check_cmd_pos : curr_path_) {
+      const auto deltaVector = check_cmd_pos - cur_pos; //vector from check_cmd_pos to cur_pos
+      const auto delta = deltaVector.squaredNorm();
+
+      if ((delta < nearest_cmd_dist) && !(occ_map_->withinObstacleInflation(check_cmd_pos))) {
+        nearest_cmd_dist = delta;
+        nearest_cmd_pos = check_cmd_pos; //go back to nearest point
+        // nearest_cmd_pos = check_cmd_pos + ((deltaVector / std::sqrt(nearest_cmd_dist)) * 0.25); //go back to nearest point, but 0.25 radius dist further
+        // nearest_cmd_pos = cur_pos + (deltaVector * 1.2); //go back to nearest point, but a bit further
+      } //if
+      else{
+        RCLCPP_WARN(get_logger(), "[getControllerCommand]NoValidControl: Global path is in inflation");
+        nearest_cmd_pos = cur_pos;
+      }
+    } //for
+
+    if (curr_path_.empty()){
+      RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Empty path");
+      nearest_cmd_pos = cur_pos;
     }
-    else{
-      nearest_cmd_pos = cmd_pos_prev_[2];
-    }
-    
+    // Stuff to test (Use global path to get out of inflation) //
+
+    // // Go to 3rd point in trajectory
+    // if (cmd_pos_prev_.size() < 2){
+    //   nearest_cmd_pos = cmd_pos_prev_[0];
+    // }
+    // else{
+    //   nearest_cmd_pos = cmd_pos_prev_[0];
+    // }
     // set the desired position
     // cmd_pos_prev_ = { cur_pos };
     cmd_pos_prev_ = { nearest_cmd_pos };
@@ -846,6 +879,7 @@ void ControllerServer::getControllerCommand()
     static const double MAX_VEL_COMPONENT = 0.25;
     static const double MAX_VEL_COMPONENT_SQ = std::pow(MAX_VEL_COMPONENT, 2);
     Eigen::Vector3d nearest_cmd_vel = nearest_cmd_pos - cur_pos;
+    // Eigen::Vector3d nearest_cmd_vel = -cmd_vel_prev_[0];
 
     if (nearest_cmd_vel.x() > MAX_VEL_COMPONENT)
       nearest_cmd_vel[0] = MAX_VEL_COMPONENT;
@@ -865,21 +899,6 @@ void ControllerServer::getControllerCommand()
       nearest_cmd_vel[2] = -MAX_VEL_COMPONENT;
     //else it is 0 or MAX_VEL_COMPONENT
 
-    // cmd_vel_prev_ = { nearest_cmd_vel };
-    // cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
-    cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-
-    //set the desired acceleration
-    // cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
-    // cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
-    cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-
-    RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
-      nearest_cmd_pos.x(),
-      nearest_cmd_pos.y(),
-      nearest_cmd_pos.z());
-    
-    last_valid_cmd_time_ = now();
     // cmd_vel_prev_ = { nearest_cmd_vel };
     // cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
     cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
