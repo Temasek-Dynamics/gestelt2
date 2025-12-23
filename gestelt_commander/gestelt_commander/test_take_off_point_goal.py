@@ -73,6 +73,7 @@ def main(args=None):
             raise Exception("Failed to transition to mission mode")
         
         mission_mngr.get_logger().info("All drones in MISSION MODE")
+        mission_mngr.resetOccMap()
 
         executor.spin()
 
