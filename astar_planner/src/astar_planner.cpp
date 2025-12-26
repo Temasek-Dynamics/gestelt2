@@ -145,19 +145,25 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
 
   // Stuff to test (Uninflated goal) //
   if (occ_map_->withinObstacleInflation(map_goal)){
-    throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
-        std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
-        ") was in inflation");
-    // if (prev_goal_ != goal){
-    //   prev_goal_ = goal;
-    //   odom_goal_ = start;
-    // }
-    // curr_goal_ = odom_goal_;
-    // RCLCPP_ERROR(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
-    //                         "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
-    //                         goal(0), goal(1), goal(2), 
-    //                         map_goal(0), map_goal(1), map_goal(2),
-    //                         odom_goal_(0), odom_goal_(1), odom_goal_(2));
+    // throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
+    //     std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
+    //     ") was in inflation");
+    if (goal_in_obs != goal){
+      goal_in_obs = goal;
+      odom_goal_ = start;
+    }
+    curr_goal_ = odom_goal_;
+    RCLCPP_ERROR(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
+                            "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
+                            goal(0), goal(1), goal(2), 
+                            map_goal(0), map_goal(1), map_goal(2),
+                            odom_goal_(0), odom_goal_(1), odom_goal_(2));
+  }
+
+  else if (goal_in_obs == goal){
+    RCLCPP_INFO(logger_, "Continue resetting to last registered odom position(%.2f, %.2f, %.2f)",
+                            odom_goal_(0), odom_goal_(1), odom_goal_(2));
+    curr_goal_ = odom_goal_;
   }
   // Stuff to test (Uninflated goal) //
 
@@ -172,8 +178,8 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   //       goal.z()
   //     );
   //     if (occ_map_->withinObstacleInflation(goal_temp)){
-  //       if (prev_goal_ != goal){
-  //         prev_goal_ = goal;
+  //       if (goal_in_obs != goal){
+  //         goal_in_obs = goal;
   //         odom_goal_ = start;
   //       }
   //       curr_goal_ = odom_goal_;
@@ -182,6 +188,11 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   //                               goal(0), goal(1), goal(2), 
   //                               map_goal(0), map_goal(1), map_goal(2),
   //                               odom_goal_(0), odom_goal_(1), odom_goal_(2));
+  //     }
+  //     else if (goal_in_obs == goal){
+  //       RCLCPP_INFO(logger_, "Continue resetting to last registered odom position(%.2f, %.2f, %.2f)",
+  //                               odom_goal_(0), odom_goal_(1), odom_goal_(2));
+  //       curr_goal_ = odom_goal_;
   //     }
   //   }
   // }
