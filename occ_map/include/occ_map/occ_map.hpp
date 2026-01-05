@@ -195,7 +195,10 @@ public:
    * @return std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>
    */
   inline std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> getLocalPtsInMapFrame(){
+    // RCLCPP_INFO(get_logger(), "[occ_map.hpp] Getting lcl_pts_map");
+    RCLCPP_INFO(get_logger(), "[occ_map.hpp] Acquiring lock lcl_occ_map_guard");
     std::lock_guard<std::mutex> lcl_occ_map_guard(lcl_occ_map_mtx_);
+    RCLCPP_INFO(get_logger(), "[occ_map.hpp] Acquired lock lcl_occ_map_guard");
     return lcl_pts_map_;
   }
 
