@@ -31,7 +31,7 @@ controller_server:
     # Goal checker parameters
     goal_checker:
       plugin: "gestelt_controller::SimpleGoalChecker"
-      xyz_goal_tolerance: 0.5 # [m] 
+      xyz_goal_tolerance: 0.6 # [m] 
       # yaw_goal_tolerance: 0.25 # Not used
       stateful: True
     # Local Controller
@@ -52,8 +52,8 @@ controller_server:
         time_step: 0.4 #[s]
         # Objective Weights
         R_p: 2400.0 # Error from reference position
-        R_v: 300.0  # Velocity magnitude
-        R_a: 20.0  # Acceleration magnitude
+        R_v: 240.0  # Velocity magnitude
+        R_a: 40.0  # Acceleration magnitude
         R_u: 0.1  # Control magnitude
         R_u_con: 0.12  # Continuity in controls
         R_pN: 2000.0 # Terminal position

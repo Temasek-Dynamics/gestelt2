@@ -429,10 +429,64 @@ void ControllerServer::computeControl()
 
       updateGlobalPath();
 
-      // Reached goal algo (untested, WIP)
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
+
+        // Logic to get out of goal (Untested, WIP) //
+        bool break_flag = false;
+
+        for (int dx = -1; dx <= 1; dx++)
         {
+          for (int dy = -1; dy <= 1; dy++)
+          {
+            const Eigen::Vector3d cur_pos_temp = Eigen::Vector3d(
+              cur_pos_.x() + ((double)dx * 0.4), //
+              cur_pos_.y() + ((double)dy * 0.4),
+              cur_pos_.z()
+            );
+            if (occ_map_->withinObstacleInflation(cur_pos_temp)){
+              {
+                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: A point around 0.4m away from odom is in inflation");
+                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+                std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+
+                const auto deltaVector = cur_pos_ - cur_pos_temp; //vector from cur_pos_temp to cur_pos
+                Eigen::Vector3d offset_cmd_pos = cur_pos_ + deltaVector; // direct offset away
+              
+                RCLCPP_INFO(this->get_logger(), "[computeControl] Setting waypoint to offset from cur_pos_ to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
+                  cur_pos_.x(),
+                  cur_pos_.y(),
+                  cur_pos_.z(),
+                  offset_cmd_pos.x(),
+                  offset_cmd_pos.y(),
+                  offset_cmd_pos.z()
+                );
+
+                cmd_pos_prev_ = {offset_cmd_pos};
+                cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+                cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+
+                last_valid_cmd_time_ = now();
+                start_publish_cmd_ = true;
+                break_flag = true;
+                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+              }
+
+              break;
+            }
+          }
+          if (break_flag){
+            break;
+          }
+        }
+        if (break_flag){
+          break;
+        }
+        // Logic to get out of goal (Untested, WIP) // 
+
+        {
+          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Area around odom is free of obstacle");
           RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
           std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
           RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
@@ -1024,7 +1078,7 @@ bool ControllerServer::isGoalReached()
   nav_2d_utils::transformPose(
     occ_map_->getTfBuffer(), occ_map_->getGlobalFrameID(),
     pose, transformed_pose, tolerance);
-  RCLCPP_INFO(get_logger(), "[isGoalReached] pose.pose: (%.2f, %.2f, %.2f), transformed_pose: (%.2f, %.2f, %.2f), end_pose_: (%.2f, %.2f, %.2f)",
+  RCLCPP_INFO(get_logger(), "[isGoalReached] pose(map frame): (%.2f, %.2f, %.2f), transformed_pose(global_frame): (%.2f, %.2f, %.2f), end_pose_(global_frame): (%.2f, %.2f, %.2f)",
                               pose.pose.position.x, pose.pose.position.y, pose.pose.position.z,
                               transformed_pose.pose.position.x, transformed_pose.pose.position.y, transformed_pose.pose.position.z,
                               end_pose_.pose.position.x, end_pose_.pose.position.y, end_pose_.pose.position.z);
