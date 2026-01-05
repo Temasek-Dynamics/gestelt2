@@ -341,7 +341,7 @@ void LinearMPCController::computeCommands(
   // [MAP FRAME] global plan used by safe flight corridor 
   std::vector<Eigen::Vector3d> ref_plan_mpc; 
 
-  for (int i = nearest_plan_idx; i < (mpc_controller_->MPC_HORIZON + nearest_plan_idx)&& i < (int)plan_map.poses.size(); i++){
+  for (int i = nearest_plan_idx; i < (mpc_controller_->MPC_HORIZON + nearest_plan_idx)&& i < (int)plan_map.poses.size(); i += 1){ // can set the increment as speed to set (Untested, WIP)
     ref_plan_mpc.push_back(Eigen::Vector3d(
       plan_map.poses[i].pose.position.x,
       plan_map.poses[i].pose.position.y,
@@ -393,7 +393,7 @@ void LinearMPCController::computeCommands(
 
     // get index of current polygon that ref_pos belongs in
     // int sfc_start_idx = ref_plan_sfc_idx[poly_idx];
-    int sfc_end_idx = ref_plan_sfc_idx[poly_idx + 1];
+    // int sfc_end_idx = ref_plan_sfc_idx[poly_idx + 1]; // Original line commented out to test preset Vr, WIP
 
     // RCLCPP_INFO(logger_, "[MPC] SFC Polygon (%d) at with segment[%d] (%0.2f, %0.2f, %0.2f) -> [%d](%0.2f, %0.2f, %0.2f)", 
     //   poly_idx, 
@@ -402,20 +402,24 @@ void LinearMPCController::computeCommands(
     //   sfc_end_idx,
     //   ref_plan_sfc[poly_idx+1](0), ref_plan_sfc[poly_idx+1](1), ref_plan_sfc[poly_idx+1](2));
 
-    if (ref_idx > sfc_end_idx) 
-    {
+    // if (ref_idx > sfc_end_idx) // Original line commented out to test preset Vr, WIP
+    // {                          // Original line commented out to test preset Vr, WIP
       // RCLCPP_INFO(logger_, "[MPC] Incrementing from polygon %d to polygon %d", poly_idx, poly_idx+1);
 
       // if MPC ref index exceeds end of current SFC segment, then increment to next polygon
-      poly_idx++;
+      // poly_idx++; // Original line commented out to test preset Vr, WIP
 
-      // Constrain poly_idx to never exceed the number of polygons
-      if (poly_idx > (int)sfc_polyhedrons.size() - 1){
-        poly_idx = (int)sfc_polyhedrons.size() - 1;
-      }
+    // Original lines unindented out to test preset Vr, WIP //
+    // Constrain poly_idx to never exceed the number of polygons
+    if (poly_idx > (int)sfc_polyhedrons.size() - 1){
+      poly_idx = (int)sfc_polyhedrons.size() - 1;
+    }
+    // Original lines unindented out to test preset Vr, WIP //
+
       // RCLCPP_ERROR(logger_, 
       //   "[MPC] ERROR: Ref Path idx %d exceeds SFC Segment end %d", ref_idx, sfc_end_idx );
-    }
+
+    // } // Original line commented out to test preset Vr, WIP
 
     // At k-th control iteration, set PVA reference 
     Eigen::Vector3d ref_vel(0, 0, 0); // vel reference
@@ -434,6 +438,21 @@ void LinearMPCController::computeCommands(
 
     // At k-th control iteration, set SFC linear constraints
     Eigen::MatrixX4d sfc_planes;
+
+    // Unconfined SFC, important for preset Vr, WIP //
+    while(poly_idx < (int)sfc_polyhedrons.size() - 1){
+      polyhedronToPlanes(sfc_polyhedrons[poly_idx], sfc_planes);
+      if (mpc_controller_->isInFSC(ref_pos, sfc_planes)){
+        break;
+      }
+      else{
+        RCLCPP_WARN(logger_, 
+        "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, poly_idx );
+      }
+      poly_idx++;
+    }
+    // Unconfined SFC, important for preset Vr, WIP //
+
     polyhedronToPlanes(sfc_polyhedrons[poly_idx], sfc_planes);
     if (!mpc_controller_->isInFSC(ref_pos, sfc_planes)) { 
       RCLCPP_ERROR(logger_, 
