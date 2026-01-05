@@ -118,10 +118,11 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   // Initialize pubs & subs
   plan_publisher_ = create_publisher<nav_msgs::msg::Path>("plan", 1);
 
-  goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "goal", rclcpp::ServicesQoS(), std::bind(&PlannerServer::goalSubCB, this, _1));
-  point_goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-    "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&PlannerServer::pointGoalSubCB, this, _1));
+  // Not in use
+  // goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+  //   "goal", rclcpp::ServicesQoS(), std::bind(&PlannerServer::goalSubCB, this, _1));
+  // point_goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+  //   "point_goal", rclcpp::SystemDefaultsQoS(), std::bind(&PlannerServer::pointGoalSubCB, this, _1));
 
   double action_server_result_timeout;
   get_parameter("action_server_result_timeout", action_server_result_timeout);
@@ -633,15 +634,16 @@ PlannerServer::getPlan(
   return nav_msgs::msg::Path();
 }
 
-void PlannerServer::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
-{
+// Not in use
+// void PlannerServer::pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
+// {
 
-}
+// }
 
-void PlannerServer::goalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
-{
+// void PlannerServer::goalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg)
+// {
 
-}
+// }
 
 void
 PlannerServer::publishPlan(const nav_msgs::msg::Path & path)

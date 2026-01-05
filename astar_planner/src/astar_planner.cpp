@@ -208,7 +208,7 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
 
   nav_msgs::msg::Path path;
 
-  if (!makePlan(start, curr_goal_, tolerance_, cancel_checker, path))
+  if (!makePlan(start, curr_goal_, cancel_checker, path))
   {
     throw gestelt_core::NoValidPathCouldBeFound(
         "Failed to create plan with tolerance of: " + std::to_string(tolerance_));
@@ -221,7 +221,7 @@ bool
 AStarPlanner::makePlan(
     const Eigen::Vector3d &start,
     const Eigen::Vector3d &goal, 
-    double tolerance,
+    // double tolerance,
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path &plan)
 {

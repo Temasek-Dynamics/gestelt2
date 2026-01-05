@@ -95,7 +95,7 @@ protected:
   bool makePlan(
     const Eigen::Vector3d &start,
     const Eigen::Vector3d &goal, 
-    double tolerance,
+    // double tolerance, // for some reason, its not used
     std::function<bool()> cancel_checker,
     nav_msgs::msg::Path & plan);
 

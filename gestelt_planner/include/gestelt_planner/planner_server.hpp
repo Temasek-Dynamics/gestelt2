@@ -210,21 +210,21 @@ protected:
    */
   void computePlanThroughPoses();
 
-  /* Subscription callback to goals */
+//   /* Subscription callback to goals */
 
-  /**
-   * @brief Subscriber callback to individual goals
-   * 
-   * @param msg 
-   */
-  void goalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg);
+//   /**
+//    * @brief Subscriber callback to individual goals
+//    * 
+//    * @param msg 
+//    */
+//   void goalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg);
 
-  /**
-   * @brief Subscriber callback to point goals from RVIZ
-   * 
-   * @param msg 
-   */
-  void pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg);
+//   /**
+//    * @brief Subscriber callback to point goals from RVIZ
+//    * 
+//    * @param msg 
+//    */
+//   void pointGoalSubCB(const geometry_msgs::msg::PoseStamped::UniquePtr msg);
 
   /**
    * @brief The service callback to determine if the path is still valid
@@ -289,8 +289,8 @@ protected:
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr plan_publisher_;
 
   // Subscribers to the path
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_; // Subscriber to goal
-  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_; // Point goal subscriber
+//   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_; // Subscriber to goal
+//   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr point_goal_sub_; // Point goal subscriber
 
   // Service to determine if the path is valid
   rclcpp::Service<nav2_msgs::srv::IsPathValid>::SharedPtr is_path_valid_service_;
