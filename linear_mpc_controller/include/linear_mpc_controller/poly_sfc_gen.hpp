@@ -38,6 +38,9 @@
 
 #include <geometry_msgs/msg/point.hpp>
 
+#include <iostream>
+#include <rcutils/logging_macros.h>
+
 namespace sfc
 {
 
@@ -76,11 +79,16 @@ public: // Public structs
   {
     EllipsoidDecomp3D ellip_decomp_util; // Decomposition util for Liu's method
     
+    // const char* logger_name = "[poly_sfc_gen.hpp]"; // For logging purpose
     //Using ellipsoid decomposition
+    RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] set_obs");
     ellip_decomp_util.set_obs(obs_pts);
+    RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] set_local_bbox");
     ellip_decomp_util.set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z)); 
+    RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] dilate path");
     ellip_decomp_util.dilate(path_3d); // Set max iteration number of 10, do fix the path
 
+    RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] get polyhedrons");
     poly_vec_ = ellip_decomp_util.get_polyhedrons();
 
     // std::vector<LinearConstraint3D> poly_constr_vec_new;

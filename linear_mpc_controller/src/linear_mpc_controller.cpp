@@ -317,6 +317,9 @@ void LinearMPCController::computeCommands(
     plan_map.poses.back().pose.position.z));
   ref_plan_sfc_idx.push_back(plan_map.poses.size()-1);
 
+  RCLCPP_INFO(logger_, "[MPC] [computeCommands]. ref_plan_sfc size: %ld", ref_plan_sfc.size());
+  RCLCPP_INFO(logger_, "[MPC] [computeCommands]. Generating SFC");
+
   if (!sfc_gen_->generateSFC(occ_map_->getLocalPtsInMapFrame(), ref_plan_sfc)){
     throw gestelt_core::NoValidControl("Failed to generate Safe Flight Corridor");
   }
@@ -421,24 +424,6 @@ void LinearMPCController::computeCommands(
     if (k == 0) // First iteration
     {
       ref_vel = (ref_pos - position) / mpc_controller_->getTimeStep();
-      // if (ref_vel.x() > 0.0){
-      //   ref_vel.x() = 10.00;
-      // } 
-      // else if (ref_vel.x() < 0.0){
-      //   ref_vel.x() = -10.00;
-      // }
-      // else {
-      //   ref_vel.x() = 0.0;
-      // }
-      // if (ref_vel.y() > 0.0){
-      //   ref_vel.y() = 10.00;
-      // } 
-      // else if (ref_vel.y() < 0.0){
-      //   ref_vel.y() = -10.00;
-      // }
-      // else {
-      //   ref_vel.y() = 0.0;
-      // }
     }
     else // rest of the iteration
     {
