@@ -1,13 +1,13 @@
 {
   plugins: {
     ros2dds: {
-      nodename: "zenoh_bridge_p2p_obs_3",
-      // namespace: "/d3",
+      nodename: "zenoh_bridge_p2p_obs_4",
+      // namespace: "/d4",
       ros_localhost_only: true,
       ros_automatic_discovery_range: "LOCALHOST",
       allow: {
         publishers: [
-                      //"/d3/odom",
+                      //"/d4/odom",
                       //"/tf",
                       //"/tf_static",
                     ],
@@ -15,7 +15,7 @@
                       "/d0/odom",
                       "/d1/odom",
                       "/d2/odom",
-                      "/d4/odom",
+                      "/d3/odom",
                       //"/tf",
                       "/tf_static",
                     ],
@@ -35,7 +35,7 @@
       "udp/192.168.1.10:7447",
       "udp/192.168.1.20:7447",
       "udp/192.168.1.30:7447",
-      "udp/192.168.1.50:7447"
+      "udp/192.168.1.40:7447"
     ]
   },
 

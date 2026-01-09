@@ -1,0 +1,40 @@
+{
+  plugins: {
+    ros2dds: {
+      nodename: "zenoh_bridge_ros2dds_4",
+      ros_localhost_only: true,
+      ros_automatic_discovery_range: "LOCALHOST",
+      allow: {
+        publishers: [ 
+                      // Mission commands
+                      ".*/uav_state", 
+
+                      // Transformations
+                      "/tf",
+                      "/tf_static",
+                    ],
+        subscribers: [
+                      ".*/point_goal",
+                      ".*/uav_command",
+                      ".*/reset_map",
+                    ],
+        service_servers: [],
+        service_clients: [],
+        action_servers: [
+          
+        ],
+        action_clients: [],
+      },
+
+      //pub_max_frequencies: ["/d4/odom=50", "/tf_static=50"],
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+    endpoints: [
+      "udp/192.168.1.102:7447",
+    ]
+  },
+}

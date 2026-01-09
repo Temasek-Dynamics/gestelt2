@@ -1,0 +1,59 @@
+{
+  plugins: {
+    ros2dds: {
+      nodename: "zenoh_bridge_ros2dds_2",
+      namespace: "/d2",
+      ros_localhost_only: true,
+      ros_automatic_discovery_range: "LOCALHOST",
+      allow: {
+        publishers: [ 
+                      // Mission commands
+                      //"/uav_state", 
+
+                      // Perception
+                      "/point_cloud/downsample", 
+
+                      // Localization and mapping
+                      "/odom", 
+                      "/local_map/bounds",
+                      "/global_occ_map/occ_map",
+                      "/local_occ_map/occ_map",
+
+                      // Planning
+                      "/plan", // Global reference path
+                      "/mpc_ref_path", // Reference path used by MPC
+                      "/mpc_traj", // MPC trajectory
+                      "/sfc", // Safe Flight Corridor
+
+                      // Transformations
+                      //"/tf",
+                      //"/tf_static",
+                    ],
+        subscribers: [
+                      //".*/point_goal",
+                      //".*/uav_command",
+                      //".*/reset_map",
+                    ],
+        service_servers: [],
+        service_clients: [],
+        action_servers: [
+          "/compute_path_through_poses",
+          "/compute_path_to_pose",
+          "/follow_path",
+        ],
+        action_clients: [],
+      },
+
+      //pub_max_frequencies: ["/d2/odom=50", "/tf_static=50"],
+      //pub_max_frequencies: ["/d2/odom=50"],
+    },
+  },
+
+  mode: "peer",
+
+  connect: {
+    endpoints: [
+      "udp/192.168.1.102:7447",
+    ]
+  },
+}
