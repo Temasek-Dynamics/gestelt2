@@ -61,16 +61,19 @@ then
     tmux split-window -t $SESSION:0.5 -h
 
     tmux send-keys -t $SESSION:0.4 "$ZENOH_BRIDGE" C-m
-    tmux send-keys -t $SESSION:0.5 "$ZENOH_P2P" C-m
+    tmux send-keys -t $SESSION:0.5 "$ZENOH_P2P"
     tmux send-keys -t $SESSION:0.6 "$ZENOH_NONS" C-m
     sleep 5
-    tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m
+    tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE"
     sleep 1
-    tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m
+    tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE"
     tmux send-keys -t $SESSION:0.2 "$MISSION_NODES"
     tmux send-keys -t $SESSION:0.3 "$RECORD_ROSBAG"
 fi
 
 # Attach session on the first window
 tmux attach-session -t "$SESSION:0"
+
+# Cancelling CLI to use in CLI
+# tmux send-keys -t gestelt_sim:0.4 C-c & tmux send-keys -t gestelt_sim:0.6 C-c & tmux send-keys -t gestelt_sim:0.0 C-c & tmux send-keys -t gestelt_sim:0.1 C-c
 
