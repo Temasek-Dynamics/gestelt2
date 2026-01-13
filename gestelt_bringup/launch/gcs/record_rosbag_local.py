@@ -107,7 +107,7 @@ def generate_launch_description():
         "/fmu/out/vehicle_global_position",
         "/fmu/out/vehicle_gps_position",
         "/fmu/out/vehicle_land_detected",
-        "/fmu/out/vehicle_local_position",
+        # "/fmu/out/vehicle_local_position", # For some reason, this has an issue
         "/fmu/out/vehicle_odometry",
         "/fmu/out/vehicle_status",
 
