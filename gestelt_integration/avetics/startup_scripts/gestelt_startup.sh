@@ -64,9 +64,9 @@ then
     tmux send-keys -t $SESSION:0.5 "$ZENOH_P2P"
     tmux send-keys -t $SESSION:0.6 "$ZENOH_NONS" C-m
     sleep 5
-    tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE"
+    tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m
     sleep 1
-    tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE"
+    tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m
     tmux send-keys -t $SESSION:0.2 "$MISSION_NODES"
     tmux send-keys -t $SESSION:0.3 "$RECORD_ROSBAG"
 fi
