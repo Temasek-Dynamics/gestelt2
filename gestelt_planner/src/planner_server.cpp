@@ -490,6 +490,7 @@ PlannerServer::computePlan()
   auto result = std::make_shared<ActionToPose::Result>();
 
   geometry_msgs::msg::PoseStamped start;
+  geometry_msgs::msg::PoseStamped goal_pose;
 
   try {
     if (isServerInactive(action_server_pose_) ) {
@@ -512,7 +513,7 @@ PlannerServer::computePlan()
     }
 
     // Transform them into the global frame
-    geometry_msgs::msg::PoseStamped goal_pose = goal->goal;
+    goal_pose = goal->goal;
     if (!transformPosesToGlobalFrame(start, goal_pose)) {
       throw gestelt_core::PlannerTFError("Unable to transform poses to global frame");
     }
@@ -551,42 +552,42 @@ PlannerServer::computePlan()
     RCLCPP_INFO(get_logger(),"End of planner's action server (Success)");
 
   } catch (gestelt_core::InvalidPlanner & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::INVALID_PLANNER;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::StartOccupied & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::START_OCCUPIED;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::GoalOccupied & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::GOAL_OCCUPIED;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::NoValidPathCouldBeFound & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::NO_VALID_PATH;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::PlannerTimedOut & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::TIMEOUT;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::StartOutsideMapBounds & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::START_OUTSIDE_MAP;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::GoalOutsideMapBounds & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::GOAL_OUTSIDE_MAP;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::PlannerTFError & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::TF_ERROR;
     action_server_pose_->terminate_current(result);
   } catch (gestelt_core::PlannerCancelled &) {
     RCLCPP_INFO(get_logger(), "Goal was canceled. Canceling planning action.");
     action_server_pose_->terminate_all();
   } catch (std::exception & ex) {
-    exceptionWarning(start, goal->goal, goal->planner_id, ex);
+    exceptionWarning(start, goal_pose, goal->planner_id, ex);
     // result->error_code = ActionToPoseResult::UNKNOWN;
     action_server_pose_->terminate_current(result);
   }
@@ -602,7 +603,7 @@ PlannerServer::getPlan(
 {
   RCLCPP_INFO(
     get_logger(), "Attempting to a find path from (%.2f, %.2f, %.2f) to "
-    "(%.2f, %.2f, %.2f).", 
+    "(%.2f, %.2f, %.2f)(Start and goal poses are wrt global frame).", 
     start.pose.position.x, start.pose.position.y, start.pose.position.z,
     goal.pose.position.x, goal.pose.position.y, goal.pose.position.z);
 
@@ -753,7 +754,7 @@ void PlannerServer::exceptionWarning(
   const std::exception & ex)
 {
   RCLCPP_WARN(
-    get_logger(), "%s plugin failed to plan from (%.2f, %.2f, %.2f) to (%.2f, %.2f, %.2f): \"%s\"",
+    get_logger(), "%s plugin failed to plan from (%.2f, %.2f, %.2f)(Global frame) to (%.2f, %.2f, %.2f)(Global frame): \"%s\"",
     planner_id.c_str(),
     start.pose.position.x, start.pose.position.y, start.pose.position.z,
     goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
