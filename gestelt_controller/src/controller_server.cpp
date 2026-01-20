@@ -224,10 +224,13 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
     return nav2_util::CallbackReturn::FAILURE;
   }
 
-  // Create timer for publishing commands
+  // Create timer for publishing commands and commands to goal
 	pub_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
                                             std::bind(&ControllerServer::publishCmdTimerCB, this));
+  goal_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
+                                             std::bind(&ControllerServer::computeGoalCmdTimerCB, this));
   pub_cmd_timer_->cancel(); // Stop timer immediately
+  goal_cmd_timer_->cancel(); // Stop timer immediately
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -249,6 +252,7 @@ ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
   action_server_->activate();
 
   pub_cmd_timer_->reset(); // Starts timer
+  goal_cmd_timer_->reset();
 
   auto node = shared_from_this();
   // Add callback for dynamic parameters
@@ -431,97 +435,7 @@ void ControllerServer::computeControl()
 
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
-
-        // Logic to get out of goal (Untested, WIP) //
-        bool break_flag = false;
-
-        for (int dx = -1; dx <= 1; dx++)
-        {
-          for (int dy = -1; dy <= 1; dy++)
-          {
-            const Eigen::Vector3d cur_pos_temp = Eigen::Vector3d(
-              cur_pos_.x() + ((double)dx * 0.4), //
-              cur_pos_.y() + ((double)dy * 0.4),
-              cur_pos_.z()
-            );
-            if (occ_map_->withinObstacleInflation(cur_pos_temp)){
-              {
-                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: A point around 0.4m away from odom is in inflation");
-                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
-                std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
-                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
-
-                const auto deltaVector = cur_pos_ - cur_pos_temp; //vector from cur_pos_temp to cur_pos
-                Eigen::Vector3d offset_cmd_pos = cur_pos_ + deltaVector; // direct offset away
-              
-                RCLCPP_INFO(this->get_logger(), "[computeControl] Setting waypoint to offset from cur_pos_ to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
-                  cur_pos_.x(),
-                  cur_pos_.y(),
-                  cur_pos_.z(),
-                  offset_cmd_pos.x(),
-                  offset_cmd_pos.y(),
-                  offset_cmd_pos.z()
-                );
-
-                cmd_pos_prev_ = {offset_cmd_pos};
-                cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
-                cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-
-                last_valid_cmd_time_ = now();
-                start_publish_cmd_ = true;
-                break_flag = true;
-                RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
-              }
-
-              break;
-            }
-          }
-          if (break_flag){
-            break;
-          }
-        }
-        if (break_flag){
-          break;
-        }
-        // Logic to get out of goal (Untested, WIP) // 
-
-        {
-          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Area around odom is free of obstacle");
-          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
-          std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
-          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
-
-          // Stuff to test (Transform goal wrt global to map) //
-          geometry_msgs::msg::PoseStamped transformed_goal_pose;
-          rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
-          nav_2d_utils::transformPose(
-            occ_map_->getTfBuffer(), occ_map_->getMapFrameID(),
-            end_pose_, transformed_goal_pose, tolerance);
-
-          Eigen::Vector3d goal_cmd_pos = Eigen::Vector3d(
-                                          transformed_goal_pose.pose.position.x,
-                                          transformed_goal_pose.pose.position.y,
-                                          transformed_goal_pose.pose.position.z
-                                          );
-          
-          RCLCPP_INFO(this->get_logger(), "[computeControl] Setting waypoint to goal_cmd_pos(Global/Map) (%f, %f, %f), (%f, %f, %f)", 
-            end_pose_.pose.position.x,
-            end_pose_.pose.position.y,
-            end_pose_.pose.position.z,
-            goal_cmd_pos.x(),
-            goal_cmd_pos.y(),
-            goal_cmd_pos.z()
-          );
-          // Stuff to test (Transform goal wrt global to map) //
-
-          cmd_pos_prev_ = {goal_cmd_pos};
-          cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-          cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-
-          last_valid_cmd_time_ = now();
-          start_publish_cmd_ = true;
-          RCLCPP_INFO(get_logger(), "[computeControl]isGoalReached: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
-        }
+        start_computing_goal_ = true;
         break;
       }
 
@@ -780,6 +694,115 @@ void ControllerServer::publishCmdTimerCB()
   traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
   cmd_pub_->publish(traj_sp);
   RCLCPP_DEBUG(get_logger(), "Publishing command at time %.2f", now().seconds());
+}
+
+void ControllerServer::computeGoalCmdTimerCB(){
+  if (!start_computing_goal_){
+    return;
+  }
+  if (isGoalReached()) {
+    RCLCPP_INFO(get_logger(), "Begin computing command to goal");
+    // Logic to get out of goal (Untested, WIP) //
+    geometry_msgs::msg::PoseStamped pose;
+    if (!getRobotPose(pose)) {
+      throw gestelt_core::ControllerTFError("Failed to obtain robot pose");
+    }
+    bool break_flag = false;
+    for (int dx = -1; dx <= 1; dx++)
+    {
+      for (int dy = -1; dy <= 1; dy++)
+      {
+        // for (int dz = -1; dz <= 1; dz++){
+        const Eigen::Vector3d cur_pos_temp = Eigen::Vector3d(
+          pose.pose.position.x + ((double)dx * 0.3), 
+          pose.pose.position.y + ((double)dy * 0.3),
+          pose.pose.position.z
+        );
+        const Eigen::Vector3d cur_pos_temp_opp = Eigen::Vector3d(
+          pose.pose.position.x - ((double)dx * 0.3), 
+          pose.pose.position.y - ((double)dy * 0.3),
+          pose.pose.position.z
+        );
+
+        if (occ_map_->withinObstacleInflation(cur_pos_temp) && !(occ_map_->withinObstacleInflation(cur_pos_temp_opp))){
+          {
+            RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] A point 0.3m around odom pose is in inflation"
+                                          "(dy,dx): (%d, %d), Point(%.2f, %.2f, %.2f), Opp point(%.2f, %.2f, %.2f)",
+                                          dy, dx,
+                                          cur_pos_temp.x(), cur_pos_temp.y(), cur_pos_temp.z(),
+                                          cur_pos_temp_opp.x(), cur_pos_temp_opp.y(), cur_pos_temp_opp.z());
+            RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+            std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+            RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+            const auto deltaVector = cur_pos_ - cur_pos_temp; //vector from cur_pos_temp to cur_pos
+            Eigen::Vector3d offset_cmd_pos = cur_pos_ + (deltaVector); // direct offset away
+          
+            RCLCPP_INFO(this->get_logger(), "[computeGoalCmdTimerCB] Setting waypoint to offset from pose to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
+              pose.pose.position.x,
+              pose.pose.position.y,
+              pose.pose.position.z,
+              offset_cmd_pos.x(),
+              offset_cmd_pos.y(),
+              offset_cmd_pos.z()
+            );
+            cmd_pos_prev_ = {offset_cmd_pos};
+            cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+            cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+            last_valid_cmd_time_ = now();
+            start_publish_cmd_ = true;
+            break_flag = true;
+            RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+          }
+          break;
+        }
+        // }
+        // if (break_flag){
+        //   break;
+        // }
+      }
+      if (break_flag){
+        break;
+      }
+    }
+    if (break_flag){
+      return;
+    }
+    // Logic to get out of goal (Untested, WIP) // 
+    {
+      RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Area around odom is free of obstacle");
+      RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+      std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+      RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+      // Stuff to test (Transform goal wrt global to map) //
+      geometry_msgs::msg::PoseStamped transformed_goal_pose;
+      rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
+      nav_2d_utils::transformPose(
+        occ_map_->getTfBuffer(), occ_map_->getMapFrameID(),
+        end_pose_, transformed_goal_pose, tolerance);
+      Eigen::Vector3d goal_cmd_pos = Eigen::Vector3d(
+                                      transformed_goal_pose.pose.position.x,
+                                      transformed_goal_pose.pose.position.y,
+                                      transformed_goal_pose.pose.position.z
+                                      );
+      
+      RCLCPP_INFO(this->get_logger(), "[computeGoalCmdTimerCB] Setting waypoint to goal_cmd_pos(Global/Map) (%f, %f, %f), (%f, %f, %f)", 
+        end_pose_.pose.position.x,
+        end_pose_.pose.position.y,
+        end_pose_.pose.position.z,
+        goal_cmd_pos.x(),
+        goal_cmd_pos.y(),
+        goal_cmd_pos.z()
+      );
+      // Stuff to test (Transform goal wrt global to map) //
+      cmd_pos_prev_ = {goal_cmd_pos};
+      cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+      cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+      last_valid_cmd_time_ = now();
+      start_publish_cmd_ = true;
+      RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+    }
+  }
+  return;  
 }
 
 void ControllerServer::getControllerCommand()
