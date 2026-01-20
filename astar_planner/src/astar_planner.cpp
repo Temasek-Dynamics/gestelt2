@@ -149,11 +149,52 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
     //     std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
     //     ") was in inflation");
     if (goal_in_obs != goal){
+      RCLCPP_INFO(logger_, "Register goal_in_obs");
       goal_in_obs = goal;
-      odom_goal_ = start;
+      // odom_goal_ = start;
+      // Compute a nearer goal from goal
+      RCLCPP_INFO(logger_, "Registering odom_goal by finding nearest goal");
+      bool found_nearest_goal = false;
+      auto nearest_goal_dist = std::numeric_limits<double>::max();
+      for (int dx = -5; dx <= 5; dx++)
+      {
+        for (int dy = -5; dy <= 5; dy++)
+        {
+          // WIP: Current scan area limited to 1m away from goal 
+          const Eigen::Vector3d goal_temp = Eigen::Vector3d(
+            goal.x() + ((double)dx * 0.2), // 1m away from goal point
+            goal.y() + ((double)dy * 0.2),
+            goal.z()
+          );
+
+          const Eigen::Vector3d goal_temp_check = Eigen::Vector3d(
+            map_goal.x() + ((double)dx * 0.2), // 1m away from goal point
+            map_goal.y() + ((double)dy * 0.2),
+            map_goal.z()
+          );
+          const auto deltaVector = goal_temp_check - map_start;
+          const auto delta = deltaVector.squaredNorm();
+
+          if (!(occ_map_->withinObstacleInflation(goal_temp_check)) && (delta < nearest_goal_dist)){
+            odom_goal_ = goal_temp;
+            nearest_goal_dist = delta;
+            found_nearest_goal = true;
+            // break;
+          }
+        }
+        // if (found_nearest_goal){
+        //   break;
+        // }
+      }
+      if (!found_nearest_goal){
+        RCLCPP_INFO(logger_, "Nearest goal not found. Use last recorded odom position");
+        odom_goal_ = start;
+      }
+      RCLCPP_INFO(logger_, "Registered odom_goal by finding nearest goal");
+      // odom_goal_ = start;
     }
     curr_goal_ = odom_goal_;
-    RCLCPP_ERROR(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
+    RCLCPP_WARN(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
                             "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
                             goal(0), goal(1), goal(2), 
                             map_goal(0), map_goal(1), map_goal(2),
@@ -213,6 +254,11 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
     throw gestelt_core::NoValidPathCouldBeFound(
         "Failed to create plan with tolerance of: " + std::to_string(tolerance_));
   }
+  if ((int)path.poses.size() <= 10){ // WIP: Controller horizon is 20, so plan size needs to be at least 10. To be changed with a variable dependant on MPC horizon 
+    throw gestelt_core::NoValidPathCouldBeFound(
+      "Plan size is " + std::to_string((int)path.poses.size()));
+  }
+  
 
   return path;
 }
