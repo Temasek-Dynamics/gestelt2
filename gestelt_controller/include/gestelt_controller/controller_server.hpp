@@ -204,6 +204,8 @@ protected:
 
 
   void odometrySubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
+  
+  void globalPlanSubCB(const nav_msgs::msg::Path::UniquePtr msg);
 
   /**
    * @brief Callback executed when a parameter change is detected
@@ -223,7 +225,9 @@ protected:
   // Publishers and subscribers
 
 	rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr received_global_plan_sub_;
   rclcpp_lifecycle::LifecyclePublisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr cmd_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr current_path_pub_;
 
   // Progress Checker Plugin
   pluginlib::ClassLoader<gestelt_core::ProgressChecker> progress_checker_loader_;
@@ -274,6 +278,7 @@ protected:
 
   // Current path container
   nav_msgs::msg::Path current_path_;
+  std::vector<Eigen::Vector3d> curr_path_;
 
   // Previous valid MPC Trajectory
   std::vector<Eigen::Vector3d> cmd_pos_prev_, cmd_vel_prev_, cmd_acc_prev_, cmd_jerk_prev_;

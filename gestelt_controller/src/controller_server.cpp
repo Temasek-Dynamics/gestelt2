@@ -200,8 +200,16 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
     "odom", rclcpp::SensorDataQoS(), 
     std::bind(&ControllerServer::odometrySubCB, this, _1));
 
+  received_global_plan_sub_ = this->create_subscription<nav_msgs::msg::Path>(
+    "received_global_plan", rclcpp::SensorDataQoS(), 
+    std::bind(&ControllerServer::globalPlanSubCB, this, _1));
+
   cmd_pub_ = node->create_publisher<px4_msgs::msg::TrajectorySetpoint>(
     "intmd_cmd", rclcpp::SensorDataQoS());
+
+  // Just for visualization only
+  current_path_pub_ = this->create_publisher<nav_msgs::msg::Path>(
+    "path_in_controller", rclcpp::SensorDataQoS());
 
   double action_server_result_timeout;
   get_parameter("action_server_result_timeout", action_server_result_timeout);
@@ -249,6 +257,7 @@ ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
     it->second->activate();
   }
   cmd_pub_->on_activate();
+  current_path_pub_->on_activate();
   action_server_->activate();
 
   pub_cmd_timer_->reset(); // Starts timer
@@ -279,6 +288,7 @@ ControllerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   occ_map_->deactivate();
 
   cmd_pub_->on_deactivate();
+  current_path_pub_->on_deactivate();
 
   remove_on_set_parameters_callback(dyn_params_handler_.get());
   dyn_params_handler_.reset();
@@ -309,9 +319,11 @@ ControllerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   // Release any allocated resources
   action_server_.reset();
   odom_sub_.reset();
+  received_global_plan_sub_.reset();
   occ_map_.reset();
   occ_map_thread_.reset();
   cmd_pub_.reset();
+  current_path_pub_.reset();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -904,31 +916,10 @@ void ControllerServer::getControllerCommand()
     std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
     RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
 
-    Eigen::Vector3d nearest_cmd_pos;
+    Eigen::Vector3d nearest_cmd_pos = Eigen::Vector3d::Zero();
     auto nearest_cmd_dist = std::numeric_limits<double>::max();
 
-    // Stuff to test (Use global path to get out of inflation) //
-    // Obtain current planner path
-    std::vector<Eigen::Vector3d> curr_path_;
-    for (int i = 0; i < current_path_.poses.size(); i++){
-
-      // Need to transfrom from global to map frame before sending flight commands //
-      geometry_msgs::msg::PoseStamped transformed_path_pose;
-      rclcpp::Duration tolerance(rclcpp::Duration::from_seconds(occ_map_->getTransformTolerance()));
-      nav_2d_utils::transformPose(
-        occ_map_->getTfBuffer(), occ_map_->getMapFrameID(),
-        current_path_.poses[i], transformed_path_pose, tolerance);
-
-      curr_path_.push_back(Eigen::Vector3d(
-        transformed_path_pose.pose.position.x, 
-        transformed_path_pose.pose.position.y, 
-        transformed_path_pose.pose.position.z));
-
-      // curr_path_.push_back(Eigen::Vector3d(
-      //   current_path_.poses[i].pose.position.x, 
-      //   current_path_.poses[i].pose.position.y, 
-      //   current_path_.poses[i].pose.position.z));
-    } 
+    // // Stuff to test (Use global path to get out of inflation) //
 
     // look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint (1st workaround)
     for (const auto check_cmd_pos : curr_path_) {
@@ -940,16 +931,31 @@ void ControllerServer::getControllerCommand()
         nearest_cmd_pos = check_cmd_pos; //go back to nearest point
         // nearest_cmd_pos = check_cmd_pos + ((deltaVector / std::sqrt(nearest_cmd_dist)) * 0.25); //go back to nearest point, but 0.25 radius dist further
         // nearest_cmd_pos = cur_pos + (deltaVector * 1.2); //go back to nearest point, but a bit further
+        RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Register nearest_cmd_pos at (%f, %f, %f)",
+                    nearest_cmd_pos.x(),
+                    nearest_cmd_pos.y(),
+                    nearest_cmd_pos.z());
       } //if
-      else{
-        RCLCPP_WARN(get_logger(), "[getControllerCommand]NoValidControl: Global path is in inflation");
-        nearest_cmd_pos = cur_pos;
-      }
     } //for
 
     if (curr_path_.empty()){
       RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Empty path");
       nearest_cmd_pos = cur_pos;
+    }
+
+    if (nearest_cmd_pos.isZero()){
+      RCLCPP_WARN(get_logger(), "[getControllerCommand]NoValidControl: No valid points on global path. Setting to current odom position. "
+                    "nearest_cmd_pos_ is (%f, %f, %f)",
+                      nearest_cmd_pos.x(),
+                      nearest_cmd_pos.y(),
+                      nearest_cmd_pos.z());
+      nearest_cmd_pos = cur_pos;
+    }
+    else{
+      RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl nearest cmd_pos_ is set to waypoint of path closest to odom at (%f, %f, %f)",
+        nearest_cmd_pos.x(),
+        nearest_cmd_pos.y(),
+        nearest_cmd_pos.z());
     }
     // Stuff to test (Use global path to get out of inflation) //
 
@@ -1061,6 +1067,7 @@ void ControllerServer::updateGlobalPath()
     }
 
     setPlannerPath(goal->path);
+    current_path_pub_->publish(current_path_);
     RCLCPP_INFO(get_logger(), "[updateGlobalPath] Updated global path");
   }
 }
@@ -1174,6 +1181,17 @@ void ControllerServer::odometrySubCB(const nav_msgs::msg::Odometry::UniquePtr ms
 
   cur_twist_ = msg->twist.twist;
   
+}
+
+void ControllerServer::globalPlanSubCB(const nav_msgs::msg::Path::UniquePtr msg){
+  
+  for (int i = 0; i < msg->poses.size(); i++){
+
+    curr_path_.push_back(Eigen::Vector3d(
+      msg->poses[i].pose.position.x, 
+      msg->poses[i].pose.position.y, 
+      msg->poses[i].pose.position.z));
+  }
 }
 
 } // namespace gestelt_controller
