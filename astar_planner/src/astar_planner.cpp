@@ -172,7 +172,7 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
             map_goal.y() + ((double)dy * 0.2),
             map_goal.z()
           );
-          const auto deltaVector = goal_temp_check - map_start;
+          const auto deltaVector = goal_temp_check - map_goal;
           const auto delta = deltaVector.squaredNorm();
 
           if (!(occ_map_->withinObstacleInflation(goal_temp_check)) && (delta < nearest_goal_dist)){
