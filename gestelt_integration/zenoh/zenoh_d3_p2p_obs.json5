@@ -17,7 +17,7 @@
                       "/d2/odom",
                       "/d4/odom",
                       //"/tf",
-                      "/tf_static",
+                      //"/tf_static",
                     ],
         service_servers: [],
         service_clients: [],
