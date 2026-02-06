@@ -62,6 +62,10 @@
 #include <logger_wrapper/logger_wrapper.hpp>
 #include <logger_wrapper/timer.hpp>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <nlohmann/json.hpp>
+#include <fstream>
+
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -353,6 +357,43 @@ private:
 
   void init();
 
+  using json = nlohmann::json;
+  struct Scenario{
+
+    std::vector<float> spawn_pos;
+
+    explicit Scenario(const std::string scenario_name){
+      const std::string pkg_path = ament_index_cpp::get_package_share_directory("gestelt_commander");
+      json scenario_dict = load(pkg_path + "/" + "scenarios" + ".json");
+      try{
+        spawn_pos = scenario_dict.at(scenario_name).at("spawns_pos").at(0).get<std::vector<float>>();
+
+        if (spawn_pos.empty()){
+          throw std::runtime_error("spawn_pos is empty");
+        }
+      }
+      catch (const nlohmann::json::type_error & e) {
+        std::cerr << e.what();
+      }
+      catch (const nlohmann::json::out_of_range & e) {
+        std::cerr << e.what();
+      }
+      catch (const nlohmann::json::parse_error & e) {
+        std::cerr << e.what();
+      }
+    }
+  };
+
+  static json load(const std::string & path)
+  {
+    std::ifstream f(path);
+    if (!f.is_open()) {
+      throw std::runtime_error("Cannot open JSON file: " + path);
+    }
+
+    return json::parse(f);
+  }
+
   void getParameters();
 
   /* Core methods */
@@ -419,6 +460,11 @@ private:
   static constexpr std::array<int, 5> drone_ids_ {0, 1, 2, 3, 4}; //define all drone IDs to subscribe
   std::mutex drone_poses_mtx_;
   std::unordered_map<int, Eigen::Vector3d> drone_poses_;
+  std::array<Scenario, 5> droneScenario {{Scenario{"start_1d_zero"},
+                                          Scenario{"start_1d_one"}, 
+                                          Scenario{"start_1d_two"}, 
+                                          Scenario{"start_1d_three"}, 
+                                          Scenario{"start_1d_four"}}};
 
   bool print_timer_{false}; // Flag to enable printing of debug information such as timers
 
