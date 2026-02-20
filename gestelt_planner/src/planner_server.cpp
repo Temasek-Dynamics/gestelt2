@@ -117,6 +117,7 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
   // Initialize pubs & subs
   plan_publisher_ = create_publisher<nav_msgs::msg::Path>("plan", 1);
+  updated_plan_pub_ = create_publisher<nav_msgs::msg::Path>("updated_plan", 1);
 
   // Not in use
   // goal_sub_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
@@ -159,6 +160,7 @@ PlannerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
   RCLCPP_INFO(get_logger(), "Activating");
 
   plan_publisher_->on_activate();
+  updated_plan_pub_->on_activate();
   action_server_pose_->activate();
   action_server_poses_->activate();
 
@@ -198,6 +200,7 @@ PlannerServer::on_deactivate(const rclcpp_lifecycle::State & /*state*/)
   action_server_pose_->deactivate();
   action_server_poses_->deactivate();
   plan_publisher_->on_deactivate();
+  updated_plan_pub_->on_deactivate();
 
   /*
    * The occupancy map is also a lifecycle node, so it may have already fired on_deactivate
@@ -242,6 +245,7 @@ PlannerServer::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
   occ_map_.reset();
 
   plan_publisher_.reset();
+  updated_plan_pub_.reset();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -587,6 +591,7 @@ PlannerServer::computePlan()
 
     // Publish the plan for visualization purposes
     publishPlan(result->path);
+    publishUpdatedPlan(updated_path);
 
     auto cycle_duration = this->now() - start_time;
     result->planning_time = cycle_duration;
@@ -714,6 +719,27 @@ PlannerServer::publishPlan(const nav_msgs::msg::Path & path)
       RCLCPP_WARN(get_logger(), "Plan publisher is active");
     }
     RCLCPP_WARN(get_logger(), "Subscriber count: %ld", plan_publisher_->get_subscription_count());
+  }
+
+}
+
+void
+PlannerServer::publishUpdatedPlan(const nav_msgs::msg::Path & path)
+{
+  auto msg = std::make_unique<nav_msgs::msg::Path>(path);
+  if (updated_plan_pub_->is_activated() && updated_plan_pub_->get_subscription_count() > 0) {
+    RCLCPP_INFO(get_logger(), "[publishUpdatedPlan]Updated plan publisher is active. Subscriber count: %ld", updated_plan_pub_->get_subscription_count());
+    updated_plan_pub_->publish(std::move(msg));
+  }
+  else
+  {
+    if (!(updated_plan_pub_->is_activated())){
+      RCLCPP_WARN(get_logger(), "[publishUpdatedPlan]Updated plan publisher is not active"); // Have yet to test if this can be triggered
+    }
+    else{
+      RCLCPP_WARN(get_logger(), "[publishUpdatedPlan]Updated plan publisher is active");
+    }
+    RCLCPP_WARN(get_logger(), "[publishUpdatedPlan]Subscriber count: %ld", updated_plan_pub_->get_subscription_count());
   }
 
 }

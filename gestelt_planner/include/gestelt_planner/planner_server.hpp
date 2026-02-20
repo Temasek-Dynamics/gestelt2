@@ -240,6 +240,7 @@ protected:
    * @param path Reference to Global Path
    */
   void publishPlan(const nav_msgs::msg::Path &path);
+  void publishUpdatedPlan(const nav_msgs::msg::Path & path);
 
   void exceptionWarning(
       const geometry_msgs::msg::PoseStamped &start,
@@ -296,6 +297,7 @@ protected:
 
   // Publishers for the path
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr plan_publisher_;
+  rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>::SharedPtr updated_plan_pub_;
 
   // Subscribers to the path
 //   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_sub_; // Subscriber to goal
