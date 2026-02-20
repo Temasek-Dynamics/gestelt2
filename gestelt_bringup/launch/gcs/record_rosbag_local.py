@@ -71,6 +71,7 @@ def generate_launch_description():
         "/mpc_traj",
         "/intmd_cmd",
         "/plan",
+        "/updated_plan",
 
         "/controller_server/transition_event"
 
