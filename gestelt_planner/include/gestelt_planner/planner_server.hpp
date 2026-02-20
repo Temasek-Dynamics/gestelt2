@@ -278,7 +278,7 @@ protected:
 
   // Planner replanning params
   bool update_plan_flag_;
-  const double efficient_factor{0.95};
+  const double efficient_factor{0.90};
   double current_path_cost{-1.0};
   nav_msgs::msg::Path current_path;
   Eigen::Vector3d current_goal = Eigen::Vector3d(-999999.0, -999999.0, -999999.0);
