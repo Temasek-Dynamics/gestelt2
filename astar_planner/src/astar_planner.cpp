@@ -263,6 +263,10 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
   return path;
 }
 
+double AStarPlanner::getTotalCost(){
+  return planner_->getTotalCost();
+}
+
 bool
 AStarPlanner::makePlan(
     const Eigen::Vector3d &start,

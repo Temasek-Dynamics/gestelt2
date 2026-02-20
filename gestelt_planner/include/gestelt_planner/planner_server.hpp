@@ -275,6 +275,15 @@ protected:
   rclcpp::Duration occ_map_update_timeout_;
   std::string planner_ids_concat_;
 
+  // Planner replanning params
+  bool update_plan_flag_;
+  const double efficient_factor{0.95};
+  double current_path_cost{-1.0};
+  nav_msgs::msg::Path current_path;
+  Eigen::Vector3d current_goal = Eigen::Vector3d(-999999.0, -999999.0, -999999.0);
+  bool changedGoal(const geometry_msgs::msg::PoseStamped new_goal_temp);
+
+
   // Params
   bool print_runtime_{false};
 

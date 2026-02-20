@@ -105,6 +105,8 @@ public:
 
   int computePath(const int& max_iterations, std::function<bool()> cancelChecker);
 
+  double getTotalCost();
+
   std::vector<Eigen::Vector3i> getNeighbours(const Eigen::Vector3i& idx);
 
   inline double L1Dist(const Eigen::Vector3i& a, const Eigen::Vector3i& b)
@@ -145,6 +147,9 @@ private:
   bool set_occ_map_{false};
 
   double h_weight_{1.2};
+
+  double f_cost_temp_{-1.0};
+  double path_cost_{-1.0};
 
   Eigen::Vector3d goal_pos_, start_pos_;  // start and goal in index coordinates
 

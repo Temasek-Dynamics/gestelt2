@@ -492,6 +492,9 @@ PlannerServer::computePlan()
   geometry_msgs::msg::PoseStamped start;
   geometry_msgs::msg::PoseStamped goal_pose;
 
+  double updated_path_cost;
+  nav_msgs::msg::Path updated_path;
+
   try {
     if (isServerInactive(action_server_pose_) ) {
       RCLCPP_WARN(get_logger(),"[computePlan] Action server inactive");
@@ -525,7 +528,55 @@ PlannerServer::computePlan()
 
     tm_compute_plan_.start();
     auto plan_start = this->now();
-    result->path = getPlan(start, goal_pose, goal->planner_id, cancel_checker);
+
+    updated_path = getPlan(start, goal_pose, goal->planner_id, cancel_checker);
+    updated_path_cost = planners_[goal->planner_id]->getTotalCost();
+
+    if (current_path_cost == -1.0 && current_path.poses.empty()){
+      RCLCPP_INFO(get_logger(), "Initializing current path and current path cost");
+      current_path = updated_path;
+      current_path_cost = updated_path_cost;
+    }
+    RCLCPP_INFO(get_logger(), "Current path cost (before updating): %.4f", current_path_cost);
+
+    if (!changedGoal(goal_pose) && current_path_cost > updated_path_cost * efficient_factor){
+      RCLCPP_INFO(get_logger(), "No updating of plan");
+      update_plan_flag_ = false;
+    }
+    else{
+      RCLCPP_INFO(get_logger(), "Update plan");
+      update_plan_flag_ = true;
+    }
+
+    if (!update_plan_flag_){
+      RCLCPP_INFO(get_logger(), "Check if current plan is within inflation");
+      for (size_t i = 1; i < current_path.poses.size(); i++){
+
+        Eigen::Vector3d current_path_pose_map;
+        const Eigen::Vector3d current_path_pose_global = Eigen::Vector3d(
+                                                    current_path.poses[i].pose.position.x,
+                                                    current_path.poses[i].pose.position.y,
+                                                    current_path.poses[i].pose.position.z);
+        
+        if(!occ_map_->worldToMap(current_path_pose_global, current_path_pose_map)){
+          throw gestelt_core::PlannerTFError("Unable to transform pose to map frame");
+        }
+        if (occ_map_->withinObstacleInflation(current_path_pose_map)){
+          RCLCPP_INFO(get_logger(), "Current plan is in inflation");
+          update_plan_flag_ = true;
+          break;
+        }
+      }
+    }
+
+    if (update_plan_flag_){
+      current_path = updated_path;
+      current_path_cost = updated_path_cost;
+      RCLCPP_INFO(get_logger(), "Updated plan");
+    }
+    RCLCPP_INFO(get_logger(), "Current plan cost: %.4f, Updated plan cost: %.4f, ", current_path_cost, updated_path_cost);
+    result->path = current_path;
+
     RCLCPP_INFO(get_logger(), "[getPlan]Astar planning duration %.6f milliseconds", ((this->now() - plan_start).nanoseconds())/1e6);
     tm_compute_plan_.stop(false);
     tm_compute_plan_.getWallAvg(print_runtime_);
@@ -651,13 +702,11 @@ PlannerServer::publishPlan(const nav_msgs::msg::Path & path)
 {
   auto msg = std::make_unique<nav_msgs::msg::Path>(path);
   if (plan_publisher_->is_activated() && plan_publisher_->get_subscription_count() > 0) {
-    //TODO: print message
     RCLCPP_INFO(get_logger(), "Plan publisher is active. Subscriber count: %ld", plan_publisher_->get_subscription_count());
     plan_publisher_->publish(std::move(msg));
   }
   else
   {
-    //TODO: print message
     if (!(plan_publisher_->is_activated())){
       RCLCPP_WARN(get_logger(), "Plan publisher is not active"); // Have yet to test if this can be triggered
     }
@@ -666,6 +715,27 @@ PlannerServer::publishPlan(const nav_msgs::msg::Path & path)
     }
     RCLCPP_WARN(get_logger(), "Subscriber count: %ld", plan_publisher_->get_subscription_count());
   }
+
+}
+
+bool PlannerServer::changedGoal(const geometry_msgs::msg::PoseStamped new_goal_temp){
+  RCLCPP_INFO(get_logger(), "[changedGoal] Checking for goal change");
+  double goal_change_threshold = 0.1; // 10cm threshold
+  Eigen::Vector3d new_goal = Eigen::Vector3d(
+                              new_goal_temp.pose.position.x,
+                              new_goal_temp.pose.position.y,
+                              new_goal_temp.pose.position.z);
+
+  if ((new_goal - current_goal).norm() > goal_change_threshold){
+    RCLCPP_INFO(get_logger(), "[changedGoal] Goal change detected. "
+                  "New goal: (%.2f, %.2f, %.2f), Previous goal: (%.2f, %.2f, %.2f)",
+                  new_goal.x(), new_goal.y(), new_goal.z(), current_goal.x(), current_goal.y(), current_goal.z());
+    current_goal = new_goal;
+    return true;
+  }
+
+  RCLCPP_INFO(get_logger(), "[changedGoal] No Goal change");
+  return false;
 
 }
 

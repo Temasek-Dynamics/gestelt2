@@ -79,6 +79,8 @@ public:
     const Eigen::Vector3d &start,
     const Eigen::Vector3d &goal,
     std::function<bool()> cancel_checker) = 0;
+
+  virtual double getTotalCost() = 0;
 };
 
 }  // namespace gestelt_core

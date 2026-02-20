@@ -40,6 +40,13 @@ void AStar::setStart(const Eigen::Vector3d& start){
     start_pos_ = start;
 }
 
+double AStar::getTotalCost(){
+    if (path_cost_ == -1.0){
+        throw gestelt_core::InvalidPlanner("Invalid cost");
+    }
+    return path_cost_;
+}
+
 int AStar::computePath(const int& max_iterations, 
     std::function<bool()> cancelChecker) {
 
@@ -98,7 +105,7 @@ int AStar::computePath(const int& max_iterations,
         {
             // std::cout << "got goal with num_iter=" << num_iter << std::endl;
             planned_path_idx_ = tracePath(cur_idx);
-
+            path_cost_ = f_cost_temp_;
             return planned_path_idx_.size();
         }
 
@@ -120,6 +127,7 @@ int AStar::computePath(const int& max_iterations,
 
                 double h_cost =  h_weight_ * L2Dist(nb_idx, goal_idx);
                 double f_cost = cost_to_come_[nb_idx] + h_cost;
+                f_cost_temp_ = f_cost;
 
                 came_from_[nb_idx] = cur_idx; // Assign new predecessor cell
                 open_list_.put(f_cost, nb_idx); // Add to priority queue with new f_cost

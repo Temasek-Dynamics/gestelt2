@@ -81,6 +81,8 @@ public:
     const Eigen::Vector3d &goal,
     std::function<bool()> cancel_checker) override;
 
+  double getTotalCost() override;
+
 protected:
 
   /**
