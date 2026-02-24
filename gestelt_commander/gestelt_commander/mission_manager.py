@@ -111,9 +111,14 @@ class MissionManager(Node):
             self.goals_pubs_.append(self.create_publisher(
                                     Goals, 'd' + str(id) + '/goals', 
                                     rclpy.qos.qos_profile_services_default))
-            self.occ_map_pubs_.append(self.create_publisher(
-                                    Empty, 'd' + str(id) + '/reset_map', 
-                                    rclpy.qos.qos_profile_services_default))
+            if self.simulation:
+                self.occ_map_pubs_.append(self.create_publisher(
+                                        Empty, 'd' + str(id) + '/reset_map', 
+                                        rclpy.qos.qos_profile_services_default))
+            else:
+                self.occ_map_pubs_.append(self.create_publisher(
+                                        Empty, '/reset_map', 
+                                        rclpy.qos.qos_profile_services_default))
 
         # Initialize data structures
         self.uav_states = []
@@ -271,7 +276,8 @@ class MissionManager(Node):
             navigator = self.navigators[0]
 
             goal_pose = PoseStamped()
-            goal_pose.header.frame_id = f'd{id}_map'
+            goal_pose.header.frame_id = 'world'
+            # goal_pose.header.frame_id = f'd{id}_map'
             goal_pose.header.stamp = self.get_clock().now().to_msg()
             goal_pose.pose.position.x = self.scenario.goals_pos[0][0]
             goal_pose.pose.position.y = self.scenario.goals_pos[0][1]
