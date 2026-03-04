@@ -265,6 +265,7 @@ protected:
   double failure_tolerance_{0.0};
 
   double controller_frequency_{0.0};
+  const double yaw_resolution_{3.14/18.0}; // 10 degree  resolution
 
   bool print_runtime_{false}; // true if timer information is to be printed
 
@@ -285,6 +286,7 @@ protected:
   Eigen::Vector2d cmd_yaw_prev_;
   bool start_publish_cmd_{false}; // Start publishing command 
   bool start_computing_goal_{false};
+  bool yaw_first{true};
   // bool obstacle_avoidance_{false}; // True if in failsafe mode. Not in use
   rclcpp::Time last_valid_cmd_time_;
 

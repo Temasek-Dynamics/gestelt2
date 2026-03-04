@@ -448,6 +448,7 @@ void ControllerServer::computeControl()
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
         start_computing_goal_ = true;
+        yaw_first = true;
         break;
       }
 
@@ -868,6 +869,30 @@ void ControllerServer::getControllerCommand()
       cmd_acc_prev_ = cmd_acc;
       cmd_jerk_prev_ = cmd_jerk;
       cmd_yaw_prev_ = cmd_yaw;
+
+      float yaw_pose = atan2(2.0 * (cur_ori.w()*cur_ori.z() + cur_ori.x()*cur_ori.y()), 
+                          1.0 - 2.0 * (cur_ori.y()*cur_ori.y() + cur_ori.z()*cur_ori.z()));
+
+      if (yaw_first && !(yaw_pose > cmd_yaw(0) - yaw_resolution_ && yaw_pose < cmd_yaw(0) + yaw_resolution_)){ // < 10, > -10 
+        RCLCPP_INFO(get_logger(), "[getControllerCommand] Send yaw only first");
+        cmd_yaw_prev_ = cmd_yaw;
+        cmd_pos_prev_ = {cmd_pos};
+        cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+        cmd_acc_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+        cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+      }
+
+      else{
+        RCLCPP_INFO(get_logger(), "[getControllerCommand] Send mpc traj");
+        yaw_first = false;
+        cmd_pos_prev_ = cmd_pos;
+        cmd_vel_prev_ = cmd_vel;
+        cmd_acc_prev_ = cmd_acc;
+        cmd_jerk_prev_ = cmd_jerk;
+        cmd_yaw_prev_ = cmd_yaw;
+      }
+
+
       RCLCPP_INFO(get_logger(), "[getControllerCommand] Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
     }
 
@@ -929,12 +954,10 @@ void ControllerServer::getControllerCommand()
       if ((delta < nearest_cmd_dist) && !(occ_map_->withinObstacleInflation(check_cmd_pos))) {
         nearest_cmd_dist = delta;
         nearest_cmd_pos = check_cmd_pos; //go back to nearest point
-        // nearest_cmd_pos = check_cmd_pos + ((deltaVector / std::sqrt(nearest_cmd_dist)) * 0.25); //go back to nearest point, but 0.25 radius dist further
-        // nearest_cmd_pos = cur_pos + (deltaVector * 1.2); //go back to nearest point, but a bit further
-        RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Register nearest_cmd_pos at (%f, %f, %f)",
-                    nearest_cmd_pos.x(),
-                    nearest_cmd_pos.y(),
-                    nearest_cmd_pos.z());
+        // RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Register nearest_cmd_pos at (%f, %f, %f)",
+        //             nearest_cmd_pos.x(),
+        //             nearest_cmd_pos.y(),
+        //             nearest_cmd_pos.z());
       } //if
     } //for
 
