@@ -79,6 +79,8 @@ void LinearMPCController::configure(
   node->get_parameter(name + ".yaw_lookahead_dist", yaw_lookahead_dist_);
   declare_parameter_if_not_declared(node, name + ".yawspeed_max", rclcpp::ParameterValue(1.57));
   node->get_parameter(name + ".yawspeed_max", yawspeed_max_);
+  declare_parameter_if_not_declared(node, name + ".ref_dist_", rclcpp::ParameterValue(1));
+  node->get_parameter(name + ".ref_dist_", ref_dist_);
 
   declare_parameter_if_not_declared(node, name + ".max_robot_pose_search_dist", rclcpp::ParameterValue(1.0));
   node->get_parameter(name + ".max_robot_pose_search_dist", max_robot_pose_search_dist_);
@@ -341,7 +343,7 @@ void LinearMPCController::computeCommands(
   // [MAP FRAME] global plan used by safe flight corridor 
   std::vector<Eigen::Vector3d> ref_plan_mpc; 
 
-  for (int i = nearest_plan_idx; i < (mpc_controller_->MPC_HORIZON + nearest_plan_idx)&& i < (int)plan_map.poses.size(); i += 1){ // can set the increment as speed to set (Untested, WIP)
+  for (int i = nearest_plan_idx; i < (mpc_controller_->MPC_HORIZON * ref_dist_ + nearest_plan_idx)&& i < (int)plan_map.poses.size(); i += ref_dist_){ // can set the increment as speed to set (Untested, WIP)
     ref_plan_mpc.push_back(Eigen::Vector3d(
       plan_map.poses[i].pose.position.x,
       plan_map.poses[i].pose.position.y,

@@ -221,6 +221,7 @@
    double max_robot_pose_search_dist_{1.0};
    bool control_yaw_{true};
    int yaw_lookahead_dist_{5};
+   int ref_dist_{1};
 
    double yawspeed_max_{1.57}; // [Radians] Maximum allowable yaw speed
 
