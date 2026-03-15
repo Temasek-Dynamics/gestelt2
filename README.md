@@ -186,26 +186,33 @@ To run a simulation with a dynamical model (with physics).
 # via a PX4 parameter.
 /QGroundControl.AppImage
 
+# Start rviz simulation
+ros2 launch gestelt_bringup rviz_launch.py
+
+# Start Gazebo environment
+python3 ~/PX4-Autopilot/Tools/simulation/gz/simulation-gazebo --model_store=~/PX4-Autopilot/Tools/simulation/gz
+python3 ~/PX4-Autopilot/Tools/simulation/gz/simulation-gazebo --model_store=~/PX4-Autopilot/Tools/simulation/gz --headless # For headless mode
+
 # Launch the simulation.
-# To change the scenario, modify the `SCENARIO_NAME` in the launch file 
-ros2 launch gestelt_bringup multi_drone_sim_launch.py 
+# To change the scenario and drone id, modify the `scenario_name` and `_drone_id` respectively
+# To modify the scenario, find the scenario, and change it at [gestelt_commander/scenarios.json]
+ros2 launch gestelt_bringup multi_drone_sim_launch.py scenario_name:=start_1d_zero _drone_id:=0 
 
 # Command take-off and sending of goals
-ros2 launch gestelt_bringup test_point_goal_sim.py
+ros2 launch gestelt_bringup test_point_goal_sim.py scenario_name:=start_1d_zero _drone_id:=0
 
-# Land the drone after it is done
-ros2 run gestelt_commander land_sim
+# Landing drone is still WIP
 ```
 
-### Known Issues
+### Improvement features to include
 
-- Drone cannot take off
-    - Look at QGroundControl logs, are there missing sensors? If so, it could be a compatability with the ros_gz_bridge, of which there is no known solution, only a workaround.
-    - The workaround is to launch gazebo using the PX4-SITL executable. In the simulation launch file [multi_drone_sim_launch.py](gestelt_bringup/launch/sim/multi_drone_sim_launch.py), make sure `PX4_GZ_STANDALONE=1` is commented out. Relaunch and check if the sensors can be detected in QGroundControl.
+- Drone detection
+    - Currently, the drones' positions within the multi-drone setup are exchanged in a Peer-to-peer communication, which is not truely decentralized
+    - To achieve a true decentraliztion, the onboard camera sensor will have to be deployed to detect the drones
 
-- Drone executes most of the path but is not able to move towards the goal when within 0.5m of it.
-    - The suspicion is that the controller and planner algorithm is working as expected but the controller server might not have been calling the controller properly. 
-    - The fact is that the commands that are output from the controller server looks to be in the correct magnitude and sign but the drone is not executing them.
+- Path prediction of detected drones
+    - Detected drones in the same multi-drone setup will fly at a higher speed, hence a predicted trajectory is required
+    - The estimated trajectory will be based on a previously recorded position of the detected drone, and predict a linear path the detected drones will take
 
 ## Actual drone
 To test a single drone together with ground control computer (for visualization and mission commands), the following helper scripts are provided (TMUX required).
