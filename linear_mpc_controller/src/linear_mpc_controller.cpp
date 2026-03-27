@@ -352,6 +352,7 @@ void LinearMPCController::computeCommands(
   
   int poly_idx = 0; // current index of SFC polyhedron
   Eigen::Vector3d last_ref_pos = position; // last pos reference
+  // Eigen::Vector3d last_ref_vel = {Eigen::Vector3d::Zero()}; // last pos reference
 
   nav_msgs::msg::Path mpc_ref_path_msg;
   mpc_ref_path_msg.header.frame_id = occ_map_->getMapFrameID();
@@ -435,7 +436,17 @@ void LinearMPCController::computeCommands(
     {
       ref_vel = (ref_pos - last_ref_pos) / mpc_controller_->getTimeStep();
     }
-    // RCLCPP_INFO(logger_, "[computeCommands]Ref Vel is %0.2f, %0.2f, %0.2f", ref_vel.x(), ref_vel.y(), ref_vel.z());
+    // ref_acc = (ref_vel - last_ref_vel) / mpc_controller_->getTimeStep();
+
+    // double true_ref_vel = std::sqrt(2.0 * (std::pow(5.0, 2.0)));
+    // if (ref_vel.norm() < true_ref_vel && ref_vel.norm() > 0.0){
+    //   ref_vel.x() *= (true_ref_vel / ref_vel.norm());
+    //   ref_vel.y() *= (true_ref_vel / ref_vel.norm());
+    // } 
+
+    // RCLCPP_INFO(logger_, "[computeCommands]Ref Vel is %0.2f, %0.2f, %0.2f, Magnitude: %0.2f", ref_vel.x(), ref_vel.y(), ref_vel.z(), ref_vel.norm());
+    // RCLCPP_INFO(logger_, "[computeCommands]Ref Acc is %0.2f, %0.2f, %0.2f, Magnitude: %0.2f", ref_acc.x(), ref_acc.y(), ref_acc.z(), ref_acc.norm());
+
     mpc_controller_->setReference(ref_pos, ref_vel, ref_acc, k);
 
     // At k-th control iteration, set SFC linear constraints
@@ -449,7 +460,7 @@ void LinearMPCController::computeCommands(
       }
       else{
         RCLCPP_WARN(logger_, 
-        "[MPC] ERROR: Ref Path idx %d is not in polygon %d", ref_idx, poly_idx );
+        "[MPC]: Ref Path idx %d is not in polygon %d", ref_idx, poly_idx );
       }
       poly_idx++;
     }
@@ -471,6 +482,7 @@ void LinearMPCController::computeCommands(
     mpc_ref_path_msg.poses.push_back(pose);
 
     last_ref_pos = ref_pos;
+    // last_ref_vel = ref_vel;
   }
 
   mpc_ref_path_pub_->publish(mpc_ref_path_msg);
@@ -518,7 +530,7 @@ void LinearMPCController::computeCommands(
         valid_cmd = false;
         break;
       }
-      if (!checkValidCmd(x_current.segment<3>(3), -5.0, 5.0) ){
+      if (!checkValidCmd(x_current.segment<3>(3), -60.0, 60.0) ){
         RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC vel: (%f, %f, %f)", 
           k, 
           x_current.segment<3>(3)(0), 
@@ -545,48 +557,7 @@ void LinearMPCController::computeCommands(
       mpc_pred_u.push_back(u_optimal);
   }
 
-  // // Interpolation method (KIV)
-  // int n = 0.02 * 50; // set controller frequency at 50hz
-
-  // Eigen::Vector3d delta_acce = (mpc_pred_acc[1] - mpc_pred_acc[0]) / (mpc_controller_->getTimeStep() / 0.02);
-  // Eigen::Vector3d delta_velo = (mpc_pred_vel[1] - mpc_pred_vel[0]) / (mpc_controller_->getTimeStep() / 0.02);
-  // Eigen::Vector3d delta_posi = (mpc_pred_pos[1] - mpc_pred_pos[0]) / (mpc_controller_->getTimeStep() / 0.02);
-
-  // Eigen::Vector3d acce = mpc_pred_acc[0];
-  // Eigen::Vector3d velo = mpc_pred_vel[0];
-  // Eigen::Vector3d posi = mpc_pred_pos[0];
-  // while (n < mpc_controller_->getTimeStep() * 50 && mpc_pred_pos.size()){
-
-  //   // Interpolate from trajectory initial position
-  //   double curr_timestep = (double)n / 50.0;
-  //   // Eigen::Vector3d jerk = mpc_pred_u[n-1];
-  //   acce += delta_acce;
-  //   velo += delta_velo;
-  //   posi += delta_posi;
-  //   // insert into mpc path
-  //   mpc_pred_pos.insert(mpc_pred_pos.begin() + n, posi);
-  //   mpc_pred_vel.insert(mpc_pred_vel.begin() + n, velo);
-  //   mpc_pred_acc.insert(mpc_pred_acc.begin() + n, acce);
-  //   // mpc_pred_u.insert(mpc_pred_u.begin() + n, jerk);
-  //   n++;
-  // }
-
-  // for (int i = 0; i < (int)mpc_pred_u.size(); i++){
-  //   RCLCPP_INFO(logger_, "[MPC] Pred %d: u (%0.2f, %0.2f, %0.2f) a (%0.2f, %0.2f, %0.2f) v (%0.2f, %0.2f, %0.2f)", 
-  //     i, 
-  //     mpc_pred_u[i](0), mpc_pred_u[i](1), mpc_pred_u[i](2),
-  //     mpc_pred_acc[i](0), mpc_pred_acc[i](1), mpc_pred_acc[i](2),
-  //     mpc_pred_vel[i](0), mpc_pred_vel[i](1), mpc_pred_vel[i](2)
-  //   );
-  // }
-
   if (!valid_cmd){
-    // If MPC command is not valid, then we will use the first point of the reference path
-    // pos_corr = Eigen::Vector3d(
-    //   mpc_ref_path_msg.poses[0].pose.position.x,
-    //   mpc_ref_path_msg.poses[0].pose.position.y,
-    //   mpc_ref_path_msg.poses[0].pose.position.z
-    // );
 
     throw gestelt_core::NoValidControl("Invalid controller input from MPC solution");
   }
