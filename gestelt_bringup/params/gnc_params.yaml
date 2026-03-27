@@ -3,13 +3,14 @@ planner_server:
     expected_planner_frequency: 20.0
     planner_plugins: ["GridBased"]
     occ_map_update_timeout: 1.0
+    eff_factor: 0.95 # Effiecient factor for updating the astar path
 
     print_runtime: true # Print runtime of computing path
 
     GridBased:
       plugin: "astar_planner::AStarPlanner"
       tolerance: 0.5
-      max_iterations: 9999
+      max_iterations: 99999
       tie_breaker: 1.00001
       allow_unknown: true
       # cost_function_type: 1 # [Unimplemented] To switch between different cost metrics such as L1 and L2 cost
@@ -17,6 +18,7 @@ planner_server:
 controller_server:
   ros__parameters:
     controller_frequency: 10.0 # [hz] Frequency to call controller
+    inflation_escape_offset: 0.3 # [m] Sampling distance to find a free point outside obstacle inflation zones. To be of the same value as static_inflation
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
@@ -40,7 +42,7 @@ controller_server:
       control_yaw: true # Enable simple control of the yaw
       yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
       yawspeed_max: 0.785 # [rad/s] Maximum yaw speed
-      ref_dist_: 1 # Based on Astar path, intervals between each point to be used by the ref path sent to MPC. Used for changing reference velocity (Phrase this better)   
+      ref_dist_: 3 # [points] Spacing interval between sampled points on the A* path for constructing the MPC reference trajectory. Adjusting this effectively changes the reference velocity.
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
         plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
@@ -50,7 +52,7 @@ controller_server:
       mpc:
         # MPC parameters
         horizon: 20
-        time_step: 0.4 #[s]
+        time_step: 0.2 #[s]
         # Objective Weights
         R_p: 1000.0 # Error from reference position
         R_v: 0.0  # Velocity magnitude
@@ -62,12 +64,12 @@ controller_server:
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -4.50
-        vy_min:     -4.50
-        vz_min:     -4.50
-        vx_max:      4.50
-        vy_max:      4.50
-        vz_max:      4.50
+        vx_min:     -10.00
+        vy_min:     -10.00
+        vz_min:     -10.00
+        vx_max:      10.00
+        vy_max:      10.00
+        vz_max:      10.00
 
         # vx_min:     -0.1
         # vy_min:     -0.1
@@ -76,19 +78,19 @@ controller_server:
         # vy_max:      0.1
         # vz_max:      0.1
 
-        ax_min:     -7.5
-        ay_min:     -7.5
-        az_min:     -7.5
-        ax_max:      7.5
-        ay_max:      7.5
-        az_max:      7.5
+        ax_min:     -20.5
+        ay_min:     -20.5
+        az_min:     -20.5
+        ax_max:      20.5
+        ay_max:      20.5
+        az_max:      20.5
 
-        ux_min:     -75.0
-        uy_min:     -75.0
-        uz_min:     -75.0
-        ux_max:      75.0
-        uy_max:      75.0
-        uz_max:      75.0
+        ux_min:     -50.0
+        uy_min:     -50.0
+        uz_min:     -50.0
+        ux_max:      50.0
+        uy_max:      50.0
+        uz_max:      50.0
 
 global_occ_map:
   ros__parameters:
@@ -102,15 +104,19 @@ global_occ_map:
     update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
+    prediction_horizon_m: 1.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
+                              # used to inflate the occupancy map along their predicted trajectory
+                              # Chnage this along with ref_dist from controller_server
+
     global_map: 
       size_x: 60.0  # [m]
       size_y: 60.0  # [m]
-      size_z: 5.0  # [m]
+      size_z: 4.0  # [m]
 
     local_map:  # Local map used by controllers
       size_x: 10.0  # [m]
       size_y: 10.0  # [m]
-      size_z: 5.0   # [m]
+      size_z: 4.0   # [m]
 
     prob_map:  # Occupancy map parameters
       # Probabilistic map
@@ -121,7 +127,7 @@ global_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.2   # [m] Resolution of voxel
-      static_inflation: 0.8    # [m] Static obstacle inflation
+      static_inflation: 0.5    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor
@@ -147,6 +153,10 @@ local_occ_map:
     update_local_map_frequency: 5.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 2.0   # [Hz] Frequency to visualize the local map
 
+    prediction_horizon_m: 1.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
+                              # used to inflate the occupancy map along their predicted trajectory
+                              # Change this along with ref_dist from controller_server
+
     global_map: 
       size_x: 60.0  # [m]
       size_y: 60.0  # [m]
@@ -166,7 +176,7 @@ local_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.1   # [m] Resolution of voxel
-      static_inflation: 0.6    # [m] Static obstacle inflation
+      static_inflation: 0.3    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor

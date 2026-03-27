@@ -123,7 +123,7 @@ def launch_setup(context):
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
-        default_value='true',
+        default_value='false',
         description='Use simulation (Gazebo) clock if true',
     )
 
@@ -153,10 +153,11 @@ def launch_setup(context):
     start_gazebo_cmd = ExecuteProcess(
         cmd=[
             'python3', px4_gz,
-            '--world', 'default',
+            # '--world', 'default',
+            '--model_store=~/PX4-Autopilot/Tools/simulation/gz',
             # '--world', 'default_w_obs',
             # '--interactive',
-            # '--headless',
+            '--headless',
         ],
         name='gazebo',
         shell=False
@@ -244,6 +245,8 @@ def launch_setup(context):
                                             str(scenario.spawns_pos[0][2]), 
                                             "0", "0", 
                                             global_frame, map_frame],
+                                # remappings=[('/tf', ['/', ns, '/tf']), 
+                                #             ('/tf_static', ['/', ns, '/tf_static']),]
                             ),
                             # Transform from base link to camera frame
                             # Node(
@@ -264,31 +267,8 @@ def launch_setup(context):
                                 arguments = ["0.0", "0.0", "0.0", 
                                              "0.0", "0.0", "0.0", "1.0",
                                              base_link_frame, camera_frame],
-                            ),
-                            # Fake sensor node
-                            Node(
-                                package='fake_sensor',
-                                executable='fake_sensor_node',
-                                name= ['fake_sensor_', ns],
-                                output='screen',
-                                # shell=False,
-                                parameters=[
-                                    {'drone_id': int(drone_id)},
-                                    {'use_sim_time': use_sim_time},
-                                    {'global_frame': global_frame},
-                                    {'map_frame': map_frame},
-                                    {'sensor_frame': camera_frame},
-                                    {'pcd_map.filepath': os.path.join(
-                                        get_package_share_directory('gestelt_bringup'), 
-                                        'pcd_maps',
-                                        scenario.map + '.pcd'
-                                    )},
-                                    os.path.join(
-                                        get_package_share_directory('fake_sensor'),
-                                        'config',
-                                        'fake_sensor.yaml'
-                                    ),
-                                ],
+                                # remappings=[('/tf', ['/', ns, '/tf']), 
+                                #             ('/tf_static', ['/', ns, '/tf_static']),]
                             ),
                             # # Swarm collision checker node
                             # Node(
@@ -329,6 +309,33 @@ def launch_setup(context):
                                     # '-d' # Run as daemon (not interactive terminal)
                                 ],
                                 shell=True
+                            ),
+                            # Fake sensor node
+                            Node(
+                                package='fake_sensor',
+                                executable='fake_sensor_node',
+                                name= ['fake_sensor_', ns],
+                                output='screen',
+                                # shell=False,
+                                parameters=[
+                                    {'drone_id': int(drone_id)},
+                                    {'use_sim_time': use_sim_time},
+                                    {'global_frame': global_frame},
+                                    {'map_frame': map_frame},
+                                    {'sensor_frame': camera_frame},
+                                    {'pcd_map.filepath': os.path.join(
+                                        get_package_share_directory('gestelt_bringup'), 
+                                        'pcd_maps',
+                                        scenario.map + '.pcd'
+                                    )},
+                                    os.path.join(
+                                        get_package_share_directory('fake_sensor'),
+                                        'config',
+                                        'fake_sensor.yaml'
+                                    ),
+                                ],
+                                # remappings=[('/tf', ['/', ns, '/tf']), 
+                                #             ('/tf_static', ['/', ns, '/tf_static']),]
                             )
                         ]
                     )
