@@ -42,7 +42,7 @@ controller_server:
       control_yaw: true # Enable simple control of the yaw
       yaw_lookahead_dist: 6 # [] Number of points on global plan for calculating yaw
       yawspeed_max: 0.785 # [rad/s] Maximum yaw speed
-      ref_dist_: 3 # [points] Spacing interval between sampled points on the A* path for constructing the MPC reference trajectory. Adjusting this effectively changes the reference velocity.
+      ref_dist_: 1 # [points] Spacing interval between sampled points on the A* path for constructing the MPC reference trajectory. Adjusting this effectively changes the reference velocity.
       max_robot_pose_search_dist: 1.0 # [m] Maximum forward integrated distance along the path (starting from the last detected pose) to bound the search for the closest pose to the robot. When set to infinity (default), whole path is searched every time
       sfc:
         plan_sample_interval: 5 #[] Uses every N point on global plan as the safe flight corridor seed 
@@ -52,7 +52,7 @@ controller_server:
       mpc:
         # MPC parameters
         horizon: 20
-        time_step: 0.2 #[s]
+        time_step: 0.4 #[s]
         # Objective Weights
         R_p: 1000.0 # Error from reference position
         R_v: 0.0  # Velocity magnitude
@@ -64,12 +64,12 @@ controller_server:
         R_aN: 1000.0 # Terminal acceleration
         
         # State bounds
-        vx_min:     -10.00
-        vy_min:     -10.00
-        vz_min:     -10.00
-        vx_max:      10.00
-        vy_max:      10.00
-        vz_max:      10.00
+        vx_min:     -4.50
+        vy_min:     -4.50
+        vz_min:     -4.50
+        vx_max:      4.50
+        vy_max:      4.50
+        vz_max:      4.50
 
         # vx_min:     -0.1
         # vy_min:     -0.1
@@ -78,19 +78,19 @@ controller_server:
         # vy_max:      0.1
         # vz_max:      0.1
 
-        ax_min:     -20.5
-        ay_min:     -20.5
-        az_min:     -20.5
-        ax_max:      20.5
-        ay_max:      20.5
-        az_max:      20.5
+        ax_min:     -7.5
+        ay_min:     -7.5
+        az_min:     -7.5
+        ax_max:      7.5
+        ay_max:      7.5
+        az_max:      7.5
 
-        ux_min:     -50.0
-        uy_min:     -50.0
-        uz_min:     -50.0
-        ux_max:      50.0
-        uy_max:      50.0
-        uz_max:      50.0
+        ux_min:     -75.0
+        uy_min:     -75.0
+        uz_min:     -75.0
+        ux_max:      75.0
+        uy_max:      75.0
+        uz_max:      75.0
 
 global_occ_map:
   ros__parameters:

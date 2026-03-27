@@ -530,7 +530,7 @@ void LinearMPCController::computeCommands(
         valid_cmd = false;
         break;
       }
-      if (!checkValidCmd(x_current.segment<3>(3), -60.0, 60.0) ){
+      if (!checkValidCmd(x_current.segment<3>(3), -5.0, 5.0) ){
         RCLCPP_ERROR(logger_, "Control iteration %d has invalid MPC vel: (%f, %f, %f)", 
           k, 
           x_current.segment<3>(3)(0), 

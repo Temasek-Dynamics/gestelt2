@@ -24,9 +24,14 @@ Panels:
         - //depth_camera/points1/Topic1
         - //cloud1/Topic1
         - //cloud_global1/Topic1
+        - /d3/odom1
+        - /d3/odom1/Status1
         - /d3/odom1/Topic1
+        - /d4/odom1
         - /d4/odom1/Topic1
         - /planner1
+        - /planner1/d3/plan1
+        - /planner1/d4/plan1
         - /map1
         - /map1/d0/global_occ_map1
         - /map1/d1/global_occ_map1
@@ -2952,18 +2957,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -3.914801836013794
-        Y: -0.30495691299438477
-        Z: 3.535034920787439e-05
+        X: 1.0060293674468994
+        Y: -2.9597153663635254
+        Z: 1.1508491297718138e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.5497957468032837
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz_default_plugins)
-      Yaw: 3.119325637817383
+      Yaw: 4.699329853057861
     Saved: ~
 Window Geometry:
   Displays:
