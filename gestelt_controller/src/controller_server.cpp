@@ -51,6 +51,7 @@ ControllerServer::ControllerServer(const rclcpp::NodeOptions & options)
   RCLCPP_INFO(get_logger(), "Creating controller server");
 
   declare_parameter("controller_frequency", 20.0);
+  declare_parameter("inflation_escape_offset", 0.3);
 
   declare_parameter("action_server_result_timeout", 10.0);
 
@@ -121,6 +122,8 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
 
   get_parameter("controller_frequency", controller_frequency_);
   RCLCPP_INFO(get_logger(), "Controller frequency set to %.4fHz", controller_frequency_);
+  get_parameter("inflation_escape_offset", inflation_escape_offset_);
+  RCLCPP_INFO(get_logger(), "Inflation escape offset set to %.2fm", inflation_escape_offset_);
 
   occ_map_->configure();
   // Launch a thread to run the occupancy map node
@@ -237,8 +240,11 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
                                             std::bind(&ControllerServer::publishCmdTimerCB, this));
   goal_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
                                              std::bind(&ControllerServer::computeGoalCmdTimerCB, this));
+  inflation_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
+                                             std::bind(&ControllerServer::inflationAvoidanceTimerCB, this));
   pub_cmd_timer_->cancel(); // Stop timer immediately
   goal_cmd_timer_->cancel(); // Stop timer immediately
+  inflation_cmd_timer_->cancel();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -262,6 +268,7 @@ ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
 
   pub_cmd_timer_->reset(); // Starts timer
   goal_cmd_timer_->reset();
+  inflation_cmd_timer_->reset();
 
   auto node = shared_from_this();
   // Add callback for dynamic parameters
@@ -395,6 +402,12 @@ void ControllerServer::computeControl()
 
   RCLCPP_INFO(get_logger(), "Received a goal, begin computing control effort.");
 
+  start_computing_goal_ = true;
+  RCLCPP_INFO(get_logger(), "Set computeGoalCmdTimerCB() flag");
+  inflation_avoidance_ = true;
+  RCLCPP_INFO(get_logger(), "Set inflationAvoidanceTimerCB() flag");
+
+
   try {
     auto goal = action_server_->get_current_goal();
     if (!goal) {
@@ -447,18 +460,16 @@ void ControllerServer::computeControl()
 
       if (isGoalReached()) {
         RCLCPP_INFO(get_logger(), "Reached the goal!");
-        start_computing_goal_ = true;
-        yaw_first = true;
+        yaw_first = true; // Reset flag so drone orients toward next goal before moving
+        break;
+      }
+
+      if (odomWithinObstacleInflation()){
+        RCLCPP_WARN(get_logger(), "Odom is in obstacle");
         break;
       }
 
       getControllerCommand();
-
-      // if (isGoalReached()) {
-      //   RCLCPP_INFO(get_logger(), "Reached the goal!");
-      //   break;
-      // }
-      // Reached goal algo (untested, WIP)
 
       auto cycle_duration = this->now() - start_time;
       if (!loop_rate.sleep()) {
@@ -618,68 +629,6 @@ void ControllerServer::publishCmdTimerCB()
     return;
   }
 
-  // // Follow the whole PVA trajectory. Usable with interpolation method (New method, WIP)
-  // static int idx_path;
-  // static std::vector<Eigen::Vector3d> cmd_pos_path, cmd_vel_path, cmd_acc_path;
-  // if (!obstacle_avoidance_){
-
-  //   if (idx_path >= cmd_pos_path.size()){
-  //     idx_path = 0;
-  //     cmd_pos_path = cmd_pos_prev_;
-  //     cmd_vel_path = cmd_vel_prev_;
-  //     cmd_acc_path = cmd_acc_prev_;
-  //   }
-  //   // if (cmd_pos_path.size()){
-  //   //   idx = idx_path;
-  //   //   if (!(idx_path >= (int)cmd_pos_path.size() - 1 && arePlansSame(cmd_pos_path, cmd_pos_prev_))){
-  //   //       idx_path += 1;
-  //   //   }
-      
-  //   //   cmd_pos_prev_ = cmd_pos_path;
-  //   //   cmd_vel_prev_ = cmd_vel_path;
-  //   //   cmd_acc_prev_ = cmd_acc_path; 
-  //   // }
-  //   idx = idx_path;
-  //   idx_path += 1;
-  //   cmd_pos_prev_ = cmd_pos_path;
-  //   cmd_vel_prev_ = cmd_vel_path;
-  //   cmd_acc_prev_ = cmd_acc_path; 
-
-  //   if (idx >= 4 || isGoalReached()){
-  //     idx_path = cmd_pos_path.size(); // reset to new path
-  //   }
-
-  // }
-
-  // // Take the cmd_pos > 0.05m and cmd_vel > 0.05m/s (Taking only one waypoint per path) (Old method)
-  // while (idx < (int) cmd_pos_prev_.size() - 1){
-  //   double dx = cur_pos_.x() - cmd_pos_prev_[idx].x(),
-  //     dy = cur_pos_.y() - cmd_pos_prev_[idx].y(),
-  //     dz = cur_pos_.z() - cmd_pos_prev_[idx].z(),
-
-  //     dVx = cmd_vel_prev_[idx].x(),
-  //     dVy = cmd_vel_prev_[idx].y(),
-  //     dVz = cmd_vel_prev_[idx].z();
-
-  //   // if (dx * dx + dy * dy + dz * dz >= 1.00 && dVx * dVx + dVy * dVy + dVz * dVz >= 1.00){
-  //   //   break;
-  //   // }
-
-  //   idx += 1;
-  //   if (idx >= 2){
-  //     break;
-  //   }
-  // }
-
-  // // To use with interpolation method
-  // int largest_vel_idx = 0;
-  // for (int i=0; i < 3; i++){
-  //   if (cmd_vel_prev_[i].squaredNorm() > cmd_vel_prev_[largest_vel_idx].squaredNorm()){
-  //     largest_vel_idx = i;
-  //   }
-  // }
-  // idx = largest_vel_idx;
-
   // Failsafe when stuck in obstacle
   if (cmd_pos_prev_.size() == 1){
     idx = 0;
@@ -759,7 +708,7 @@ void ControllerServer::computeGoalCmdTimerCB(){
               offset_cmd_pos.z()
             );
             cmd_pos_prev_ = {offset_cmd_pos};
-            cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+            cmd_vel_prev_ = {deltaVector};
             cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
             last_valid_cmd_time_ = now();
             start_publish_cmd_ = true;
@@ -780,9 +729,8 @@ void ControllerServer::computeGoalCmdTimerCB(){
     if (break_flag){
       return;
     }
-    // Logic to get out of goal (Untested, WIP) // 
     {
-      RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Area around odom is free of obstacle");
+      RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Area around odom is either free of obstacle, or within. Check if planner throws any error");
       RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
       std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
       RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
@@ -806,9 +754,8 @@ void ControllerServer::computeGoalCmdTimerCB(){
         goal_cmd_pos.y(),
         goal_cmd_pos.z()
       );
-      // Stuff to test (Transform goal wrt global to map) //
       cmd_pos_prev_ = {goal_cmd_pos};
-      cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+      cmd_vel_prev_ = { goal_cmd_pos - cur_pos_ }; // Vector from change in dist to use as vector
       cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
       last_valid_cmd_time_ = now();
       start_publish_cmd_ = true;
@@ -816,6 +763,86 @@ void ControllerServer::computeGoalCmdTimerCB(){
     }
   }
   return;  
+}
+
+void ControllerServer::inflationAvoidanceTimerCB()
+{
+  if (!(inflation_avoidance_ && odomWithinObstacleInflation() && !isGoalReached())){
+    // RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: No computing of inflation avoidance");
+    return;
+  }
+
+  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+  geometry_msgs::msg::PoseStamped pose;
+  if (!getRobotPose(pose)) {
+    throw gestelt_core::ControllerTFError("Failed to obtain robot pose");
+  }
+  bool break_flag = false;
+  for (int dx = -1; dx <= 1; dx++)
+  {
+    for (int dy = -1; dy <= 1; dy++)
+    {
+      // for (int dz = -1; dz <= 1; dz++){
+      const Eigen::Vector3d cur_pos_temp = Eigen::Vector3d(
+        pose.pose.position.x + ((double)dx * inflation_escape_offset_), 
+        pose.pose.position.y + ((double)dy * inflation_escape_offset_),
+        pose.pose.position.z
+      );
+      const Eigen::Vector3d cur_pos_temp_opp = Eigen::Vector3d(
+        pose.pose.position.x - ((double)dx * inflation_escape_offset_), 
+        pose.pose.position.y - ((double)dy * inflation_escape_offset_),
+        pose.pose.position.z
+      );
+      if (occ_map_->withinObstacleInflation(cur_pos_temp) && !(occ_map_->withinObstacleInflation(cur_pos_temp_opp))){
+        RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Finding a free point %.2fm around odom pose out of inflation"
+                                      "(dy,dx): (%d, %d), Point(%.2f, %.2f, %.2f), Opp point(%.2f, %.2f, %.2f)",
+                                      inflation_escape_offset_,
+                                      dy, dx,
+                                      cur_pos_temp.x(), cur_pos_temp.y(), cur_pos_temp.z(),
+                                      cur_pos_temp_opp.x(), cur_pos_temp_opp.y(), cur_pos_temp_opp.z());
+        const auto deltaVector = cur_pos_ - cur_pos_temp; //vector from cur_pos_temp to cur_pos
+        Eigen::Vector3d offset_cmd_pos = cur_pos_ + (deltaVector); // direct offset away
+      
+        RCLCPP_INFO(this->get_logger(), "[inflationAvoidanceTimerCB]: Setting waypoint to offset from pose to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
+          pose.pose.position.x,
+          pose.pose.position.y,
+          pose.pose.position.z,
+          offset_cmd_pos.x(),
+          offset_cmd_pos.y(),
+          offset_cmd_pos.z()
+        );
+        cmd_pos_prev_ = {offset_cmd_pos};
+        cmd_vel_prev_ = {deltaVector};
+        cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+        last_valid_cmd_time_ = now();
+        start_publish_cmd_ = true;
+        break_flag = true;
+        
+        break;
+      }
+      // }
+      // if (break_flag){
+      //   break;
+      // }
+    }
+    if (break_flag){
+      break;
+    }
+  }
+  if (break_flag){
+    RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+    return;
+  }
+
+  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Area around odom is in inflation. Stay at its own odom");
+  cmd_pos_prev_ = {cur_pos_};
+  cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+  cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+  last_valid_cmd_time_ = now();
+  start_publish_cmd_ = true;
+  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
 }
 
 void ControllerServer::getControllerCommand()
@@ -903,50 +930,26 @@ void ControllerServer::getControllerCommand()
   } 
   catch (gestelt_core::NoValidControl & e) {
     RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] %s", e.what());
-
-    // // Select the MPC command from the previous trajectory that is closest to the current time (Old method)
-    // px4_msgs::msg::TrajectorySetpoint traj_sp;
-    // traj_sp.position = {(float) cur_pos.x(), 
-    //                     (float) cur_pos.y(), 
-    //                     (float) cur_pos.z()};
-    // traj_sp.velocity = {0.0, 0.0, 0.0};
-    // traj_sp.acceleration = {0.0, 0.0, 0.0};
-    // traj_sp.yaw = NAN;
-    // traj_sp.yawspeed = NAN;
-    // traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
-
-    // if (failure_tolerance_ > 0 || failure_tolerance_ == -1.0) {
-    //   RCLCPP_WARN(this->get_logger(), "%s", e.what());
-    //   traj_sp.position = {(float) pose.pose.position.x , 
-    //                       (float) pose.pose.position.y, 
-    //                       (float) pose.pose.position.z};
-    //   traj_sp.velocity = {0.0, 0.0, 0.0};
-    //   traj_sp.acceleration = {0.0, 0.0, 0.0};
-    //   traj_sp.yaw = NAN;
-    //   traj_sp.yawspeed = NAN;
-    //   traj_sp.timestamp = now().nanoseconds() / 1000; // In microseconds
-    //   if ((now() - last_valid_cmd_time_).seconds() > failure_tolerance_ &&
-    //     failure_tolerance_ != -1.0)
-    //   {
-    //     throw gestelt_core::PatienceExceeded("Controller patience exceeded");
-    //   }
-    //   cmd_pub_->publish(traj_sp);
-    // } else {
-    //   throw gestelt_core::NoValidControl(e.what());
-    // }
-
-    
-    // Select a single PVA waypoint to send (New method) 
     RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
     std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
     RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
 
+    // If the path is stale (no new plan for kPathStaleSecs), hover in place.
+    const double path_age = (now() - last_path_time_).seconds();
+    if (curr_path_.empty() || path_age > kPathStaleSecs) {
+      RCLCPP_WARN(get_logger(), "[getControllerCommand]NoValidControl: Path stale (%.1fs) or empty. Hovering at current odom.", path_age);
+      cmd_pos_prev_ = { cur_pos };
+      cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""), std::nanf(""), std::nanf("")) };
+      cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""), std::nanf(""), std::nanf("")) };
+      last_valid_cmd_time_ = now();
+      start_publish_cmd_ = true;
+      return;
+    }
+
     Eigen::Vector3d nearest_cmd_pos = Eigen::Vector3d::Zero();
     auto nearest_cmd_dist = std::numeric_limits<double>::max();
 
-    // // Stuff to test (Use global path to get out of inflation) //
-
-    // look at cmd_pos_prev and find closest waypoint/index and set that as next waypoint (1st workaround)
+    // Use global path to get out of no valid control //
     for (const auto check_cmd_pos : curr_path_) {
       const auto deltaVector = check_cmd_pos - cur_pos; //vector from check_cmd_pos to cur_pos
       const auto delta = deltaVector.squaredNorm();
@@ -980,17 +983,8 @@ void ControllerServer::getControllerCommand()
         nearest_cmd_pos.y(),
         nearest_cmd_pos.z());
     }
-    // Stuff to test (Use global path to get out of inflation) //
+    // Use global path to get out of no valid control //
 
-    // // Go to 3rd point in trajectory
-    // if (cmd_pos_prev_.size() < 2){
-    //   nearest_cmd_pos = cmd_pos_prev_[0];
-    // }
-    // else{
-    //   nearest_cmd_pos = cmd_pos_prev_[0];
-    // }
-    // set the desired position
-    // cmd_pos_prev_ = { cur_pos };
     cmd_pos_prev_ = { nearest_cmd_pos };
 
     //set the desired velocity, according to closest waypoint
@@ -1017,16 +1011,16 @@ void ControllerServer::getControllerCommand()
       nearest_cmd_vel[2] = -MAX_VEL_COMPONENT;
     //else it is 0 or MAX_VEL_COMPONENT
 
-    // cmd_vel_prev_ = { nearest_cmd_vel };
+    cmd_vel_prev_ = { nearest_cmd_vel };
     // cmd_vel_prev_ = { Eigen::Vector3d::Zero() };
-    cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+    // cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
 
     //set the desired acceleration
     // cmd_acc_prev_ = { Eigen::Vector3d(0.25, 0.25, 0.25) };
     // cmd_acc_prev_ = { Eigen::Vector3d::Zero() };
     cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
 
-    RCLCPP_ERROR(this->get_logger(), "[ControllerServer::getControllerCommand] Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
+    RCLCPP_INFO(this->get_logger(), "[getControllerCommand]NoValidControl: Setting waypoint to nearest cmd_pos_ (%f, %f, %f)", 
       nearest_cmd_pos.x(),
       nearest_cmd_pos.y(),
       nearest_cmd_pos.z());
@@ -1090,7 +1084,6 @@ void ControllerServer::updateGlobalPath()
     }
 
     setPlannerPath(goal->path);
-    current_path_pub_->publish(current_path_);
     RCLCPP_INFO(get_logger(), "[updateGlobalPath] Updated global path");
   }
 }
@@ -1152,6 +1145,27 @@ bool ControllerServer::getRobotPose(geometry_msgs::msg::PoseStamped & pose)
   return true;
 }
 
+bool ControllerServer::odomWithinObstacleInflation()
+{
+  RCLCPP_INFO(get_logger(), "Check if odom is within inflation");
+  geometry_msgs::msg::PoseStamped pose;
+  if (!getRobotPose(pose)) {
+    throw gestelt_core::ControllerTFError("Failed to obtain robot pose");
+  }
+  const Eigen::Vector3d temp_pose = Eigen::Vector3d(pose.pose.position.x, 
+                                                    pose.pose.position.y,
+                                                    pose.pose.position.z);
+
+  if(occ_map_->withinObstacleInflation(temp_pose)){
+    RCLCPP_WARN(get_logger(), "Odom from occ map (%.2f, %.2f, %.2f) is within obstacle inflation", pose.pose.position.x, pose.pose.position.y, pose.pose.position.z);
+    return true;
+  }
+
+  RCLCPP_INFO(get_logger(), "Odom is free from inflation");
+  return false;
+
+}
+
 rcl_interfaces::msg::SetParametersResult
 ControllerServer::dynamicParametersCallback(std::vector<rclcpp::Parameter> parameters)
 {
@@ -1207,14 +1221,19 @@ void ControllerServer::odometrySubCB(const nav_msgs::msg::Odometry::UniquePtr ms
 }
 
 void ControllerServer::globalPlanSubCB(const nav_msgs::msg::Path::UniquePtr msg){
-  
-  for (int i = 0; i < msg->poses.size(); i++){
 
+  msg->header.frame_id = occ_map_->getMapFrameID();
+
+  curr_path_.clear();
+  for (int i = 0; i < msg->poses.size(); i++){
     curr_path_.push_back(Eigen::Vector3d(
-      msg->poses[i].pose.position.x, 
-      msg->poses[i].pose.position.y, 
+      msg->poses[i].pose.position.x,
+      msg->poses[i].pose.position.y,
       msg->poses[i].pose.position.z));
   }
+  last_path_time_ = now();
+
+  current_path_pub_->publish(*msg);
 }
 
 } // namespace gestelt_controller

@@ -168,7 +168,7 @@ protected:
   void getControllerCommand();
 
   /**
-   * @brief Timer callback for publishgin controls
+   * @brief Timer callback for publishing controls
    * 
    */
   void publishCmdTimerCB();
@@ -177,18 +177,23 @@ protected:
    * @brief Calls setPlannerPath method with an updated path received from
    * action server
    */
-
-  void computeGoalCmdTimerCB();
+  void updateGlobalPath();
 
   /**
    * @brief Computes goal command when agent is near its goal
    */
-  void updateGlobalPath();
+  void computeGoalCmdTimerCB();
+
+  /**
+   * @brief Computes PV commands when agent is within obstacle inflation
+   */
+  void inflationAvoidanceTimerCB();
 
   /**
    * @brief Called on goal exit
    */
   void onGoalExit();
+
   /**
    * @brief Checks if goal is reached
    * @return true or false
@@ -202,6 +207,7 @@ protected:
    */
   bool getRobotPose(geometry_msgs::msg::PoseStamped & pose);
 
+  bool odomWithinObstacleInflation();
 
   void odometrySubCB(const nav_msgs::msg::Odometry::UniquePtr msg);
   
@@ -258,6 +264,7 @@ protected:
   // Timers
   rclcpp::TimerBase::SharedPtr pub_cmd_timer_; // Timer for publishing commands
   rclcpp::TimerBase::SharedPtr goal_cmd_timer_; // Timer for commands to goal
+  rclcpp::TimerBase::SharedPtr inflation_cmd_timer_; // Timer for commands out of inflation
 
   // params
   bool publish_zero_velocity_;
@@ -265,6 +272,7 @@ protected:
   double failure_tolerance_{0.0};
 
   double controller_frequency_{0.0};
+  double inflation_escape_offset_{0.3};
   const double yaw_resolution_{3.14/18.0}; // 10 degree  resolution
 
   bool print_runtime_{false}; // true if timer information is to be printed
@@ -280,6 +288,8 @@ protected:
   // Current path container
   nav_msgs::msg::Path current_path_;
   std::vector<Eigen::Vector3d> curr_path_;
+  rclcpp::Time last_path_time_;            // When curr_path_ was last updated
+  static constexpr double kPathStaleSecs = 2.0; // Hover after this many seconds without a new plan
 
   // Previous valid MPC Trajectory
   std::vector<Eigen::Vector3d> cmd_pos_prev_, cmd_vel_prev_, cmd_acc_prev_, cmd_jerk_prev_;
@@ -287,7 +297,7 @@ protected:
   bool start_publish_cmd_{false}; // Start publishing command 
   bool start_computing_goal_{false};
   bool yaw_first{true};
-  // bool obstacle_avoidance_{false}; // True if in failsafe mode. Not in use
+  bool inflation_avoidance_{false};
   rclcpp::Time last_valid_cmd_time_;
 
   std::mutex mpc_pred_mtx_;
