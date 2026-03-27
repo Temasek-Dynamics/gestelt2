@@ -123,12 +123,10 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
       ") was outside bounds");
   }
 
-  // Stuff to test //
   Eigen::Vector3d map_start, map_goal;
 
   occ_map_->worldToMap(start, map_start);
   occ_map_->worldToMap(goal, map_goal);
-  // Stuff to test //
 
   if (occ_map_->withinObstacleInflation(map_start)){
     throw gestelt_core::StartOccupied("Start(Global/map frame) Coordinates of(" + 
@@ -136,14 +134,8 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
         "(" + std::to_string(map_start(0)) + ", " + std::to_string(map_start(1)) + ", " + std::to_string(map_start(2)) +")" " was in inflation"
         );
 
-    // Stuff to test //
-    // RCLCPP_WARN(logger_, "Start(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation,",
-    //                         start(0), start(1), start(2), 
-    //                         map_start(0), map_start(1), map_start(2));
-    // Stuff to test //
   }
 
-  // Stuff to test (Uninflated goal) //
   if (occ_map_->withinObstacleInflation(map_goal)){
     // throw gestelt_core::GoalOccupied("Goal Coordinates of(" + std::to_string(goal(0)) + ", " +
     //     std::to_string(goal(1)) + ", " + std::to_string(goal(2)) + 
@@ -151,9 +143,9 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
     if (goal_in_obs != goal){
       RCLCPP_INFO(logger_, "Register goal_in_obs");
       goal_in_obs = goal;
-      // odom_goal_ = start;
+      // nearest_goal_ = start;
       // Compute a nearer goal from goal
-      RCLCPP_INFO(logger_, "Registering odom_goal by finding nearest goal");
+      RCLCPP_INFO(logger_, "Registering nearest goal");
       bool found_nearest_goal = false;
       auto nearest_goal_dist = std::numeric_limits<double>::max();
       for (int dx = -5; dx <= 5; dx++)
@@ -176,7 +168,7 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
           const auto delta = deltaVector.squaredNorm();
 
           if (!(occ_map_->withinObstacleInflation(goal_temp_check)) && (delta < nearest_goal_dist)){
-            odom_goal_ = goal_temp;
+            nearest_goal_ = goal_temp;
             nearest_goal_dist = delta;
             found_nearest_goal = true;
             // break;
@@ -188,56 +180,25 @@ nav_msgs::msg::Path AStarPlanner::createPlan(
       }
       if (!found_nearest_goal){
         RCLCPP_INFO(logger_, "Nearest goal not found. Use last recorded odom position");
-        odom_goal_ = start;
+        nearest_goal_ = start;
       }
-      RCLCPP_INFO(logger_, "Registered odom_goal by finding nearest goal");
-      // odom_goal_ = start;
+      RCLCPP_INFO(logger_, "Registered nearest goal");
+      // nearest_goal_ = start;
     }
-    curr_goal_ = odom_goal_;
+    curr_goal_ = nearest_goal_;
     RCLCPP_WARN(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation," 
                             "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
                             goal(0), goal(1), goal(2), 
                             map_goal(0), map_goal(1), map_goal(2),
-                            odom_goal_(0), odom_goal_(1), odom_goal_(2));
+                            nearest_goal_(0), nearest_goal_(1), nearest_goal_(2));
   }
 
   else if (goal_in_obs == goal){
-    RCLCPP_INFO(logger_, "Continue resetting to last registered odom position(%.2f, %.2f, %.2f)",
-                            odom_goal_(0), odom_goal_(1), odom_goal_(2));
-    curr_goal_ = odom_goal_;
+    // Goal was previously in inflation but is now free — recover
+    RCLCPP_INFO(logger_, "Original goal is now reachable. Clearing cached nearest_goal.");
+    goal_in_obs = Eigen::Vector3d(std::nan(""), std::nan(""), std::nan(""));
+    curr_goal_ = goal;  // Use the original goal
   }
-  // Stuff to test (Uninflated goal) //
-
-  // // Stuff to test (Inflated goal) //
-  // for (int dx = -1; dx <= 1; dx++)
-  // {
-  //   for (int dy = -1; dy <= 1; dy++)
-  //   {
-  //     const Eigen::Vector3d goal_temp = Eigen::Vector3d(
-  //       goal.x() + ((double)dx * 0.2), // 0.3m away from goal point
-  //       goal.y() + ((double)dy * 0.2),
-  //       goal.z()
-  //     );
-  //     if (occ_map_->withinObstacleInflation(goal_temp)){
-  //       if (goal_in_obs != goal){
-  //         goal_in_obs = goal;
-  //         odom_goal_ = start;
-  //       }
-  //       curr_goal_ = odom_goal_;
-  //       RCLCPP_WARN(logger_, "Goal(Global/Map frame) Coordinates of(%.2f, %.2f, %.2f), (%.2f, %.2f, %.2f) was in inflation,"
-  //                               "resetting goal to current position(%.2f, %.2f, %.2f) in makePlan...", 
-  //                               goal(0), goal(1), goal(2), 
-  //                               map_goal(0), map_goal(1), map_goal(2),
-  //                               odom_goal_(0), odom_goal_(1), odom_goal_(2));
-  //     }
-  //     else if (goal_in_obs == goal){
-  //       RCLCPP_INFO(logger_, "Continue resetting to last registered odom position(%.2f, %.2f, %.2f)",
-  //                               odom_goal_(0), odom_goal_(1), odom_goal_(2));
-  //       curr_goal_ = odom_goal_;
-  //     }
-  //   }
-  // }
-  // // Stuff to test (Inflated goal) //
 
   if (tolerance_ == 0 && occ_map_->getCost(goal) == occ_map::LETHAL_OBSTACLE)
   {
