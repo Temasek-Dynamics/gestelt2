@@ -113,6 +113,7 @@ void OccMap::init()
 
   declare_parameter("update_local_map_frequency",  10.0);
   declare_parameter("viz_map_frequency",  2.0);
+  declare_parameter("prediction_horizon_m", 1.0);
 
   declare_parameter("global_frame", "world");
   declare_parameter("map_frame", "map");
@@ -207,6 +208,15 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
   // RCLCPP_INFO(get_logger(), "drone full id: %s", parent_namespace_.c_str());
 
   // Get Params
+  std::string ns = parent_namespace_;
+	if (ns.size() < 2){
+		throw std::runtime_error("Invalid namespace provided to trajectory_server, "
+			"should be in the form of 'dX' where X is an integer");
+	}
+
+	drone_id_ = ns[ns.size()-1] - '0'; //logic from trajectory_server
+
+  RCLCPP_INFO(get_logger(), "drone_id_: %d", drone_id_);
 
   for (const auto current_id : drone_ids_)
 	{
@@ -301,6 +311,10 @@ OccMap::on_configure(const rclcpp_lifecycle::State & /*state*/)
     local_map_size_(2) / 2.0);
 
   last_cloud_cb_time_ = get_clock()->now().seconds();
+  for (size_t i = 0; i < last_odom_cb_time_.size(); i++){
+    last_odom_cb_time_[i] = get_clock()->now().seconds();
+  }
+  // last_odom_cb_time_ = get_clock()->now().seconds();
 
   // Initialize point cloud filters
   z_filter_cloud_in_.setFilterFieldName("z");
@@ -477,6 +491,7 @@ void OccMap::getParameters()
 
   get_parameter("update_local_map_frequency",  update_local_map_freq_);
   get_parameter("viz_map_frequency", viz_occ_map_freq_);
+  get_parameter("prediction_horizon_m", prediction_horizon_);
 
   get_parameter("prob_map.resolution", resolution_);
   get_parameter("prob_map.static_inflation", inflation_);
@@ -595,8 +610,8 @@ void OccMap::updateLocalMap(){
                 for (int dz = -4; dz <= 4; dz++)
                 {
                   const Eigen::Vector3d odom_pos_map = Eigen::Vector3d(
-                    current_drone_pose(0) + ((double)dx * 0.1), // res of 0.1m
-                    current_drone_pose(1) + ((double)dy * 0.1),
+                    current_drone_pose(0) + ((double)dx * 0.3), // res of 0.3m
+                    current_drone_pose(1) + ((double)dy * 0.3),
                     current_drone_pose(2) + ((double)dz * 0.1)
                   );
 
@@ -612,6 +627,43 @@ void OccMap::updateLocalMap(){
       } //for (auto& [current_drone_id, current_drone_pose]: drone_poses_)
 
       RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sent drone poses to lcl pcd map");
+
+      RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sending predicted drone poses to lcl pcd map");
+      for (const auto& [current_drone_id, prev_drone_pose]: prev_drone_poses_)
+      {
+        if ((drone_poses_[current_drone_id].head<2>() - prev_drone_pose.head<2>()).norm() < 0.1){
+          RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "d%d drone's prev odom(%.2f, %.2f, %.2f) and current odom(%.2f, %.2f, %.2f) is shorter than 0.1m. Skipping path estimation", 
+                                                                  current_drone_id,
+                                                                  prev_drone_pose.x(), prev_drone_pose.y(), prev_drone_pose.z(),
+                                                                  drone_poses_[current_drone_id].x(), drone_poses_[current_drone_id].y(), drone_poses_[current_drone_id].z());
+          continue;
+        }
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                for (int dz = -4; dz <= 4; dz++)
+                {
+                  for (int i = 0; i < (prediction_horizon_ * 2); i++){
+                    Eigen::Vector3d pred_odom_pos_temp = pathPredictor(prev_drone_pose, drone_poses_[current_drone_id], i);
+                    const Eigen::Vector3d pred_odom_pos = Eigen::Vector3d(
+                      pred_odom_pos_temp(0) + ((double)dx * 0.3),
+                      pred_odom_pos_temp(1) + ((double)dy * 0.3),
+                      pred_odom_pos_temp(2) + ((double)dz * 0.1)
+                    );
+
+                    if (!inLocalMap(pred_odom_pos)) {  // Point is outside the local map
+                      continue;
+                    }
+
+                    lcl_pcd_map_raw_->push_back(
+                      pcl::PointXYZ(pred_odom_pos(0), pred_odom_pos(1), pred_odom_pos(2)));
+                  }
+                } //z
+            } //y
+        } //x
+      } 
+      RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Sent predicted drone poses to lcl pcd map");
     } //std::lock_guard<std::mutex> drone_poses_lock(drone_poses_mtx_);
 
     // Part of odom subscription (Temp solution for swarm) //
@@ -751,6 +803,23 @@ void OccMap::updateLocalMapTimerCB()
   local_map_updated_ = true;
 }
 
+Eigen::Vector3d OccMap::pathPredictor(const Eigen::Vector3d& prev_pose, const Eigen::Vector3d& current_pose, int index)
+{
+  const auto deltaVector = current_pose - prev_pose;
+  // if (deltaVector.head<2>().norm() < 1.0){ // Just the XY portion of deltaVector
+  //   // Eigen::Vector3d predicted_pos = current_pose + (deltaVector);
+  //   Eigen::Vector3d predicted_pos = current_pose;
+  //   return predicted_pos;
+  // }
+  // Eigen::Vector3d predicted_pos = current_pose + (deltaVector * (((double)index * 0.5) / deltaVector.norm()));
+  Eigen::Vector3d predicted_pos = Eigen::Vector3d(
+                                    current_pose.x() + (deltaVector.x() * (((double)index * 0.5) / deltaVector.norm())),
+                                    current_pose.y() + (deltaVector.y() * (((double)index * 0.5) / deltaVector.norm())),
+                                    current_pose.z()
+                                  );
+  return predicted_pos;
+}
+
 /** Subscriber callbacks */
 
 void OccMap::resetMapCB(const std_msgs::msg::Empty::SharedPtr )
@@ -846,14 +915,14 @@ void OccMap::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg, const int
   );
 
   // Get other agent's frame to map_frame transform
-  RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from other drone at %.2f, %.2f, %.2f", pose(0), pose(1), pose(2));
+  RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from d%d at %.2f, %.2f, %.2f", drone_id, pose(0), pose(1), pose(2));
 
   try {
     // Set fixed map origin (map to map so no need z)
     pose(0) = pose(0) - droneScenario[drone_id_].spawn_pos[0] + droneScenario[drone_id].spawn_pos[0];
     pose(1) = pose(1) - droneScenario[drone_id_].spawn_pos[1] + droneScenario[drone_id].spawn_pos[1];
 
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from other drone after transform at %.2f, %.2f, %.2f", pose(0), pose(1), pose(2));
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from d%d after transform at %.2f, %.2f, %.2f", drone_id, pose(0), pose(1), pose(2));
   }
 
   catch (const tf2::TransformException & ex) {
@@ -865,6 +934,13 @@ void OccMap::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg, const int
 
   std::lock_guard<std::mutex> drone_poses_lock(drone_poses_mtx_);
   drone_poses_[drone_id] = pose;
+
+  if (isTimeout(last_odom_cb_time_[drone_id], 1.0)){
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Registering past odom pose every 1.0s." 
+                                                              "d%d Pose: %.2f, %.2f, %.2f", drone_id, pose(0), pose(1), pose(2));
+    last_odom_cb_time_[drone_id] = get_clock()->now().seconds();
+    prev_drone_poses_[drone_id] = pose;
+  }
 }
 // Part of odom subscription (Temp solution for swarm) //
 

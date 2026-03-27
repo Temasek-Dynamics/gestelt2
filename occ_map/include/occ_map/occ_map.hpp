@@ -428,6 +428,11 @@ private:
   */
   void updateLocalMapTimerCB();
 
+  /**
+   * @brief Predicts next position based on prev_pose and current_pose
+  */
+  Eigen::Vector3d pathPredictor(const Eigen::Vector3d& prev_pose, const Eigen::Vector3d& current_pose, int index);
+
   // Checks if time elapsed has exceeded a given threshold
   inline bool isTimeout(const double& last_state_time, const double& threshold)
   {
@@ -452,14 +457,16 @@ private:
   std::string parent_namespace_;
 
   /* Params */
-  std::string drone_ns = std::getenv("DRONE_NS"); // Get from environment variable
-  // int drone_id_{0}; //Drone ID
-  int drone_id_{drone_ns[drone_ns.size() - 1] - '0'}; //Drone ID. Get from last char of drone_ns
+  // std::string drone_ns = std::getenv("DRONE_NS"); // Get from environment variable
+  int drone_id_{0}; //Drone ID
+  // int drone_id_{drone_ns[drone_ns.size() - 1] - '0'}; //Drone ID. Get from last char of drone_ns
 
   // Part of odom subscription (Temp solution for swarm) //
   static constexpr std::array<int, 5> drone_ids_ {0, 1, 2, 3, 4}; //define all drone IDs to subscribe
   std::mutex drone_poses_mtx_;
   std::unordered_map<int, Eigen::Vector3d> drone_poses_;
+  std::unordered_map<int, Eigen::Vector3d> prev_drone_poses_;
+  std::array<double, 5> last_odom_cb_time_{-1.0, -1.0, -1.0, -1.0, -1.0};
   std::array<Scenario, 5> droneScenario {{Scenario{"start_1d_zero"},
                                           Scenario{"start_1d_one"}, 
                                           Scenario{"start_1d_two"}, 
@@ -484,6 +491,7 @@ private:
 
   double time_vel_{0.1}; // [s] time along velocity vector to mark as occupied
 
+  double prediction_horizon_{1.0}; // Lookahead distance for predicting the future path of other observable drones based on their velocity
   double viz_occ_map_freq_{-1.0}; // Frequency to publish occupancy map visualization
   double update_local_map_freq_{-1.0};  // Frequency to update local map
 
