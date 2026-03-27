@@ -1,6 +1,8 @@
 #include <fake_sensor/fake_sensor.hpp>
 
 #include <tf2_eigen/tf2_eigen.hpp>
+#include <chrono>
+#include <thread>
 
 FakeSensor::FakeSensor()
 : Node("fake_sensor")
@@ -38,11 +40,11 @@ FakeSensor::FakeSensor()
 	// Downsampler parameters
 	this->declare_parameter("pcd_voxel_filter.enable", true);
 	this->declare_parameter("pcd_voxel_filter.voxel_size", -1.0);
-	
+
 	// RCLCPP_INFO(this->get_logger(), "Obtaining drone id \n");
 	drone_id_ = this->get_parameter("drone_id").as_int();
 	// RCLCPP_INFO(this->get_logger(), "Obtained drone id \n");
-	
+
 	// Frame parameters
 	global_frame_ = this->get_parameter("global_frame").as_string();
 	map_frame_ = this->get_parameter("map_frame").as_string();
@@ -100,29 +102,58 @@ FakeSensor::FakeSensor()
 	pass_fil_y_->setNegative (true);
 	pass_fil_z_->setNegative (true);
 
+	// Stagger heavy initialization based on drone_id to prevent concurrent memory spikes
+	// This mitigates OOM issues when multiple drones load large PCD files simultaneously
+	int startup_delay_seconds = drone_id_ * 2;
+	if (startup_delay_seconds > 0) {
+		RCLCPP_INFO(this->get_logger(),
+			"Delaying PCD loading by %d seconds to stagger heavy initialization (drone_id=%d)",
+			startup_delay_seconds, drone_id_);
+		std::this_thread::sleep_for(std::chrono::seconds(startup_delay_seconds));
+	}
+
 	// Load point cloud map from file
-	if (pcl::io::loadPCDFile(map_filepath, *fake_map_cloud_) == -1) 
+	RCLCPP_INFO(this->get_logger(), "Starting to load PCD file from %s", map_filepath.c_str());
+	if (pcl::io::loadPCDFile(map_filepath, *fake_map_cloud_) == -1)
 	{
 		RCLCPP_ERROR(this->get_logger(), "Invalid PCD filepath input: %s\n", map_filepath.c_str());
 		rclcpp::shutdown();
 	}
-	RCLCPP_INFO(this->get_logger(), "Loaded PCD input file from %s\n", map_filepath.c_str());
+	RCLCPP_INFO(this->get_logger(), "Loaded PCD input file from %s (num_points=%ld)\n",
+		map_filepath.c_str(), fake_map_cloud_->points.size());
 
   	fake_map_cloud_->header.frame_id = global_frame_;
 
-	// Set up sensor renderer
-	sensor_renderer_.set_parameters(
-		resolution,
-		sensor_max_range,
-		*fake_map_cloud_,
-		vtc_laser_range_dgr,
-		hrz_laser_range_dgr,
-		vtc_laser_line_num,
-		hrz_laser_line_num);
+	// Set up sensor renderer with exception handling
+	try {
+		RCLCPP_INFO(this->get_logger(), "Initializing sensor renderer (building KD-tree and allocating matrices)");
+		sensor_renderer_.set_parameters(
+			resolution,
+			sensor_max_range,
+			*fake_map_cloud_,
+			vtc_laser_range_dgr,
+			hrz_laser_range_dgr,
+			vtc_laser_line_num,
+			hrz_laser_line_num);
+		RCLCPP_INFO(this->get_logger(), "Sensor renderer initialization succeeded");
+	}
+	catch (const std::exception & ex) {
+		RCLCPP_ERROR(this->get_logger(),
+			"Failed to initialize sensor renderer: %s. This may be due to out-of-memory during concurrent initialization of multiple drones.",
+			ex.what());
+		rclcpp::shutdown();
+		return;
+	}
+	catch (...) {
+		RCLCPP_ERROR(this->get_logger(),
+			"Unknown error occurred during sensor renderer initialization. This may be due to out-of-memory or segmentation fault during concurrent initialization of multiple drones.");
+		rclcpp::shutdown();
+		return;
+	}
 
-	sensor_update_timer_ = this->create_wall_timer((1.0/sensor_refresh_freq) *1000ms, 
-							std::bind(&FakeSensor::sensorUpdateTimerCB, this),
-							reentrant_cb_grp_);
+	sensor_update_timer_ = this->create_wall_timer((1.0/sensor_refresh_freq) *1000ms,
+						std::bind(&FakeSensor::sensorUpdateTimerCB, this),
+						reentrant_cb_grp_);
 
 	RCLCPP_INFO(this->get_logger(), "Initialized");
 }
@@ -164,9 +195,9 @@ void FakeSensor::sensorUpdateTimerCB()
 
 		sensor_pos = global_to_sensor_mat_.block<3, 1>(0, 3);
 		sensor_ori = global_to_sensor_mat_.block<3, 3>(0, 0);
-	} 
+	}
 	catch (const tf2::TransformException & ex) {
-		RCLCPP_ERROR(this->get_logger(), 
+		RCLCPP_ERROR(this->get_logger(),
 			"Could not get transform from global_frame (%s) to sensor_frame(%s): %s. ",
 			global_frame_.c_str(), sensor_frame_.c_str(), ex.what());
 		return;
@@ -177,7 +208,7 @@ void FakeSensor::sensorUpdateTimerCB()
 		return;
 	}
 
-	// Output point clouds are given in global frame 
+	// Output point clouds are given in global frame
 	sensor_renderer_.render_sensed_points(
 		sensor_pos,  // sensor position in global frame
 		sensor_ori,  // sensor orientation in global frame
@@ -186,7 +217,7 @@ void FakeSensor::sensorUpdateTimerCB()
 
 	// RCLCPP_INFO(this->get_logger(),
 	// 	"sensor_pos (%0.2f, %0.2f, %0.2f), size(%ld), width(%ld), height(%ld)",
-	// 	sensor_pos(0), sensor_pos(1), sensor_pos(2), 
+	// 	sensor_pos(0), sensor_pos(1), sensor_pos(2),
 	// 	cloud_global_->points.size(), cloud_global_->width, cloud_global_->height);
 
 	// Downsample cloud
@@ -210,8 +241,8 @@ void FakeSensor::sensorUpdateTimerCB()
 
 	// RCLCPP_INFO(this->get_logger(),
 	// 	"sensor_to_global transformation (%0.2f, %0.2f, %0.2f)",
-	// 	sensor_to_global_mat_.block<3, 1>(0, 3)(0), 
-	// 	sensor_to_global_mat_.block<3, 1>(0, 3)(1), 
+	// 	sensor_to_global_mat_.block<3, 1>(0, 3)(0),
+	// 	sensor_to_global_mat_.block<3, 1>(0, 3)(1),
 	// 	sensor_to_global_mat_.block<3, 1>(0, 3)(2));
 
 	pcl::transformPointCloud (*cloud_global_, *cloud_sensor_, sensor_to_global_mat_);
@@ -229,8 +260,8 @@ void FakeSensor::sensorUpdateTimerCB()
 		pcl::toROSMsg(*cloud_sensor_, cloud_sensor_msg);
 	}
 	else {
-		RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, 
-								"Publishing empty sensor cloud");
+		RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+							"Publishing empty sensor cloud");
 	}
 	cloud_sensor_msg.header.frame_id = sensor_frame_;
 	cloud_sensor_msg.header.stamp = this->get_clock()->now();
