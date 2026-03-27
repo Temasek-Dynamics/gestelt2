@@ -70,6 +70,7 @@ def main(args=None):
                 raise Exception("Failed to transition to mission mode")
             
         mission_mngr.get_logger().info("All drones in MISSION MODE. Ready to execute goals.")
+        mission_mngr.resetOccMap()
 
         executor = rclpy.executors.MultiThreadedExecutor(num_threads=2)
         executor.add_node(mission_mngr)

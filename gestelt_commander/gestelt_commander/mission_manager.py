@@ -64,6 +64,7 @@ class MissionManager(Node):
         self.get_logger().info(f"Initializing mission manager with scenario {self.scenario_name}...")
 
         self.enable_planning = False
+        self.enable_auto_planning = False
 
         # Sleep for init_delay
         time.sleep(self.init_delay)
@@ -75,6 +76,15 @@ class MissionManager(Node):
         sub_point_goal = self.create_subscription(
             PoseStamped, '/point_goal', self.pointGoalCallback, 10)
         sub_point_goal  # prevent unused variable warning
+
+        if self.simulation:
+            sub_goal = self.create_subscription(
+                PoseStamped, '/d' + str(self.drone_id) + '/goal', self.goalCallback, 10)
+            sub_goal  # prevent unused variable warning
+        else:
+            sub_goal = self.create_subscription(
+                PoseStamped, '/goal', self.goalCallback, 10)
+            sub_goal  # prevent unused variable warning
 
         """
         Publishers
@@ -108,9 +118,6 @@ class MissionManager(Node):
         self.goals_pubs_ = []
         for id in range(self.scenario.num_agents):
             id = self.drone_id
-            self.goals_pubs_.append(self.create_publisher(
-                                    Goals, 'd' + str(id) + '/goals', 
-                                    rclpy.qos.qos_profile_services_default))
             if self.simulation:
                 self.occ_map_pubs_.append(self.create_publisher(
                                         Empty, 'd' + str(id) + '/reset_map', 
@@ -152,7 +159,7 @@ class MissionManager(Node):
         self.planning_timer = self.create_timer(1.0/self.global_replanning_freq, self.planningTimerCB)
 
         # For multi drone, when rviz is not used
-        # self.planning_timer = self.create_timer(1.0/self.global_replanning_freq, self.pubScenarioGoals)
+        self.planning_timer = self.create_timer(1.0/self.global_replanning_freq, self.pubScenarioGoals)
 
         self.get_logger().info(f"Initialized mission manager")
     
@@ -270,26 +277,25 @@ class MissionManager(Node):
     def pubScenarioGoals(self):
         """Publish goals to all drones from scenario.json configuration
         """
+        if not self.enable_auto_planning:
+            return
+
         for id in range(self.scenario.num_agents):
             id = self.drone_id
             ns = '/d' + str(id)
-            navigator = self.navigators[0]
+            # navigator = self.navigators[0]
 
-            goal_pose = PoseStamped()
-            goal_pose.header.frame_id = 'world'
-            # goal_pose.header.frame_id = f'd{id}_map'
-            goal_pose.header.stamp = self.get_clock().now().to_msg()
-            goal_pose.pose.position.x = self.scenario.goals_pos[0][0]
-            goal_pose.pose.position.y = self.scenario.goals_pos[0][1]
-            goal_pose.pose.position.z = self.scenario.goals_pos[0][2]
-            goal_pose.pose.orientation.w = 1.0
+            self.get_logger().info(f"Getting global plan to goal "
+                f"({self.goal_pose.pose.position.x:.2f}, {self.goal_pose.pose.position.y:.2f}, {self.goal_pose.pose.position.z:.2f})...",
+                throttle_duration_sec=1.0)
 
-            if not navigator.waitUntilNav2Active(navigator=ns+'/planner_server', localizer='robot_localization'):
-                self.get_logger().error(f"Failed to activate {ns+'/planner_server'}, planning request aborted!")
-                return
+            if self.simulation:
+                navigator = self.navigators[0]
+            else:
+                navigator = self.navigator_no_ns
 
             # sanity check a valid path exists
-            gbl_path = navigator.getPath(PoseStamped(), goal_pose, 
+            gbl_path = navigator.getPath(PoseStamped(), self.goal_pose, 
                                             planner_id='GridBased', use_start=False)
             if gbl_path == None:
                 self.get_logger().warn("Global path planning failed, not sending reference plan to controller")
@@ -315,6 +321,24 @@ class MissionManager(Node):
         self.point_goal_pose.pose.orientation.w = 1.0
 
         self.enable_planning = True
+    
+    def goalCallback(self, msg):
+        """Callback on goal topic from designated script
+        """
+        id = self.drone_id
+        self.get_logger().info(f"Received goal {msg.pose.position.x:.2f}, {msg.pose.position.y:.2f}, {self.point_goal_height:.2f}")
+        
+        self.goal_pose = PoseStamped()
+        # self.goal_pose.header.frame_id = 'world'
+        # self.goal_pose.header.frame_id = msg.header.frame_id
+        self.goal_pose.header.frame_id = f'd{id}_map'
+        self.goal_pose.header.stamp = self.get_clock().now().to_msg()
+        self.goal_pose.pose.position.x = msg.pose.position.x
+        self.goal_pose.pose.position.y = msg.pose.position.y
+        self.goal_pose.pose.position.z = self.point_goal_height
+        self.goal_pose.pose.orientation.w = 1.0
+
+        self.enable_auto_planning = True
 
     def resetOccMap(self):
         """Reset occupancy map
