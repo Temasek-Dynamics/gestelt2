@@ -30,6 +30,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
   declare_parameter("planner_plugins", default_ids_);
   declare_parameter("expected_planner_frequency", 1.0);
   declare_parameter("action_server_result_timeout", 10.0);
+  declare_parameter("eff_factor", 0.80);
   declare_parameter("occ_map_update_timeout", 1.0);
   declare_parameter("print_runtime", rclcpp::ParameterValue(false));
 
@@ -133,6 +134,8 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   double occ_map_update_timeout_dbl;
   get_parameter("occ_map_update_timeout", occ_map_update_timeout_dbl);
   occ_map_update_timeout_ = rclcpp::Duration::from_seconds(occ_map_update_timeout_dbl);
+
+  get_parameter("eff_factor", efficient_factor);
 
   // Create the action servers for path planning to a pose and through poses
   action_server_pose_ = std::make_unique<ActionServerToPose>(
@@ -543,6 +546,7 @@ PlannerServer::computePlan()
     }
     RCLCPP_INFO(get_logger(), "Current path cost (before updating): %.4f", current_path_cost);
 
+    RCLCPP_INFO(get_logger(), "Efficient factor is %.2f", efficient_factor);
     if (!changedGoal(goal_pose) && current_path_cost > updated_path_cost * efficient_factor){
       RCLCPP_INFO(get_logger(), "No updating of plan");
       update_plan_flag_ = false;
