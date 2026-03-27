@@ -72,8 +72,8 @@ struct ObsFreeSquare
 					&& (y > this->min_y && y < this->max_y); 
 	}
 
-	double min_x, max_x;
-	double min_y, max_y;
+	double min_x, min_y;
+	double max_x, max_y;
 };
 
 /* Circle used to denote an obstacle free area*/
@@ -844,7 +844,12 @@ int main(int argc, char *argv[])
 
 	pcl::visualization::CloudViewer viewer("PCD Map Viewer");
 	viewer.showCloud(cloud_map.makeShared());
-	viewer.runOnVisualizationThreadOnce(boost::bind(&PCDMapGen::viewerOneOff, node, std::placeholders::_1));
+	// viewer.runOnVisualizationThreadOnce(boost::bind(&PCDMapGen::viewerOneOff, node, std::placeholders::_1)); // Old method
+	viewer.runOnVisualizationThreadOnce(
+		[node](pcl::visualization::PCLVisualizer& v){
+			node->viewerOneOff(v);
+		}
+	);
 
 	while (!viewer.wasStopped() && rclcpp::ok())
 	{
