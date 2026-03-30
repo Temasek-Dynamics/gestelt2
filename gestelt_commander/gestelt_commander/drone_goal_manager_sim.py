@@ -149,8 +149,10 @@ class MultiDroneGoals(Node):
                 # No plan received yet, publish the goal to trigger planning
                 if self.publish_flag[int(drone_name[-1])]:
                     self.publish_goal(drone, drone['goals'][drone['goal_index']])
-                    self.publish_flag[int(drone_name[-1])] = False
+                    # self.publish_flag[int(drone_name[-1])] = False
                 continue
+            else:
+                self.publish_flag[int(drone_name[-1])] = False
 
             current_position = drone['position']
 

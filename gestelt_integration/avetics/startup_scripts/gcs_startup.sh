@@ -62,5 +62,5 @@ fi
 tmux attach-session -t "$SESSION:0"
 
 # Cancelling CLI to use in CLI
-# tmux send-keys -t gestelt_startup:0.4 C-c & tmux send-keys -t gestelt_startup:0.6 C-c & tmux send-keys -t gestelt_startup:0.0 C-c & tmux send-keys -t gestelt_startup:0.1 C-c
+# tmux send-keys -t gestelt_startup:0.5 C-c & tmux send-keys -t gestelt_startup:0.7 C-c & tmux send-keys -t gestelt_startup:0.0 C-c & tmux send-keys -t gestelt_startup:0.1 C-c
 

@@ -30,6 +30,7 @@ setup(
             'test_point_goal = gestelt_commander.test_point_goal:main',
             'test_take_off_point_goal = gestelt_commander.test_take_off_point_goal:main',
             'drone_goal_manager_sim = gestelt_commander.drone_goal_manager_sim:main',
+            'drone_goal_manager = gestelt_commander.drone_goal_manager:main',
         ],
     },
 )

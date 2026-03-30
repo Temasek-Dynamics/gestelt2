@@ -39,6 +39,9 @@ MISSION_NODES="start_takeoff"
 # Record bag
 RECORD_ROSBAG="ros2 launch gestelt_bringup record_rosbag_local.py"
 
+# Preset goals
+AUTO_GOAL="ros2 launch gestelt_bringup drone_goal_manager_launch.py"
+
 # Start zenoh bridge (Add alias into bashrc)
 ZENOH_BRIDGE="start_zenoh"
 
@@ -59,16 +62,18 @@ then
     tmux split-window -t $SESSION:0.2 -h
     tmux split-window -t $SESSION:0.0 -h
     tmux split-window -t $SESSION:0.5 -h
+    tmux split-window -t $SESSION:0.2 -h
 
-    tmux send-keys -t $SESSION:0.4 "$ZENOH_BRIDGE" C-m
-    tmux send-keys -t $SESSION:0.5 "$ZENOH_P2P" C-m
-    tmux send-keys -t $SESSION:0.6 "$ZENOH_NONS" C-m
+    tmux send-keys -t $SESSION:0.5 "$ZENOH_BRIDGE" C-m
+    tmux send-keys -t $SESSION:0.6 "$ZENOH_P2P" C-m
+    tmux send-keys -t $SESSION:0.7 "$ZENOH_NONS" C-m
     sleep 5
     tmux send-keys -t $SESSION:0.0 "$VILOTA_BRIDGE" C-m
     sleep 1
     tmux send-keys -t $SESSION:0.1 "$GESTELT_NODE" C-m
     tmux send-keys -t $SESSION:0.2 "$MISSION_NODES"
-    tmux send-keys -t $SESSION:0.3 "$RECORD_ROSBAG"
+    tmux send-keys -t $SESSION:0.4 "$RECORD_ROSBAG"
+    tmux send-keys -t $SESSION:0.3 "$AUTO_GOAL"
 fi
 
 # Attach session on the first window
