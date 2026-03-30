@@ -3,7 +3,7 @@ planner_server:
     expected_planner_frequency: 20.0
     planner_plugins: ["GridBased"]
     occ_map_update_timeout: 1.0
-    eff_factor: 0.95 # Effiecient factor for updating the astar path
+    eff_factor: 0.80 # Effiecient factor for updating the astar path
 
     print_runtime: true # Print runtime of computing path
 
