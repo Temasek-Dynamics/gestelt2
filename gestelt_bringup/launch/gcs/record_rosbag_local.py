@@ -43,21 +43,21 @@ def generate_launch_description():
         "/goal",
         "/goals",
 
-        # Sensor output
-        "/front_left/depth/camera_info",
-        "/front_left/depth/pose",
-        "/front_left/depth/rect",
-        "/front_left/image/rect",
-        "/front_left/point_cloud/downsample",
-        "/front_left/point_cloud/full",
-        "/front_right/depth/camera_info",
-        "/front_right/depth/pose",
-        "/front_right/depth/rect",
-        "/front_right/image/rect",
-        "/front_right/point_cloud/downsample",
-        "/front_right/point_cloud/full",
-        # concat
-        "/point_cloud/concat",
+        # Sensor output (Take too much space)
+        # "/front_left/depth/camera_info",
+        # "/front_left/depth/pose",
+        # "/front_left/depth/rect",
+        # "/front_left/image/rect",
+        # "/front_left/point_cloud/downsample",
+        # "/front_left/point_cloud/full",
+        # "/front_right/depth/camera_info",
+        # "/front_right/depth/pose",
+        # "/front_right/depth/rect",
+        # "/front_right/image/rect",
+        # "/front_right/point_cloud/downsample",
+        # "/front_right/point_cloud/full",
+        # # concat
+        # "/point_cloud/concat",
 
         # # Global Plan
         "/planner_server/transition_event",
