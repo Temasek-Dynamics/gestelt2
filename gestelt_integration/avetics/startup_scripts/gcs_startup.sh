@@ -38,7 +38,7 @@ ZENOH_GCS="start_zenoh"
 RESET_MAP="ros2 topic pub /reset_map std_msgs/msg/Empty {}"
 
 # Land
-LAND_NODES="ros2 run gestelt_commander land scenario_name:=single_drone_test"
+STATIC_TRANSFORM="ros2 launch gestelt_bringup static_transform_publisher.py"
 
 if [ "$SESSIONEXISTS" = "" ]
 then 
@@ -55,7 +55,7 @@ then
     tmux send-keys -t $SESSION:0.1 "$RVIZ" C-m 
     tmux send-keys -t $SESSION:0.2 "$ZENOH_GCS" 
     tmux send-keys -t $SESSION:0.3 "$RESET_MAP" 
-    tmux send-keys -t $SESSION:0.4 "$LAND_NODES" 
+    tmux send-keys -t $SESSION:0.4 "$STATIC_TRANSFORM" C-m
 fi
 
 # Attach session on the first window
