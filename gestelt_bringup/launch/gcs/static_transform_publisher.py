@@ -85,15 +85,15 @@ def generate_launch_description():
                                    global_frame, map_frame],
                     ),
                     # d{id}_base_link -> d{id}_camera_link  (identity)
-                    Node(
-                        package="tf2_ros",
-                        name=f"{ns}_base_link_to_cam_tf",
-                        executable="static_transform_publisher",
-                        output="own_log",
-                        arguments=["0.0", "0.0", "0.0",
-                                   "0.0", "0.0", "0.0", "1.0",
-                                   base_link_frame, camera_frame],
-                    ),
+                    # Node(
+                    #     package="tf2_ros",
+                    #     name=f"{ns}_base_link_to_cam_tf",
+                    #     executable="static_transform_publisher",
+                    #     output="own_log",
+                    #     arguments=["0.0", "0.0", "0.0",
+                    #                "0.0", "0.0", "0.0", "1.0",
+                    #                base_link_frame, camera_frame],
+                    # ),
                 ]
             )
         )

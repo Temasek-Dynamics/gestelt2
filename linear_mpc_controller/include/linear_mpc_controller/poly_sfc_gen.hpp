@@ -28,6 +28,9 @@
 
 #include <queue>
 #include <unordered_map>
+#include <thread>
+#include <future>
+#include <chrono>
 
 #include <Eigen/Eigen>
 
@@ -77,38 +80,40 @@ public: // Public structs
   bool generateSFC(const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &obs_pts,
                    const std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>> &path_3d)
   {
-    EllipsoidDecomp3D ellip_decomp_util; // Decomposition util for Liu's method
-    
-    // const char* logger_name = "[poly_sfc_gen.hpp]"; // For logging purpose
+    constexpr auto dilate_timeout = std::chrono::milliseconds(500);
+
+    // shared_ptr: on timeout the detached thread still runs dilate(),
+    // so the object must outlive this function scope.
+    auto ellip_decomp_util = std::make_shared<EllipsoidDecomp3D>();
+
     //Using ellipsoid decomposition
     RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] set_obs");
-    ellip_decomp_util.set_obs(obs_pts);
+    ellip_decomp_util->set_obs(obs_pts);
     RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] set_local_bbox");
-    ellip_decomp_util.set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z)); 
+    ellip_decomp_util->set_local_bbox(Vec3f(params_.bbox_x, params_.bbox_y, params_.bbox_z));
+
+    // Copy path for thread safety (detached thread may outlive caller's reference)
+    auto path_copy = std::make_shared<std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d>>>(path_3d);
+
+    // Run dilate() in a detached thread with timeout.
+    // Using std::promise + detach (NOT std::async) because std::async's future
+    // destructor blocks until the task completes, defeating the timeout.
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
     RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] dilate path");
-    ellip_decomp_util.dilate(path_3d); // Set max iteration number of 10, do fix the path
+    std::thread([ellip_decomp_util, path_copy, p = std::move(promise)]() mutable {
+      ellip_decomp_util->dilate(*path_copy);
+      p.set_value();
+    }).detach();
+
+    if (future.wait_for(dilate_timeout) == std::future_status::timeout) {
+      RCUTILS_LOG_WARN("[poly_sfc_gen.hpp] dilate() timed out");
+      return false;
+    }
 
     RCUTILS_LOG_INFO("[poly_sfc_gen.hpp] get polyhedrons");
-    poly_vec_ = ellip_decomp_util.get_polyhedrons();
-
-    // std::vector<LinearConstraint3D> poly_constr_vec_new;
-
-    // // Construct poly_constr_vec
-    // for (const auto& poly: poly_vec_)
-    // {
-    //     int num_planes = poly.vs_.size(); // Num of planes from polyhedron
-    //     // Constraint: A_poly * x - b_poly <= 0
-    //     MatDNf<3> A_poly(num_planes, 3);        
-    //     VecDf b_poly(num_planes);               
-
-    //     for (int i = 0; i < num_planes; i++) { // For each plane
-    //         A_poly.row(i) = poly.vs_[i].n_;                  // normal (a,b,c) as in ax+by+cz+d
-    //         b_poly(i) = poly.vs_[i].p_.dot(poly.vs_[i].n_);  // Scalar d obtained from point.dot(normal)
-    //     }
-    //     poly_constr_vec_new.push_back(LinearConstraint3D(A_poly, b_poly));
-    // }
-
-    // poly_constr_vec_ = poly_constr_vec_new;
+    poly_vec_ = ellip_decomp_util->get_polyhedrons();
 
     return true;
   }
