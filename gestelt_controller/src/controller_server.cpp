@@ -936,7 +936,7 @@ void ControllerServer::getControllerCommand()
       if (yaw_first && !(yaw_pose > cmd_yaw(0) - yaw_resolution_ && yaw_pose < cmd_yaw(0) + yaw_resolution_)){ // < 10, > -10 
         RCLCPP_INFO(get_logger(), "[getControllerCommand] Send yaw only first");
         cmd_yaw_prev_ = cmd_yaw;
-        cmd_pos_prev_ = {cmd_pos};
+        cmd_pos_prev_ = cmd_pos;
         cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
         cmd_acc_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
         cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
