@@ -467,7 +467,7 @@ void ControllerServer::computeControl()
 
       if (odomWithinObstacleInflation()){
         RCLCPP_WARN(get_logger(), "Odom is in obstacle");
-        break;
+        continue;
       }
 
       getControllerCommand();
