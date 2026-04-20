@@ -187,7 +187,7 @@ protected:
   /**
    * @brief Computes PV commands when agent is within obstacle inflation
    */
-  void inflationAvoidanceTimerCB();
+  void inflationAvoidance();
 
   /**
    * @brief Called on goal exit
@@ -264,7 +264,6 @@ protected:
   // Timers
   rclcpp::TimerBase::SharedPtr pub_cmd_timer_; // Timer for publishing commands
   rclcpp::TimerBase::SharedPtr goal_cmd_timer_; // Timer for commands to goal
-  rclcpp::TimerBase::SharedPtr inflation_cmd_timer_; // Timer for commands out of inflation
 
   // params
   bool publish_zero_velocity_;
@@ -290,6 +289,9 @@ protected:
   std::vector<Eigen::Vector3d> curr_path_;
   rclcpp::Time last_path_time_;            // When curr_path_ was last updated
   static constexpr double kPathStaleSecs = 2.0; // Hover after this many seconds without a new plan
+
+  // Inflation Avoidance
+  Eigen::Vector3d prev_offset_cmd_ = Eigen::Vector3d(0.0, 0.0, 0.0);
 
   // Previous valid MPC Trajectory
   std::vector<Eigen::Vector3d> cmd_pos_prev_, cmd_vel_prev_, cmd_acc_prev_, cmd_jerk_prev_;

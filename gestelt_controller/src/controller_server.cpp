@@ -240,11 +240,8 @@ ControllerServer::on_configure(const rclcpp_lifecycle::State & state)
                                             std::bind(&ControllerServer::publishCmdTimerCB, this));
   goal_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
                                              std::bind(&ControllerServer::computeGoalCmdTimerCB, this));
-  inflation_cmd_timer_ = this->create_wall_timer((1.0/controller_frequency_) *1000ms, 
-                                             std::bind(&ControllerServer::inflationAvoidanceTimerCB, this));
   pub_cmd_timer_->cancel(); // Stop timer immediately
   goal_cmd_timer_->cancel(); // Stop timer immediately
-  inflation_cmd_timer_->cancel();
 
   return nav2_util::CallbackReturn::SUCCESS;
 }
@@ -268,7 +265,6 @@ ControllerServer::on_activate(const rclcpp_lifecycle::State & /*state*/)
 
   pub_cmd_timer_->reset(); // Starts timer
   goal_cmd_timer_->reset();
-  inflation_cmd_timer_->reset();
 
   auto node = shared_from_this();
   // Add callback for dynamic parameters
@@ -407,7 +403,7 @@ void ControllerServer::computeControl()
   start_computing_goal_ = true;
   RCLCPP_INFO(get_logger(), "Set computeGoalCmdTimerCB() flag");
   inflation_avoidance_ = true;
-  RCLCPP_INFO(get_logger(), "Set inflationAvoidanceTimerCB() flag");
+  RCLCPP_INFO(get_logger(), "Set inflationAvoidance() flag");
 
 
   try {
@@ -465,10 +461,6 @@ void ControllerServer::computeControl()
         break;
       }
 
-      if (odomWithinObstacleInflation()){
-        RCLCPP_WARN(get_logger(), "Odom is in obstacle");
-        continue;
-      }
 
       getControllerCommand();
 
@@ -676,28 +668,28 @@ void ControllerServer::computeGoalCmdTimerCB(){
       for (int dy = -1; dy <= 1; dy++)
       {
         // for (int dz = -1; dz <= 1; dz++){
-        const Eigen::Vector3d cur_pos_temp = Eigen::Vector3d(
+        const Eigen::Vector3d cur_pos_offset = Eigen::Vector3d(
           pose.pose.position.x + ((double)dx * 0.3), 
           pose.pose.position.y + ((double)dy * 0.3),
           pose.pose.position.z
         );
-        const Eigen::Vector3d cur_pos_temp_opp = Eigen::Vector3d(
+        const Eigen::Vector3d cur_pos_offset_opp = Eigen::Vector3d(
           pose.pose.position.x - ((double)dx * 0.3), 
           pose.pose.position.y - ((double)dy * 0.3),
           pose.pose.position.z
         );
 
-        if (occ_map_->withinObstacleInflation(cur_pos_temp) && !(occ_map_->withinObstacleInflation(cur_pos_temp_opp))){
+        if (occ_map_->withinObstacleInflation(cur_pos_offset) && !(occ_map_->withinObstacleInflation(cur_pos_offset_opp))){
           {
             RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] A point 0.3m around odom pose is in inflation"
                                           "(dy,dx): (%d, %d), Point(%.2f, %.2f, %.2f), Opp point(%.2f, %.2f, %.2f)",
                                           dy, dx,
-                                          cur_pos_temp.x(), cur_pos_temp.y(), cur_pos_temp.z(),
-                                          cur_pos_temp_opp.x(), cur_pos_temp_opp.y(), cur_pos_temp_opp.z());
+                                          cur_pos_offset.x(), cur_pos_offset.y(), cur_pos_offset.z(),
+                                          cur_pos_offset.x(), cur_pos_offset_opp.y(), cur_pos_offset_opp.z());
             RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
             std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
             RCLCPP_INFO(get_logger(), "[computeGoalCmdTimerCB] Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
-            const auto deltaVector = cur_pos_ - cur_pos_temp; //vector from cur_pos_temp to cur_pos
+            const auto deltaVector = cur_pos_ - cur_pos_offset; //vector from cur_pos_offset to cur_pos
             Eigen::Vector3d offset_cmd_pos = cur_pos_ + (deltaVector); // direct offset away
           
             RCLCPP_INFO(this->get_logger(), "[computeGoalCmdTimerCB] Setting waypoint to offset from pose to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
@@ -768,114 +760,137 @@ void ControllerServer::computeGoalCmdTimerCB(){
   return;  
 }
 
-void ControllerServer::inflationAvoidanceTimerCB()
+void ControllerServer::inflationAvoidance()
 {
   if (!(inflation_avoidance_ && odomWithinObstacleInflation() && !isGoalReached())){
-    // RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: No computing of inflation avoidance");
+    // RCLCPP_INFO(get_logger(), "[inflationAvoidance]: No computing of inflation avoidance");
     return;
   }
 
-  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
-  std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
-  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
-  geometry_msgs::msg::PoseStamped pose;
-  if (!getRobotPose(pose)) {
-    throw gestelt_core::ControllerTFError("Failed to obtain robot pose");
-  }
-  bool break_flag = false;
-  bool euclidean_search = false;
-  for (int dz = -2; dz <= 2; dz++){
-    if (!euclidean_search){
-      dz = 0;
+  {
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+    std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+    geometry_msgs::msg::PoseStamped pose;
+    if (!getRobotPose(pose)) {
+      throw gestelt_core::ControllerTFError("Failed to obtain robot pose");
     }
+    bool break_flag = false;
+    bool euclidean_search = false;
+    for (int dz = -3; dz <= 2; dz++){
+      int temp_dz = dz;
+      if (!euclidean_search){
+        temp_dz = 0;
+      }
 
-    for (int dx = -1; dx <= 1; dx++)
-    {
-      for (int dy = -1; dy <= 1; dy++)
+      for (int dx = -1; dx <= 1; dx++)
       {
-        // for (int dz = -1; dz <= 1; dz++){
-        const Eigen::Vector3d cur_pos_temp = Eigen::Vector3d(
-          pose.pose.position.x + ((double)dx * inflation_escape_offset_), 
-          pose.pose.position.y + ((double)dy * inflation_escape_offset_),
-          // pose.pose.position.z
-          pose.pose.position.z + ((double)dz * 0.2)
-        );
-        const Eigen::Vector3d cur_pos_temp_opp = Eigen::Vector3d(
-          pose.pose.position.x - ((double)dx * inflation_escape_offset_), 
-          pose.pose.position.y - ((double)dy * inflation_escape_offset_),
-          // pose.pose.position.z
-          pose.pose.position.z + ((double)dz * 0.2)
-        );
-        // if (!occ_map_->inGlobalMap(cur_pos_)){ // Have a catch statement
-        //   RCLCPP_ERROR(get_logger(), "[inflationAvoidanceTimerCB]: Odom Coordinates of (%.2f, %.2f, %.2f) was outside bounds",
-        //                 cur_pos_.x(), cur_pos_.y(), cur_pos_.z());
-        //   break_flag = true;
-        //   break;
-        // }
-        if (occ_map_->withinObstacleInflation(cur_pos_temp) && !(occ_map_->withinObstacleInflation(cur_pos_temp_opp))){
-          RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Finding a free point %.2fm around odom pose out of inflation"
-                                        "(dy,dx,dz): (%d, %d, %d), Point(%.2f, %.2f, %.2f), Opp point(%.2f, %.2f, %.2f)",
-                                        inflation_escape_offset_,
-                                        dy, dx, dz,
-                                        cur_pos_temp.x(), cur_pos_temp.y(), cur_pos_temp.z(),
-                                        cur_pos_temp_opp.x(), cur_pos_temp_opp.y(), cur_pos_temp_opp.z());
-          const auto deltaVector = cur_pos_ - cur_pos_temp; //vector from cur_pos_temp to cur_pos
-          // Eigen::Vector3d offset_cmd_pos = cur_pos_ + (deltaVector); // direct offset away
-          Eigen::Vector3d offset_cmd_pos = Eigen::Vector3d((cur_pos_ + (deltaVector)).x(),
-                                                           (cur_pos_ + (deltaVector)).y(),
-                                                            cur_pos_temp.z()); // direct offset 
-
-          if (!occ_map_->inGlobalMap(offset_cmd_pos)){
-            RCLCPP_ERROR(get_logger(), "[inflationAvoidanceTimerCB]: offset_cmd_pos Coordinates of (%.2f, %.2f, %.2f) was outside bounds",
-                        offset_cmd_pos.x(), offset_cmd_pos.y(), offset_cmd_pos.z());
-            continue;
-          }
-        
-          RCLCPP_INFO(this->get_logger(), "[inflationAvoidanceTimerCB]: Setting waypoint to offset from pose to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
-            pose.pose.position.x,
-            pose.pose.position.y,
-            pose.pose.position.z,
-            offset_cmd_pos.x(),
-            offset_cmd_pos.y(),
-            offset_cmd_pos.z()
+        for (int dy = -1; dy <= 1; dy++)
+        {
+          // for (int dz = -1; dz <= 1; dz++){
+          const Eigen::Vector3d cur_pos_offset = Eigen::Vector3d(
+            pose.pose.position.x + ((double)dx * inflation_escape_offset_), 
+            pose.pose.position.y + ((double)dy * inflation_escape_offset_),
+            pose.pose.position.z + ((double)temp_dz * 0.2)
           );
-          cmd_pos_prev_ = {offset_cmd_pos};
-          cmd_vel_prev_ = {deltaVector};
-          cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-          cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
-          last_valid_cmd_time_ = now();
-          start_publish_cmd_ = true;
-          break_flag = true;
+          const Eigen::Vector3d cur_pos_offset_opp = Eigen::Vector3d(
+            pose.pose.position.x - ((double)dx * inflation_escape_offset_), 
+            pose.pose.position.y - ((double)dy * inflation_escape_offset_),
+            pose.pose.position.z + ((double)temp_dz * 0.2)
+          );
+          // if (!occ_map_->inGlobalMap(cur_pos_)){ // Have a catch statement
+          //   RCLCPP_ERROR(get_logger(), "[inflationAvoidance]: Odom Coordinates of (%.2f, %.2f, %.2f) was outside bounds",
+          //                 cur_pos_.x(), cur_pos_.y(), cur_pos_.z());
+          //   break_flag = true;
+          //   break;
+          // }
+          if (occ_map_->withinObstacleInflation(cur_pos_offset) && !(occ_map_->withinObstacleInflation(cur_pos_offset_opp))){
+            RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Finding a free point %.2fm around odom pose out of inflation"
+                                          "(dy,dx,dz): (%d, %d, %d), Point(%.2f, %.2f, %.2f), Opp point(%.2f, %.2f, %.2f)",
+                                          inflation_escape_offset_,
+                                          dy, dx, temp_dz,
+                                          cur_pos_offset.x(), cur_pos_offset.y(), cur_pos_offset.z(),
+                                          cur_pos_offset_opp.x(), cur_pos_offset_opp.y(), cur_pos_offset_opp.z());
+            const auto deltaVector = cur_pos_ - cur_pos_offset; //vector from cur_pos_offset to cur_pos
+            // Eigen::Vector3d offset_cmd_pos = cur_pos_ + (deltaVector); // direct offset away
+            Eigen::Vector3d offset_cmd_pos = Eigen::Vector3d((cur_pos_ + (deltaVector)).x(),
+                                                             (cur_pos_ + (deltaVector)).y(),
+                                                              cur_pos_offset.z()); // direct offset 
+
+            if (!occ_map_->inGlobalMap(offset_cmd_pos)){
+              RCLCPP_ERROR(get_logger(), "[inflationAvoidance]: offset_cmd_pos Coordinates of (%.2f, %.2f, %.2f) was outside bounds",
+                          offset_cmd_pos.x(), offset_cmd_pos.y(), offset_cmd_pos.z());
+              continue;
+            }
+
+            if (offset_cmd_pos.z() <= inflation_escape_offset_ + 0.2){ // Typically lower than planner inflation
+              RCLCPP_ERROR(get_logger(), "[inflationAvoidance]: offset_cmd_pos Coordinates of (%.2f, %.2f, %.2f) altitude is too low",
+                          offset_cmd_pos.x(), offset_cmd_pos.y(), offset_cmd_pos.z());
+              continue;
+            }
+          
+            RCLCPP_INFO(this->get_logger(), "[inflationAvoidance]: Setting waypoint to offset from pose to offset_cmd_pos (%f, %f, %f), (%f, %f, %f)", 
+              pose.pose.position.x,
+              pose.pose.position.y,
+              pose.pose.position.z,
+              offset_cmd_pos.x(),
+              offset_cmd_pos.y(),
+              offset_cmd_pos.z()
+            );
+            RCLCPP_INFO(this->get_logger(), "[inflationAvoidance]: Registering offset_cmd_pos to prev_offset_cmd_");
+            prev_offset_cmd_ = offset_cmd_pos;
+            
+            cmd_pos_prev_ = {offset_cmd_pos};
+            cmd_vel_prev_ = {deltaVector};
+            cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+            cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+            last_valid_cmd_time_ = now();
+            start_publish_cmd_ = true;
+            break_flag = true;
+            break;
+          }
+          // }
+          // if (break_flag){
+          //   break;
+          // }
+        }
+        if (break_flag){
           break;
         }
-        // }
-        // if (break_flag){
-        //   break;
-        // }
       }
+      euclidean_search = true;
+
       if (break_flag){
         break;
       }
     }
-    euclidean_search = true;
-
     if (break_flag){
-      break;
+      RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+      return;
     }
-  }
-  if (break_flag){
-    RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
-    return;
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock. Area around odom is in inflation");
   }
 
-  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Area around odom is in inflation. Stay at its own odom");
-  cmd_pos_prev_ = {cur_pos_};
-  cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
-  cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
-  cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
-  last_valid_cmd_time_ = now();
-  start_publish_cmd_ = true;
-  RCLCPP_INFO(get_logger(), "[inflationAvoidanceTimerCB]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+  if (prev_offset_cmd_ == Eigen::Vector3d(0.0, 0.0, 0.0) || prev_offset_cmd_.z() < 0.0){
+    throw gestelt_core::NoValidControl("Area around odom is in inflation");
+  }
+  
+  {
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Acquiring mpc_pred_lk(mpc_pred_mtx_) lock");
+    std::lock_guard<std::mutex> mpc_pred_lk(mpc_pred_mtx_);
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Acquired mpc_pred_lk(mpc_pred_mtx_) lock");
+
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Area around odom is in inflation. Use prev_offset_cmd_(%.2f, %.2f %.2f)", 
+                                  prev_offset_cmd_.x(), prev_offset_cmd_.y(), prev_offset_cmd_.z());
+    cmd_pos_prev_ = {prev_offset_cmd_};
+    cmd_vel_prev_ = {prev_offset_cmd_ - cur_pos_};
+    cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf("")) };
+    cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
+    last_valid_cmd_time_ = now();
+    start_publish_cmd_ = true;
+    RCLCPP_INFO(get_logger(), "[inflationAvoidance]: Unlock mpc_pred_lk(mpc_pred_mtx_) lock");
+  }
+  
 }
 
 void ControllerServer::getControllerCommand()
@@ -903,6 +918,12 @@ void ControllerServer::getControllerCommand()
   );
 
   try {
+    if (odomWithinObstacleInflation()){
+      RCLCPP_WARN(get_logger(), "[getControllerCommand]Odom is in obstacle");
+      inflationAvoidance();
+      return;
+    }
+
     std::vector<Eigen::Vector3d> cmd_pos, cmd_vel, cmd_acc, cmd_jerk;
     Eigen::Vector2d cmd_yaw( NAN, NAN);
 
@@ -933,9 +954,13 @@ void ControllerServer::getControllerCommand()
       float yaw_pose = atan2(2.0 * (cur_ori.w()*cur_ori.z() + cur_ori.x()*cur_ori.y()), 
                           1.0 - 2.0 * (cur_ori.y()*cur_ori.y() + cur_ori.z()*cur_ori.z()));
 
-      if (yaw_first && !(yaw_pose > cmd_yaw(0) - yaw_resolution_ && yaw_pose < cmd_yaw(0) + yaw_resolution_)){ // < 10, > -10 
+      float yaw_to_goal = (!curr_path_.empty()) ?
+        static_cast<float>(atan2(curr_path_.back().y() - cur_pos.y(), curr_path_.back().x() - cur_pos.x())) :
+        static_cast<float>(cmd_yaw(0));
+
+      if (yaw_first && !(yaw_pose > yaw_to_goal - yaw_resolution_ && yaw_pose < yaw_to_goal + yaw_resolution_)){ // < 10, > -10 
         RCLCPP_INFO(get_logger(), "[getControllerCommand] Send yaw only first");
-        cmd_yaw_prev_ = cmd_yaw;
+        cmd_yaw_prev_ = {Eigen::Vector2d(yaw_to_goal, cmd_yaw(1))};
         cmd_pos_prev_ = cmd_pos;
         cmd_vel_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
         cmd_acc_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
@@ -971,7 +996,7 @@ void ControllerServer::getControllerCommand()
     const double path_age = (now() - last_path_time_).seconds();
     if (curr_path_.empty() || path_age > kPathStaleSecs) {
       RCLCPP_WARN(get_logger(), "[getControllerCommand]NoValidControl: Path stale (%.1fs) or empty. Hovering at current odom.", path_age);
-      cmd_pos_prev_ = { cur_pos };
+      cmd_pos_prev_ = { cur_pos_ };
       cmd_vel_prev_ = { Eigen::Vector3d(std::nanf(""), std::nanf(""), std::nanf("")) };
       cmd_acc_prev_ = { Eigen::Vector3d(std::nanf(""), std::nanf(""), std::nanf("")) };
       cmd_jerk_prev_ = {Eigen::Vector3d(std::nanf(""),std::nanf(""),std::nanf(""))};
@@ -985,7 +1010,7 @@ void ControllerServer::getControllerCommand()
 
     // Use global path to get out of no valid control //
     for (const auto check_cmd_pos : curr_path_) {
-      const auto deltaVector = check_cmd_pos - cur_pos; //vector from check_cmd_pos to cur_pos
+      const auto deltaVector = check_cmd_pos - cur_pos_; //vector from check_cmd_pos to cur_pos
       const auto delta = deltaVector.squaredNorm();
 
       if ((delta < nearest_cmd_dist) && !(occ_map_->withinObstacleInflation(check_cmd_pos))) {
@@ -1000,7 +1025,7 @@ void ControllerServer::getControllerCommand()
 
     if (curr_path_.empty()){
       RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl: Empty path");
-      nearest_cmd_pos = cur_pos;
+      nearest_cmd_pos = cur_pos_;
     }
 
     if (nearest_cmd_pos.isZero()){
@@ -1009,7 +1034,7 @@ void ControllerServer::getControllerCommand()
                       nearest_cmd_pos.x(),
                       nearest_cmd_pos.y(),
                       nearest_cmd_pos.z());
-      nearest_cmd_pos = cur_pos;
+      nearest_cmd_pos = cur_pos_;
     }
     else{
       RCLCPP_INFO(get_logger(), "[getControllerCommand]NoValidControl nearest cmd_pos_ is set to waypoint of path closest to odom at (%f, %f, %f)",
@@ -1024,7 +1049,7 @@ void ControllerServer::getControllerCommand()
     //set the desired velocity, according to closest waypoint
     static const double MAX_VEL_COMPONENT = 0.25;
     static const double MAX_VEL_COMPONENT_SQ = std::pow(MAX_VEL_COMPONENT, 2);
-    Eigen::Vector3d nearest_cmd_vel = nearest_cmd_pos - cur_pos;
+    Eigen::Vector3d nearest_cmd_vel = nearest_cmd_pos - cur_pos_;
     // Eigen::Vector3d nearest_cmd_vel = -cmd_vel_prev_[0];
 
     if (nearest_cmd_vel.x() > MAX_VEL_COMPONENT)
