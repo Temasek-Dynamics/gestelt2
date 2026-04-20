@@ -10,8 +10,8 @@
                       ".*/uav_state", 
 
                       // Transformations
-                      //"/tf",
-                      //"/tf_static",
+                      "/tf",
+                      "/tf_static",
                     ],
         subscribers: [
                       ".*/point_goal",
