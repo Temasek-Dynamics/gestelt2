@@ -569,8 +569,20 @@ PlannerServer::computePlan()
         if(!occ_map_->worldToMap(current_path_pose_global, current_path_pose_map)){
           throw gestelt_core::PlannerTFError("Unable to transform pose to map frame");
         }
-        if (occ_map_->withinObstacleInflation(current_path_pose_map)){
-          RCLCPP_INFO(get_logger(), "Current plan is in inflation");
+        if (occ_map_->withinObstacleInflation(current_path_pose_map) || current_path_pose_map.z() < occ_map_->getInflation()){
+          if (occ_map_->withinObstacleInflation(current_path_pose_map)){
+            RCLCPP_INFO(get_logger(), "Current plan is in inflation");
+          }
+          else if (current_path_pose_map.z() < occ_map_->getInflation()){
+            RCLCPP_INFO(get_logger(), "Current plan has an altitude at pose(map frame)(%.2f,%.2f,%.2f) lower than %.2fm",
+                                        current_path_pose_map.x(), current_path_pose_map.y(), current_path_pose_map.z(),
+                                        occ_map_->getInflation());
+          }
+          else{
+            RCLCPP_INFO(get_logger(), "Current plan is in inflation and has an altitude at pose(map frame)(%.2f,%.2f,%.2f) lower than %.2fm",
+                                        current_path_pose_map.x(), current_path_pose_map.y(), current_path_pose_map.z(),
+                                        occ_map_->getInflation());
+          }
           update_plan_flag_ = true;
           break;
         }
