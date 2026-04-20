@@ -44,7 +44,7 @@
     "description": "Spawning configs for 1 agent",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.0,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
       [-1.0, 0.0, 0.0]
@@ -57,7 +57,7 @@
     "description": "Spawning configs for 1 agent",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.0,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
       [-1.0, 0.0, 0.0]
@@ -70,7 +70,7 @@
     "description": "Spawning configs for 1 agent",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.0,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
       [1.0, 0.0, 0.0]
@@ -83,7 +83,7 @@
     "description": "Spawning configs for 1 agent",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.0,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
       [1.0, 0.0, 0.0]
@@ -96,7 +96,7 @@
     "description": "Spawning configs for 1 agent",
     "map": "empty_20x20",
     "num_agents": 1,
-    "take_off_height": 1.0,
+    "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
       [0.0, 2.0, 0.0]
