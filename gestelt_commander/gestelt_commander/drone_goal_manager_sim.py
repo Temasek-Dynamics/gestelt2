@@ -106,6 +106,7 @@ class MultiDroneGoals(Node):
                 'effective_goal': None,
                 'publisher': pub,
                 'finished': False,
+                'reached_current_goal': False,
             }
 
             self.publish_flag.append(True)
@@ -133,6 +134,7 @@ class MultiDroneGoals(Node):
             ]
 
     def timer_callback(self):
+        # Phase 1: update each drone's reached_current_goal flag
         for drone_name, drone in self.drones.items():
             if drone['finished']:
                 self.get_logger().info(f'{drone_name} is finished')
@@ -142,48 +144,48 @@ class MultiDroneGoals(Node):
                 self.get_logger().warn(f'Received no odom from {drone_name}')
                 continue
 
-            # Use the effective goal (end of plan) if available,
-            # otherwise we haven't received a plan yet so skip the check
             effective_goal = drone['effective_goal']
             if effective_goal is None:
-                # No plan received yet, publish the goal to trigger planning
+                # No plan received yet — publish goal to trigger planning
                 if self.publish_flag[int(drone_name[-1])]:
                     self.publish_goal(drone, drone['goals'][drone['goal_index']])
-                    # self.publish_flag[int(drone_name[-1])] = False
                 continue
             else:
                 self.publish_flag[int(drone_name[-1])] = False
 
-            current_position = drone['position']
+            if drone['reached_current_goal']:
+                # Already flagged as reached; waiting for other drones
+                continue
 
+            current_position = drone['position']
             dx = effective_goal[0] - current_position[0]
             dy = effective_goal[1] - current_position[1]
             dz = effective_goal[2] - current_position[2]
-
             distance = math.sqrt(dx * dx + dy * dy + dz * dz)
 
             if distance <= self.goal_tolerance:
+                drone['reached_current_goal'] = True
                 self.get_logger().info(
                     f'{drone_name}: reached goal {drone["goal_index"] + 1}/{len(drone["goals"])} '
-                    f'(effective goal: {effective_goal})'
+                    f'(effective goal: {effective_goal}) — waiting for others'
                 )
-                self.publish_flag[int(drone_name[-1])] = True
 
+        # Phase 2: advance all drones only when every active drone has reached its goal
+        active_drones = [(n, d) for n, d in self.drones.items() if not d['finished']]
+        if active_drones and all(d['reached_current_goal'] for _, d in active_drones):
+            self.get_logger().info('All drones reached current goal — advancing to next goal')
+            for drone_name, drone in active_drones:
                 drone['goal_index'] += 1
-                drone['effective_goal'] = None  # Reset for next goal
+                drone['reached_current_goal'] = False
+                drone['effective_goal'] = None
 
                 if drone['goal_index'] >= len(drone['goals']):
                     drone['finished'] = True
                     self.get_logger().info(f'{drone_name}: finished all goals')
-                    continue
-
-                current_goal = drone['goals'][drone['goal_index']]
-                self.get_logger().info(
-                    f'{drone_name}: switching to next goal {current_goal}'
-                )
-            if self.publish_flag[int(drone_name[-1])]:
-                self.publish_goal(drone, drone['goals'][drone['goal_index']])
-                self.publish_flag[int(drone_name[-1])] = False
+                else:
+                    next_goal = drone['goals'][drone['goal_index']]
+                    self.get_logger().info(f'{drone_name}: switching to next goal {next_goal}')
+                    self.publish_goal(drone, next_goal)
 
     def publish_goal(self, drone, goal):
         msg = PoseStamped()
