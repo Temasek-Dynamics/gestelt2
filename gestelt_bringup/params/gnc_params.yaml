@@ -52,7 +52,7 @@ controller_server:
       mpc:
         # MPC parameters
         horizon: 20
-        time_step: 0.4 #[s]
+        time_step: 0.2 #[s]
         # Objective Weights
         R_p: 1000.0 # Error from reference position
         R_v: 0.0  # Velocity magnitude
@@ -104,7 +104,7 @@ global_occ_map:
     update_local_map_frequency: 12.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 8.0   # [Hz] Frequency to visualize the local map
 
-    prediction_horizon_m: 1.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
+    prediction_horizon_m: 3.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
                               # used to inflate the occupancy map along their predicted trajectory
                               # Chnage this along with ref_dist from controller_server
 
@@ -153,7 +153,7 @@ local_occ_map:
     update_local_map_frequency: 12.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 8.0   # [Hz] Frequency to visualize the local map
 
-    prediction_horizon_m: 1.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
+    prediction_horizon_m: 3.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
                               # used to inflate the occupancy map along their predicted trajectory
                               # Change this along with ref_dist from controller_server
 
