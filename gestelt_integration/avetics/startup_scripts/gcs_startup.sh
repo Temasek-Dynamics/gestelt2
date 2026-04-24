@@ -55,7 +55,7 @@ then
     tmux send-keys -t $SESSION:0.1 "$RVIZ" C-m 
     tmux send-keys -t $SESSION:0.2 "$ZENOH_GCS" 
     tmux send-keys -t $SESSION:0.3 "$RESET_MAP" 
-    tmux send-keys -t $SESSION:0.4 "$STATIC_TRANSFORM"
+    tmux send-keys -t $SESSION:0.4 "$STATIC_TRANSFORM" C-m
 fi
 
 # Attach session on the first window
