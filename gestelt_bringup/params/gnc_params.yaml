@@ -1,9 +1,9 @@
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 5.0
+    expected_planner_frequency: 10.0
     planner_plugins: ["GridBased"]
     occ_map_update_timeout: 1.0
-    eff_factor: 0.80 # Effiecient factor for updating the astar path
+    eff_factor: 0.80 # Efficient factor for updating the astar path
 
     print_runtime: true # Print runtime of computing path
 

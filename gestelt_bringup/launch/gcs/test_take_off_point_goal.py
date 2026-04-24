@@ -66,7 +66,7 @@ def launch_setup(context):
             {'scenario': scenario.name},
             {'init_delay': 1.0},
             {'point_goal_height': 1.2},
-            {'global_replanning_freq': 5.0},
+            {'global_replanning_freq': 10.0},
             {'drone_id' : int(_drone_id)},
         ]
     )
