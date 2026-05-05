@@ -30,6 +30,7 @@
                       //"/tf_static",
                     ],
         subscribers: [
+                      "/goal",
                       //".*/point_goal",
                       //".*/uav_command",
                       //".*/reset_map",
