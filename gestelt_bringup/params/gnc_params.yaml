@@ -18,7 +18,7 @@ planner_server:
 controller_server:
   ros__parameters:
     controller_frequency: 50.0 # [hz] Frequency to call controller
-    inflation_escape_offset: 0.5 # [m] Sampling distance to find a free point outside obstacle inflation zones. To be of the same value as static_inflation
+    inflation_escape_offset: 0.3 # [m] Sampling distance to find a free point outside obstacle inflation zones. To be of the same value as static_inflation
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
@@ -104,7 +104,7 @@ global_occ_map:
     update_local_map_frequency: 12.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 8.0   # [Hz] Frequency to visualize the local map
 
-    prediction_horizon_m: 3.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
+    prediction_horizon_m: 2.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
                               # used to inflate the occupancy map along their predicted trajectory
                               # Chnage this along with ref_dist from controller_server
 
@@ -127,7 +127,7 @@ global_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.2   # [m] Resolution of voxel
-      static_inflation: 0.7    # [m] Static obstacle inflation
+      static_inflation: 0.5    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor
@@ -153,7 +153,7 @@ local_occ_map:
     update_local_map_frequency: 12.0 # [Hz] Frequency to update the local map
     viz_map_frequency: 8.0   # [Hz] Frequency to visualize the local map
 
-    prediction_horizon_m: 3.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
+    prediction_horizon_m: 2.0 # [m] Lookahead distance for predicting the future path of other observable drones based on their velocity, 
                               # used to inflate the occupancy map along their predicted trajectory
                               # Change this along with ref_dist from controller_server
 
@@ -176,7 +176,7 @@ local_occ_map:
       occupancy_threshold_log: 0.5 # 
 
       resolution: 0.1   # [m] Resolution of voxel
-      static_inflation: 0.5    # [m] Static obstacle inflation
+      static_inflation: 0.3    # [m] Static obstacle inflation
       ground_height: 0.0  # [m] Height considered to be ground. Anything below this value leads to a potential collision
       # dynamic_inflation: 0.6    # Unused [m] Dynamic obstacle inflation
       max_range: 5.0   # [m] Maximum range of sensor
