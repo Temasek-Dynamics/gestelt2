@@ -31,6 +31,7 @@ PlannerServer::PlannerServer(const rclcpp::NodeOptions &options)
   declare_parameter("expected_planner_frequency", 1.0);
   declare_parameter("action_server_result_timeout", 10.0);
   declare_parameter("eff_factor", 0.80);
+  declare_parameter("inflation_tolerance", 0.1);
   declare_parameter("occ_map_update_timeout", 1.0);
   declare_parameter("print_runtime", rclcpp::ParameterValue(false));
 
@@ -136,6 +137,7 @@ PlannerServer::on_configure(const rclcpp_lifecycle::State & /*state*/)
   occ_map_update_timeout_ = rclcpp::Duration::from_seconds(occ_map_update_timeout_dbl);
 
   get_parameter("eff_factor", efficient_factor);
+  get_parameter("inflation_tolerance", inflation_tolerance);
 
   // Create the action servers for path planning to a pose and through poses
   action_server_pose_ = std::make_unique<ActionServerToPose>(
@@ -571,6 +573,37 @@ PlannerServer::computePlan()
         }
         if (occ_map_->withinObstacleInflation(current_path_pose_map) || current_path_pose_map.z() < occ_map_->getInflation()){
           if (occ_map_->withinObstacleInflation(current_path_pose_map)){
+            RCLCPP_INFO(get_logger(), "Current plan is in inflation. Checking area around current_path_pose_map");
+
+            bool inflation_break_flag = false;
+            for (int dz = -1; dz <= 1; dz++){
+              for (int dy = -1; dy <= 1; dy++){
+                for (int dx = -1; dx <= 1; dx++){
+                  const Eigen::Vector3d path_pose_offset = Eigen::Vector3d(
+                                                        current_path_pose_map.x() + ((double)dx * inflation_tolerance),
+                                                        current_path_pose_map.y() + ((double)dy * inflation_tolerance),
+                                                        current_path_pose_map.z() + ((double)dz * inflation_tolerance));
+
+                  if (!(occ_map_->withinObstacleInflation(path_pose_offset))){
+                    RCLCPP_INFO(get_logger(), "Current plan has a pose(map frame)(%.2f,%.2f,%.2f) not fully in inflation. Offset point not in inflation is (%.2f, %.2f, %.2f)",
+                                                current_path_pose_map.x(), current_path_pose_map.y(), current_path_pose_map.z(),
+                                                path_pose_offset.x(), path_pose_offset.y(), path_pose_offset.z());
+
+                    inflation_break_flag = true;
+                    break;
+                  }
+                }
+                if (inflation_break_flag){
+                  break;
+                }
+              }
+              if (inflation_break_flag){
+                break;
+              }
+            }
+            if (inflation_break_flag){
+              continue; // Get out from checking current pose, onto next pose
+            }
             RCLCPP_INFO(get_logger(), "Current plan is in inflation");
           }
           else if (current_path_pose_map.z() < occ_map_->getInflation()){

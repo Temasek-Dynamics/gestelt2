@@ -4,13 +4,14 @@ planner_server:
     planner_plugins: ["GridBased"]
     occ_map_update_timeout: 1.0
     eff_factor: 0.80 # Efficient factor for updating the astar path
+    inflation_tolerance: 0.1 # [m] For checking whether path is fully in inflation
 
     print_runtime: true # Print runtime of computing path
 
     GridBased:
       plugin: "astar_planner::AStarPlanner"
       tolerance: 0.5
-      max_iterations: 99999
+      max_iterations: 9999
       tie_breaker: 1.00001
       allow_unknown: true
       # cost_function_type: 1 # [Unimplemented] To switch between different cost metrics such as L1 and L2 cost
