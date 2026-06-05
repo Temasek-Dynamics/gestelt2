@@ -23,7 +23,12 @@ from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch_ros.actions import Node, PushRosNamespace, ComposableNodeContainer, SetParameter
 from launch_ros.descriptions import ComposableNode
 
-SCENARIO_NAME = "single_drone_test"
+drone_ns = os.environ.get('DRONE_NS')
+if drone_ns is not None:
+    print("Retrieved DRONE_NS from OBC environment. DRONE_NS:" + drone_ns)
+else:
+    drone_ns = '0'
+    print("Unable to retrieve DRONE_NS from OBC environment. Defaulting to drone_ns:" + drone_ns)
 
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
@@ -41,7 +46,6 @@ class Scenario:
         self.name = scenario_name
         self.map = scenario_dict.get("map", None)
         self.spawns_pos = scenario_dict.get("spawns_pos", None )
-        self.goals_pos = scenario_dict.get("goals_pos", None )
         self.num_agents = scenario_dict.get("num_agents", None )
 
         self.checks()
@@ -50,10 +54,7 @@ class Scenario:
         if (len(self.spawns_pos) != self.num_agents):
             raise Exception("Number of spawn positions does not match number of agents!")
 
-        if (len(self.goals_pos) != self.num_agents):
-            raise Exception("Number of goal positions does not match number of agents!")
-
-        if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
+        if self.map == None or self.spawns_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
 # def generate_launch_description():
@@ -63,17 +64,6 @@ def launch_setup(context):
     SCENARIO_NAME = LaunchConfiguration('scenario_name').perform(context)
     _drone_id = LaunchConfiguration('_drone_id').perform(context)
 
-    
-    declare_scenario_config_cmd = DeclareLaunchArgument(
-        'scenario_name',
-        default_value='single_drone_test',
-        description='Select a scenario containing an empty or fake map and spawn position',
-    )
-    declare_drone_id_cmd = DeclareLaunchArgument(
-        '_drone_id',
-        default_value='0',
-        description='Drone identity for the drone using this script',
-    )
     ## Declare launch arguments ##
 
     scenario = Scenario(
@@ -145,22 +135,15 @@ def launch_setup(context):
         shell=True
     )
 
-    # # Create the launch description and populate
-    # ld = LaunchDescription()
-
-    # ld.add_action(declare_namespace_cmd)
-    # ld.add_action(declare_use_namespace_cmd)
-    # ld.add_action(declare_params_file_cmd)
-    # ld.add_action(declare_use_sim_time_cmd)
-
-    # ld.add_action(declare_rviz_config_file_cmd)
-    # ld.add_action(declare_use_rviz_cmd)
-
-    # ld.add_action(xrce_agent)
-    # ld.add_action(start_rviz_cmd)
-
     drone_id = int(_drone_id)
     ns = "d" + str(drone_id)
+
+    spawn_index = drone_id
+    if str(SCENARIO_NAME) == 'single_drone_real_flight':
+        spawn_index = 0
+        print("Start single drone real flight. Scenario index is ", spawn_index)
+    else:
+        print("Start " +  str(SCENARIO_NAME) + ". Scenario index is ", spawn_index)
 
     global_frame = "world" # Fixed
     map_frame = ns + "_map"
@@ -194,10 +177,10 @@ def launch_setup(context):
                                 namespace = ns,
                                 executable = "static_transform_publisher",
                                 output="own_log",
-                                arguments = [str(scenario.spawns_pos[0][0]), 
-                                            str(scenario.spawns_pos[0][1]), 
+                                arguments = [str(scenario.spawns_pos[spawn_index][0]), 
+                                            str(scenario.spawns_pos[spawn_index][1]), 
                                             "0", 
-                                            str(scenario.spawns_pos[0][2]), 
+                                            str(scenario.spawns_pos[spawn_index][2]), 
                                             "0", "0", 
                                             global_frame, map_frame],
                             ),
@@ -245,11 +228,32 @@ def launch_setup(context):
                             ),
                         ]
                     )
+
+    static_transforms = []
+    for spawn_id in range(scenario.num_agents):
+        if drone_id is spawn_id:
+            continue
+        
+        other_ns = "d" + str(spawn_id)
+        other_map_frame = other_ns + "_map"
+
+        static_transform = Node( 
+                                package = "tf2_ros", 
+                                name=other_ns+'_world_to_map_tf',
+                                executable = "static_transform_publisher",
+                                output="own_log",
+                                arguments = [str(scenario.spawns_pos[spawn_id][0]), 
+                                            str(scenario.spawns_pos[spawn_id][1]), 
+                                            "0", 
+                                            str(scenario.spawns_pos[spawn_id][2]), 
+                                            "0", "0", 
+                                            global_frame, other_map_frame],
+                            )
+
+        static_transforms.append(static_transform)
     
 
     return [
-        declare_scenario_config_cmd,
-        declare_drone_id_cmd,
         declare_namespace_cmd,
         declare_use_namespace_cmd,
         declare_params_file_cmd,
@@ -257,16 +261,30 @@ def launch_setup(context):
 
         declare_rviz_config_file_cmd,
         declare_use_rviz_cmd,
-        # xrce_agent,
+        # xrce_agent, # Disabled because the OBC itself has xrce agent running as a service
         # start_rviz_cmd,
 
         drone_bringup,  
+        *static_transforms
     ]
 
 def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)
 
-    ld = LaunchDescription()
+    launch_args = [
+        DeclareLaunchArgument(
+            'scenario_name',
+            default_value='single_drone_real_flight',
+            description='Select a scenario containing an empty or fake map and spawn position',
+        ),
+        DeclareLaunchArgument(
+            '_drone_id',
+            default_value=drone_ns,
+            description='Drone identity for the drone using this script',
+        )
+    ]
+
+    ld = LaunchDescription(launch_args)
     ld.add_action(opfunc)
 
     return ld

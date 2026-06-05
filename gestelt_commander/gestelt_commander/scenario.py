@@ -41,7 +41,6 @@ class Scenario:
         self.name = scenario_name
         self.map = scenario_dict.get("map", None)
         self.spawns_pos = scenario_dict.get("spawns_pos", None )
-        self.goals_pos = scenario_dict.get("goals_pos", None )
         self.num_agents = scenario_dict.get("num_agents", None )
         self.take_off_height = scenario_dict.get("take_off_height", None )
         self.send_goals = scenario_dict.get("send_goals", None )
@@ -52,8 +51,5 @@ class Scenario:
         if (len(self.spawns_pos) != self.num_agents):
             raise Exception("Number of spawn positions does not match number of agents!")
 
-        if (len(self.goals_pos) != self.num_agents):
-            raise Exception("Number of goal positions does not match number of agents!")
-
-        if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
+        if self.map == None or self.spawns_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")

@@ -30,7 +30,6 @@ class Scenario:
         self.name = scenario_name
         self.map = scenario_dict.get("map", None)
         self.spawns_pos = scenario_dict.get("spawns_pos", None )
-        self.goals_pos = scenario_dict.get("goals_pos", None )
         self.num_agents = scenario_dict.get("num_agents", None )
 
         self.checks()
@@ -39,41 +38,42 @@ class Scenario:
         if (len(self.spawns_pos) != self.num_agents):
             raise Exception("Number of spawn positions does not match number of agents!")
 
-        if (len(self.goals_pos) != self.num_agents):
-            raise Exception("Number of goal positions does not match number of agents!")
-
-        if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
+        if self.map == None or self.spawns_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
 def launch_setup(context):
     scenario_name = LaunchConfiguration('scenario_name').perform(context)
-    _drone_id = LaunchConfiguration('_drone_id').perform(context)
 
     scenario = Scenario(os.path.join(
         get_package_share_directory('gestelt_commander'), 'scenarios.json'),
         scenario_name
     )
 
-    # Mission node: Sends goals to agents
-    mission_node = Node(
-        name='mission_node',
-        package='gestelt_commander',
-        executable='test_point_goal_sim',
-        output='screen',
-        emulate_tty=False,
-        shell=True,
-        parameters = [
-            {'scenario': scenario.name},
-            {'init_delay': 1.0},
-            {'point_goal_height': 1.2},
-            {'global_replanning_freq': 10.0},
-            {'drone_id' : int(_drone_id)},
-        ]
-    )
+    mission_nodes = []
+
+    for drone_id in range(scenario.num_agents):
+        # Mission node: Sends goals to agents
+        mission_node = Node(
+            name='mission_node',
+            package='gestelt_commander',
+            executable='test_point_goal_sim',
+            output='screen',
+            emulate_tty=False,
+            shell=True,
+            parameters = [
+                {'scenario': scenario.name},
+                {'init_delay': 1.0},
+                {'point_goal_height': 1.2},
+                {'global_replanning_freq': 10.0},
+                {'drone_id' : int(drone_id)},
+            ]
+        )
+
+        mission_nodes.append(mission_node)
 
     return [
         SetEnvironmentVariable(name='PYTHONUNBUFFERED', value='0'),
-        mission_node,
+        *mission_nodes,
     ]
 
 def generate_launch_description():
@@ -81,7 +81,6 @@ def generate_launch_description():
 
     launch_args = [
         DeclareLaunchArgument('scenario_name', default_value='single_drone_test'),
-        DeclareLaunchArgument('_drone_id', default_value='0'),
     ]
 
     ld = LaunchDescription(launch_args)

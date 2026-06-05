@@ -909,9 +909,14 @@ void OccMap::swarmOdomCB(const nav_msgs::msg::Odometry::UniquePtr msg, const int
   RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from d%d at %.2f, %.2f, %.2f", drone_id, pose(0), pose(1), pose(2));
 
   try {
+    auto tf = tf_buffer_->lookupTransform(
+      map_frame_, msg->header.frame_id,
+      tf2::TimePointZero,
+      tf2_ros::fromRclcpp(rclcpp::Duration::from_seconds(0.5)));
+
     // Set fixed map origin (map to map so no need z)
-    pose(0) = pose(0) - droneScenario[drone_id_].spawn_pos[0] + droneScenario[drone_id].spawn_pos[0];
-    pose(1) = pose(1) - droneScenario[drone_id_].spawn_pos[1] + droneScenario[drone_id].spawn_pos[1];
+    pose(0) += tf.transform.translation.x;
+    pose(1) += tf.transform.translation.y;
 
     RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Obtained pose from d%d after transform at %.2f, %.2f, %.2f", drone_id, pose(0), pose(1), pose(2));
   }

@@ -106,41 +106,25 @@ class MissionManager(Node):
         )
 
         # Publish to individual UAV
-        self.uav_cmd_pubs = []
-        for id in range(self.scenario.num_agents):
-            id = self.drone_id
-            self.uav_cmd_pubs.append(self.create_publisher(
-                                    AllUAVCommand, '/d' + str(id) + '/uav_command', 
-                                    rclpy.qos.qos_profile_services_default))
+        self.uav_cmd_pub = self.create_publisher(
+            AllUAVCommand, '/d' + str(self.drone_id) + '/uav_command', rclpy.qos.qos_profile_services_default)
 
         # Publisher for resetting occupancy map and uav goals
-        self.occ_map_pubs_ = []
-        self.goals_pubs_ = []
-        for id in range(self.scenario.num_agents):
-            id = self.drone_id
-            if self.simulation:
-                self.occ_map_pubs_.append(self.create_publisher(
-                                        Empty, 'd' + str(id) + '/reset_map', 
-                                        rclpy.qos.qos_profile_services_default))
-            else:
-                self.occ_map_pubs_.append(self.create_publisher(
-                                        Empty, '/reset_map', 
-                                        rclpy.qos.qos_profile_services_default))
+        if self.simulation:
+            self.occ_map_pub_ = (self.create_publisher(
+                Empty, 'd' + str(self.drone_id) + '/reset_map', rclpy.qos.qos_profile_services_default))
+        else:
+            self.occ_map_pub_ = (self.create_publisher(
+                Empty, '/reset_map', rclpy.qos.qos_profile_services_default))
 
         # Initialize data structures
-        self.uav_states = []
-        for id in range(self.scenario.num_agents):
-            id = self.drone_id
-            self.uav_states.append(UAVState.UNDEFINED)
+        self.uav_state = UAVState.UNDEFINED
 
         """
         Initialize navigator object for interfacing with planner and controller server
         """
-        self.navigators = []
-        for id in range(self.scenario.num_agents):
-            id = self.drone_id
-            self.navigators.append(BasicNavigator(node_name='basic_navigator', 
-                                                  namespace='/d' + str(id)))
+        # self.navigators = []
+        self.navigator = BasicNavigator(node_name='basic_navigator', namespace='/d' + str(self.drone_id))
 
         # Navigator without namespace
         self.navigator_no_ns = BasicNavigator(node_name='basic_navigator')
@@ -173,7 +157,7 @@ class MissionManager(Node):
                 throttle_duration_sec=1.0)
 
             if self.simulation:
-                navigator = self.navigators[0]
+                navigator = self.navigator
             else:
                 navigator = self.navigator_no_ns
 
@@ -216,13 +200,11 @@ class MissionManager(Node):
         # Publish to all drones
         # Wait for drone states to be req_state before triggering state transition
         if req_state != None:
-            for id in range(self.scenario.num_agents):
-                id = self.drone_id
-                while not self.isInReqState(id, req_state):
-                    time.sleep(1.0)
-                    retry_num += 1
-                    if (retry_num > self.max_retries):
-                        return False
+            while not self.isInReqState(self.drone_id, req_state):
+                time.sleep(1.0)
+                retry_num += 1
+                if (retry_num > self.max_retries):
+                    return False
 
         msg = AllUAVCommand()
         msg.command = command
@@ -253,22 +235,18 @@ class MissionManager(Node):
         # Publish to all drones
         # Wait for drone states to be req_state before triggering state transition
         if req_state != None:
-            for id in range(self.scenario.num_agents):
-                id = self.drone_id
-                while not self.isInReqState(id, req_state):
-                    time.sleep(1.0)
-                    retry_num += 1
-                    if (retry_num > self.max_retries):
-                        return False
+            while not self.isInReqState(self.drone_id, req_state):
+                time.sleep(1.0)
+                retry_num += 1
+                if (retry_num > self.max_retries):
+                    return False
 
         msg = AllUAVCommand()
         msg.command = command
         msg.value = value
         msg.mode = mode
 
-        for i in range(self.scenario.num_agents):
-            for uav_cmd_pub in self.uav_cmd_pubs:
-                uav_cmd_pub.publish(msg)
+        self.uav_cmd_pub.publish(msg)
 
         self.get_logger().info(f"Commanded all drones via '/dx/uav_command': (cmd:{command}, value:{value}, mode:{mode})")
 
@@ -280,30 +258,30 @@ class MissionManager(Node):
         if not self.enable_auto_planning:
             return
 
-        for id in range(self.scenario.num_agents):
-            id = self.drone_id
-            ns = '/d' + str(id)
-            # navigator = self.navigators[0]
+        id = self.drone_id
+        ns = '/d' + str(id)
 
-            self.get_logger().info(f"Getting global plan to goal "
-                f"({self.goal_pose.pose.position.x:.2f}, {self.goal_pose.pose.position.y:.2f}, {self.goal_pose.pose.position.z:.2f})...",
-                throttle_duration_sec=1.0)
+        self.get_logger().info(f"Getting global plan to goal "
+            f"({self.goal_pose.pose.position.x:.2f}, {self.goal_pose.pose.position.y:.2f}, {self.goal_pose.pose.position.z:.2f})...",
+            throttle_duration_sec=1.0)
 
-            if self.simulation:
-                navigator = self.navigators[0]
-            else:
-                navigator = self.navigator_no_ns
+        if self.simulation:
+            navigator = self.navigator
+        else:
+            navigator = self.navigator_no_ns
 
-            # sanity check a valid path exists
-            gbl_path = navigator.getPath(PoseStamped(), self.goal_pose, 
-                                            planner_id='GridBased', use_start=False)
-            if gbl_path == None:
-                self.get_logger().warn("Global path planning failed, not sending reference plan to controller")
-                continue
-            self.get_logger().info(f"[d{str(id)}.pubScenarioGoals]Robot current position: {gbl_path.poses[0].pose.position.x:.2f}, {gbl_path.poses[0].pose.position.y:.2f}, {gbl_path.poses[0].pose.position.z:.2f}")
+        # sanity check a valid path exists
+        gbl_path = navigator.getPath(PoseStamped(), self.goal_pose, 
+                                        planner_id='GridBased', use_start=False)
 
-            # Request for controller to follow global path
-            navigator.followPath(gbl_path)
+        if gbl_path == None:
+            self.get_logger().warn("Global path planning failed, not sending reference plan to controller")
+            # continue
+            return
+        self.get_logger().info(f"[d{str(id)}.pubScenarioGoals]Robot current position: {gbl_path.poses[0].pose.position.x:.2f}, {gbl_path.poses[0].pose.position.y:.2f}, {gbl_path.poses[0].pose.position.z:.2f}")
+        
+        # Request for controller to follow global path
+        navigator.followPath(gbl_path)
 
     def pointGoalCallback(self, msg):
         """Callback on point goal topic from RVIZ
@@ -343,11 +321,9 @@ class MissionManager(Node):
     def resetOccMap(self):
         """Reset occupancy map
         """
-        for id in range(self.scenario.num_agents):
-            id = self.drone_id
-            self.get_logger().info("Resetting occ map")
-            self.occ_map_pubs_[0].publish(Empty())
-            self.get_logger().info("Reset occ map")
+        self.get_logger().info("Resetting occ map")
+        self.occ_map_pub_.publish(Empty())
+        self.get_logger().info("Reset occ map")
 
     def isInReqState(self, id, req_state):
         """Check if UAV with specified id is in required state
@@ -374,12 +350,12 @@ class MissionManager(Node):
             self.get_logger().error(f"Did not receive message from {state_topic}")
             return False
         
-        self.uav_states[0] = msg.state
+        self.uav_state = msg.state
 
         # if (not in_req_state):
         #     self.get_logger().info(f'Drone{id} is in state {msg.state}. Not in required state {req_state}')
 
-        return (self.uav_states[0] == req_state)
+        return (self.uav_state == req_state)
 
     def waitForReqState(self, req_state, max_retries=20):
         """Wait until the UAV state matches the required state
@@ -392,14 +368,12 @@ class MissionManager(Node):
         self.get_logger().info(f"Waiting for required state: {req_state} ...")
 
         if req_state != None:
-            for id in range(self.scenario.num_agents):
-                id = self.drone_id
-                while not self.isInReqState(id, req_state):
-                    time.sleep(1.0)
-                    retry_num += 1
-                    if (retry_num > max_retries):
-                        self.get_logger().info(f"Failed to wait for required state: {req_state} ...")
-                        return False
+            while not self.isInReqState(self.drone_id, req_state):
+                time.sleep(1.0)
+                retry_num += 1
+                if (retry_num > max_retries):
+                    self.get_logger().info(f"Failed to wait for required state: {req_state} ...")
+                    return False
                     
         self.get_logger().info(f"All drones in required state: {req_state} ...")
                     

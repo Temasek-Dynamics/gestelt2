@@ -14,6 +14,13 @@ from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node
 
+drone_ns = os.environ.get('DRONE_NS')
+if drone_ns is not None:
+    print("Retrieved DRONE_NS from OBC environment. DRONE_NS:" + drone_ns)
+else:
+    drone_ns = '0'
+    print("Unable to retrieve DRONE_NS from OBC environment. Defaulting to drone_ns:" + drone_ns)
+
 class Scenario:
     """Scenario class that contains all the attributes of a scenario, used to start the fake_map
     and define the number of drones and their spawn positions
@@ -30,7 +37,6 @@ class Scenario:
         self.name = scenario_name
         self.map = scenario_dict.get("map", None)
         self.spawns_pos = scenario_dict.get("spawns_pos", None )
-        self.goals_pos = scenario_dict.get("goals_pos", None )
         self.num_agents = scenario_dict.get("num_agents", None )
 
         self.checks()
@@ -39,10 +45,7 @@ class Scenario:
         if (len(self.spawns_pos) != self.num_agents):
             raise Exception("Number of spawn positions does not match number of agents!")
 
-        if (len(self.goals_pos) != self.num_agents):
-            raise Exception("Number of goal positions does not match number of agents!")
-
-        if self.map == None or self.spawns_pos == None or self.goals_pos == None or self.num_agents == None:
+        if self.map == None or self.spawns_pos == None or self.num_agents == None:
             raise Exception("map_name and/or spawns_pos field does not exist!")
 
 def launch_setup(context):
@@ -80,8 +83,8 @@ def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)
 
     launch_args = [
-        DeclareLaunchArgument('scenario_name', default_value='single_drone_test'),
-        DeclareLaunchArgument('_drone_id', default_value='0'),
+        DeclareLaunchArgument('scenario_name', default_value='single_drone_real_flight'),
+        DeclareLaunchArgument('_drone_id', default_value=drone_ns),
     ]
 
     ld = LaunchDescription(launch_args)
