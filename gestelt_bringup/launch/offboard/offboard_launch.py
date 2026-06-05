@@ -27,7 +27,7 @@ drone_ns = os.environ.get('DRONE_NS')
 if drone_ns is not None:
     print("Retrieved DRONE_NS from OBC environment. DRONE_NS:" + drone_ns)
 else:
-    drone_ns = '0'
+    drone_ns = 'd0'
     print("Unable to retrieve DRONE_NS from OBC environment. Defaulting to drone_ns:" + drone_ns)
 
 class Scenario:
@@ -279,7 +279,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             '_drone_id',
-            default_value=drone_ns,
+            default_value=drone_ns[-1],
             description='Drone identity for the drone using this script',
         )
     ]

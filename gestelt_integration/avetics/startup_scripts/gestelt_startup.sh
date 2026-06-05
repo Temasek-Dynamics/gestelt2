@@ -30,11 +30,22 @@ VILOTA_BRIDGE="ros2 launch gestelt_bringup vilota_launch.py"
 
 # VILOTA_VIO_ONLY="ros2 run vision vio_bridge_px4"
 
-# Start gestelt nodes (Add alias into bashrc)
-GESTELT_NODE="start_offboard"
+if [ -z "$SCENARIO_NAME" ]; then
+    echo "No scenario name. Flying as single drone"
 
-# Start mission node
-MISSION_NODES="start_takeoff"
+    # Start gestelt nodes
+    GESTELT_NODE="ros2 launch gestelt_bringup offboard_launch.py"
+    # Start mission node
+    MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py"
+
+else
+    echo "Using $SCENARIO_NAME as scenario"
+    # Start gestelt nodes
+    GESTELT_NODE="ros2 launch gestelt_bringup offboard_launch.py scenario_name:=$SCENARIO_NAME"
+    # Start mission node
+    MISSION_NODES="ros2 launch gestelt_bringup test_take_off_point_goal.py scenario_name:=$SCENARIO_NAME"
+
+fi
 
 # Record bag
 RECORD_ROSBAG="ros2 launch gestelt_bringup record_rosbag_local.py"

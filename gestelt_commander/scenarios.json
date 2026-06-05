@@ -12,13 +12,15 @@
   "multi_drone_real_flight": {
     "description": "Multi Drone Testing For Real Flight",
     "map": "empty_20x20",
-    "num_agents": 3,
+    "num_agents": 5,
     "take_off_height": 1.2,
     "send_goals": false,
     "spawns_pos": [
       [-1.0, 0.0, 0.0],
-      [1.0, 0.0, 0.0],
-      [0.0, 2.0, 0.0]
+      [-2.0, 0.0, 0.0],
+      [2.0, 0.0, 0.0],
+      [0.0, 2.0, 0.0],
+      [0.0, 1.0, 0.0]
     ]
   },
   
@@ -157,75 +159,6 @@
       [-3.0, -0.15, 1.2]
     ]
   },
-
-
-  "start_1d_zero": {
-    "description": "Spawning configs for 1 agent",
-    "map": "Flight_arena_2_obs",
-    "num_agents": 1,
-    "take_off_height": 1.2,
-    "send_goals": false,
-    "spawns_pos": [
-      [-2.0, -3.0, 0.0]
-    ],
-    "goals_pos": [
-      [3.0, 0.15, 1.0]
-    ]
-  },
-  "start_1d_one": {
-    "description": "Spawning configs for 1 agent",
-    "map": "Flight_arena_2_obs",
-    "num_agents": 1,
-    "take_off_height": 1.2,
-    "send_goals": false,
-    "spawns_pos": [
-      [2.0, -3.0, 0.0]
-    ],
-    "goals_pos": [
-      [-3.0, -0.15, 1.0]
-    ]
-  },
-  "start_1d_two": {
-    "description": "Spawning configs for 1 agent",
-    "map": "Flight_arena_2_obs",
-    "num_agents": 1,
-    "take_off_height": 1.2,
-    "send_goals": false,
-    "spawns_pos": [
-      [0.0, -2.0, 0.0]
-    ],
-    "goals_pos": [
-      [0.15, -3.0, 1.0]
-    ]
-  },
-  "start_1d_three": {
-    "description": "Spawning configs for 1 agent",
-    "map": "empty_20x20",
-    "num_agents": 1,
-    "take_off_height": 1.0,
-    "send_goals": false,
-    "spawns_pos": [
-      [0.0, 2.0, 0.0]
-    ],
-    "goals_pos": [
-      [-6.0, -0.15, 1.2]
-    ]
-  },
-  "start_1d_four": {
-    "description": "Spawning configs for 1 agent",
-    "map": "empty_20x20",
-    "num_agents": 1,
-    "take_off_height": 1.0,
-    "send_goals": false,
-    "spawns_pos": [
-      [1.0, 2.0, 0.0]
-    ],
-    "goals_pos": [
-      [-6.0, -0.15, 1.2]
-    ]
-  },
-
-  
   "goals_2d_0": {
     "description": "First set of goals for 2 agents",
     "map": "empty_20x20",
