@@ -194,14 +194,23 @@ python3 ~/PX4-Autopilot/Tools/simulation/gz/simulation-gazebo --model_store=~/PX
 python3 ~/PX4-Autopilot/Tools/simulation/gz/simulation-gazebo --model_store=~/PX4-Autopilot/Tools/simulation/gz --headless # For headless mode
 
 # Launch the simulation.
-# To change the scenario and drone id, modify the `scenario_name` and `_drone_id` respectively
 # To modify the scenario, find the scenario, and change it at [gestelt_commander/scenarios.json]
-ros2 launch gestelt_bringup multi_drone_sim_launch.py scenario_name:=start_1d_zero _drone_id:=0 
+ros2 launch gestelt_bringup multi_drone_sim_launch.py scenario_name:=single_drone_test
 
-# Command take-off and sending of goals
-ros2 launch gestelt_bringup test_point_goal_sim.py scenario_name:=start_1d_zero _drone_id:=0
+# Command take-off and sending of goals (Make sure to use the same scenario as multi_drone_sim_launch)
+ros2 launch gestelt_bringup test_point_goal_sim.py scenario_name:=single_drone_test
 
 # Landing drone is still WIP
+```
+
+### Gazebo simulation not spawning drone
+```bash
+In ~/PX4-Autopilot/Tools/simulation/gz/simulation-gazebo, change the following:
+# In line 93 (old)
+cmd = f'GZ_SIM_RESOURCE_PATH={args.model_store}/models gz sim -r {args.model_store}/worlds/{args.world}.sdf'
+
+# New line
+cmd = f'GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:{args.model_store}/models:{args.model_store}/worlds gz sim -r {args.model_store}/worlds/{args.world}.sdf'
 ```
 
 ### Improvement features to include
