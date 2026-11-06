@@ -28,17 +28,15 @@ done
 # Start QGroundControl 
 QGC="~/Documents/QGroundControl.AppImage"
 
-# Start Rviz
-RVIZ="ros2 launch gestelt_bringup rviz_viz.py"
+# Start Rviz, the scenario static transforms and the goal republisher
+SCENARIO_NAME=${SCENARIO_NAME:-multi_drone_real_flight}
+RVIZ="ros2 launch gestelt_bringup rviz_gcs_launch.py scenario_name:=$SCENARIO_NAME"
 
 # Start zenoh bridge gcs
 ZENOH_GCS="start_zenoh"
 
 # Reset map
 RESET_MAP="ros2 topic pub /reset_map std_msgs/msg/Empty {}"
-
-# Land
-STATIC_TRANSFORM="ros2 launch gestelt_bringup static_transform_publisher.py"
 
 if [ "$SESSIONEXISTS" = "" ]
 then 
@@ -55,7 +53,6 @@ then
     tmux send-keys -t $SESSION:0.1 "$RVIZ" C-m 
     tmux send-keys -t $SESSION:0.2 "$ZENOH_GCS" 
     tmux send-keys -t $SESSION:0.3 "$RESET_MAP" 
-    tmux send-keys -t $SESSION:0.4 "$STATIC_TRANSFORM" C-m
 fi
 
 # Attach session on the first window
