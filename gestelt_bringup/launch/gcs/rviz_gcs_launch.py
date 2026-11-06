@@ -52,8 +52,7 @@ def generate_launch_description():
     # Declare the launch arguments
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config',
-        default_value=os.path.join(bringup_dir, 'rviz', 'five_drones.rviz'),
-        # default_value=os.path.join(bringup_dir, 'rviz', 'single_drone_follow.rviz'),
+        default_value=os.path.join(bringup_dir, 'rviz', 'five_drone_gcs.rviz'),
         description='Full path to the RVIZ config file to use',
     )
 
